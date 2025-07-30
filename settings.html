@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - YouTube Video Manager</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <div class="container">
+        <div class="page-header">
+            <h2>Settings</h2>
+        </div>
+
+        <div class="settings-container">
+            <!-- General Settings -->
+            <div class="settings-section">
+                <h3>General Settings</h3>
+                
+                <div class="setting-item">
+                    <label for="language">Language</label>
+                    <select id="language" class="form-control">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="timezone">Timezone</label>
+                    <select id="timezone" class="form-control">
+                        <option value="UTC">UTC</option>
+                        <option value="America/New_York">Eastern Time</option>
+                        <option value="America/Chicago">Central Time</option>
+                        <option value="America/Denver">Mountain Time</option>
+                        <option value="America/Los_Angeles">Pacific Time</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="dateFormat">Date Format</label>
+                    <select id="dateFormat" class="form-control">
+                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Privacy Settings -->
+            <div class="settings-section">
+                <h3>Privacy Settings</h3>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <strong>Profile Visibility</strong>
+                        <p>Control who can see your profile information</p>
+                    </div>
+                    <select id="profileVisibility" class="form-control">
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                        <option value="members">Members Only</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <strong>Data Collection</strong>
+                        <p>Allow collection of usage data for improvements</p>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="dataCollection" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <strong>Analytics Tracking</strong>
+                        <p>Enable analytics for better user experience</p>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="analyticsTracking" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Video Settings (Admin/Editor only) -->
+            <div class="settings-section admin-only editor-only">
+                <h3>Video Settings</h3>
+                
+                <div class="setting-item">
+                    <label for="defaultVideoPrivacy">Default Video Privacy</label>
+                    <select id="defaultVideoPrivacy" class="form-control">
+                        <option value="public">Public</option>
+                        <option value="unlisted">Unlisted</option>
+                        <option value="private">Private</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="autoSync">Auto-sync with YouTube</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="autoSync">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="videoQuality">Default Upload Quality</label>
+                    <select id="videoQuality" class="form-control">
+                        <option value="720p">720p HD</option>
+                        <option value="1080p">1080p Full HD</option>
+                        <option value="1440p">1440p 2K</option>
+                        <option value="2160p">2160p 4K</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Subscription Settings (Viewer only) -->
+            <div class="settings-section viewer-only">
+                <h3>Subscription Settings</h3>
+                
+                <div class="subscription-info">
+                    <div class="current-plan">
+                        <h4 id="currentPlan">Free Plan</h4>
+                        <p id="planDescription">Basic access to public content</p>
+                        <div class="plan-status" id="planStatus">Active</div>
+                    </div>
+                    
+                    <div class="subscription-actions">
+                        <button class="btn btn-primary" onclick="upgradePlan()">Upgrade Plan</button>
+                        <button class="btn btn-secondary" onclick="viewBilling()">View Billing</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Settings -->
+            <div class="settings-actions">
+                <button class="btn btn-primary" onclick="saveSettings()">Save All Settings</button>
+                <button class="btn btn-secondary" onclick="resetSettings()">Reset to Default</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/header.js"></script>
+    <script src="assets/js/settings.js"></script>
+</body>
+</html>
