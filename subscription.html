@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Management - YouTube Video Manager</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header"></div>
+
+    <div class="container">
+        <!-- Elegant Hero Section -->
+        <div class="subscription-hero">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="hero-badge-icon">✨</span>
+                    Subscription Management
+                </div>
+                <h1 class="hero-title">Choose Your Perfect Plan</h1>
+                <p class="hero-subtitle">Unlock premium features and take your video management to the next level</p>
+            </div>
+            <div class="hero-decoration">
+                <div class="decoration-circle decoration-circle-1"></div>
+                <div class="decoration-circle decoration-circle-2"></div>
+                <div class="decoration-circle decoration-circle-3"></div>
+            </div>
+        </div>
+
+        <!-- Current Subscription Status Card -->
+        <div class="current-subscription-wrapper">
+            <div class="current-subscription-card">
+                <div class="subscription-header">
+                    <div class="subscription-icon">
+                        <div class="icon-circle">
+                            <span>👑</span>
+                        </div>
+                    </div>
+                    <div class="subscription-info">
+                        <h3>Current Plan</h3>
+                        <div class="plan-details">
+                            <span class="plan-name" id="currentPlanName">Free Plan</span>
+                            <span class="plan-price" id="currentPlanPrice">$0/month</span>
+                        </div>
+                    </div>
+                    <div class="subscription-status">
+                        <span class="status-indicator" id="currentPlanStatus">Active</span>
+                    </div>
+                </div>
+                <div class="subscription-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Status</span>
+                        <span class="meta-value">Active</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Next Billing</span>
+                        <span class="meta-value" id="nextBilling">No billing date</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Videos Uploaded</span>
+                        <span class="meta-value">24 this month</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Elegant Pricing Plans -->
+        <div class="pricing-section">
+            <div class="section-header">
+                <h2>Choose Your Plan</h2>
+                <p>Select the perfect plan for your content creation needs</p>
+            </div>
+            
+            <div class="pricing-toggle">
+                <span class="toggle-label">Monthly</span>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="billingToggle">
+                    <label for="billingToggle" class="toggle-slider"></label>
+                </div>
+                <span class="toggle-label">Annual <span class="savings-badge">Save 20%</span></span>
+            </div>
+
+            <div class="elegant-plans-grid">
+                <!-- Free Plan -->
+                <div class="elegant-plan-card free-plan">
+                    <div class="plan-header">
+                        <div class="plan-icon">
+                            <span>🎯</span>
+                        </div>
+                        <h3 class="plan-title">Starter</h3>
+                        <p class="plan-description">Perfect for beginners</p>
+                    </div>
+                    <div class="plan-pricing">
+                        <div class="price-display">
+                            <span class="currency">$</span>
+                            <span class="amount">0</span>
+                            <span class="period">/month</span>
+                        </div>
+                    </div>
+                    <div class="plan-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Access to public videos</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Basic video quality</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Community features</span>
+                        </div>
+                        <div class="feature-item disabled">
+                            <span class="feature-icon">✗</span>
+                            <span>Premium content</span>
+                        </div>
+                        <div class="feature-item disabled">
+                            <span class="feature-icon">✗</span>
+                            <span>HD streaming</span>
+                        </div>
+                    </div>
+                    <button class="plan-cta-button current-plan" disabled>Current Plan</button>
+                </div>
+
+                <!-- Premium Plan -->
+                <div class="elegant-plan-card premium-plan featured">
+                    <div class="popular-badge">
+                        <span>Most Popular</span>
+                    </div>
+                    <div class="plan-header">
+                        <div class="plan-icon">
+                            <span>🚀</span>
+                        </div>
+                        <h3 class="plan-title">Professional</h3>
+                        <p class="plan-description">For content creators</p>
+                    </div>
+                    <div class="plan-pricing">
+                        <div class="price-display">
+                            <span class="currency">$</span>
+                            <span class="amount">9.99</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <div class="annual-price">$7.99/month billed annually</div>
+                    </div>
+                    <div class="plan-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Everything in Starter</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Premium exclusive content</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>HD & 4K streaming</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Offline downloads</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Ad-free experience</span>
+                        </div>
+                    </div>
+                    <button class="plan-cta-button upgrade-btn" onclick="selectPlan('premium')">
+                        <span>Upgrade to Professional</span>
+                        <span class="btn-arrow">→</span>
+                    </button>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="elegant-plan-card pro-plan">
+                    <div class="plan-header">
+                        <div class="plan-icon">
+                            <span>⭐</span>
+                        </div>
+                        <h3 class="plan-title">Enterprise</h3>
+                        <p class="plan-description">For professional teams</p>
+                    </div>
+                    <div class="plan-pricing">
+                        <div class="price-display">
+                            <span class="currency">$</span>
+                            <span class="amount">19.99</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <div class="annual-price">$15.99/month billed annually</div>
+                    </div>
+                    <div class="plan-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Everything in Professional</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Early access to content</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Exclusive live streams</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Priority support 24/7</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Advanced creator tools</span>
+                        </div>
+                    </div>
+                    <button class="plan-cta-button upgrade-btn" onclick="selectPlan('pro')">
+                        <span>Upgrade to Enterprise</span>
+                        <span class="btn-arrow">→</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Method Section -->
+        <div class="payment-section">
+            <div class="section-header">
+                <h2>Payment Method</h2>
+                <p>Secure and encrypted payment processing</p>
+            </div>
+            <div class="payment-method-card" id="paymentMethodCard">
+                <div class="payment-icon">
+                    <span>💳</span>
+                </div>
+                <div class="payment-info">
+                    <div class="payment-title">No payment method</div>
+                    <div class="payment-description">Add a payment method to subscribe to premium plans</div>
+                </div>
+                <button class="payment-action-btn" onclick="addPaymentMethod()">
+                    <span>Add Payment Method</span>
+                    <span class="btn-plus">+</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Payment History Section -->
+        <div class="history-section">
+            <div class="section-header">
+                <h2>Payment History</h2>
+                <p>Track your subscription payments and invoices</p>
+            </div>
+            <div class="elegant-history-table">
+                <div class="table-header-row">
+                    <div class="table-cell">Date</div>
+                    <div class="table-cell">Plan</div>
+                    <div class="table-cell">Amount</div>
+                    <div class="table-cell">Status</div>
+                    <div class="table-cell">Action</div>
+                </div>
+                <div class="table-body" id="paymentHistoryBody">
+                    <div class="empty-state">
+                        <div class="empty-icon">📄</div>
+                        <div class="empty-title">No payment history</div>
+                        <div class="empty-description">Your payment history will appear here once you subscribe</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Payment Method Modal -->
+    <div id="paymentModal" class="elegant-modal">
+        <div class="modal-backdrop" onclick="closeModal('paymentModal')"></div>
+        <div class="elegant-modal-content">
+            <div class="modal-header">
+                <div class="modal-title-section">
+                    <h3>Add Payment Method</h3>
+                    <p>Your payment information is secure and encrypted</p>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('paymentModal')">
+                    <span>×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-form">
+                    <div class="form-group">
+                        <label for="cardNumber">Card Number</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                            <div class="card-icons">
+                                <span class="card-icon visa">💳</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expiryDate">Expiry Date</label>
+                            <input type="text" id="expiryDate" placeholder="MM/YY" maxlength="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="cvv">CVV</label>
+                            <input type="text" id="cvv" placeholder="123" maxlength="4">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cardName">Cardholder Name</label>
+                        <input type="text" id="cardName" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="billingAddress">Billing Address</label>
+                        <textarea id="billingAddress" placeholder="Enter your billing address" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="closeModal('paymentModal')">Cancel</button>
+                <button class="modal-btn primary" onclick="savePaymentMethod()">
+                    <span>Save Payment Method</span>
+                    <span class="btn-check">✓</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/header.js"></script>
+    <script src="assets/js/subscription.js"></script>
+</body>
+</html>

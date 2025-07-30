@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - YouTube Video Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h2>📊 Dashboard</h2>
+            <div class="dashboard-actions">
+                <button class="btn btn-primary admin-only editor-only" onclick="showModal('uploadModal')">
+                    <span>📤</span> Upload Video
+                </button>
+                <a href="analytics.html" class="btn btn-secondary admin-only editor-only">
+                    <span>📈</span> Analytics
+                </a>
+                <a href="user-management.html" class="btn btn-secondary admin-only">
+                    <span>👥</span> Manage Users
+                </a>
+                <button class="btn btn-secondary" onclick="refreshDashboard()">
+                    <span>🔄</span> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Enhanced Search and Filter Bar -->
+        <div class="search-filter-bar">
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="🔍 Search videos, titles, descriptions..." />
+                <button class="search-clear-btn" onclick="clearSearch()" title="Clear search">✕</button>
+            </div>
+            <div class="filter-container">
+                <select class="filter-select" id="statusFilter">
+                    <option value="">📊 All Status</option>
+                    <option value="published">✅ Published</option>
+                    <option value="draft">📝 Draft</option>
+                    <option value="scheduled">⏰ Scheduled</option>
+                </select>
+                <select class="filter-select" id="sortFilter">
+                    <option value="newest">🆕 Newest First</option>
+                    <option value="oldest">📅 Oldest First</option>
+                    <option value="most-viewed">👁️ Most Viewed</option>
+                    <option value="alphabetical">🔤 A-Z</option>
+                </select>
+                <button class="btn btn-secondary filter-clear-btn" onclick="clearFilters()">
+                    <span>🔄</span> Clear All
+                </button>
+            </div>
+        </div>    
+
+        <!-- Stats Grid - Only for Admin/Editor -->
+        <div class="stats-grid admin-only editor-only">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-number" id="totalUsers">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎥</div>
+                <div class="stat-number" id="totalVideos">0</div>
+                <div class="stat-label">Total Videos</div>
+            </div>
+            <div class="stat-card admin-only">
+                <div class="stat-icon">💰</div>
+                <div class="stat-number" id="totalRevenue">$0</div>
+                <div class="stat-label">Revenue</div>
+            </div>
+            <div class="stat-card admin-only">
+                <div class="stat-icon">📈</div>
+                <div class="stat-number" id="engagementRate">0%</div>
+                <div class="stat-label">Engagement</div>
+            </div>
+        </div>
+
+        <!-- Upgrade Prompt for Non-Subscribers -->
+        <div id="upgradePrompt" class="upgrade-prompt viewer-only" style="display: none;">
+            <h3>🚀 Unlock Premium Content</h3>
+            <p>Get access to exclusive videos, advanced tutorials, and premium features with our subscription plans.</p>
+            <button class="upgrade-btn" onclick="showModal('subscriptionModal')">
+                💎 Upgrade Now
+            </button>
+        </div>
+
+        <!-- Videos Section -->
+        <div style="background: white; border: 1px solid #e0e0e0; border-radius: 4px; padding: 20px;">
+            <h3>Videos</h3>
+            <div class="video-grid" id="videoGrid">
+                <!-- Videos will be loaded here -->
+            </div>
+        </div>
+
+        <!-- User Management - Admin Only -->
+        <div class="admin-only" style="background: white; border: 1px solid #e0e0e0; border-radius: 4px; padding: 20px; margin-top: 20px;">
+            <h3>User Management</h3>
+            <div class="user-list" id="userList">
+                <!-- Users will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Upload Video</h3>
+                <span class="close" onclick="closeModal('uploadModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" onclick="document.getElementById('videoFile').click()">
+                    <p>📁 Click to upload video file</p>
+                    <small>MP4, MOV, AVI up to 500MB</small>
+                    <input type="file" id="videoFile" accept="video/*" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="videoTitle">Video Title</label>
+                    <input type="text" id="videoTitle" placeholder="Enter video title">
+                </div>
+                <div class="form-group">
+                    <label for="videoDescription">Description</label>
+                    <textarea id="videoDescription" placeholder="Enter video description" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('uploadModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="uploadVideo()">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Modal -->
+    <div id="subscriptionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Upgrade to Premium</h3>
+                <span class="close" onclick="closeModal('subscriptionModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="plan-cards">
+                    <div class="plan-card" data-plan="basic">
+                        <h4>Basic</h4>
+                        <div class="price">$4.99<span>/month</span></div>
+                        <ul>
+                            <li>5 video uploads</li>
+                            <li>Basic analytics</li>
+                            <li>Email support</li>
+                        </ul>
+                    </div>
+                    <div class="plan-card active" data-plan="premium">
+                        <h4>Premium</h4>
+                        <div class="price">$9.99<span>/month</span></div>
+                        <ul>
+                            <li>Unlimited uploads</li>
+                            <li>Advanced analytics</li>
+                            <li>Priority support</li>
+                            <li>Team collaboration</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="payment-form">
+                    <div class="form-group">
+                        <label for="subCardNumber">Card Number</label>
+                        <input type="text" id="subCardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="subExpiry">Expiry</label>
+                            <input type="text" id="subExpiry" placeholder="MM/YY" maxlength="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="subCvc">CVC</label>
+                            <input type="text" id="subCvc" placeholder="123" maxlength="3">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="subCardName">Cardholder Name</label>
+                        <input type="text" id="subCardName" placeholder="John Doe">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('subscriptionModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="processSubscription()">Subscribe Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/dashboard.js"></script>
+    <script src="assets/js/header.js"></script>
+    <script src="assets/js/visual-enhancements.js"></script>
+    <script>
+        // Check authentication on dashboard load
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+
+            // If no user data, redirect to login
+            if (!currentUser && !isLoggedIn) {
+                window.location.replace('/login.html');
+                return;
+            }
+
+            // Set default user if none exists
+            if (!currentUser) {
+                localStorage.setItem('currentUser', JSON.stringify({
+                    name: 'Demo User',
+                    email: 'demo@example.com',
+                    role: 'admin'
+                }));
+            }
+        });
+    </script>
+</body>
+</html>

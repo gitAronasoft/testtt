@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - YouTube Video Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+<body>
+    <div class="auth-background">
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="auth-logo">
+                        <div class="logo-icon">🎬</div>
+                        <h1>YouTube Video Manager</h1>
+                    </div>
+                    <div class="auth-title">
+                        <h2>Create Your Account</h2>
+                        <p>Join thousands of content creators worldwide</p>
+                    </div>
+                </div>
+
+                <form id="signupForm" class="auth-form">
+                    <div id="alertContainer"></div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">👤</span>
+                                <input type="text" id="firstName" placeholder="Enter first name" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">👤</span>
+                                <input type="text" id="lastName" placeholder="Enter last name" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">📧</span>
+                            <input type="email" id="email" placeholder="Enter your email address" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">🔒</span>
+                                <input type="password" id="password" placeholder="Create a strong password" required>
+                                <button type="button" class="password-toggle" onclick="togglePassword('password')">👁️</button>
+                            </div>
+                            <div class="password-strength">
+                                <div class="strength-indicator">
+                                    <div class="strength-bar"></div>
+                                </div>
+                                <span class="strength-text">Password strength</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password</label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">🔒</span>
+                                <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                                <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">👁️</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Choose Your Role</label>
+                        <div class="role-selection">
+                            <label class="role-option">
+                                <input type="radio" name="role" value="viewer" checked>
+                                <div class="role-card">
+                                    <div class="role-icon">👁️</div>
+                                    <div class="role-info">
+                                        <h4>Viewer</h4>
+                                        <p>Browse and watch content with basic features</p>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="role-option">
+                                <input type="radio" name="role" value="editor">
+                                <div class="role-card">
+                                    <div class="role-icon">✏️</div>
+                                    <div class="role-info">
+                                        <h4>Editor</h4>
+                                        <p>Create, upload and manage video content</p>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="role-option">
+                                <input type="radio" name="role" value="admin">
+                                <div class="role-card">
+                                    <div class="role-icon">🛡️</div>
+                                    <div class="role-info">
+                                        <h4>Administrator</h4>
+                                        <p>Full system access and user management</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="terms" required>
+                            <span class="checkmark"></span>
+                            I agree to the <a href="#" class="terms-link">Terms of Service</a> and <a href="#" class="terms-link">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="newsletter">
+                            <span class="checkmark"></span>
+                            Subscribe to our newsletter for updates and tips
+                        </label>
+                    </div>
+
+                    <button type="submit" class="auth-btn">
+                        <span class="btn-text">Create Account</span>
+                        <span class="btn-loader hidden">🔄</span>
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>or continue with</span>
+                </div>
+
+                <div class="social-login">
+                    <button class="social-btn google-btn">
+                        <span class="social-icon">🔍</span>
+                        Sign up with Google
+                    </button>
+                    <button class="social-btn github-btn">
+                        <span class="social-icon">💾</span>
+                        Sign up with GitHub
+                    </button>
+                </div>
+
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="login.html" class="auth-link">Sign In</a></p>
+                    <p><a href="index.html" class="auth-link">← Back to Home</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/visual-enhancements.js"></script>
+    <script>
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = input.nextElementSibling;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggle.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggle.textContent = '👁️';
+            }
+        }
+
+        // Password strength indicator
+        document.getElementById('password').addEventListener('input', function(e) {
+            const password = e.target.value;
+            const strengthBar = document.querySelector('.strength-bar');
+            const strengthText = document.querySelector('.strength-text');
+
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
+            const texts = ['Weak', 'Fair', 'Good', 'Strong'];
+
+            strengthBar.style.width = (strength * 25) + '%';
+            strengthBar.style.backgroundColor = colors[strength - 1] || '#e5e7eb';
+            strengthText.textContent = strength > 0 ? texts[strength - 1] : 'Password strength';
+        });
+    </script>
+</body>
+</html>
