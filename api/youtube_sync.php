@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require_once 'youtube_service.php';
@@ -51,10 +50,10 @@ function handleAutoSync($youtube_service) {
         ]);
         return;
     }
-    
+
     // Perform automatic sync
     $result = $youtube_service->syncAllVideos();
-    
+
     if ($result['success']) {
         echo json_encode([
             'success' => true,
@@ -75,7 +74,7 @@ function handleAutoSync($youtube_service) {
 function handleCheckStatus($youtube_service) {
     $connected = $youtube_service->isConnected();
     $channel_info = $connected ? $youtube_service->getChannelInfo() : null;
-    
+
     echo json_encode([
         'success' => true,
         'connected' => $connected,
@@ -92,36 +91,36 @@ function handleForceSync($youtube_service) {
         ]);
         return;
     }
-    
+
     // Get all videos and update existing ones
     $videos = $youtube_service->getChannelVideos();
-    
+
     if ($videos === false) {
         echo json_encode(['success' => false, 'message' => 'Failed to fetch videos from YouTube']);
         return;
     }
-    
+
     $conn = getConnection();
     $synced_count = 0;
     $updated_count = 0;
-    
+
     foreach ($videos as $video) {
         // Check if video already exists
         $check_stmt = $conn->prepare("SELECT id FROM videos WHERE youtube_id = ?");
         $check_stmt->bind_param("s", $video['youtube_id']);
         $check_stmt->execute();
         $result = $check_stmt->get_result();
-        
+
         if ($result->num_rows === 0) {
             // Insert new video
             $insert_stmt = $conn->prepare("
                 INSERT INTO videos (title, description, uploader_id, youtube_id, youtube_thumbnail, is_youtube_synced, created_at) 
                 VALUES (?, ?, ?, ?, ?, 1, ?)
             ");
-            
+
             $uploader_id = $_SESSION['user']['id'];
             $created_at = date('Y-m-d H:i:s', strtotime($video['published_at']));
-            
+
             $insert_stmt->bind_param("ssssss", 
                 $video['title'], 
                 $video['description'], 
@@ -130,7 +129,7 @@ function handleForceSync($youtube_service) {
                 $video['thumbnail'],
                 $created_at
             );
-            
+
             if ($insert_stmt->execute()) {
                 $synced_count++;
             }
@@ -141,22 +140,22 @@ function handleForceSync($youtube_service) {
                 SET title = ?, description = ?, youtube_thumbnail = ?, is_youtube_synced = 1
                 WHERE youtube_id = ?
             ");
-            
+
             $update_stmt->bind_param("ssss", 
                 $video['title'], 
                 $video['description'], 
                 $video['thumbnail'],
                 $video['youtube_id']
             );
-            
+
             if ($update_stmt->execute()) {
                 $updated_count++;
             }
         }
     }
-    
+
     $conn->close();
-    
+
     echo json_encode([
         'success' => true,
         'message' => "Force sync completed: {$synced_count} new videos, {$updated_count} updated videos",

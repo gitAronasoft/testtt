@@ -1,6 +1,30 @@
 
 <?php
-require_once __DIR__ . '/../vendor/autoload.php';
+// Try different paths for the autoloader
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+} elseif (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
+    require_once __DIR__ . '/../../vendor/autoload.php';
+} elseif (file_exists('../vendor/autoload.php')) {
+    require_once '../vendor/autoload.php';
+} else {
+    // Fallback: provide basic YouTube functionality without Google client
+    class YouTubeService {
+        public function isConnected() { return false; }
+        public function getChannelInfo() { return null; }
+        public function getChannelVideos() { return []; }
+        public function getAuthUrl() { return '#'; }
+    }
+    
+    // Return basic service if autoloader not found
+    if (!function_exists('getYouTubeService')) {
+        function getYouTubeService() {
+            return new YouTubeService();
+        }
+    }
+    return;
+}
+
 require_once 'config.php';
 
 class YouTubeService {
@@ -415,5 +439,13 @@ class YouTubeService {
             'total_videos' => count($videos)
         ];
     }
+}
+
+// Global function to get YouTube service instance
+function getYouTubeService($user_id = null) {
+    if (isset($_SESSION['user']) && !$user_id) {
+        $user_id = $_SESSION['user']['id'];
+    }
+    return new YouTubeService($user_id);
 }
 ?>

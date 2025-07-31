@@ -1,15 +1,44 @@
+The code has been modified to improve error handling for missing YouTube dependencies.
+```
+
+```php
 <?php
 session_start();
-require_once 'youtube_service.php';
+try {
+    require_once 'youtube_service.php';
+} catch (Error $e) {
+    // Handle missing dependencies gracefully
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'message' => 'YouTube API dependencies not installed. Run "composer install" to enable YouTube integration.',
+        'connected' => false,
+        'channel_info' => null
+    ]);
+    exit();
+}
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    exit();
+}
+
+$action = $_GET['action'] ?? '';
+
+try {
+    $youtube_service = getYouTubeService();
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'YouTube service unavailable: ' . $e->getMessage(),
+        'connected' => false,
+        'channel_info' => null
+    ]);
     exit();
 }
 
@@ -63,7 +92,7 @@ function handleConnect($youtube_service) {
 function handleStatus($youtube_service) {
     $connected = $youtube_service->isConnected();
     $channel_info = $connected ? $youtube_service->getChannelInfo() : null;
-    
+
     echo json_encode([
         'success' => true,
         'connected' => $connected,
@@ -76,7 +105,7 @@ function handleChannelInfo($youtube_service) {
         echo json_encode(['success' => false, 'message' => 'YouTube not connected']);
         return;
     }
-    
+
     $channel_info = $youtube_service->getChannelInfo();
     echo json_encode([
         'success' => true,
@@ -89,9 +118,9 @@ function handleGetVideos($youtube_service) {
         echo json_encode(['success' => false, 'message' => 'YouTube not connected']);
         return;
     }
-    
+
     $videos = $youtube_service->getChannelVideos();
-    
+
     if ($videos !== false) {
         echo json_encode([
             'success' => true,
@@ -107,9 +136,9 @@ function handleGetStatistics($youtube_service) {
         echo json_encode(['success' => false, 'message' => 'YouTube not connected']);
         return;
     }
-    
+
     $statistics = $youtube_service->getChannelStatistics();
-    
+
     if ($statistics !== false) {
         echo json_encode([
             'success' => true,
@@ -125,23 +154,23 @@ function handleUploadVideo($youtube_service) {
         echo json_encode(['success' => false, 'message' => 'YouTube not connected']);
         return;
     }
-    
+
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         echo json_encode(['success' => false, 'message' => 'POST method required']);
         return;
     }
-    
+
     // Check if file was uploaded
     if (!isset($_FILES['video']) || $_FILES['video']['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['success' => false, 'message' => 'No video file uploaded']);
         return;
     }
-    
+
     $title = $_POST['title'] ?? 'Untitled Video';
     $description = $_POST['description'] ?? '';
     $tags = isset($_POST['tags']) ? explode(',', $_POST['tags']) : [];
     $privacy = $_POST['privacy'] ?? 'private';
-    
+
     $upload_result = $youtube_service->uploadVideo(
         $_FILES['video']['tmp_name'],
         $title,
@@ -149,7 +178,7 @@ function handleUploadVideo($youtube_service) {
         $tags,
         $privacy
     );
-    
+
     if ($upload_result) {
         echo json_encode([
             'success' => true,
@@ -165,35 +194,35 @@ function handleSyncVideos($youtube_service) {
         echo json_encode(['success' => false, 'message' => 'YouTube not connected']);
         return;
     }
-    
+
     $videos = $youtube_service->getChannelVideos();
-    
+
     if ($videos === false) {
         echo json_encode(['success' => false, 'message' => 'Failed to sync videos']);
         return;
     }
-    
+
     // Sync videos to local database
     $conn = getConnection();
     $synced_count = 0;
-    
+
     foreach ($videos as $video) {
         // Check if video already exists
         $check_stmt = $conn->prepare("SELECT id FROM videos WHERE youtube_id = ?");
         $check_stmt->bind_param("s", $video['youtube_id']);
         $check_stmt->execute();
         $result = $check_stmt->get_result();
-        
+
         if ($result->num_rows === 0) {
             // Insert new video
             $insert_stmt = $conn->prepare("
                 INSERT INTO videos (title, description, uploader_id, youtube_id, youtube_thumbnail, created_at) 
                 VALUES (?, ?, ?, ?, ?, ?)
             ");
-            
+
             $uploader_id = $_SESSION['user']['id'];
             $created_at = date('Y-m-d H:i:s', strtotime($video['published_at']));
-            
+
             $insert_stmt->bind_param("ssssss", 
                 $video['title'], 
                 $video['description'], 
@@ -202,15 +231,15 @@ function handleSyncVideos($youtube_service) {
                 $video['thumbnail'],
                 $created_at
             );
-            
+
             if ($insert_stmt->execute()) {
                 $synced_count++;
             }
         }
     }
-    
+
     $conn->close();
-    
+
     echo json_encode([
         'success' => true,
         'synced_count' => $synced_count,
@@ -218,3 +247,4 @@ function handleSyncVideos($youtube_service) {
     ]);
 }
 ?>
+</replit_final_file>

@@ -81,7 +81,7 @@ function handlePurchase() {
     }
     
     // Insert purchase record
-    $insert_purchase = $conn->prepare("INSERT INTO purchases (user_id, video_id) VALUES (?, ?)");
+    $insert_purchase = $conn->prepare("INSERT INTO purchases (user_id, video_id, purchase_date) VALUES (?, ?, NOW())");
     $insert_purchase->bind_param("si", $user_id, $video_id);
     
     if ($insert_purchase->execute()) {

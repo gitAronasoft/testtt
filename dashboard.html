@@ -12,7 +12,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary global-navbar">
         <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">
+            <a class="navbar-brand" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
                 <i class="fas fa-video me-2"></i>Video Platform
             </a>
             <div class="navbar-nav ms-auto d-flex align-items-center">
@@ -43,19 +43,19 @@
                         </div>
 
                         <nav class="nav flex-column">
-                            <a class="nav-link active" href="#" onclick="showPanel('overview')">
+                            <a class="nav-link active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
                                 <i class="fas fa-chart-bar me-2"></i>Overview
                             </a>
-                            <a class="nav-link" href="#" onclick="showPanel('videos')">
+                            <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
                                 <i class="fas fa-video me-2"></i>All Videos
                             </a>
 
                             <!-- Viewer Sidebar -->
                             <div id="viewerSidebar">
-                                <a class="nav-link" href="#" onclick="showPanel('purchases')">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('purchases'); return false;">
                                     <i class="fas fa-shopping-cart me-2"></i>My Purchases
                                 </a>
-                                <a class="nav-link" href="#" onclick="showPanel('watchlist')">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('watchlist'); return false;">
                                     <i class="fas fa-bookmark me-2"></i>Watchlist
                                 </a>
                             </div>
@@ -64,16 +64,19 @@
                             <div id="creatorSidebar">
                                 <hr>
                                 <h6 class="text-muted px-3">Creator Tools</h6>
-                                <a class="nav-link" href="#" onclick="showPanel('myVideos')">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('myVideos'); return false;">
                                     <i class="fas fa-film me-2"></i>My Videos
                                 </a>
-                                <a class="nav-link" href="#" onclick="showPanel('upload')">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('upload'); return false;">
                                     <i class="fas fa-upload me-2"></i>Upload Video
                                 </a>
-                                <a class="nav-link" href="#" onclick="showPanel('earnings')">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('youtube'); return false;">
+                                    <i class="fab fa-youtube me-2"></i>YouTube Integration
+                                </a>
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('earnings'); return false;">
                                     <i class="fas fa-dollar-sign me-2"></i>Earnings
                                 </a>
-                                <a class="nav-link" href="#" onclick="showPanel('paidUsers')">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('paidUsers'); return false;">
                                     <i class="fas fa-users me-2"></i>Paid Users
                                 </a>
                             </div>
@@ -82,10 +85,10 @@
                             <div id="adminSidebar">
                                 <hr>
                                 <h6 class="text-muted px-3">Admin Panel</h6>
-                                <a class="nav-link" href="#" onclick="showPanel('users')">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('users'); return false;">
                                     <i class="fas fa-users me-2"></i>Manage Users
                                 </a>
-                                <a class="nav-link" href="#" onclick="showPanel('analytics')">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('analytics'); return false;">
                                     <i class="fas fa-chart-line me-2"></i>Analytics
                                 </a>
                             </div>
@@ -239,7 +242,7 @@
                     <div id="myVideosPanel" class="panel" style="display: none;">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h2>My Videos</h2>
-                            <button class="btn btn-primary" onclick="showPanel('upload')">
+                            <button class="btn btn-primary" onclick="event.preventDefault(); showPanel('upload'); return false;">
                                 <i class="fas fa-plus me-2"></i>Upload New Video
                             </button>
                         </div>
@@ -404,7 +407,7 @@
                                             </tr>
                                         </thead>
                                         <tbody id="transactionsTableBody">
-                                            <!-- Transactions will be populated by JavaScript -->
+                                            <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -432,6 +435,134 @@
                         <div class="alert alert-info">
                             <i class="fas fa-chart-line me-2"></i>
                             Analytics charts will be implemented with Chart.js
+                        </div>
+                    </div>
+
+                    <!-- YouTube Panel -->
+                    <div id="youtubePanel" class="panel" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2><i class="fab fa-youtube text-danger me-2"></i>YouTube Integration</h2>
+                        </div>
+
+                        <!-- Connection Status -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5>Connection Status</h5>
+                                        <div id="youtubeStatus">
+                                            <div class="d-flex justify-content-center py-3">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Checking connection...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="youtubeControls" class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Channel Info -->
+                        <div id="youtubeChannelInfo" class="row mb-4" style="display: none;">
+                            <div class="col-12">
+                                <!-- Channel info will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Statistics -->
+                        <div id="youtubeStats" class="row mb-4" style="display: none;">
+                            <div class="col-md-4">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body text-center">
+                                        <h5>Subscribers</h5>
+                                        <h3 id="ytSubscribers">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h5>Total Views</h5>
+                                        <h3 id="ytTotalViews">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h5>Videos</h5>
+                                        <h3 id="ytVideoCount">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Form -->
+                        <div id="youtubeUploadForm" class="row mb-4" style="display: none;">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5><i class="fas fa-upload me-2"></i>Upload to YouTube</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="youtubeUpload">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="ytTitle" class="form-label">Title</label>
+                                                        <input type="text" class="form-control" id="ytTitle" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="ytDescription" class="form-label">Description</label>
+                                                        <textarea class="form-control" id="ytDescription" rows="3"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="ytTags" class="form-label">Tags (comma separated)</label>
+                                                        <input type="text" class="form-control" id="ytTags">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="ytPrivacy" class="form-label">Privacy</label>
+                                                        <select class="form-select" id="ytPrivacy">
+                                                            <option value="private">Private</option>
+                                                            <option value="unlisted">Unlisted</option>
+                                                            <option value="public">Public</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="ytVideo" class="form-label">Video File</label>
+                                                        <input type="file" class="form-control" id="ytVideo" accept="video/*" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-danger">
+                                                <i class="fab fa-youtube me-2"></i>Upload to YouTube
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Videos List -->
+                        <div id="youtubeVideos" class="row" style="display: none;">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5><i class="fab fa-youtube me-2"></i>YouTube Videos</h5>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="syncYouTubeVideos()">
+                                            <i class="fas fa-sync me-1"></i>Sync Videos
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="youtubeVideosList">
+                                            <!-- Videos will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

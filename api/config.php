@@ -152,6 +152,7 @@ function initializeMySQL() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id VARCHAR(50) NOT NULL,
         video_id INT NOT NULL,
+        purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
