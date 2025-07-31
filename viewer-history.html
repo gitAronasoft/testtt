@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase History - Video Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <!-- Global Navbar will be injected here -->
+
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm bg-gradient-success text-white">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h2 class="mb-1"><i class="fas fa-history me-2"></i>Purchase History</h2>
+                                <p class="mb-0 opacity-75">View your purchased videos and transaction history</p>
+                            </div>
+                            <div class="text-end">
+                                <div class="display-6">📋</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center">
+                    <div class="card-body">
+                        <div class="display-6 text-primary mb-2"><i class="fas fa-video"></i></div>
+                        <h4 class="text-primary" id="totalPurchasedVideos">0</h4>
+                        <p class="text-muted mb-0">Videos Owned</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center">
+                    <div class="card-body">
+                        <div class="display-6 text-success mb-2"><i class="fas fa-dollar-sign"></i></div>
+                        <h4 class="text-success" id="totalSpent">$0.00</h4>
+                        <p class="text-muted mb-0">Total Spent</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center">
+                    <div class="card-body">
+                        <div class="display-6 text-info mb-2"><i class="fas fa-calendar"></i></div>
+                        <h4 class="text-info" id="thisMonth">$0.00</h4>
+                        <p class="text-muted mb-0">This Month</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center">
+                    <div class="card-body">
+                        <div class="display-6 text-warning mb-2"><i class="fas fa-star"></i></div>
+                        <h4 class="text-warning" id="avgRating">0.0</h4>
+                        <p class="text-muted mb-0">Avg Rating</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchased Videos -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-video text-primary"></i> Your Videos</h5>
+                <button class="btn btn-outline-primary btn-sm" onclick="refreshPurchases()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row" id="purchasedVideosGrid">
+                    <!-- Purchased videos will be loaded here -->
+                </div>
+                <div id="noPurchasedVideos" class="text-center py-5" style="display: none;">
+                    <div class="text-muted">
+                        <i class="fas fa-shopping-cart fa-4x mb-3"></i>
+                        <h4>No videos purchased yet</h4>
+                        <p>Start exploring and purchasing videos to build your library!</p>
+                        <a href="viewer-videos.html" class="btn btn-primary">
+                            <i class="fas fa-video"></i> Browse Videos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction History -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <h5 class="mb-0"><i class="fas fa-receipt text-success"></i> Transaction History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Video</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Transaction ID</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionHistory">
+                            <!-- Transaction history will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noTransactions" class="text-center py-4" style="display: none;">
+                    <div class="text-muted">
+                        <i class="fas fa-receipt fa-3x mb-3"></i>
+                        <p>No transactions found</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div class="modal fade" id="videoPlayerModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Video Player</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="videoPlayerContainer" class="text-center">
+                        <div class="video-placeholder bg-dark text-white p-5 rounded">
+                            <i class="fas fa-play-circle fa-5x mb-3"></i>
+                            <h4>Video Player</h4>
+                            <p>Your video would play here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/navbar.js"></script>
+    <script src="assets/js/viewer-history.js"></script>
+</body>
+</html>

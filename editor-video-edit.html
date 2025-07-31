@@ -1,0 +1,843 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Video - Video Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .video-preview-container {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 16px;
+            padding: 2rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .video-preview-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .video-preview-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .thumbnail-display {
+            width: 100%;
+            max-width: 300px;
+            height: 169px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .thumbnail-display:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .form-floating label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .analytics-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(34, 197, 94, 0.05));
+            border: 2px solid rgba(16, 185, 129, 0.2);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .analytics-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .tag-badge {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+        
+        .tag-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status-published { background: var(--success-color); }
+        .status-draft { background: var(--warning-color); }
+        .status-private { background: var(--danger-color); }
+        .status-unlisted { background: var(--info-color); }
+        
+        .save-indicator {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: var(--gradient-success);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: var(--shadow-lg);
+            transform: translateX(300px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .save-indicator.show {
+            transform: translateX(0);
+        }
+        
+        .price-preview-card {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.05));
+            border: 2px solid rgba(245, 158, 11, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        
+        .earnings-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-warning);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Navbar will be injected here -->
+
+    <div class="container-fluid main-content">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="fas fa-edit me-2 text-primary"></i>Edit Video
+                        </h2>
+                        <p class="text-muted mb-0">Modify your video details and settings</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="editor-videos.html" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Videos
+                        </a>
+                        <button class="btn btn-success" onclick="previewVideo()">
+                            <i class="fas fa-eye me-1"></i>Preview
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Status Bar -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <span class="status-indicator status-published"></span>
+                                    <span class="fw-semibold me-3">Status: <span id="currentStatus">Published</span></span>
+                                    <small class="text-muted">Last updated: <span id="lastUpdated">Just now</span></small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <small class="text-muted">Video ID: <code id="videoId">VID_12345</code></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="editVideoForm">
+            <div class="row">
+                <!-- Main Content -->
+                <div class="col-lg-8">
+                    <!-- Video Preview -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <div class="video-preview-container">
+                                <div class="video-preview-content">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4">
+                                            <div class="thumbnail-display" id="thumbnailDisplay">
+                                                🎬
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h4 class="mb-3" id="previewTitle">Video Title</h4>
+                                            <p class="mb-3 opacity-90" id="previewDescription">Video description will appear here...</p>
+                                            <div class="d-flex flex-wrap gap-2 mb-3" id="previewTags">
+                                                <!-- Tags will be populated here -->
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-light text-dark px-3 py-2">
+                                                    <i class="fas fa-clock me-1"></i><span id="previewDuration">10:30</span>
+                                                </span>
+                                                <span class="badge bg-light text-dark px-3 py-2" id="previewPrice">
+                                                    <i class="fas fa-dollar-sign me-1"></i>Free
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Details -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle me-2 text-primary"></i>Video Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 mb-4">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="videoTitle" placeholder="Video Title" maxlength="100" required>
+                                        <label for="videoTitle">Video Title <span class="text-danger">*</span></label>
+                                        <div class="form-text">
+                                            <span id="titleCount">0</span>/100 characters
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12 mb-4">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="videoDescription" placeholder="Video Description" style="height: 120px" maxlength="2000"></textarea>
+                                        <label for="videoDescription">Description</label>
+                                        <div class="form-text">
+                                            <span id="descCount">0</span>/2000 characters
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="videoCategory">
+                                            <option value="">Select Category</option>
+                                            <option value="education">Education</option>
+                                            <option value="entertainment">Entertainment</option>
+                                            <option value="technology">Technology</option>
+                                            <option value="tutorial">Tutorial</option>
+                                            <option value="gaming">Gaming</option>
+                                            <option value="music">Music</option>
+                                            <option value="sports">Sports</option>
+                                            <option value="travel">Travel</option>
+                                            <option value="comedy">Comedy</option>
+                                            <option value="news">News</option>
+                                        </select>
+                                        <label for="videoCategory">Category</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="videoLanguage">
+                                            <option value="en">English</option>
+                                            <option value="es">Spanish</option>
+                                            <option value="fr">French</option>
+                                            <option value="de">German</option>
+                                            <option value="it">Italian</option>
+                                            <option value="pt">Portuguese</option>
+                                        </select>
+                                        <label for="videoLanguage">Language</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tags Section -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Tags</label>
+                                <div class="border rounded p-3 bg-light">
+                                    <div id="tagsContainer" class="mb-2">
+                                        <!-- Tags will be displayed here -->
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="newTagInput" placeholder="Add a new tag...">
+                                        <button class="btn btn-outline-primary" type="button" onclick="addTag()">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Settings -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-dollar-sign me-2 text-primary"></i>Pricing & Monetization
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="radio" name="priceType" id="freeVideo" value="free" checked>
+                                        <label class="form-check-label fw-semibold" for="freeVideo">
+                                            <i class="fas fa-gift text-success me-2"></i>Free Video
+                                        </label>
+                                        <div class="form-text">Anyone can watch for free</div>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="radio" name="priceType" id="paidVideo" value="paid">
+                                        <label class="form-check-label fw-semibold" for="paidVideo">
+                                            <i class="fas fa-credit-card text-primary me-2"></i>Paid Video
+                                        </label>
+                                        <div class="form-text">Viewers pay to watch</div>
+                                    </div>
+                                    
+                                    <div id="pricingOptions" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-floating">
+                                                    <input type="number" class="form-control" id="videoPrice" step="0.01" min="0.99" max="999.99" placeholder="9.99">
+                                                    <label for="videoPrice">Price (USD)</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-floating">
+                                                    <select class="form-select" id="accessType">
+                                                        <option value="lifetime">Lifetime Access</option>
+                                                        <option value="rental_24h">24 Hour Rental</option>
+                                                        <option value="rental_7d">7 Day Rental</option>
+                                                        <option value="rental_30d">30 Day Rental</option>
+                                                    </select>
+                                                    <label for="accessType">Access Type</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="price-preview-card">
+                                        <h6 class="fw-bold mb-3">
+                                            <i class="fas fa-eye me-2"></i>Preview
+                                        </h6>
+                                        <div id="pricePreview" class="mb-3">
+                                            <span class="badge bg-success fs-6">FREE</span>
+                                        </div>
+                                        <div id="earningsPreview">
+                                            <small class="text-muted">Your earnings:</small>
+                                            <div class="earnings-display">$0.00</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Video Analytics -->
+                    <div class="analytics-card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold mb-3">
+                                <i class="fas fa-chart-line me-2 text-success"></i>Performance
+                            </h6>
+                            <div class="row text-center">
+                                <div class="col-6 mb-3">
+                                    <div class="h4 text-primary mb-1" id="analyticsViews">2,540</div>
+                                    <small class="text-muted">Views</small>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <div class="h4 text-success mb-1" id="analyticsLikes">189</div>
+                                    <small class="text-muted">Likes</small>
+                                </div>
+                                <div class="col-6">
+                                    <div class="h4 text-warning mb-1" id="analyticsEarnings">$149.95</div>
+                                    <small class="text-muted">Earnings</small>
+                                </div>
+                                <div class="col-6">
+                                    <div class="h4 text-info mb-1" id="analyticsComments">42</div>
+                                    <small class="text-muted">Comments</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Publishing Settings -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-cog me-2"></i>Settings
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="videoStatus" class="form-label fw-semibold">Visibility</label>
+                                <select class="form-select" id="videoStatus">
+                                    <option value="published">Published</option>
+                                    <option value="unlisted">Unlisted</option>
+                                    <option value="private">Private</option>
+                                    <option value="draft">Draft</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="allowComments" checked>
+                                <label class="form-check-label" for="allowComments">
+                                    Allow comments
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="allowRatings" checked>
+                                <label class="form-check-label" for="allowRatings">
+                                    Allow ratings
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="notifySubscribers" checked>
+                                <label class="form-check-label" for="notifySubscribers">
+                                    Notify subscribers
+                                </label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ageRestriction">
+                                <label class="form-check-label" for="ageRestriction">
+                                    Age restriction (18+)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thumbnail Upload -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-image me-2"></i>Thumbnail
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <input type="file" class="form-control mb-3" id="thumbnailFile" accept="image/*">
+                            <div class="form-text">Recommended: 1280x720px, JPG/PNG</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-primary btn-lg" onclick="saveChanges()">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteVideo()">
+                                    <i class="fas fa-trash me-2"></i>Delete Video
+                                </button>
+                                <hr>
+                                <button type="button" class="btn btn-outline-secondary" onclick="duplicateVideo()">
+                                    <i class="fas fa-copy me-2"></i>Duplicate
+                                </button>
+                                <button type="button" class="btn btn-outline-info" onclick="viewAnalytics()">
+                                    <i class="fas fa-chart-bar me-2"></i>View Analytics
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Save Indicator -->
+    <div class="save-indicator" id="saveIndicator">
+        <i class="fas fa-check me-2"></i>Changes saved!
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/navbar.js"></script>
+    <script src="assets/js/visual-enhancements.js"></script>
+    <script>
+        let currentVideo = null;
+        let tags = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const userRole = localStorage.getItem('userRole');
+            if (userRole !== 'editor' && userRole !== 'admin') {
+                showAlert('Access denied. This page is for editors only.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+                return;
+            }
+
+            loadVideoData();
+            setupEventListeners();
+        });
+
+        function loadVideoData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoId = urlParams.get('id');
+            
+            if (!videoId) {
+                showAlert('No video ID provided', 'error');
+                window.location.href = 'editor-videos.html';
+                return;
+            }
+
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            currentVideo = uploadedVideos.find(v => v.id === videoId);
+
+            if (!currentVideo) {
+                // Load demo data if video not found
+                currentVideo = {
+                    id: videoId,
+                    title: 'JavaScript Fundamentals Course',
+                    description: 'Complete beginner guide to JavaScript programming with hands-on examples and projects.',
+                    tags: ['javascript', 'programming', 'tutorial', 'web-development'],
+                    category: 'education',
+                    language: 'en',
+                    status: 'published',
+                    price: 29.99,
+                    accessType: 'lifetime',
+                    views: 2540,
+                    likes: 189,
+                    earnings: 149.95,
+                    comments: 42,
+                    duration: '45:30',
+                    allowComments: true,
+                    allowRatings: true,
+                    notifySubscribers: true,
+                    ageRestriction: false
+                };
+            }
+
+            populateForm();
+            updatePreview();
+        }
+
+        function populateForm() {
+            document.getElementById('videoId').textContent = currentVideo.id;
+            document.getElementById('videoTitle').value = currentVideo.title || '';
+            document.getElementById('videoDescription').value = currentVideo.description || '';
+            document.getElementById('videoCategory').value = currentVideo.category || '';
+            document.getElementById('videoLanguage').value = currentVideo.language || 'en';
+            document.getElementById('videoStatus').value = currentVideo.status || 'published';
+            
+            // Pricing
+            if (currentVideo.price > 0) {
+                document.getElementById('paidVideo').checked = true;
+                document.getElementById('videoPrice').value = currentVideo.price;
+                document.getElementById('accessType').value = currentVideo.accessType || 'lifetime';
+                togglePricingOptions();
+            } else {
+                document.getElementById('freeVideo').checked = true;
+            }
+            
+            // Checkboxes
+            document.getElementById('allowComments').checked = currentVideo.allowComments !== false;
+            document.getElementById('allowRatings').checked = currentVideo.allowRatings !== false;
+            document.getElementById('notifySubscribers').checked = currentVideo.notifySubscribers !== false;
+            document.getElementById('ageRestriction').checked = currentVideo.ageRestriction === true;
+            
+            // Tags
+            tags = currentVideo.tags || [];
+            renderTags();
+            
+            // Analytics
+            document.getElementById('analyticsViews').textContent = formatNumber(currentVideo.views || 0);
+            document.getElementById('analyticsLikes').textContent = formatNumber(currentVideo.likes || 0);
+            document.getElementById('analyticsEarnings').textContent = '$' + formatNumber(currentVideo.earnings || 0);
+            document.getElementById('analyticsComments').textContent = formatNumber(currentVideo.comments || 0);
+            
+            // Status
+            updateStatus();
+            updateCharacterCounts();
+        }
+
+        function setupEventListeners() {
+            // Real-time preview updates
+            document.getElementById('videoTitle').addEventListener('input', function() {
+                updatePreview();
+                updateCharacterCounts();
+            });
+            
+            document.getElementById('videoDescription').addEventListener('input', function() {
+                updatePreview();
+                updateCharacterCounts();
+            });
+            
+            // Pricing options
+            document.querySelectorAll('input[name="priceType"]').forEach(radio => {
+                radio.addEventListener('change', togglePricingOptions);
+            });
+            
+            document.getElementById('videoPrice').addEventListener('input', updatePricePreview);
+            document.getElementById('accessType').addEventListener('change', updatePricePreview);
+            
+            // Status updates
+            document.getElementById('videoStatus').addEventListener('change', updateStatus);
+            
+            // Tag input
+            document.getElementById('newTagInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTag();
+                }
+            });
+            
+            // Auto-save (demo)
+            let saveTimeout;
+            document.getElementById('editVideoForm').addEventListener('input', function() {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    showSaveIndicator();
+                }, 2000);
+            });
+        }
+
+        function updatePreview() {
+            const title = document.getElementById('videoTitle').value || 'Untitled Video';
+            const description = document.getElementById('videoDescription').value || 'No description';
+            
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewDescription').textContent = truncateText(description, 100);
+            document.getElementById('previewDuration').textContent = currentVideo.duration || '0:00';
+            
+            updatePricePreview();
+            renderPreviewTags();
+        }
+
+        function renderPreviewTags() {
+            const container = document.getElementById('previewTags');
+            container.innerHTML = tags.map(tag => 
+                `<span class="badge bg-light text-dark">${tag}</span>`
+            ).join('');
+        }
+
+        function togglePricingOptions() {
+            const isPaid = document.getElementById('paidVideo').checked;
+            const pricingOptions = document.getElementById('pricingOptions');
+            pricingOptions.style.display = isPaid ? 'block' : 'none';
+            updatePricePreview();
+        }
+
+        function updatePricePreview() {
+            const isFree = document.getElementById('freeVideo').checked;
+            const price = parseFloat(document.getElementById('videoPrice').value) || 0;
+            const accessType = document.getElementById('accessType').value;
+            
+            const previewContainer = document.getElementById('pricePreview');
+            const earningsContainer = document.getElementById('earningsPreview');
+            const previewPriceSpan = document.getElementById('previewPrice');
+            
+            if (isFree || price === 0) {
+                previewContainer.innerHTML = '<span class="badge bg-success fs-6">FREE</span>';
+                previewPriceSpan.innerHTML = '<i class="fas fa-gift me-1"></i>Free';
+                earningsContainer.querySelector('.earnings-display').textContent = '$0.00';
+            } else {
+                const accessLabels = {
+                    'lifetime': 'Lifetime Access',
+                    'rental_24h': '24 Hour Rental',
+                    'rental_7d': '7 Day Rental',
+                    'rental_30d': '30 Day Rental'
+                };
+                
+                const platformFee = 0.15;
+                const earnings = (price * (1 - platformFee)).toFixed(2);
+                
+                previewContainer.innerHTML = `<span class="badge bg-warning fs-6">$${price.toFixed(2)} - ${accessLabels[accessType]}</span>`;
+                previewPriceSpan.innerHTML = `<i class="fas fa-dollar-sign me-1"></i>$${price.toFixed(2)}`;
+                earningsContainer.querySelector('.earnings-display').textContent = `$${earnings}`;
+            }
+        }
+
+        function updateStatus() {
+            const status = document.getElementById('videoStatus').value;
+            const statusElement = document.getElementById('currentStatus');
+            const indicator = document.querySelector('.status-indicator');
+            
+            statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            
+            indicator.className = `status-indicator status-${status}`;
+        }
+
+        function updateCharacterCounts() {
+            const title = document.getElementById('videoTitle').value;
+            const description = document.getElementById('videoDescription').value;
+            
+            document.getElementById('titleCount').textContent = title.length;
+            document.getElementById('descCount').textContent = description.length;
+        }
+
+        function addTag() {
+            const input = document.getElementById('newTagInput');
+            const tag = input.value.trim().toLowerCase();
+            
+            if (tag && !tags.includes(tag) && tags.length < 10) {
+                tags.push(tag);
+                input.value = '';
+                renderTags();
+                renderPreviewTags();
+            }
+        }
+
+        function removeTag(tag) {
+            tags = tags.filter(t => t !== tag);
+            renderTags();
+            renderPreviewTags();
+        }
+
+        function renderTags() {
+            const container = document.getElementById('tagsContainer');
+            container.innerHTML = tags.map(tag => 
+                `<span class="tag-badge">
+                    ${tag}
+                    <i class="fas fa-times" onclick="removeTag('${tag}')" style="cursor: pointer;"></i>
+                </span>`
+            ).join('');
+        }
+
+        function saveChanges() {
+            const formData = gatherFormData();
+            
+            // Update current video object
+            Object.assign(currentVideo, formData);
+            
+            // Update in localStorage
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            const index = uploadedVideos.findIndex(v => v.id === currentVideo.id);
+            
+            if (index !== -1) {
+                uploadedVideos[index] = currentVideo;
+                localStorage.setItem('uploadedVideos', JSON.stringify(uploadedVideos));
+            }
+            
+            showSaveIndicator();
+            showAlert('Video updated successfully!', 'success');
+            
+            // Update last modified time
+            document.getElementById('lastUpdated').textContent = 'Just now';
+        }
+
+        function gatherFormData() {
+            const priceType = document.querySelector('input[name="priceType"]:checked').value;
+            const price = priceType === 'paid' ? parseFloat(document.getElementById('videoPrice').value) || 0 : 0;
+            
+            return {
+                title: document.getElementById('videoTitle').value.trim(),
+                description: document.getElementById('videoDescription').value.trim(),
+                category: document.getElementById('videoCategory').value,
+                language: document.getElementById('videoLanguage').value,
+                status: document.getElementById('videoStatus').value,
+                tags: tags,
+                price: price,
+                accessType: document.getElementById('accessType').value,
+                allowComments: document.getElementById('allowComments').checked,
+                allowRatings: document.getElementById('allowRatings').checked,
+                notifySubscribers: document.getElementById('notifySubscribers').checked,
+                ageRestriction: document.getElementById('ageRestriction').checked,
+                lastModified: new Date().toISOString()
+            };
+        }
+
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 3000);
+        }
+
+        function deleteVideo() {
+            if (confirm(`Are you sure you want to delete "${currentVideo.title}"?\n\nThis action cannot be undone.`)) {
+                const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+                const updatedVideos = uploadedVideos.filter(v => v.id !== currentVideo.id);
+                localStorage.setItem('uploadedVideos', JSON.stringify(updatedVideos));
+                
+                showAlert('Video deleted successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'editor-videos.html';
+                }, 1500);
+            }
+        }
+
+        function duplicateVideo() {
+            const newVideo = { ...currentVideo };
+            newVideo.id = 'VID_' + Date.now();
+            newVideo.title = currentVideo.title + ' (Copy)';
+            newVideo.views = 0;
+            newVideo.likes = 0;
+            newVideo.earnings = 0;
+            newVideo.comments = 0;
+            newVideo.uploadedAt = new Date().toISOString();
+            
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            uploadedVideos.unshift(newVideo);
+            localStorage.setItem('uploadedVideos', JSON.stringify(uploadedVideos));
+            
+            showAlert('Video duplicated successfully!', 'success');
+        }
+
+        function previewVideo() {
+            showAlert('Video preview feature coming soon!', 'info');
+        }
+
+        function viewAnalytics() {
+            window.location.href = `analytics.html?video=${currentVideo.id}`;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+    </script>
+</body>
+</html>
