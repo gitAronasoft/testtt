@@ -10,21 +10,25 @@
 </head>
 <body class="bg-light">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary global-navbar">
+    <nav class="navbar navbar-expand-lg global-navbar">
         <div class="container-fluid">
             <a class="navbar-brand" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
                 <i class="fas fa-video me-2"></i>Video Platform
             </a>
+            <button class="mobile-nav-toggle d-lg-none" type="button" onclick="toggleMobileNav()">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="navbar-nav ms-auto d-flex align-items-center">
                 <div class="d-flex align-items-center me-3">
-                    <div class="user-avatar me-2" id="userAvatar">A</div>
-                    <div>
+                    <div class="user-avatar me-3" id="userAvatar">A</div>
+                    <div class="d-none d-sm-block">
                         <div class="user-name" id="userName">Admin User</div>
                         <div class="user-role" id="userRole">Admin</div>
                     </div>
                 </div>
-                <button class="btn btn-outline-light" onclick="logout()">
-                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                <button class="btn btn-outline-primary btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt me-1"></i>
+                    <span class="d-none d-sm-inline">Logout</span>
                 </button>
             </div>
         </div>
@@ -39,15 +43,15 @@
         </div>
     </div>
 
-    <div class="container-fluid">
-        <div class="row">
+    <div class="container-fluid p-0">
+        <div class="row g-0">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0">
-                <div class="bg-white shadow-sm h-100" style="min-height: calc(100vh - 56px);">
-                    <div class="p-3">
+            <div class="col-lg-3 col-xl-2">
+                <div class="sidebar" id="sidebar">
+                    <div class="p-4">
                         <div class="welcome-section mb-4">
                             <h5>Welcome back,</h5>
-                            <p class="text-muted mb-0" id="welcomeName">Admin User</p>
+                            <p class="text-muted mb-1" id="welcomeName">Admin User</p>
                             <small class="text-muted" id="welcomeRole">Admin</small>
                         </div>
 
@@ -107,8 +111,8 @@
             </div>
 
             <!-- Main Content -->
-            <div class="col-md-9 col-lg-10">
-                <div class="p-4">
+            <div class="col-lg-9 col-xl-10">
+                <div class="main-content p-4 p-lg-6">
                     <!-- Loading Spinner -->
                     <div id="loadingSpinner" class="text-center py-5" style="display: none;">
                         <div class="spinner-border text-primary" role="status">
@@ -122,55 +126,63 @@
                             <h2>Dashboard Overview</h2>
                         </div>
 
-                        <div class="row mb-4">
-                            <div class="col-md-3">
-                                <div class="card bg-primary text-white">
+                        <div class="row g-4 mb-5">
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card bg-primary text-white h-100">
                                     <div class="card-body">
-                                        <div class="d-flex justify-content-between">
+                                        <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <h5 class="card-title">Total Videos</h5>
-                                                <h3 id="totalVideos">25</h3>
+                                                <h6 class="card-title mb-2">Total Videos</h6>
+                                                <h3 class="mb-0" id="totalVideos">25</h3>
                                             </div>
-                                            <i class="fas fa-video fa-2x"></i>
+                                            <div class="opacity-75">
+                                                <i class="fas fa-video fa-2x"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="card bg-success text-white">
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card bg-success text-white h-100">
                                     <div class="card-body">
-                                        <div class="d-flex justify-content-between">
+                                        <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <h5 class="card-title">Active Users</h5>
-                                                <h3 id="activeUsers">150</h3>
+                                                <h6 class="card-title mb-2">Active Users</h6>
+                                                <h3 class="mb-0" id="activeUsers">150</h3>
                                             </div>
-                                            <i class="fas fa-users fa-2x"></i>
+                                            <div class="opacity-75">
+                                                <i class="fas fa-users fa-2x"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="card bg-warning text-white">
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card bg-warning text-white h-100">
                                     <div class="card-body">
-                                        <div class="d-flex justify-content-between">
+                                        <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <h5 class="card-title">Total Revenue</h5>
-                                                <h3 id="totalRevenue">$2,450</h3>
+                                                <h6 class="card-title mb-2">Total Revenue</h6>
+                                                <h3 class="mb-0" id="totalRevenue">$2,450</h3>
                                             </div>
-                                            <i class="fas fa-dollar-sign fa-2x"></i>
+                                            <div class="opacity-75">
+                                                <i class="fas fa-dollar-sign fa-2x"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="card bg-info text-white">
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card bg-info text-white h-100">
                                     <div class="card-body">
-                                        <div class="d-flex justify-content-between">
+                                        <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <h5 class="card-title">Total Views</h5>
-                                                <h3 id="totalViews">12,580</h3>
+                                                <h6 class="card-title mb-2">Total Views</h6>
+                                                <h3 class="mb-0" id="totalViews">12,580</h3>
                                             </div>
-                                            <i class="fas fa-eye fa-2x"></i>
+                                            <div class="opacity-75">
+                                                <i class="fas fa-eye fa-2x"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -670,28 +682,3 @@
     </script>
 </body>
 </html>
-        <!-- Connection Status -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h6><i class="fas fa-key me-2"></i>Add YouTube Access Token</h6>
-                    </div>
-                    <div class="card-body">
-                        <form id="youtubeTokenForm" onsubmit="event.preventDefault(); saveYouTubeTokens();">
-                            <div class="mb-3">
-                                <label for="accessTokenInput" class="form-label">Access Token</label>
-                                <input type="password" class="form-control" id="accessTokenInput" placeholder="Enter your YouTube access token">
-                            </div>
-                            <div class="mb-3">
-                                <label for="refreshTokenInput" class="form-label">Refresh Token (Optional)</label>
-                                <input type="password" class="form-control" id="refreshTokenInput" placeholder="Enter your YouTube refresh token">
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i>Save Tokens
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>

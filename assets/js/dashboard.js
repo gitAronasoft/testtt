@@ -3,6 +3,7 @@ let currentUser = null;
 let allVideos = [];
 let allUsers = [];
 let purchaseVideoId = null;
+let mobileNavOpen = false;
 
 // Utility functions
 function showLoading(show = true) {
@@ -212,6 +213,9 @@ function setupDashboard() {
 }
 
 function showPanel(panelName) {
+    // Close mobile navigation when panel changes
+    closeMobileNav();
+    
     // Check if user has permission to access this panel
     if (!hasPermissionForPanel(panelName)) {
         showNotification(
@@ -342,58 +346,124 @@ function hasPermissionForPanel(panelName) {
 }
 
 async function loadVideos() {
+    // Prevent multiple simultaneous calls
+    if (this.isLoadingVideos) {
+        return;
+    }
+    this.isLoadingVideos = true;
+
     showLoading(true);
 
     try {
-        const response = await fetch("api/videos.php");
-        
-        // Check if response is HTML (error page) instead of JSON
+        // Load from database first for consistent display
+        const response = await fetch("api/videos.php", {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-            throw new Error("Server returned an error page instead of JSON");
+            const text = await response.text();
+            console.error("Invalid response format:", text);
+            throw new Error("Server returned invalid response format");
         }
 
         const data = await response.json();
 
         if (data.success) {
-            allVideos = data.videos;
+            allVideos = data.videos || [];
             renderVideos(allVideos);
+
+            if (allVideos.length === 0) {
+                showNotification("No videos available. Upload some videos or connect to YouTube to sync your channel.", "info");
+            }
         } else {
-            showNotification("Failed to load videos: " + data.message, "error");
+            throw new Error(data.message || "Failed to load videos from database");
         }
+
     } catch (error) {
         console.error("Failed to load videos:", error);
-        showNotification("Failed to load videos", "error");
+        showNotification("Failed to load videos: " + error.message, "error");
+        renderVideos([]);
+    } finally {
+        showLoading(false);
+        this.isLoadingVideos = false;
     }
-
-    showLoading(false);
 }
 
+const requestCache = new Map();
+
 async function loadMyVideos() {
-    showLoading(true);
+    const cacheKey = 'loadMyVideos';
 
-    try {
-        const response = await fetch("api/videos.php?filter=my_videos");
-        
-        // Check if response is HTML (error page) instead of JSON
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            throw new Error("Server returned an error page instead of JSON");
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-            renderMyVideos(data.videos);
-        } else {
-            showNotification("Failed to load videos: " + data.message, "error");
-        }
-    } catch (error) {
-        console.error("Failed to load my videos:", error);
-        showNotification("Failed to load videos", "error");
+    // Check if a request is already in progress
+    if (requestCache.has(cacheKey)) {
+        console.log('Returning cached loadMyVideos promise');
+        return requestCache.get(cacheKey);
     }
 
-    showLoading(false);
+    const promise = (async () => {
+        showLoading(true);
+
+        try {
+            // Load directly from YouTube
+            if (window.youtubeAPI) {
+                const initialized = await window.youtubeAPI.initialize();
+                if (initialized && window.youtubeAPI.isSignedIn()) {
+                    try {
+                        const result = await window.youtubeAPI.getMyVideos(50);
+                        if (result.videos && result.videos.length > 0) {
+                            const myVideos = result.videos.map(video => ({
+                                id: video.youtube_id,
+                                title: video.title,
+                                description: video.description,
+                                price: 0,
+                                uploader: video.channel_title,
+                                views: video.view_count || 0,
+                                created_at: video.published_at,
+                                youtube_id: video.youtube_id,
+                                youtube_thumbnail: video.thumbnail,
+                                is_youtube_synced: true,
+                                video_url: `https://www.youtube.com/watch?v=${video.youtube_id}`
+                            }));
+                            renderMyVideos(myVideos);
+                            showLoading(false);
+                            return;
+                        }
+                    } catch (youtubeError) {
+                        console.error("YouTube API error:", youtubeError);
+                        showNotification("Failed to load from YouTube: " + youtubeError.message, "warning");
+                    }
+                }
+            }
+
+            // Show message if not connected to YouTube
+            const container = document.getElementById("myVideosContainer");
+            if (container) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <h5><i class="fab fa-youtube text-danger me-2"></i>Connect to YouTube</h5>
+                            <p>To view your YouTube videos, please connect your YouTube account in the YouTube section.</p>
+                            <a href="#" onclick="showPanel('youtube')" class="btn btn-primary">
+                                <i class="fab fa-youtube me-2"></i>Go to YouTube Settings
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error("Failed to load my videos:", error);
+            showNotification("Failed to load videos", "error");
+        }
+
+        showLoading(false);
+        requestCache.delete(cacheKey);
+    })();
+
+    requestCache.set(cacheKey, promise);
+    return promise;
 }
 
 async function saveYouTubeTokens() {
@@ -430,7 +500,7 @@ async function saveYouTubeTokens() {
             showNotification('Tokens saved successfully!', 'success');
             document.getElementById('accessTokenInput').value = '';
             document.getElementById('refreshTokenInput').value = '';
-            
+
             // Reinitialize YouTube API with new tokens
             await checkYouTubeStatus();
         } else {
@@ -453,18 +523,39 @@ function renderVideos(videos) {
     }
 
     if (videos.length === 0) {
-        container.innerHTML =
-            '<div class="col-12"><div class="alert alert-info">No videos available</div></div>';
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info d-flex align-items-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <div>
+                        <strong>No videos available</strong>
+                        <p class="mb-0 mt-1">Upload videos or connect your YouTube account to get started.</p>
+                    </div>
+                </div>  
+            </div>
+        `;
         return;
     }
 
-    // Use DocumentFragment for efficient DOM manipulation
-    const fragment = document.createDocumentFragment();
+    // Clear container first for better perceived performance
+    container.innerHTML = '';
 
-    // Process videos in chunks to prevent blocking
-    const chunkSize = 20;
+    // Show initial loading placeholder
+    const loadingPlaceholder = document.createElement('div');
+    loadingPlaceholder.className = 'col-12 text-center py-3';
+    loadingPlaceholder.innerHTML = `
+        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+        Rendering ${videos.length} videos...
+    `;
+    container.appendChild(loadingPlaceholder);
+
+    // Use requestIdleCallback for better performance
     const renderChunks = (startIndex = 0) => {
+        const chunkSize = 12; // Optimal chunk size for smooth rendering
         const endIndex = Math.min(startIndex + chunkSize, videos.length);
+
+        // Create fragment for this chunk
+        const fragment = document.createDocumentFragment();
 
         for (let i = startIndex; i < endIndex; i++) {
             const video = videos[i];
@@ -472,42 +563,65 @@ function renderVideos(videos) {
             fragment.appendChild(videoElement);
         }
 
+        // Remove loading placeholder on first chunk
+        if (startIndex === 0) {
+            container.removeChild(loadingPlaceholder);
+        }
+
+        container.appendChild(fragment);
+
+        // Continue with next chunk if there are more videos
         if (endIndex < videos.length) {
-            // Process next chunk asynchronously
-            requestAnimationFrame(() => renderChunks(endIndex));
-        } else {
-            // All chunks processed, update DOM once
-            container.innerHTML = '';
-            container.appendChild(fragment);
+            // Use requestIdleCallback if available, otherwise requestAnimationFrame
+            if (window.requestIdleCallback) {
+                requestIdleCallback(() => renderChunks(endIndex), { timeout: 100 });
+            } else {
+                setTimeout(() => renderChunks(endIndex), 16); // ~60fps
+            }
         }
     };
 
-    renderChunks();
+    // Start rendering
+    if (window.requestIdleCallback) {
+        requestIdleCallback(() => renderChunks(0), { timeout: 50 });
+    } else {
+        setTimeout(() => renderChunks(0), 10);
+    }
 }
 
 function createVideoElement(video) {
     const col = document.createElement('div');
     col.className = 'col-md-6 col-lg-4 mb-4';
 
-    const badgeHTML = video.price === 0
-        ? '<span class="position-absolute top-0 end-0 badge bg-success m-2">FREE</span>'
-        : video.purchased
-            ? '<span class="position-absolute top-0 end-0 badge bg-info m-2">PURCHASED</span>'
-            : `<span class="position-absolute top-0 end-0 badge bg-warning m-2">$${video.price}</span>`;
+    const badgeHTML = video.youtube_id
+        ? '<span class="position-absolute top-0 end-0 badge bg-danger m-2"><i class="fab fa-youtube"></i></span>'
+        : video.price === 0
+            ? '<span class="position-absolute top-0 end-0 badge bg-success m-2">FREE</span>'
+            : video.purchased
+                ? '<span class="position-absolute top-0 end-0 badge bg-info m-2">PURCHASED</span>'
+                : `<span class="position-absolute top-0 end-0 badge bg-warning m-2">$${video.price}</span>`;
+
+    const thumbnailHTML = video.youtube_thumbnail
+        ? `<img src="${video.youtube_thumbnail}" class="card-img-top" style="width: 100%; height: 200px; object-fit: cover;" alt="${escapeHtml(video.title)}">`
+        : '<i class="fas fa-play-circle fa-3x text-primary"></i>';
 
     col.innerHTML = `
         <div class="card video-card h-100">
-            <div class="video-thumbnail position-relative bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                <i class="fas fa-play-circle fa-3x text-primary"></i>
+            <div class="video-thumbnail position-relative bg-light d-flex align-items-center justify-content-center" style="height: 200px; overflow: hidden;">
+                ${thumbnailHTML}
                 ${badgeHTML}
             </div>
             <div class="card-body">
                 <h5 class="video-title">${escapeHtml(video.title)}</h5>
-                <p class="video-description text-muted">${escapeHtml(video.description)}</p>
+                <p class="video-description text-muted">${escapeHtml(video.description?.substring(0, 100) + (video.description?.length > 100 ? '...' : '') || 'No description')}</p>
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <small class="text-muted">By ${escapeHtml(video.uploader)}</small>
                     <small class="text-muted">${video.views.toLocaleString()} views</small>
                 </div>
+                ${video.youtube_likes ? `<div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-success"><i class="fas fa-thumbs-up"></i> ${window.youtubeAPI?.formatNumber(video.youtube_likes) || video.youtube_likes}</small>
+                    <small class="text-muted">${new Date(video.created_at).toLocaleDateString()}</small>
+                </div>` : ''}
                 ${renderVideoActions(video)}
             </div>
         </div>
@@ -571,8 +685,20 @@ function renderMyVideos(videos) {
 }
 
 function renderVideoActions(video) {
-    const canWatch =
-        video.price === 0 || video.purchased || currentUser?.role === "admin";
+    // Check if it's a YouTube video
+    if (video.youtube_id) {
+        return `<div class="btn-group w-100">
+                    <button class="btn btn-danger" onclick="playYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                        <i class="fab fa-youtube me-2"></i>Watch on YouTube
+                    </button>
+                    <a href="https://www.youtube.com/watch?v=${video.youtube_id}" target="_blank" class="btn btn-outline-danger">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>`;
+    }
+
+    // Regular platform videos
+    const canWatch = video.price === 0 || video.purchased || currentUser?.role === "admin";
 
     if (canWatch) {
         return `<button class="btn btn-success w-100" 
@@ -804,13 +930,49 @@ async function loadYouTubeData() {
 async function loadYouTubeVideos() {
     try {
         showLoading(true);
-        
-        // Use the new enhanced method to fetch and display videos
-        await window.youtubeAPI.fetchAndDisplayVideos('youtubeVideosList', 12);
-        
+
+        if (!window.youtubeAPI.isSignedIn()) {
+            // Try to load stored tokens first
+            const initialized = await window.youtubeAPI.initialize();
+            if (!initialized || !window.youtubeAPI.isSignedIn()) {
+                const container = document.getElementById('youtubeVideosList');
+                if (container) {
+                    container.innerHTML = '<div class="alert alert-warning">Please connect to YouTube first to view your videos.</div>';
+                }
+                return;
+            }
+        }
+
+        // Fetch videos directly from YouTube API
+        const result = await window.youtubeAPI.getMyVideos(50);
+
+        if (result.videos && result.videos.length > 0) {
+            // Get detailed video information
+            const videoIds = result.videos.map(v => v.youtube_id).slice(0, 50);
+            const detailedVideos = await window.youtubeAPI.getVideoDetails(videoIds);
+
+            // Merge detailed info with basic video data
+            const enhancedVideos = result.videos.map(video => {
+                const details = detailedVideos.find(d => d.youtube_id === video.youtube_id);
+                return details ? { ...video, ...details } : video;
+            });
+
+            displayYouTubeVideos(enhancedVideos);
+        } else {
+            const container = document.getElementById('youtubeVideosList');
+            if (container) {
+                container.innerHTML = '<div class="alert alert-info">No videos found in your YouTube channel.</div>';
+            }
+        }
+
     } catch (error) {
         console.error("Failed to load YouTube videos:", error);
         showNotification('Failed to load YouTube videos: ' + error.message, 'error');
+
+        const container = document.getElementById('youtubeVideosList');
+        if (container) {
+            container.innerHTML = `<div class="alert alert-danger">Failed to load videos: ${error.message}</div>`;
+        }
     } finally {
         showLoading(false);
     }
@@ -825,24 +987,57 @@ function displayYouTubeVideos(videos) {
     }
 
     if (videos.length === 0) {
-        container.innerHTML = '<p class="text-muted">No videos found on your YouTube channel.</p>';
+        container.innerHTML = '<div class="alert alert-info">No videos found on your YouTube channel.</div>';
         return;
     }
 
-    // Use the new enhanced rendering method
-    window.youtubeAPI.renderVideoGrid(videos.map(video => ({
-        id: { videoId: video.youtube_id },
-        snippet: {
-            title: video.title,
-            description: video.description,
-            publishedAt: video.published_at,
-            thumbnails: {
-                high: { url: video.thumbnail },
-                medium: { url: video.thumbnail },
-                default: { url: video.thumbnail }
-            }
-        }
-    })), container, 12);
+    let html = '<div class="row">';
+
+    videos.forEach(video => {
+        const thumbnail = video.thumbnail || 'https://via.placeholder.com/320x180?text=No+Thumbnail';
+        const duration = video.duration ? window.youtubeAPI.formatDuration(video.duration) : '';
+
+        html += `
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card video-card h-100">
+                    <div class="video-thumbnail position-relative" style="height: 200px; overflow: hidden;">
+                        <img src="${thumbnail}" class="card-img-top" style="width: 100%; height: 100%; object-fit: cover;" alt="${escapeHtml(video.title)}">
+                        <div class="position-absolute top-50 start-50 translate-middle">
+                            <button class="btn btn-danger btn-lg rounded-circle" onclick="playYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                                <i class="fab fa-youtube"></i>
+                            </button>
+                        </div>
+                        ${duration ? `<span class="position-absolute bottom-0 end-0 bg-dark text-white px-2 py-1 m-2 rounded">${duration}</span>` : ''}
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title" title="${escapeHtml(video.title)}">${escapeHtml(video.title.length > 50 ? video.title.substring(0, 50) + '...' : video.title)}</h6>
+                        <p class="card-text text-muted small">${escapeHtml(video.description ? video.description.substring(0, 100) + (video.description.length > 100 ? "..." : "") : 'No description')}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">${new Date(video.published_at).toLocaleDateString()}</small>
+                            ${video.view_count ? `<small class="text-muted">${window.youtubeAPI.formatNumber(video.view_count)} views</small>` : ''}
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="playYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')" title="Watch video">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="btn btn-outline-success" onclick="syncSpecificVideo('${video.youtube_id}')" title="Import to platform">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <a href="https://www.youtube.com/watch?v=${video.youtube_id}" target="_blank" class="btn btn-outline-danger" title="View on YouTube">
+                                    <i class="fab fa-youtube"></i>
+                                </a>
+                            </div>
+                            ${video.like_count ? `<small class="text-success"><i class="fas fa-thumbs-up"></i> ${window.youtubeAPI.formatNumber(video.like_count)}</small>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 async function loadYouTubeStatistics() {
@@ -1186,6 +1381,9 @@ async function handleVideoUpload(event) {
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
 
+    // Clear previous validation errors
+    clearFormErrors(form);
+
     // Get form values
     const title = form.videoTitle.value.trim();
     const description = form.videoDescription.value.trim();
@@ -1193,14 +1391,52 @@ async function handleVideoUpload(event) {
     const category = form.videoCategory.value;
     const file = form.videoFile.files[0];
 
-    // Validate
-    if (!title || !description || !category) {
-        showNotification('❌ Please fill in all required fields', 'error');
-        return;
+    // Enhanced validation with field-specific feedback
+    let hasErrors = false;
+
+    if (!title) {
+        showFieldError(form.videoTitle, 'Title is required');
+        hasErrors = true;
+    } else if (title.length < 3) {
+        showFieldError(form.videoTitle, 'Title must be at least 3 characters long');
+        hasErrors = true;
+    }
+
+    if (!description) {
+        showFieldError(form.videoDescription, 'Description is required');
+        hasErrors = true;
+    } else if (description.length < 10) {
+        showFieldError(form.videoDescription, 'Description must be at least 10 characters long');
+        hasErrors = true;
+    }
+
+    if (!category) {
+        showFieldError(form.videoCategory, 'Please select a category');
+        hasErrors = true;
+    }
+
+    if (price < 0) {
+        showFieldError(form.videoPrice, 'Price cannot be negative');
+        hasErrors = true;
+    } else if (price > 999.99) {
+        showFieldError(form.videoPrice, 'Price cannot exceed $999.99');
+        hasErrors = true;
     }
 
     if (!file) {
-        showNotification('❌ Please select a video file', 'error');
+        showFieldError(form.videoFile, 'Please select a video file');
+        hasErrors = true;
+    } else {
+        // Enhanced file validation
+        const validationResult = validateVideoFile(file);
+        if (!validationResult.valid) {
+            showFieldError(form.videoFile, validationResult.message);
+            hasErrors = true;
+        }
+    }
+
+    if (hasErrors) {
+        showNotification('❌ Please fix the errors above', 'error');
         return;
     }
 
@@ -1386,6 +1622,77 @@ async function uploadWithRetry(url, options, maxRetries = 3, delay = 1000) {
     }
 
     throw new Error(`Upload failed after ${maxRetries} attempts: ${lastError.message}`);
+}
+
+// Form Validation Utilities
+function showFieldError(field, message) {
+    field.classList.add('is-invalid');
+    
+    // Remove existing error message
+    const existingError = field.parentNode.querySelector('.invalid-feedback');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Add new error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'invalid-feedback d-block';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${message}`;
+    field.parentNode.appendChild(errorDiv);
+    
+    // Add animation
+    errorDiv.style.animation = 'slideInUp 0.3s ease-out';
+}
+
+function clearFormErrors(form) {
+    form.querySelectorAll('.form-control, .form-select').forEach(field => {
+        field.classList.remove('is-invalid');
+    });
+    form.querySelectorAll('.invalid-feedback').forEach(error => {
+        error.remove();
+    });
+}
+
+function validateVideoFile(file) {
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    const allowedTypes = [
+        'video/mp4', 'video/webm', 'video/ogg', 
+        'video/avi', 'video/mov', 'video/wmv', 
+        'video/flv', 'video/mkv'
+    ];
+    
+    if (file.size > maxSize) {
+        return {
+            valid: false,
+            message: 'File size must be less than 100MB'
+        };
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+        return {
+            valid: false,
+            message: 'Please select a valid video file (MP4, WebM, OGG, AVI, MOV, etc.)'
+        };
+    }
+    
+    return { valid: true };
+}
+
+// Enhanced notification system
+function showSuccessMessage(title, message) {
+    showNotification(`✅ ${title}: ${message}`, 'success');
+}
+
+function showErrorMessage(title, message) {
+    showNotification(`❌ ${title}: ${message}`, 'error');
+}
+
+function showInfoMessage(title, message) {
+    showNotification(`ℹ️ ${title}: ${message}`, 'info');
+}
+
+function showWarningMessage(title, message) {
+    showNotification(`⚠️ ${title}: ${message}`, 'warning');
 }
 
 // Debounce function to prevent rapid function calls
@@ -1615,10 +1922,10 @@ function playYouTubeVideo(videoId, title) {
     if (!modal) {
         createYouTubeVideoModal();
     }
-    
+
     const modalTitle = document.getElementById('youtubeVideoModalTitle');
     const modalBody = document.getElementById('youtubeVideoModalBody');
-    
+
     modalTitle.textContent = title;
     modalBody.innerHTML = `
         <div class="ratio ratio-16x9">
@@ -1629,10 +1936,10 @@ function playYouTubeVideo(videoId, title) {
             </iframe>
         </div>
     `;
-    
+
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
-    
+
     // Clean up iframe when modal is closed
     modal.addEventListener('hidden.bs.modal', function () {
         modalBody.innerHTML = '';
@@ -1655,7 +1962,7 @@ function createYouTubeVideoModal() {
             </div>
         </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
@@ -1666,12 +1973,153 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+async function handleYouTubeUpload(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const title = document.getElementById('ytUploadTitle').value.trim();
+    const description = document.getElementById('ytUploadDescription').value.trim();
+    const tags = document.getElementById('ytUploadTags').value.trim().split(',').map(tag => tag.trim()).filter(tag => tag);
+    const privacy = document.getElementById('ytUploadPrivacy').value;
+    const fileInput =
+ document.getElementById('ytUploadFile');
+
+    if (!fileInput.files[0]) {
+        showNotification('Please select a video file', 'error');
+        return;
+    }
+
+    if (!title) {
+        showNotification('Please enter a video title', 'error');
+        return;
+    }
+
+    const videoFile = fileInput.files[0];
+
+    // Validate file size (limit to 2GB)
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+    if (videoFile.size > maxSize) {
+        showNotification('File size must be less than 2GB', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const metadata = {
+            title: title,
+            description: description,
+            tags: tags,
+            privacyStatus: privacy,
+            categoryId: '22' // People & Blogs category
+        };
+
+        const result = await window.youtubeAPI.uploadVideo(videoFile, metadata);
+
+        if (result.success) {
+            showNotification(`Video "${title}" uploaded successfully to YouTube!`, 'success');
+            form.reset();
+
+            // Refresh videos list
+            await loadYouTubeVideos();
+            await loadSyncedVideos();
+        } else {
+            showNotification('Upload failed: ' + (result.message || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('YouTube upload error:', error);
+        showNotification('Upload failed: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Mobile Navigation Functions
+function toggleMobileNav() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileNavOverlay');
+    
+    mobileNavOpen = !mobileNavOpen;
+    
+    if (mobileNavOpen) {
+        sidebar.classList.add('show');
+        if (!overlay) {
+            createMobileNavOverlay();
+        }
+        document.body.style.overflow = 'hidden';
+    } else {
+        sidebar.classList.remove('show');
+        if (overlay) {
+            overlay.remove();
+        }
+        document.body.style.overflow = '';
+    }
+}
+
+function createMobileNavOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'mobileNavOverlay';
+    overlay.className = 'position-fixed w-100 h-100';
+    overlay.style.cssText = `
+        top: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+        backdrop-filter: blur(4px);
+    `;
+    overlay.onclick = toggleMobileNav;
+    document.body.appendChild(overlay);
+}
+
+function closeMobileNav() {
+    if (mobileNavOpen) {
+        toggleMobileNav();
+    }
+}
+
+// Enhanced Error Handling
+function handleApiError(error, operation = 'operation') {
+    console.error(`${operation} failed:`, error);
+    
+    let message = `${operation} failed`;
+    
+    if (error.message) {
+        message += `: ${error.message}`;
+    } else if (typeof error === 'string') {
+        message += `: ${error}`;
+    }
+    
+    showNotification(message, 'error');
+}
+
+// Improved Loading State Management
+let loadingStates = new Set();
+
+function setLoadingState(operation, isLoading) {
+    if (isLoading) {
+        loadingStates.add(operation);
+    } else {
+        loadingStates.delete(operation);
+    }
+    
+    showLoading(loadingStates.size > 0);
+}
+
 // Make functions globally accessible
 window.logout = logout;
 window.showPanel = showPanel;
 window.playYouTubeVideo = playYouTubeVideo;
+window.handleYouTubeUpload = handleYouTubeUpload;
+window.toggleMobileNav = toggleMobileNav;
+window.closeMobileNav = closeMobileNav;
 
 async function checkYouTubeStatus() {
+    // Prevent multiple simultaneous calls
+    if (this.isCheckingYouTubeStatus) {
+        return;
+    }
+    this.isCheckingYouTubeStatus = true;
+
     try {
         // Ensure YouTube API is available
         if (!window.youtubeAPI) {
@@ -1683,6 +2131,7 @@ async function checkYouTubeStatus() {
         const initialized = await window.youtubeAPI.initialize();
 
         if (!initialized) {
+            console.log('YouTube API not initialized - no valid tokens found');
             updateYouTubeStatus(false, null);
             return;
         }
@@ -1692,10 +2141,14 @@ async function checkYouTubeStatus() {
 
         if (isSignedIn) {
             try {
+                console.log('Fetching YouTube channel info...');
                 channelInfo = await window.youtubeAPI.getMyChannelInfo();
+                console.log('Channel info received:', channelInfo);
             } catch (channelError) {
                 console.error('Error getting channel info:', channelError);
-                // Continue with signed-in status but no channel info
+                // Token might be invalid, show as disconnected
+                updateYouTubeStatus(false, null);
+                return;
             }
         }
 
@@ -1703,7 +2156,67 @@ async function checkYouTubeStatus() {
     } catch (error) {
         console.error('YouTube status error:', error);
         updateYouTubeStatus(false, null);
+    } finally {
+        this.isCheckingYouTubeStatus = false;
     }
+}
+
+async function loadSyncedVideos() {
+    // Only load if explicitly requested to avoid automatic calls
+    if (!this.syncedVideosRequested) {
+        return;
+    }
+
+    try {
+        const response = await fetch('api/videos.php?action=get_synced_videos&limit=50');
+        const data = await response.json();
+
+        if (data.success && data.videos.length > 0) {
+            console.log(`Loaded ${data.videos.length} synced videos from database`);
+            displaySyncedVideos(data.videos);
+        }
+    } catch (error) {
+        console.error('Failed to load synced videos:', error);
+    } finally {
+        this.syncedVideosRequested = false;
+    }
+}
+
+function displaySyncedVideos(videos) {
+    const container = document.getElementById('syncedVideosContainer');
+    if (!container) return;
+
+    if (videos.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No synced videos found in database.</div>';
+        return;
+    }
+
+    let html = '<div class="card mt-3"><div class="card-header"><h6><i class="fas fa-database me-2"></i>Synced Videos Database</h6></div><div class="card-body"><div class="row">';
+
+    videos.forEach(video => {
+        html += `
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <img src="${video.thumbnail_url || 'https://via.placeholder.com/320x180'}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                    <div class="card-body">
+                        <h6 class="card-title" title="${escapeHtml(video.title)}">${escapeHtml(video.title.substring(0, 50))}</h6>
+                        <p class="card-text small text-muted">${escapeHtml((video.description || '').substring(0, 100))}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-success">${video.view_count.toLocaleString()} views</small>
+                            <small class="text-muted">${new Date(video.synced_at).toLocaleDateString()}</small>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge bg-${video.privacy_status === 'public' ? 'success' : 'warning'}">${video.privacy_status}</span>
+                            <span class="badge bg-info ms-1">${video.upload_status}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div></div></div>';
+    container.innerHTML = html;
 }
 
 function showSpinner() {
@@ -1721,9 +2234,8 @@ function showToast(message, type) {
 async function loadYouTubePanel() {
     try {
         await checkYouTubeStatus();
-        if (window.youtubeAPI.isSignedIn()) {
-            await loadYouTubeData();
-        }
+        // Don't auto-load videos here to prevent redundant calls
+        // Videos will be loaded only when user explicitly requests them
     } catch (error) {
         console.error("Failed to load YouTube panel:", error);
         updateYouTubeStatus(false, null);
@@ -1965,7 +2477,7 @@ function updateYouTubeStatus(connected, channelInfo) {
         statusDiv.innerHTML = `
             <div class="alert alert-success">
                 <i class="fab fa-youtube me-2"></i>
-                Connected to YouTube channel: <strong>${channelInfo.title}</strong>
+                Connected to YouTube channel: <strong>${escapeHtml(channelInfo.title)}</strong>
                 <br><small class="text-muted">${window.youtubeAPI.formatNumber(channelInfo.subscriber_count)} subscribers • ${window.youtubeAPI.formatNumber(channelInfo.view_count)} total views</small>
             </div>
         `;
@@ -2001,6 +2513,60 @@ function updateYouTubeStatus(connected, channelInfo) {
 
                 <div class="card mt-3">
                     <div class="card-header">
+                        <h6><i class="fas fa-upload me-2"></i>Upload Video to YouTube</h6>
+                    </div>
+                    <div class="card-body">
+                        <form id="youtubeUploadForm" onsubmit="handleYouTubeUpload(event)">
+                            <div class="mb-3">
+                                <label for="ytUploadTitle" class="form-label">Video Title</label>
+                                <input type="text" class="form-control" id="ytUploadTitle" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ytUploadDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="ytUploadDescription" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ytUploadTags" class="form-label">Tags (comma separated)</label>
+                                <input type="text" class="form-control" id="ytUploadTags" placeholder="gaming, tutorial, review">
+                            </div>
+                            <div class="mb-3">
+                                <label for="ytUploadPrivacy" class="form-label">Privacy</label>
+                                <select class="form-control" id="ytUploadPrivacy">
+                                    <option value="private">Private</option>
+                                    <option value="unlisted">Unlisted</option>
+                                    <option value="public">Public</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ytUploadFile" class="form-label">Video File</label>
+                                <input type="file" class="form-control" id="ytUploadFile" accept="video/*" required>
+                            </div>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fab fa-youtube me-2"></i>Upload to YouTube
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6><i class="fab fa-youtube me-2"></i>My YouTube Videos</h6>
+                        <button class="btn btn-sm btn-primary" onclick="loadYouTubeVideosManually()">
+                            <i class="fas fa-sync me-1"></i>Load Videos
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="youtubeVideosList">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Click "Load Videos" to fetch your YouTube videos.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
                         <h6><i class="fas fa-search me-2"></i>Sync Other Channels</h6>
                     </div>
                     <div class="card-body">
@@ -2019,6 +2585,8 @@ function updateYouTubeStatus(connected, channelInfo) {
                         <div id="channelSearchResults"></div>
                     </div>
                 </div>
+
+                <div id="syncedVideosContainer"></div>
             `;
         }
     } else {
@@ -2056,6 +2624,10 @@ function updateYouTubeStatus(connected, channelInfo) {
         if (videosDiv) videosDiv.style.display = "none";
         if (statsDiv) statsDiv.style.display = "none";
     }
+}
+
+async function loadYouTubeVideosManually() {
+    await loadYouTubeVideos();
 }
 
 async function syncMyChannel() {

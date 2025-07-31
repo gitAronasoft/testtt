@@ -166,18 +166,47 @@ function initializeMySQL() {
         UNIQUE KEY unique_purchase (user_id, video_id)
     )";
 
-    // Create youtube_tokens table
+    // Create youtube_tokens table (global tokens, not per user)
     $youtube_tokens_table = "
     CREATE TABLE IF NOT EXISTS youtube_tokens (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id VARCHAR(50) NOT NULL,
+        token_type ENUM('global', 'backup') DEFAULT 'global',
         access_token TEXT NOT NULL,
         refresh_token TEXT,
         expires_at DATETIME NOT NULL,
+        scope TEXT,
+        token_info JSON,
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        UNIQUE KEY unique_user_token (user_id)
+        UNIQUE KEY unique_token_type (token_type, is_active)
+    )";
+
+    // Create youtube_videos table for synced video metadata
+    $youtube_videos_table = "
+    CREATE TABLE IF NOT EXISTS youtube_videos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        youtube_video_id VARCHAR(50) UNIQUE NOT NULL,
+        title VARCHAR(500) NOT NULL,
+        description TEXT,
+        thumbnail_url VARCHAR(500),
+        duration VARCHAR(20),
+        published_at DATETIME,
+        view_count BIGINT DEFAULT 0,
+        like_count BIGINT DEFAULT 0,
+        comment_count BIGINT DEFAULT 0,
+        privacy_status VARCHAR(20),
+        upload_status VARCHAR(20),
+        channel_id VARCHAR(50),
+        channel_title VARCHAR(255),
+        tags JSON,
+        category_id VARCHAR(10),
+        default_language VARCHAR(10),
+        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_youtube_video_id (youtube_video_id),
+        INDEX idx_channel_id (channel_id),
+        INDEX idx_published_at (published_at)
     )";
 
     if ($conn->query($users_table) === TRUE) {
@@ -194,6 +223,10 @@ function initializeMySQL() {
 
     if ($conn->query($youtube_tokens_table) === TRUE) {
         echo "YouTube tokens table created successfully\n";
+    }
+
+    if ($conn->query($youtube_videos_table) === TRUE) {
+        echo "YouTube videos metadata table created successfully\n";
     }
 
     insertDefaultUsers($conn);

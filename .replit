@@ -1,11 +1,11 @@
 run = "php -S 0.0.0.0:8000 -t ."
-modules = ["php-8.2", "nodejs-20", "web", "nix"]
+modules = ["nodejs-20", "php-8.2", "web", "nix"]
 
 [nix]
 channel = "stable-25_05"
 
 [deployment]
-run = ["sh", "-c", "php -S 0.0.0.0:8000 -t ."]
+run = ["sh", "-c", "php -S 0.0.0.0:5000 -t ."]
 deploymentTarget = "cloudrun"
 
 [[ports]]
@@ -17,7 +17,7 @@ localPort = 8000
 externalPort = 80
 
 [workflows]
-runButton = "Run PHP Server"
+runButton = "Run Web Server"
 
 [[workflows.workflow]]
 name = "Run PHP Server"
@@ -35,4 +35,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "php -S 0.0.0.0:8000 -t ."
+args = "php -S 0.0.0.0:5000 -t ."

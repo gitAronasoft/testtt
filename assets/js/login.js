@@ -14,14 +14,43 @@ document.addEventListener("DOMContentLoaded", function () {
 async function handleLogin(event) {
     event.preventDefault();
 
+    const form = event.target;
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
 
-    if (!email || !password) {
-        showNotification("Please enter both email and password", "error");
+    // Clear previous errors
+    clearFormErrors(form);
+
+    // Enhanced validation
+    let hasErrors = false;
+
+    if (!email) {
+        showFieldError(document.getElementById("email"), "Email is required");
+        hasErrors = true;
+    } else if (!isValidEmail(email)) {
+        showFieldError(document.getElementById("email"), "Please enter a valid email address");
+        hasErrors = true;
+    }
+
+    if (!password) {
+        showFieldError(document.getElementById("password"), "Password is required");
+        hasErrors = true;
+    } else if (password.length < 6) {
+        showFieldError(document.getElementById("password"), "Password must be at least 6 characters");
+        hasErrors = true;
+    }
+
+    if (hasErrors) {
+        showNotification("Please fix the errors above", "error");
         return;
     }
 
+    // Update button state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing in...';
+    
     showLoading(true);
 
     try {
@@ -138,4 +167,40 @@ function showNotification(message, type = "info") {
         // Fallback to alert if toast elements not found
         alert(message);
     }
+}
+
+// Form validation utilities
+function showFieldError(field, message) {
+    field.classList.add('is-invalid');
+    
+    // Remove existing error message
+    const existingError = field.parentNode.querySelector('.invalid-feedback');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Add new error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'invalid-feedback d-block';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${message}`;
+    field.parentNode.appendChild(errorDiv);
+}
+
+function clearFormErrors(form) {
+    form.querySelectorAll('.form-control, .form-select').forEach(field => {
+        field.classList.remove('is-invalid', 'is-valid');
+    });
+    form.querySelectorAll('.invalid-feedback').forEach(error => {
+        error.remove();
+    });
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function resetSubmitButton(button, originalText) {
+    button.disabled = false;
+    button.innerHTML = originalText;
 }
