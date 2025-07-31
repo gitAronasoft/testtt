@@ -1,0 +1,288 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - YouTube Video Manager</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="dashboard.html">
+                <i class="fas fa-video text-warning"></i> YouTube Manager
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="user-management.html">
+                            <i class="fas fa-users"></i> User Management
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin-videos.html">
+                            <i class="fas fa-video"></i> Video Management
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="analytics.html">
+                            <i class="fas fa-chart-line"></i> Analytics
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar me-2" id="navUserAvatar">A</div>
+                            <span id="navUserName">Admin</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container"></div>
+        <div class="page-header">
+            <h2>👥 User Management</h2>
+            <div class="dashboard-actions">
+                <button class="btn btn-primary" onclick="showModal('addUserModal')">
+                    <span>➕</span> Add User
+                </button>
+                <button class="btn btn-secondary" onclick="exportUsers()">
+                    <span>📊</span> Export
+                </button>
+                <button class="btn btn-secondary" onclick="refreshUsers()">
+                    <span>🔄</span> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- User Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-number" id="totalUsersCount">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-number" id="activeUsersCount">0</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👑</div>
+                <div class="stat-number" id="premiumUsersCount">0</div>
+                <div class="stat-label">Premium Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-number" id="newUsersCount">0</div>
+                <div class="stat-label">New This Month</div>
+            </div>
+        </div>
+
+        <!-- Enhanced Search and Filter Bar -->
+        <div class="search-filter-bar">
+            <div class="search-container">
+                <input type="text" class="search-input" id="userSearchInput" placeholder="🔍 Search users by name, email, or role..." />
+                <button class="search-clear-btn" onclick="clearUserSearch()" title="Clear search">✕</button>
+            </div>
+            <div class="filter-container">
+                <select class="filter-select" id="roleFilter">
+                    <option value="">👤 All Roles</option>
+                    <option value="admin">🛡️ Admin</option>
+                    <option value="editor">✏️ Editor</option>
+                    <option value="viewer">👁️ Viewer</option>
+                </select>
+                <select class="filter-select" id="statusFilter">
+                    <option value="">📊 All Status</option>
+                    <option value="active">✅ Active</option>
+                    <option value="inactive">❌ Inactive</option>
+                    <option value="suspended">⏸️ Suspended</option>
+                </select>
+                <select class="filter-select" id="subscriptionFilter">
+                    <option value="">💳 All Plans</option>
+                    <option value="free">🆓 Free</option>
+                    <option value="premium">💎 Premium</option>
+                    <option value="pro">⭐ Pro</option>
+                </select>
+                <button class="btn btn-secondary filter-clear-btn" onclick="clearUserFilters()">
+                    <span>🔄</span> Clear All
+                </button>
+            </div>
+        </div>
+
+        <!-- User Management Table -->
+        <div class="card">
+            <div class="table-header">
+                <h3>User List</h3>
+                <div class="table-actions">
+                    <button class="btn btn-secondary" onclick="selectAllUsers()">Select All</button>
+                    <button class="btn btn-danger" onclick="bulkDeleteUsers()">Delete Selected</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"></th>
+                            <th>👤 User</th>
+                            <th>📧 Email</th>
+                            <th>🎭 Role</th>
+                            <th>📊 Status</th>
+                            <th>💳 Plan</th>
+                            <th>📅 Joined</th>
+                            <th>⚡ Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <!-- Users will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing <span id="showingCount">1-10</span> of <span id="totalCount">0</span> users
+                </div>
+                <div class="pagination-controls">
+                    <button class="btn btn-secondary" onclick="previousPage()" id="prevBtn">Previous</button>
+                    <span id="pageNumbers"></span>
+                    <button class="btn btn-secondary" onclick="nextPage()" id="nextBtn">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Add New User</h3>
+                <span class="close" onclick="closeModal('addUserModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newUserName">Full Name</label>
+                        <input type="text" id="newUserName" placeholder="Enter full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserEmail">Email Address</label>
+                        <input type="email" id="newUserEmail" placeholder="Enter email address" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newUserRole">Role</label>
+                        <select id="newUserRole" required>
+                            <option value="">Select role</option>
+                            <option value="viewer">👁️ Viewer</option>
+                            <option value="editor">✏️ Editor</option>
+                            <option value="admin">🛡️ Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserPlan">Subscription Plan</label>
+                        <select id="newUserPlan">
+                            <option value="free">🆓 Free</option>
+                            <option value="premium">💎 Premium</option>
+                            <option value="pro">⭐ Pro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="sendWelcomeEmail"> Send welcome email to user
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addUserModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="addNewUser()">Add User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Edit User</h3>
+                <span class="close" onclick="closeModal('editUserModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editUserName">Full Name</label>
+                        <input type="text" id="editUserName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUserEmail">Email Address</label>
+                        <input type="email" id="editUserEmail" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editUserRole">Role</label>
+                        <select id="editUserRole" required>
+                            <option value="viewer">👁️ Viewer</option>
+                            <option value="editor">✏️ Editor</option>
+                            <option value="admin">🛡️ Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUserStatus">Status</label>
+                        <select id="editUserStatus" required>
+                            <option value="active">✅ Active</option>
+                            <option value="inactive">❌ Inactive</option>
+                            <option value="suspended">⏸️ Suspended</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editUserPlan">Subscription Plan</label>
+                    <select id="editUserPlan">
+                        <option value="free">🆓 Free</option>
+                        <option value="premium">💎 Premium</option>
+                        <option value="pro">⭐ Pro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="deleteUser()">Delete User</button>
+                <button class="btn btn-secondary" onclick="closeModal('editUserModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="updateUser()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/navbar.js"></script>
+    <script src="assets/js/user-management.js"></script>
+</body>
+</html>

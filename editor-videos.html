@@ -1,0 +1,563 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Videos - Video Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <!-- Global Navbar will be injected here -->
+
+    <div class="container-fluid main-content">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="page-header bg-gradient-primary text-white p-4 rounded-4 shadow-sm animate-on-scroll">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1 fw-bold">
+                                <i class="fas fa-video me-2"></i>My Video Library
+                            </h2>
+                            <p class="mb-0 opacity-90">Manage and organize your video content</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="editor-upload.html" class="btn btn-light btn-lg">
+                                <i class="fas fa-plus me-1"></i>Upload Video
+                            </a>
+                            <button class="btn btn-outline-light" onclick="refreshVideos()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm h-100 animate-on-scroll">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-primary mb-2">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <h4 class="text-primary mb-1" id="totalVideosCount">0</h4>
+                        <p class="text-muted mb-0">Total Videos</p>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-primary" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm h-100 animate-on-scroll">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-success mb-2">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <h4 class="text-success mb-1" id="totalViewsCount">0</h4>
+                        <p class="text-muted mb-0">Total Views</p>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: 85%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm h-100 animate-on-scroll">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-warning mb-2">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <h4 class="text-warning mb-1" id="totalEarningsCount">$0</h4>
+                        <p class="text-muted mb-0">Total Earnings</p>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-warning" style="width: 70%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm h-100 animate-on-scroll">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-info mb-2">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h4 class="text-info mb-1" id="totalLikesCount">0</h4>
+                        <p class="text-muted mb-0">Total Likes</p>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-info" style="width: 90%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="card border-0 shadow-sm mb-4 animate-on-scroll">
+            <div class="card-body">
+                <h6 class="card-title mb-3">
+                    <i class="fas fa-filter me-2"></i>Filter & Search Videos
+                </h6>
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0" id="searchVideos" 
+                                   placeholder="Search videos by title or description...">
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-4">
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="published">Published</option>
+                            <option value="private">Private</option>
+                            <option value="unlisted">Unlisted</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-4">
+                        <select class="form-select" id="sortFilter">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="most_viewed">Most Viewed</option>
+                            <option value="highest_earning">Highest Earning</option>
+                            <option value="title">Title A-Z</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-4">
+                        <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Videos Grid -->
+        <div class="row" id="videosContainer">
+            <!-- Videos will be loaded here -->
+        </div>
+
+        <!-- No Videos Message -->
+        <div id="noVideos" class="text-center py-5" style="display: none;">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body py-5">
+                    <div class="text-muted">
+                        <i class="fas fa-video fa-4x mb-3 text-primary opacity-50"></i>
+                        <h4>No videos found</h4>
+                        <p class="mb-3">You haven't uploaded any videos yet or no videos match your filters.</p>
+                        <a href="editor-upload.html" class="btn btn-primary btn-lg">
+                            <i class="fas fa-upload me-1"></i>Upload Your First Video
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Video Modal -->
+    <div class="modal fade" id="editVideoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-edit me-2 text-primary"></i>Edit Video Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editVideoForm">
+                        <input type="hidden" id="editVideoId">
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="editTitle" class="form-label fw-semibold">Video Title</label>
+                                    <input type="text" class="form-control" id="editTitle" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="editDescription" class="form-label fw-semibold">Description</label>
+                                    <textarea class="form-control" id="editDescription" rows="4" 
+                                              placeholder="Describe your video content..."></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="editTags" class="form-label fw-semibold">Tags</label>
+                                    <input type="text" class="form-control" id="editTags" 
+                                           placeholder="javascript, tutorial, coding">
+                                    <div class="form-text">Separate tags with commas</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editStatus" class="form-label fw-semibold">Visibility</label>
+                                    <select class="form-select" id="editStatus">
+                                        <option value="published">Published</option>
+                                        <option value="unlisted">Unlisted</option>
+                                        <option value="private">Private</option>
+                                        <option value="draft">Draft</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="editPrice" class="form-label fw-semibold">Price ($)</label>
+                                    <input type="number" class="form-control" id="editPrice" 
+                                           step="0.01" min="0" placeholder="0.00">
+                                    <div class="form-text">Set to 0 for free videos</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="editCategory" class="form-label fw-semibold">Category</label>
+                                    <select class="form-select" id="editCategory">
+                                        <option value="education">Education</option>
+                                        <option value="entertainment">Entertainment</option>
+                                        <option value="technology">Technology</option>
+                                        <option value="tutorial">Tutorial</option>
+                                        <option value="gaming">Gaming</option>
+                                        <option value="music">Music</option>
+                                        <option value="sports">Sports</option>
+                                        <option value="travel">Travel</option>
+                                        <option value="comedy">Comedy</option>
+                                        <option value="news">News</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveVideoEdit()">
+                        <i class="fas fa-save me-1"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/navbar.js"></script>
+    <script src="assets/js/visual-enhancements.js"></script>
+    <script>
+        let myVideos = [];
+        let filteredVideos = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const userRole = localStorage.getItem('userRole');
+            if (userRole !== 'editor' && userRole !== 'admin') {
+                showAlert('Access denied. This page is for editors only.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+                return;
+            }
+
+            loadMyVideos();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('searchVideos').addEventListener('input', applyFilters);
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('sortFilter').addEventListener('change', applyFilters);
+        }
+
+        function loadMyVideos() {
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            const currentUser = localStorage.getItem('userName') || 'Editor';
+            
+            myVideos = uploadedVideos.filter(video => video.uploadedBy === currentUser);
+            
+            if (myVideos.length === 0) {
+                myVideos = getDemoVideos();
+                const allVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+                allVideos.push(...myVideos);
+                localStorage.setItem('uploadedVideos', JSON.stringify(allVideos));
+            }
+            
+            filteredVideos = [...myVideos];
+            updateStatistics();
+            applyFilters();
+        }
+
+        function getDemoVideos() {
+            const currentUser = localStorage.getItem('userName') || 'Editor';
+            return [
+                {
+                    id: 'DEMO_1',
+                    title: 'JavaScript Fundamentals Course',
+                    description: 'Complete beginner guide to JavaScript programming',
+                    uploadedBy: currentUser,
+                    uploadedAt: new Date().toISOString(),
+                    status: 'published',
+                    views: 2540,
+                    likes: 189,
+                    duration: '45:30',
+                    thumbnail: '💻',
+                    tags: ['javascript', 'programming', 'tutorial'],
+                    price: 29.99,
+                    category: 'education',
+                    earnings: 149.95
+                },
+                {
+                    id: 'DEMO_2',
+                    title: 'React.js Project Build',
+                    description: 'Build a complete React application from scratch',
+                    uploadedBy: currentUser,
+                    uploadedAt: new Date(Date.now() - 86400000).toISOString(),
+                    status: 'published',
+                    views: 1892,
+                    likes: 167,
+                    duration: '1:12:15',
+                    thumbnail: '⚛️',
+                    tags: ['react', 'javascript', 'project'],
+                    price: 39.99,
+                    category: 'tutorial',
+                    earnings: 199.95
+                },
+                {
+                    id: 'DEMO_3',
+                    title: 'Free CSS Grid Tutorial',
+                    description: 'Learn CSS Grid layout system with this free tutorial',
+                    uploadedBy: currentUser,
+                    uploadedAt: new Date(Date.now() - 172800000).toISOString(),
+                    status: 'published',
+                    views: 3421,
+                    likes: 298,
+                    duration: '28:45',
+                    thumbnail: '🎨',
+                    tags: ['css', 'grid', 'layout'],
+                    price: 0,
+                    category: 'education',
+                    earnings: 0
+                }
+            ];
+        }
+
+        function updateStatistics() {
+            const totalVideos = myVideos.length;
+            const totalViews = myVideos.reduce((sum, video) => sum + (video.views || 0), 0);
+            const totalEarnings = myVideos.reduce((sum, video) => sum + (video.earnings || 0), 0);
+            const totalLikes = myVideos.reduce((sum, video) => sum + (video.likes || 0), 0);
+
+            document.getElementById('totalVideosCount').textContent = totalVideos;
+            document.getElementById('totalViewsCount').textContent = formatNumber(totalViews);
+            document.getElementById('totalEarningsCount').textContent = '$' + formatNumber(totalEarnings);
+            document.getElementById('totalLikesCount').textContent = formatNumber(totalLikes);
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchVideos').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+
+            filteredVideos = myVideos.filter(video => {
+                const matchesSearch = !searchTerm || 
+                    video.title.toLowerCase().includes(searchTerm) ||
+                    video.description.toLowerCase().includes(searchTerm);
+                
+                const matchesStatus = !statusFilter || video.status === statusFilter;
+
+                return matchesSearch && matchesStatus;
+            });
+
+            sortVideos(sortFilter);
+            renderVideos();
+        }
+
+        function sortVideos(sortBy) {
+            switch(sortBy) {
+                case 'newest':
+                    filteredVideos.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+                    break;
+                case 'oldest':
+                    filteredVideos.sort((a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt));
+                    break;
+                case 'most_viewed':
+                    filteredVideos.sort((a, b) => (b.views || 0) - (a.views || 0));
+                    break;
+                case 'highest_earning':
+                    filteredVideos.sort((a, b) => (b.earnings || 0) - (a.earnings || 0));
+                    break;
+                case 'title':
+                    filteredVideos.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+            }
+        }
+
+        function renderVideos() {
+            const container = document.getElementById('videosContainer');
+            const noVideos = document.getElementById('noVideos');
+            
+            if (filteredVideos.length === 0) {
+                container.innerHTML = '';
+                noVideos.style.display = 'block';
+                return;
+            }
+
+            noVideos.style.display = 'none';
+            
+            container.innerHTML = filteredVideos.map(video => `
+                <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100 animate-on-scroll">
+                        <div class="position-relative">
+                            <div class="video-thumbnail bg-gradient-primary d-flex align-items-center justify-content-center text-white rounded-top" style="height: 200px; font-size: 3rem;">
+                                ${video.thumbnail || '🎥'}
+                            </div>
+                            <span class="position-absolute top-0 end-0 m-2 badge ${getStatusBadgeClass(video.status)}">${video.status}</span>
+                            <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark">${video.duration}</span>
+                            ${(video.price || 0) > 0 ? 
+                                `<span class="position-absolute top-0 start-0 m-2 badge bg-success">$${video.price}</span>` : 
+                                '<span class="position-absolute top-0 start-0 m-2 badge bg-info">FREE</span>'
+                            }
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="card-title fw-bold mb-2">${video.title}</h6>
+                            <p class="card-text text-muted small mb-3 flex-grow-1">${truncateText(video.description, 80)}</p>
+                            
+                            <div class="row text-center mb-3 border-top pt-3">
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Views</small>
+                                    <strong class="text-primary">${formatNumber(video.views || 0)}</strong>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Likes</small>
+                                    <strong class="text-success">${formatNumber(video.likes || 0)}</strong>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Earnings</small>
+                                    <strong class="text-warning">$${formatNumber(video.earnings || 0)}</strong>
+                                </div>
+                            </div>
+                            
+                            <small class="text-muted d-block mb-3">
+                                <i class="fas fa-calendar me-1"></i>${formatDate(video.uploadedAt)}
+                            </small>
+                            
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-outline-primary btn-sm" onclick="editVideo('${video.id}')" title="Edit Video">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteVideo('${video.id}')" title="Delete Video">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusBadgeClass(status) {
+            const classes = {
+                'published': 'bg-success',
+                'private': 'bg-warning',
+                'unlisted': 'bg-info',
+                'draft': 'bg-secondary'
+            };
+            return classes[status] || 'bg-secondary';
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString();
+        }
+
+        function editVideo(videoId) {
+            const video = myVideos.find(v => v.id === videoId);
+            if (!video) return;
+
+            document.getElementById('editVideoId').value = video.id;
+            document.getElementById('editTitle').value = video.title;
+            document.getElementById('editDescription').value = video.description || '';
+            document.getElementById('editTags').value = (video.tags || []).join(', ');
+            document.getElementById('editStatus').value = video.status || 'published';
+            document.getElementById('editPrice').value = video.price || 0;
+            document.getElementById('editCategory').value = video.category || 'education';
+
+            new bootstrap.Modal(document.getElementById('editVideoModal')).show();
+        }
+
+        function saveVideoEdit() {
+            const videoId = document.getElementById('editVideoId').value;
+            const title = document.getElementById('editTitle').value;
+            const description = document.getElementById('editDescription').value;
+            const tags = document.getElementById('editTags').value.split(',').map(t => t.trim());
+            const status = document.getElementById('editStatus').value;
+            const price = parseFloat(document.getElementById('editPrice').value) || 0;
+            const category = document.getElementById('editCategory').value;
+
+            const video = myVideos.find(v => v.id === videoId);
+            if (video) {
+                video.title = title;
+                video.description = description;
+                video.tags = tags;
+                video.status = status;
+                video.price = price;
+                video.category = category;
+            }
+
+            const allVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            const videoIndex = allVideos.findIndex(v => v.id === videoId);
+            if (videoIndex !== -1) {
+                allVideos[videoIndex] = video;
+                localStorage.setItem('uploadedVideos', JSON.stringify(allVideos));
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('editVideoModal')).hide();
+            applyFilters();
+            showAlert('Video updated successfully!', 'success');
+        }
+
+        function deleteVideo(videoId) {
+            const video = myVideos.find(v => v.id === videoId);
+            if (!video) return;
+
+            if (confirm(`Are you sure you want to delete "${video.title}"?\n\nThis action cannot be undone.`)) {
+                myVideos = myVideos.filter(v => v.id !== videoId);
+                filteredVideos = filteredVideos.filter(v => v.id !== videoId);
+
+                const allVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+                const updatedVideos = allVideos.filter(v => v.id !== videoId);
+                localStorage.setItem('uploadedVideos', JSON.stringify(updatedVideos));
+
+                updateStatistics();
+                applyFilters();
+                showAlert('Video deleted successfully!', 'success');
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('searchVideos').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('sortFilter').value = 'newest';
+            applyFilters();
+        }
+
+        function refreshVideos() {
+            loadMyVideos();
+            showAlert('Videos refreshed!', 'success');
+        }
+    </script>
+</body>
+</html>

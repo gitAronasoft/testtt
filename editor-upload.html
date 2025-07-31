@@ -1,0 +1,925 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Video - Video Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .upload-zone {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #0d6efd;
+            background: #e7f1ff;
+        }
+        .upload-zone.has-file {
+            border-color: #198754;
+            background: #d1e7dd;
+        }
+        .file-preview {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            background: white;
+        }
+        .progress-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        .tag-input {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0.5rem;
+            min-height: 100px;
+        }
+        .tag {
+            display: inline-block;
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            margin: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .tag .remove-tag {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            color: #dc3545;
+        }
+        .thumbnail-preview {
+            max-width: 200px;
+            border-radius: 8px;
+        }
+        .schedule-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .pricing-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+        }
+        .price-option {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .price-option.selected {
+            border-color: #0d6efd;
+            background: #e7f1ff;
+        }
+        .price-preview {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container main-content">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-cloud-upload-alt me-2 text-primary"></i>Upload Video</h2>
+                        <p class="text-muted mb-0">Share your content with the world and start earning</p>
+                    </div>
+                    <a href="editor-videos.html" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to My Videos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="row">
+                <!-- Main Upload Section -->
+                <div class="col-lg-8">
+                    <!-- File Upload -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-file-video me-2"></i>Video File</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-zone" id="uploadZone">
+                                <div id="uploadPrompt">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <h5>Drag and drop your video here</h5>
+                                    <p class="text-muted">or <span class="text-primary">click to browse</span></p>
+                                    <small class="text-muted">Supports MP4, MOV, AVI, WMV (Max: 2GB)</small>
+                                </div>
+                                <div id="filePreview" style="display: none;">
+                                    <div class="file-preview">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-file-video fa-2x text-primary me-3"></i>
+                                            <div class="flex-grow-1">
+                                                <h6 id="fileName" class="mb-1"></h6>
+                                                <div class="d-flex justify-content-between">
+                                                    <small id="fileSize" class="text-muted"></small>
+                                                    <small id="fileType" class="text-muted"></small>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile()">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="file" id="videoFile" accept="video/*" style="display: none;" required>
+                        </div>
+                    </div>
+
+                    <!-- Video Details -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Video Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Title -->
+                            <div class="mb-3">
+                                <label for="videoTitle" class="form-label">Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="videoTitle" placeholder="Enter video title" maxlength="100" required>
+                                <div class="form-text">
+                                    <span id="titleCount">0</span>/100 characters
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label for="videoDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="videoDescription" rows="4" placeholder="Describe your video content..." maxlength="2000"></textarea>
+                                <div class="form-text">
+                                    <span id="descCount">0</span>/2000 characters
+                                </div>
+                            </div>
+
+                            <!-- Tags -->
+                            <div class="mb-3">
+                                <label class="form-label">Tags</label>
+                                <div class="tag-input" id="tagContainer">
+                                    <input type="text" id="tagInput" placeholder="Type and press Enter to add tags..." class="border-0 outline-0 w-100">
+                                </div>
+                                <div class="form-text">Add relevant tags to help people discover your video</div>
+                                <input type="hidden" id="videoTags">
+                            </div>
+
+                            <!-- Category and Language -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="videoCategory" class="form-label">Category</label>
+                                    <select class="form-select" id="videoCategory">
+                                        <option value="">Select Category</option>
+                                        <option value="education">Education</option>
+                                        <option value="entertainment">Entertainment</option>
+                                        <option value="technology">Technology</option>
+                                        <option value="tutorial">Tutorial</option>
+                                        <option value="gaming">Gaming</option>
+                                        <option value="music">Music</option>
+                                        <option value="sports">Sports</option>
+                                        <option value="travel">Travel</option>
+                                        <option value="comedy">Comedy</option>
+                                        <option value="news">News</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="videoLanguage" class="form-label">Language</label>
+                                    <select class="form-select" id="videoLanguage">
+                                        <option value="en">English</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="fr">French</option>
+                                        <option value="de">German</option>
+                                        <option value="it">Italian</option>
+                                        <option value="pt">Portuguese</option>
+                                        <option value="ru">Russian</option>
+                                        <option value="ja">Japanese</option>
+                                        <option value="ko">Korean</option>
+                                        <option value="zh">Chinese</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Thumbnail -->
+                            <div class="mb-3">
+                                <label for="thumbnailFile" class="form-label">Custom Thumbnail (Optional)</label>
+                                <input type="file" class="form-control" id="thumbnailFile" accept="image/*">
+                                <div class="form-text">Recommended: 1280x720px, JPG/PNG format</div>
+                                <div id="thumbnailPreview" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Pricing -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Video Pricing & Monetization</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="pricing-card">
+                                <h6 class="mb-3">Set your video price for viewers</h6>
+                                
+                                <!-- Price Options -->
+                                <div class="price-option" id="freeOption" onclick="selectPriceOption('free')">
+                                    <div class="d-flex align-items-center">
+                                        <input type="radio" name="priceType" id="priceFree" value="free" checked class="me-3">
+                                        <div>
+                                            <h6 class="mb-1"><i class="fas fa-gift text-success me-2"></i>Free Video</h6>
+                                            <small class="text-muted">Anyone can watch for free</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="price-option" id="paidOption" onclick="selectPriceOption('paid')">
+                                    <div class="d-flex align-items-center">
+                                        <input type="radio" name="priceType" id="pricePaid" value="paid" class="me-3">
+                                        <div>
+                                            <h6 class="mb-1"><i class="fas fa-credit-card text-primary me-2"></i>Paid Video</h6>
+                                            <small class="text-muted">Viewers pay to watch</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Price Input Section -->
+                                <div id="priceInputSection" style="display: none;">
+                                    <hr class="my-3">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="videoPrice" class="form-label">Price (USD)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control" id="videoPrice" step="0.01" min="0.99" max="999.99" placeholder="9.99" oninput="updatePricePreview()">
+                                            </div>
+                                            <div class="form-text">Minimum price: $0.99</div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="accessType" class="form-label">Access Type</label>
+                                            <select class="form-select" id="accessType" onchange="updatePricePreview()">
+                                                <option value="lifetime">Lifetime Access</option>
+                                                <option value="rental_24h">24 Hour Rental</option>
+                                                <option value="rental_7d">7 Day Rental</option>
+                                                <option value="rental_30d">30 Day Rental</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Price Preview -->
+                                    <div class="price-preview">
+                                        <h6><i class="fas fa-eye me-2"></i>How viewers will see this:</h6>
+                                        <div id="pricePreviewContent">
+                                            <span class="badge bg-success">$9.99 - Lifetime Access</span>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">
+                                            You'll receive <strong id="yourEarnings">$8.49</strong> after platform fees (15%)
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Pricing Tips -->
+                                <div class="mt-3 p-3 bg-light rounded">
+                                    <h6><i class="fas fa-lightbulb text-warning me-2"></i>Pricing Tips</h6>
+                                    <ul class="mb-0 small">
+                                        <li>Free videos get more views and help build your audience</li>
+                                        <li>Educational content typically ranges from $5-50</li>
+                                        <li>Premium tutorials can be priced $20-100+</li>
+                                        <li>Short content works better with lower prices</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Publishing -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Publishing</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="publishing" id="publishNow" value="now" checked>
+                                <label class="form-check-label" for="publishNow">
+                                    <i class="fas fa-upload text-success me-2"></i>Publish immediately
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="publishing" id="publishSchedule" value="schedule">
+                                <label class="form-check-label" for="publishSchedule">
+                                    <i class="fas fa-clock text-info me-2"></i>Schedule for later
+                                </label>
+                            </div>
+                            <div id="scheduleOptions" class="schedule-section" style="display: none;">
+                                <label for="scheduleDateTime" class="form-label">Publish Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="scheduleDateTime">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Visibility -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Video Visibility</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="visibility" id="visibilityPublic" value="public" checked>
+                                <label class="form-check-label" for="visibilityPublic">
+                                    <i class="fas fa-globe text-success me-2"></i>Public
+                                    <div class="form-text">Listed in search results</div>
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="visibility" id="visibilityUnlisted" value="unlisted">
+                                <label class="form-check-label" for="visibilityUnlisted">
+                                    <i class="fas fa-link text-warning me-2"></i>Unlisted
+                                    <div class="form-text">Only accessible via direct link</div>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="visibility" id="visibilityPrivate" value="private">
+                                <label class="form-check-label" for="visibilityPrivate">
+                                    <i class="fas fa-lock text-danger me-2"></i>Private
+                                    <div class="form-text">Only you can view</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Advanced Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="allowComments" checked>
+                                <label class="form-check-label" for="allowComments">
+                                    Allow comments
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="allowRatings" checked>
+                                <label class="form-check-label" for="allowRatings">
+                                    Allow ratings
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="notifySubscribers" checked>
+                                <label class="form-check-label" for="notifySubscribers">
+                                    Notify subscribers
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ageRestriction">
+                                <label class="form-check-label" for="ageRestriction">
+                                    Age restriction (18+)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Progress -->
+                    <div id="uploadProgress" class="card" style="display: none;">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Upload Progress</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="progress-container">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <small id="progressText">Preparing upload...</small>
+                                    <small id="progressPercent">0%</small>
+                                </div>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         id="progressBar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div class="text-center">
+                                    <small class="text-muted" id="uploadETA">Estimating time...</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary me-2" onclick="saveDraft()">
+                                <i class="fas fa-save me-1"></i>Save Draft
+                            </button>
+                            <button type="button" class="btn btn-outline-info" onclick="previewVideo()">
+                                <i class="fas fa-eye me-1"></i>Preview
+                            </button>
+                        </div>
+                        <div>
+                            <a href="editor-videos.html" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary" id="uploadBtn">
+                                <i class="fas fa-cloud-upload-alt me-1"></i>
+                                <span id="uploadBtnText">Upload Video</span>
+                                <span id="uploadSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/navbar.js"></script>
+    <script src="assets/js/visual-enhancements.js"></script>
+    <script>
+        let selectedFile = null;
+        let tags = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUploadPage();
+        });
+
+        function initializeUploadPage() {
+            setupFileUpload();
+            setupTagInput();
+            setupCharacterCounters();
+            setupEventListeners();
+            selectPriceOption('free'); // Default to free
+        }
+
+        function setupFileUpload() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('videoFile');
+
+            uploadZone.addEventListener('click', () => fileInput.click());
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('video/')) {
+                showAlert('Please select a valid video file', 'error');
+                return;
+            }
+
+            if (file.size > 2 * 1024 * 1024 * 1024) {
+                showAlert('File size must be less than 2GB', 'error');
+                return;
+            }
+
+            selectedFile = file;
+            showFilePreview(file);
+
+            const titleInput = document.getElementById('videoTitle');
+            if (!titleInput.value.trim()) {
+                const fileName = file.name.replace(/\.[^/.]+$/, "");
+                titleInput.value = fileName.charAt(0).toUpperCase() + fileName.slice(1);
+                updateCharacterCount('videoTitle', 'titleCount');
+            }
+        }
+
+        function showFilePreview(file) {
+            const uploadZone = document.getElementById('uploadZone');
+            const uploadPrompt = document.getElementById('uploadPrompt');
+            const filePreview = document.getElementById('filePreview');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const fileType = document.getElementById('fileType');
+
+            uploadZone.classList.add('has-file');
+            uploadPrompt.style.display = 'none';
+            filePreview.style.display = 'block';
+
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileType.textContent = file.type;
+        }
+
+        function removeFile() {
+            selectedFile = null;
+            const uploadZone = document.getElementById('uploadZone');
+            const uploadPrompt = document.getElementById('uploadPrompt');
+            const filePreview = document.getElementById('filePreview');
+
+            uploadZone.classList.remove('has-file');
+            uploadPrompt.style.display = 'block';
+            filePreview.style.display = 'none';
+            document.getElementById('videoFile').value = '';
+        }
+
+        function selectPriceOption(type) {
+            const freeOption = document.getElementById('freeOption');
+            const paidOption = document.getElementById('paidOption');
+            const priceInputSection = document.getElementById('priceInputSection');
+
+            freeOption.classList.remove('selected');
+            paidOption.classList.remove('selected');
+
+            if (type === 'free') {
+                freeOption.classList.add('selected');
+                document.getElementById('priceFree').checked = true;
+                priceInputSection.style.display = 'none';
+            } else {
+                paidOption.classList.add('selected');
+                document.getElementById('pricePaid').checked = true;
+                priceInputSection.style.display = 'block';
+                updatePricePreview();
+            }
+        }
+
+        function updatePricePreview() {
+            const price = parseFloat(document.getElementById('videoPrice').value) || 9.99;
+            const accessType = document.getElementById('accessType').value;
+            const platformFee = 0.15; // 15% platform fee
+            const yourEarnings = (price * (1 - platformFee)).toFixed(2);
+
+            const accessLabels = {
+                'lifetime': 'Lifetime Access',
+                'rental_24h': '24 Hour Rental',
+                'rental_7d': '7 Day Rental',
+                'rental_30d': '30 Day Rental'
+            };
+
+            document.getElementById('pricePreviewContent').innerHTML = 
+                `<span class="badge bg-success">$${price.toFixed(2)} - ${accessLabels[accessType]}</span>`;
+            document.getElementById('yourEarnings').textContent = `$${yourEarnings}`;
+        }
+
+        function setupTagInput() {
+            const tagInput = document.getElementById('tagInput');
+
+            tagInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addTag(tagInput.value.trim());
+                    tagInput.value = '';
+                }
+            });
+
+            tagInput.addEventListener('blur', () => {
+                if (tagInput.value.trim()) {
+                    addTag(tagInput.value.trim());
+                    tagInput.value = '';
+                }
+            });
+        }
+
+        function addTag(tagText) {
+            if (!tagText || tags.includes(tagText.toLowerCase())) return;
+
+            tags.push(tagText.toLowerCase());
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag';
+            tagElement.innerHTML = `
+                ${tagText}
+                <span class="remove-tag" onclick="removeTag('${tagText.toLowerCase()}')">&times;</span>
+            `;
+
+            const tagInput = document.getElementById('tagInput');
+            tagInput.parentElement.insertBefore(tagElement, tagInput);
+            
+            updateTagsInput();
+        }
+
+        function removeTag(tagToRemove) {
+            tags = tags.filter(tag => tag !== tagToRemove);
+            renderTags();
+            updateTagsInput();
+        }
+
+        function renderTags() {
+            const tagContainer = document.getElementById('tagContainer');
+            const tagInput = document.getElementById('tagInput');
+            
+            const existingTags = tagContainer.querySelectorAll('.tag');
+            existingTags.forEach(tag => tag.remove());
+
+            tags.forEach(tag => {
+                const tagElement = document.createElement('span');
+                tagElement.className = 'tag';
+                tagElement.innerHTML = `
+                    ${tag}
+                    <span class="remove-tag" onclick="removeTag('${tag}')">&times;</span>
+                `;
+                tagContainer.insertBefore(tagElement, tagInput);
+            });
+        }
+
+        function updateTagsInput() {
+            document.getElementById('videoTags').value = tags.join(',');
+        }
+
+        function setupCharacterCounters() {
+            document.getElementById('videoTitle').addEventListener('input', () => {
+                updateCharacterCount('videoTitle', 'titleCount');
+            });
+
+            document.getElementById('videoDescription').addEventListener('input', () => {
+                updateCharacterCount('videoDescription', 'descCount');
+            });
+        }
+
+        function updateCharacterCount(inputId, countId) {
+            const input = document.getElementById(inputId);
+            const counter = document.getElementById(countId);
+            counter.textContent = input.value.length;
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('input[name="publishing"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const scheduleOptions = document.getElementById('scheduleOptions');
+                    scheduleOptions.style.display = e.target.value === 'schedule' ? 'block' : 'none';
+                });
+            });
+
+            document.getElementById('thumbnailFile').addEventListener('change', handleThumbnailSelect);
+            document.getElementById('uploadForm').addEventListener('submit', handleFormSubmit);
+        }
+
+        function handleThumbnailSelect(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('thumbnailPreview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <div class="mt-2">
+                            <img src="${e.target.result}" alt="Thumbnail Preview" class="thumbnail-preview">
+                            <div class="mt-1">
+                                <small class="text-muted">${file.name}</small>
+                            </div>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '';
+            }
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            if (!selectedFile) {
+                showAlert('Please select a video file', 'error');
+                return;
+            }
+
+            const title = document.getElementById('videoTitle').value.trim();
+            if (!title) {
+                showAlert('Please enter a video title', 'error');
+                return;
+            }
+
+            const formData = gatherFormData();
+            startUpload(formData);
+        }
+
+        function gatherFormData() {
+            const publishing = document.querySelector('input[name="publishing"]:checked').value;
+            const visibility = document.querySelector('input[name="visibility"]:checked').value;
+            const priceType = document.querySelector('input[name="priceType"]:checked').value;
+
+            const price = priceType === 'paid' ? parseFloat(document.getElementById('videoPrice').value) || 0 : 0;
+            const accessType = priceType === 'paid' ? document.getElementById('accessType').value : 'lifetime';
+
+            return {
+                file: selectedFile,
+                title: document.getElementById('videoTitle').value.trim(),
+                description: document.getElementById('videoDescription').value.trim(),
+                tags: tags,
+                category: document.getElementById('videoCategory').value,
+                language: document.getElementById('videoLanguage').value,
+                visibility: visibility,
+                publishing: publishing,
+                scheduleDateTime: document.getElementById('scheduleDateTime').value,
+                price: price,
+                accessType: accessType,
+                allowComments: document.getElementById('allowComments').checked,
+                allowRatings: document.getElementById('allowRatings').checked,
+                notifySubscribers: document.getElementById('notifySubscribers').checked,
+                ageRestriction: document.getElementById('ageRestriction').checked,
+                thumbnail: document.getElementById('thumbnailFile').files[0]
+            };
+        }
+
+        function startUpload(formData) {
+            showUploadProgress();
+            disableForm();
+
+            simulateUpload(formData).then(result => {
+                if (result.success) {
+                    showAlert('Video uploaded successfully!', 'success');
+                    saveUploadedVideo(result.video);
+                    setTimeout(() => {
+                        window.location.href = 'editor-videos.html';
+                    }, 2000);
+                } else {
+                    showAlert('Upload failed: ' + result.message, 'error');
+                    enableForm();
+                    hideUploadProgress();
+                }
+            });
+        }
+
+        function showUploadProgress() {
+            const progressCard = document.getElementById('uploadProgress');
+            progressCard.style.display = 'block';
+
+            let progress = 0;
+            let startTime = Date.now();
+
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 95) progress = 95;
+
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                const progressPercent = document.getElementById('progressPercent');
+                const uploadETA = document.getElementById('uploadETA');
+
+                progressBar.style.width = progress + '%';
+                progressPercent.textContent = Math.round(progress) + '%';
+
+                const elapsed = (Date.now() - startTime) / 1000;
+                const eta = progress > 5 ? Math.round((elapsed / progress) * (100 - progress)) : 0;
+
+                if (progress < 20) {
+                    progressText.textContent = 'Uploading video file...';
+                } else if (progress < 60) {
+                    progressText.textContent = 'Processing video...';
+                } else if (progress < 90) {
+                    progressText.textContent = 'Setting up pricing...';
+                } else {
+                    progressText.textContent = 'Finalizing upload...';
+                }
+
+                uploadETA.textContent = eta > 0 ? `${eta} seconds remaining` : 'Almost done...';
+
+                if (progress >= 95) {
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    progressPercent.textContent = '100%';
+                    progressText.textContent = 'Upload complete!';
+                    uploadETA.textContent = 'Processing finished';
+                }
+            }, 500);
+        }
+
+        function hideUploadProgress() {
+            document.getElementById('uploadProgress').style.display = 'none';
+        }
+
+        function disableForm() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadBtnText = document.getElementById('uploadBtnText');
+            const uploadSpinner = document.getElementById('uploadSpinner');
+
+            uploadBtn.disabled = true;
+            uploadBtnText.textContent = 'Uploading...';
+            uploadSpinner.style.display = 'inline-block';
+
+            const inputs = document.querySelectorAll('input, select, textarea, button');
+            inputs.forEach(input => {
+                if (input.id !== 'uploadBtn') input.disabled = true;
+            });
+        }
+
+        function enableForm() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadBtnText = document.getElementById('uploadBtnText');
+            const uploadSpinner = document.getElementById('uploadSpinner');
+
+            uploadBtn.disabled = false;
+            uploadBtnText.textContent = 'Upload Video';
+            uploadSpinner.style.display = 'none';
+
+            const inputs = document.querySelectorAll('input, select, textarea, button');
+            inputs.forEach(input => input.disabled = false);
+        }
+
+        function simulateUpload(formData) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const videoId = 'VID_' + Date.now();
+                    const status = formData.publishing === 'schedule' ? 'scheduled' : 'published';
+
+                    resolve({
+                        success: true,
+                        video: {
+                            id: videoId,
+                            title: formData.title,
+                            description: formData.description,
+                            tags: formData.tags,
+                            category: formData.category,
+                            language: formData.language,
+                            visibility: formData.visibility,
+                            status: status,
+                            uploadedBy: localStorage.getItem('userName') || 'Editor',
+                            uploadedAt: new Date().toISOString(),
+                            scheduledFor: formData.scheduleDateTime || null,
+                            views: 0,
+                            likes: 0,
+                            duration: '10:30',
+                            price: formData.price,
+                            accessType: formData.accessType,
+                            earnings: 0,
+                            thumbnail: '🎬'
+                        }
+                    });
+                }, 3000);
+            });
+        }
+
+        function saveUploadedVideo(video) {
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            uploadedVideos.unshift(video);
+            localStorage.setItem('uploadedVideos', JSON.stringify(uploadedVideos));
+        }
+
+        function saveDraft() {
+            const title = document.getElementById('videoTitle').value.trim();
+            if (!title) {
+                showAlert('Please enter a title to save draft', 'error');
+                return;
+            }
+
+            const draft = {
+                id: Date.now(),
+                title: title,
+                description: document.getElementById('videoDescription').value.trim(),
+                tags: tags,
+                category: document.getElementById('videoCategory').value,
+                savedAt: new Date().toISOString()
+            };
+
+            const drafts = JSON.parse(localStorage.getItem('videoDrafts') || '[]');
+            drafts.unshift(draft);
+            localStorage.setItem('videoDrafts', JSON.stringify(drafts.slice(0, 10)));
+
+            showAlert('Draft saved successfully!', 'success');
+        }
+
+        function previewVideo() {
+            if (!selectedFile) {
+                showAlert('Please select a video file first', 'error');
+                return;
+            }
+            showAlert('Video preview coming soon!', 'info');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
