@@ -44,11 +44,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
 function handleGetVideos() {
     $conn = getConnection();
-    
+
     // Get filter parameters
     $filter = $_GET['filter'] ?? 'all';
     $user_id = $_SESSION['user']['id'] ?? null;
-    
+
     $sql = "
         SELECT v.*, u.name as uploader_name,
                CASE WHEN p.user_id IS NOT NULL THEN 1 ELSE 0 END as purchased
@@ -56,10 +56,10 @@ function handleGetVideos() {
         JOIN users u ON v.uploader_id = u.id 
         LEFT JOIN purchases p ON v.id = p.video_id AND p.user_id = ?
     ";
-    
+
     $params = [$user_id];
     $types = "s";
-    
+
     // Apply filters
     switch ($filter) {
         case 'free':
@@ -77,14 +77,14 @@ function handleGetVideos() {
             $types .= "s";
             break;
     }
-    
+
     $sql .= " ORDER BY v.created_at DESC";
-    
+
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $videos = [];
     while ($row = $result->fetch_assoc()) {
         $videos[] = [
@@ -111,12 +111,12 @@ function handleGetVideos() {
             'embed_html' => $row['youtube_id'] ? "<iframe width='560' height='315' src='https://www.youtube.com/embed/{$row['youtube_id']}' frameborder='0' allowfullscreen></iframe>" : null
         ];
     }
-    
+
     echo json_encode([
         'success' => true,
         'videos' => $videos
     ]);
-    
+
     $conn->close();
 }
 
@@ -163,15 +163,15 @@ function handleUploadVideo() {
     }
 
     $conn = getConnection();
-    
+
     // Insert video
     $insert_video = $conn->prepare("INSERT INTO videos (title, description, price, uploader_id, file_path, category) VALUES (?, ?, ?, ?, ?, ?)");
     $uploader_id = $_SESSION['user']['id'];
     $insert_video->bind_param("ssdsss", $title, $description, $price, $uploader_id, $file_path, $category);
-    
+
     if ($insert_video->execute()) {
         $video_id = $conn->insert_id;
-        
+
         echo json_encode([
             'success' => true,
             'message' => 'Video uploaded successfully',
@@ -191,34 +191,34 @@ function handleUploadVideo() {
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to upload video']);
     }
-    
+
     $conn->close();
 }
 
 function handleUpdateVideo() {
     parse_str(file_get_contents("php://input"), $input);
     $video_id = $input['id'] ?? null;
-    
+
     if (!$video_id) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Video ID is required']);
         return;
     }
-    
+
     $conn = getConnection();
-    
+
     // Check if user owns the video or is admin
     $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
     $check_owner->bind_param("i", $video_id);
     $check_owner->execute();
     $result = $check_owner->get_result();
-    
+
     if ($result->num_rows === 0) {
         echo json_encode(['success' => false, 'message' => 'Video not found']);
         $conn->close();
         return;
     }
-    
+
     $video = $result->fetch_assoc();
     if ($video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
         http_response_code(403);
@@ -226,61 +226,277 @@ function handleUpdateVideo() {
         $conn->close();
         return;
     }
-    
+
     // Increment view count
     if (isset($input['action']) && $input['action'] === 'increment_views') {
         $update_views = $conn->prepare("UPDATE videos SET views = views + 1 WHERE id = ?");
         $update_views->bind_param("i", $video_id);
         $update_views->execute();
-        
+
         echo json_encode(['success' => true, 'message' => 'View count updated']);
     }
-    
+
     $conn->close();
 }
 
 function handleDeleteVideo() {
-    parse_str(file_get_contents("php://input"), $input);
-    $video_id = $input['id'] ?? null;
-    
-    if (!$video_id) {
-        http_response_code(400);
+    if (!isset($_POST['id'])) {
         echo json_encode(['success' => false, 'message' => 'Video ID is required']);
         return;
     }
-    
+
     $conn = getConnection();
-    
-    // Check if user owns the video or is admin
-    $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
-    $check_owner->bind_param("i", $video_id);
-    $check_owner->execute();
-    $result = $check_owner->get_result();
-    
-    if ($result->num_rows === 0) {
-        echo json_encode(['success' => false, 'message' => 'Video not found']);
-        $conn->close();
-        return;
-    }
-    
-    $video = $result->fetch_assoc();
-    if ($video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Not authorized to delete this video']);
-        $conn->close();
-        return;
-    }
-    
-    // Delete video
-    $delete_video = $conn->prepare("DELETE FROM videos WHERE id = ?");
-    $delete_video->bind_param("i", $video_id);
-    
-    if ($delete_video->execute()) {
+    $video_id = $_POST['id'];
+    $user_id = $_SESSION['user']['id'];
+
+    try {
+        // Check if user owns the video or is admin
+        $stmt = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
+        $stmt->bind_param("i", $video_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'Video not found']);
+            return;
+        }
+
+        $video = $result->fetch_assoc();
+        if ($video['uploader_id'] !== $user_id && $_SESSION['user']['role'] !== 'admin') {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        // Delete video
+        $stmt = $conn->prepare("DELETE FROM videos WHERE id = ?");
+        $stmt->bind_param("i", $video_id);
+        $stmt->execute();
+
         echo json_encode(['success' => true, 'message' => 'Video deleted successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete video']);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error deleting video: ' . $e->getMessage()]);
     }
-    
+
     $conn->close();
+}
+
+function handleYouTubeSync() {
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!isset($input['videos']) || !is_array($input['videos'])) {
+        echo json_encode(['success' => false, 'message' => 'Videos data is required']);
+        return;
+    }
+
+    $conn = getConnection();
+    $user_id = $_SESSION['user']['id'];
+    $videos = $input['videos'];
+    $synced_count = 0;
+    $errors = [];
+
+    try {
+        foreach ($videos as $video) {
+            // Check if video already exists
+            $check_stmt = $conn->prepare("SELECT id FROM videos WHERE youtube_id = ?");
+            $check_stmt->bind_param("s", $video['youtube_id']);
+            $check_stmt->execute();
+            $existing = $check_stmt->get_result();
+
+            if ($existing->num_rows > 0) {
+                // Update existing video
+                $update_stmt = $conn->prepare("
+                    UPDATE videos SET 
+                    title = ?, 
+                    description = ?, 
+                    youtube_thumbnail = ?, 
+                    youtube_channel_id = ?, 
+                    youtube_channel_title = ?,
+                    is_youtube_synced = TRUE
+                    WHERE youtube_id = ?
+                ");
+                $update_stmt->bind_param("ssssss", 
+                    $video['title'], 
+                    $video['description'], 
+                    $video['youtube_thumbnail'],
+                    $video['youtube_channel_id'],
+                    $video['youtube_channel_title'],
+                    $video['youtube_id']
+                );
+                $update_stmt->execute();
+            } else {
+                // Insert new video
+                $insert_stmt = $conn->prepare("
+                    INSERT INTO videos (
+                        title, description, uploader_id, youtube_id, 
+                        youtube_thumbnail, youtube_channel_id, youtube_channel_title,
+                        is_youtube_synced, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE, ?)
+                ");
+                $created_at = date('Y-m-d H:i:s', strtotime($video['created_at']));
+                $insert_stmt->bind_param("ssssssss", 
+                    $video['title'], 
+                    $video['description'], 
+                    $user_id,
+                    $video['youtube_id'],
+                    $video['youtube_thumbnail'],
+                    $video['youtube_channel_id'],
+                    $video['youtube_channel_title'],
+                    $created_at
+                );
+                $insert_stmt->execute();
+            }
+            $synced_count++;
+        }
+
+        echo json_encode([
+            'success' => true, 
+            'message' => "Successfully synced {$synced_count} videos from YouTube",
+            'synced_count' => $synced_count
+        ]);
+
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Error syncing videos: ' . $e->getMessage()
+        ]);
+    }
+
+    $conn->close();
+}
+
+$action = $_GET['action'] ?? ($_POST['action'] ?? 'get');
+
+switch ($action) {
+    case 'get':
+        handleGetVideos();
+        break;
+    case 'create':
+        handleUploadVideo();
+        break;
+    case 'upload':
+        handleUploadVideo();
+        break;
+    case 'sync_youtube_videos':
+        syncYouTubeVideos();
+        break;
+    default:
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid action']);
+}
+
+function uploadVideo() {
+    echo json_encode(['success' => false, 'message' => 'Upload feature not implemented']);
+}
+
+function syncYouTubeVideos() {
+    if (!isset($_SESSION['user'])) {
+        echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+        return;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!isset($input['videos']) || !is_array($input['videos'])) {
+        echo json_encode(['success' => false, 'message' => 'No videos provided']);
+        return;
+    }
+
+    $videos = $input['videos'];
+    $user_id = $_SESSION['user']['id'];
+    $conn = getConnection();
+    $synced_count = 0;
+    $errors = [];
+
+    foreach ($videos as $video) {
+        try {
+            // Check if video already exists
+            $check_stmt = $conn->prepare("SELECT id FROM videos WHERE youtube_id = ?");
+            $check_stmt->bind_param("s", $video['youtube_id']);
+            $check_stmt->execute();
+            $result = $check_stmt->get_result();
+
+            if ($result->num_rows === 0) {
+                // Insert new video with enhanced data
+                $insert_stmt = $conn->prepare("
+                    INSERT INTO videos (
+                        title, description, uploader_id, youtube_id, youtube_thumbnail, 
+                        youtube_channel_id, youtube_channel_title, youtube_views, 
+                        youtube_likes, youtube_comments, is_youtube_synced, created_at,
+                        category, price
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 'youtube', 0)
+                ");
+
+                $created_at = date('Y-m-d H:i:s', strtotime($video['published_at']));
+                $youtube_views = isset($video['view_count']) ? intval($video['view_count']) : 0;
+                $youtube_likes = isset($video['like_count']) ? intval($video['like_count']) : 0;
+                $youtube_comments = isset($video['comment_count']) ? intval($video['comment_count']) : 0;
+
+                $insert_stmt->bind_param("sssssssiiis", 
+                    $video['title'], 
+                    $video['description'], 
+                    $user_id, 
+                    $video['youtube_id'],
+                    $video['thumbnail'],
+                    $video['channel_id'],
+                    $video['channel_title'],
+                    $youtube_views,
+                    $youtube_likes,
+                    $youtube_comments,
+                    $created_at
+                );
+
+                if ($insert_stmt->execute()) {
+                    $synced_count++;
+                } else {
+                    $errors[] = "Failed to insert: " . $video['title'];
+                }
+            } else {
+                // Update existing video with enhanced data
+                $update_stmt = $conn->prepare("
+                    UPDATE videos 
+                    SET title = ?, description = ?, youtube_thumbnail = ?, 
+                        youtube_channel_id = ?, youtube_channel_title = ?, 
+                        youtube_views = ?, youtube_likes = ?, youtube_comments = ?,
+                        is_youtube_synced = 1
+                    WHERE youtube_id = ?
+                ");
+
+                $youtube_views = isset($video['view_count']) ? intval($video['view_count']) : 0;
+                $youtube_likes = isset($video['like_count']) ? intval($video['like_count']) : 0;
+                $youtube_comments = isset($video['comment_count']) ? intval($video['comment_count']) : 0;
+
+                $update_stmt->bind_param("sssssiiis", 
+                    $video['title'], 
+                    $video['description'], 
+                    $video['thumbnail'],
+                    $video['channel_id'],
+                    $video['channel_title'],
+                    $youtube_views,
+                    $youtube_likes,
+                    $youtube_comments,
+                    $video['youtube_id']
+                );
+
+                $update_stmt->execute();
+            }
+        } catch (Exception $e) {
+            $errors[] = "Error processing " . $video['title'] . ": " . $e->getMessage();
+        }
+    }
+
+    $conn->close();
+
+    $message = "Synced {$synced_count} videos successfully";
+    if (!empty($errors)) {
+        $message .= ". Some errors occurred.";
+    }
+
+    echo json_encode([
+        'success' => true,
+        'synced_count' => $synced_count,
+        'total_videos' => count($videos),
+        'message' => $message,
+        'errors' => $errors
+    ]);
 }
 ?>
