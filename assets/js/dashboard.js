@@ -4,6 +4,59 @@ let allVideos = [];
 let allUsers = [];
 let purchaseVideoId = null;
 
+// Utility functions
+function showLoading(show = true) {
+    const spinner = document.getElementById("loadingSpinner");
+    if (spinner) {
+        if (show) {
+            spinner.classList.remove("d-none");
+            spinner.style.display = "block";
+        } else {
+            spinner.classList.add("d-none");
+            spinner.style.display = "none";
+        }
+    } else {
+        // If no spinner element found, create a simple loading indicator
+        if (show) {
+            if (!document.getElementById("tempLoadingIndicator")) {
+                const loadingDiv = document.createElement("div");
+                loadingDiv.id = "tempLoadingIndicator";
+                loadingDiv.innerHTML = '<div class="d-flex justify-content-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                loadingDiv.style.position = "fixed";
+                loadingDiv.style.top = "50%";
+                loadingDiv.style.left = "50%";
+                loadingDiv.style.transform = "translate(-50%, -50%)";
+                loadingDiv.style.zIndex = "9999";
+                loadingDiv.style.backgroundColor = "rgba(255,255,255,0.9)";
+                loadingDiv.style.padding = "20px";
+                loadingDiv.style.borderRadius = "5px";
+                document.body.appendChild(loadingDiv);
+            }
+        } else {
+            const tempIndicator = document.getElementById("tempLoadingIndicator");
+            if (tempIndicator) {
+                tempIndicator.remove();
+            }
+        }
+    }
+}
+
+function showNotification(message, type = "info") {
+    const toast = document.getElementById("notificationToast");
+    const toastMessage = document.getElementById("toastMessage");
+
+    if (toast && toastMessage) {
+        toastMessage.textContent = message;
+        toast.className = `toast bg-${type === "error" ? "danger" : type === "success" ? "success" : "info"} text-white`;
+
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+    } else {
+        // Fallback to alert if toast elements not found
+        alert(message);
+    }
+}
+
 // Initialize dashboard
 document.addEventListener("DOMContentLoaded", function () {
     // Prevent any unwanted navigation
@@ -345,18 +398,18 @@ function renderVideos(videos) {
 
     // Use DocumentFragment for efficient DOM manipulation
     const fragment = document.createDocumentFragment();
-    
+
     // Process videos in chunks to prevent blocking
     const chunkSize = 20;
     const renderChunks = (startIndex = 0) => {
         const endIndex = Math.min(startIndex + chunkSize, videos.length);
-        
+
         for (let i = startIndex; i < endIndex; i++) {
             const video = videos[i];
             const videoElement = createVideoElement(video);
             fragment.appendChild(videoElement);
         }
-        
+
         if (endIndex < videos.length) {
             // Process next chunk asynchronously
             requestAnimationFrame(() => renderChunks(endIndex));
@@ -366,20 +419,20 @@ function renderVideos(videos) {
             container.appendChild(fragment);
         }
     };
-    
+
     renderChunks();
 }
 
 function createVideoElement(video) {
     const col = document.createElement('div');
     col.className = 'col-md-6 col-lg-4 mb-4';
-    
+
     const badgeHTML = video.price === 0
         ? '<span class="position-absolute top-0 end-0 badge bg-success m-2">FREE</span>'
         : video.purchased
             ? '<span class="position-absolute top-0 end-0 badge bg-info m-2">PURCHASED</span>'
             : `<span class="position-absolute top-0 end-0 badge bg-warning m-2">$${video.price}</span>`;
-    
+
     col.innerHTML = `
         <div class="card video-card h-100">
             <div class="video-thumbnail position-relative bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
@@ -397,7 +450,7 @@ function createVideoElement(video) {
             </div>
         </div>
     `;
-    
+
     return col;
 }
 
@@ -483,10 +536,10 @@ const debouncedFilterVideos = debounce(async function(filter) {
     if (this.currentFilter === filter && this.isFiltering) {
         return;
     }
-    
+
     this.currentFilter = filter;
     this.isFiltering = true;
-    
+
     showLoading(true);
 
     try {
@@ -588,17 +641,17 @@ function animateCounter(elementId, targetValue) {
     const duration = 1500; // Animation duration in ms
     const startTime = performance.now();
     const startValue = 0;
-    
+
     function updateCounter(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
+
         // Easing function for smooth animation
         const easeOutQuart = 1 - Math.pow(1 - progress, 4);
         const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOutQuart);
-        
+
         element.textContent = currentValue.toLocaleString();
-        
+
         if (progress < 1) {
             requestAnimationFrame(updateCounter);
         } else {
@@ -606,7 +659,7 @@ function animateCounter(elementId, targetValue) {
             element.textContent = targetValue.toLocaleString();
         }
     }
-    
+
     requestAnimationFrame(updateCounter);
 }
 
@@ -657,68 +710,29 @@ const uploadForm = document.getElementById("youtubeUploadForm");
 const videosDiv = document.getElementById("youtubeVideos");
 const statsDiv = document.getElementById("youtubeStats");
 
-if (connected && channelInfo) {
-    statusDiv.innerHTML = `
-            <div class="alert alert-success">
-                <i class="fab fa-youtube me-2"></i>
-                Connected to YouTube channel: <strong>${channelInfo.channel_title}</strong>
-            </div>
-        `;
-
-    controlsDiv.innerHTML = `
-            <button class="btn btn-outline-danger btn-sm" onclick="disconnectYouTube()">
-                <i class="fas fa-unlink me-1"></i>Disconnect
-            </button>
-        `;
-
-    channelInfoDiv.style.display = "block";
-    uploadForm.style.display = "block";
-    videosDiv.style.display = "block";
-    statsDiv.style.display = "block";
-
-    channelInfoDiv.innerHTML = `
-            <div class="card">
-                <div class="card-body">
-                    <h5><i class="fab fa-youtube text-danger me-2"></i>${channelInfo.channel_title}</h5>
-                    <p class="text-muted">Channel ID: ${channelInfo.channel_id}</p>
-                </div>
-            </div>
-        `;
-} else {
-    statusDiv.innerHTML = `
-            <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                YouTube channel not connected<br>
-                <small>Please add YouTube tokens to the database youtube_tokens table</small>
-            </div>
-        `;
-
-    controlsDiv.innerHTML = `
-            <button class="btn btn-info" onclick="performAutoSync()">
-                <i class="fas fa-sync me-1"></i>Check Connection
-            </button>
-        `;
-
-    channelInfoDiv.style.display = "none";
-    uploadForm.style.display = "none";
-    videosDiv.style.display = "none";
-    statsDiv.style.display = "none";
-}
+// Initialize YouTube status check on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkYouTubeStatus();
+});
 
 async function connectYouTube() {
-    try {
-        const response = await fetch("api/youtube_api.php?action=connect");
-        const data = await response.json();
+    window.location.href = 'api/youtube_oauth.php';
+}
 
-        if (data.success) {
-            window.location.href = data.auth_url;
-        } else {
-            showToast("Failed to initiate YouTube connection", "error");
-        }
-    } catch (error) {
-        console.error("Failed to connect YouTube:", error);
-        showToast("Failed to connect YouTube", "error");
-    }
+function debugYouTubeConnection() {
+    fetch('api/debug_youtube_connection.php', {
+        method: 'GET',
+        credentials: 'same-origin'
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log('YouTube Debug Info:', data);
+            alert('Debug info logged to console. Check browser dev tools.');
+        })
+        .catch(error => {
+            console.error('Debug error:', error);
+            alert('Debug failed: ' + error.message);
+        });
 }
 
 async function loadYouTubeData() {
@@ -895,7 +909,7 @@ function renderUsers(users) {
             <td>${user.joined}</td>
             <td>
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser('${user.id}')">
-                    <i class="fas fa-edit"></i>
+                    <i class="fas fa-editi"></i>
                 </button>
                 ${
                     user.role !== "admin"
@@ -1271,11 +1285,11 @@ function updateUploadProgress(loadingOverlay, percentage, statusText) {
     const progressBar = loadingOverlay.querySelector('.progress-bar');
     const statusElement = loadingOverlay.querySelector('.upload-status');
     const percentageElement = loadingOverlay.querySelector('.upload-percentage');
-    
+
     progressBar.style.width = percentage + '%';
     statusElement.textContent = statusText;
     percentageElement.textContent = percentage + '%';
-    
+
     // Change color based on completion
     if (percentage === 100) {
         progressBar.classList.remove('bg-primary');
@@ -1291,26 +1305,26 @@ function simulateDelay(ms) {
 
 async function uploadWithRetry(url, options, maxRetries = 3, delay = 1000) {
     let lastError;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const response = await fetch(url, options);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             return response;
         } catch (error) {
             lastError = error;
             console.warn(`Upload attempt ${attempt} failed:`, error.message);
-            
+
             if (attempt < maxRetries) {
                 await simulateDelay(delay * attempt); // Exponential backoff
             }
         }
     }
-    
+
     throw new Error(`Upload failed after ${maxRetries} attempts: ${lastError.message}`);
 }
 
@@ -1450,11 +1464,11 @@ async function confirmPurchase() {
 function updateVideoCardAfterPurchase(videoId) {
     // More efficient: use data attributes instead of parsing onclick
     const purchaseButtons = document.querySelectorAll(`[data-video-id="${videoId}"][data-action="purchase"]`);
-    
+
     purchaseButtons.forEach(button => {
         const card = button.closest('.video-card');
         if (!card) return;
-        
+
         // Update button
         button.className = 'btn btn-success w-100';
         button.innerHTML = '<i class="fas fa-play me-2"></i>Watch Now';
@@ -1464,7 +1478,7 @@ function updateVideoCardAfterPurchase(videoId) {
         // Update badge efficiently
         const thumbnail = card.querySelector('.video-thumbnail');
         const existingBadge = thumbnail?.querySelector('.badge');
-        
+
         if (thumbnail && !existingBadge) {
             const badge = document.createElement('span');
             badge.className = 'position-absolute top-0 end-0 badge bg-info m-2';
@@ -1475,7 +1489,7 @@ function updateVideoCardAfterPurchase(videoId) {
             existingBadge.textContent = 'PURCHASED';
         }
     });
-    
+
     // Update the video in allVideos array to prevent re-render issues
     const videoIndex = allVideos.findIndex(v => v.id === videoId);
     if (videoIndex !== -1) {
@@ -1539,39 +1553,32 @@ async function logout() {
 window.logout = logout;
 window.showPanel = showPanel;
 
-// Missing YouTube functions
-async function performAutoSync() {
-    showSpinner();
-
+async function checkYouTubeStatus() {
     try {
-        // First check YouTube status
-        const statusResponse = await fetch('api/youtube_sync.php?action=check_status');
-        const statusData = await statusResponse.json();
+        const response = await fetch('api/youtube_sync.php?action=status');
+        const data = await response.json();
 
-        if (statusData.success) {
-            updateYouTubeStatus(statusData.connected, statusData.channel_info);
+        const statusElement = document.getElementById('youtubeStatus');
+        const connectBtn = document.getElementById('connectYouTubeBtn');
+        const syncBtn = document.getElementById('syncChannelBtn');
 
-            if (statusData.connected) {
-                // Perform auto sync if connected
-                const syncResponse = await fetch('api/youtube_sync.php?action=auto_sync');
-                const syncData = await syncResponse.json();
-
-                if (syncData.success) {
-                    showToast(syncData.message, 'success');
-                    await loadYouTubeData();
-                } else {
-                    showToast(syncData.message, 'error');
-                }
-            } else {
-                showToast('YouTube not connected. Please add tokens to youtube_tokens table.', 'warning');
-            }
+        if (data.connected && data.channel_info) {
+            statusElement.innerHTML = `
+                <span class="text-success">✅ Connected to: ${data.channel_info.title || 'Unknown Channel'}</span>
+            `;
+            if (connectBtn) connectBtn.style.display = 'none';
+            if (syncBtn) syncBtn.style.display = 'inline-block';
+        } else {
+            statusElement.innerHTML = '<span class="text-warning">❌ Not connected to YouTube</span>';
+            if (connectBtn) connectBtn.style.display = 'inline-block';
+            if (syncBtn) syncBtn.style.display = 'none';
         }
     } catch (error) {
-        console.error('Auto sync failed:', error);
-        showToast('Failed to sync YouTube videos', 'error');
-        updateYouTubeStatus(false, null);
-    } finally {
-        hideSpinner();
+        console.error('YouTube status error:', error);
+        const statusElement = document.getElementById('youtubeStatus');
+        if (statusElement) {
+            statusElement.innerHTML = '<span class="text-danger">❌ Error checking YouTube status</span>';
+        }
     }
 }
 
@@ -1589,7 +1596,7 @@ function showToast(message, type) {
 
 async function loadYouTubePanel() {
     try {
-        const response = await fetch("api/youtube_api.php?action=status");
+        const response = await fetch("api/youtube_sync.php?action=check_status");
         const data = await response.json();
 
         if (data.success) {
@@ -1606,14 +1613,65 @@ async function loadYouTubePanel() {
     }
 }
 
+async function syncChannelById() {
+    const channelIdInput = document.getElementById('channelIdInput');
+    const channelId = channelIdInput ? channelIdInput.value.trim() : '';
+
+    if (!channelId) {
+        showNotification('Please enter a channel ID', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const response = await fetch(`api/youtube_sync.php?action=sync_channel&channel_id=${encodeURIComponent(channelId)}`);
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification(data.message, 'success');
+            channelIdInput.value = '';
+            await loadVideos(); // Refresh videos list
+        } else {
+            showNotification(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to sync channel:', error);
+        showNotification('Failed to sync channel', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function performChannelSearch() {
+    const searchInput = document.getElementById('channelSearchInput');
+    const query = searchInput ? searchInput.value.trim() : '';
+
+    if (!query) {
+        showNotification('Please enter a search term', 'error');
+        return;
+    }
+
+    showNotification('Channel search functionality coming soon', 'info');
+}
+
+async function disconnectYouTube() {
+    if (!confirm('Are you sure you want to disconnect your YouTube account?')) {
+        return;
+    }
+
+    showNotification('Disconnect functionality coming soon', 'info');
+}
+
 function updateYouTubeStatus(connected, channelInfo) {
     const statusDiv = document.getElementById("youtubeStatus");
     const controlsDiv = document.getElementById("youtubeControls");
-
     const channelInfoDiv = document.getElementById("youtubeChannelInfo");
     const uploadForm = document.getElementById("youtubeUploadForm");
     const videosDiv = document.getElementById("youtubeVideos");
     const statsDiv = document.getElementById("youtubeStats");
+
+    if (!statusDiv || !controlsDiv) return;
 
     if (connected && channelInfo) {
         statusDiv.innerHTML = `
@@ -1629,19 +1687,42 @@ function updateYouTubeStatus(connected, channelInfo) {
             </button>
         `;
 
-        channelInfoDiv.style.display = "block";
-        uploadForm.style.display = "block";
-        videosDiv.style.display = "block";
-        statsDiv.style.display = "block";
+        if (channelInfoDiv) channelInfoDiv.style.display = "block";
+        if (uploadForm) uploadForm.style.display = "block";
+        if (videosDiv) videosDiv.style.display = "block";
+        if (statsDiv) statsDiv.style.display = "block";
 
-        channelInfoDiv.innerHTML = `
-            <div class="card">
-                <div class="card-body">
-                    <h5><i class="fab fa-youtube text-danger me-2"></i>${channelInfo.channel_title}</h5>
-                    <p class="text-muted">Channel ID: ${channelInfo.channel_id}</p>
+        if (channelInfoDiv) {
+            channelInfoDiv.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="fab fa-youtube text-danger me-2"></i>${channelInfo.channel_title}</h5>
+                        <p class="text-muted">Channel ID: ${channelInfo.channel_id}</p>
+                    </div>
                 </div>
-            </div>
-        `;
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-search me-2"></i>Sync Other Channels</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="channelSearchInput" placeholder="Search for YouTube channels...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="performChannelSearch()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="channelIdInput" placeholder="Or enter Channel ID directly...">
+                            <button class="btn btn-primary" type="button" onclick="syncChannelById()">
+                                <i class="fas fa-sync me-1"></i>Sync Channel
+                            </button>
+                        </div>
+                        <div id="channelSearchResults"></div>
+                    </div>
+                </div>
+            `;
+        }
     } else {
         statusDiv.innerHTML = `
             <div class="alert alert-warning">
@@ -1657,94 +1738,55 @@ function updateYouTubeStatus(connected, channelInfo) {
             </button>
         `;
 
-        channelInfoDiv.style.display = "none";
-        uploadForm.style.display = "none";
-        videosDiv.style.display = "none";
-        statsDiv.style.display = "none";
+        if (channelInfoDiv) channelInfoDiv.style.display = "none";
+        if (uploadForm) uploadForm.style.display = "none";
+        if (videosDiv) videosDiv.style.display = "none";
+        if (statsDiv) statsDiv.style.display = "none";
     }
 }
 
-function showLoading(show) {
-    const spinner = document.getElementById("loadingSpinner");
-    if (spinner) {
-        spinner.style.display = show ? "block" : "none";
+function syncMyChannel() {
+    if (!confirm('Are you sure you want to sync your YouTube channel? This will fetch all your videos.')) {
+        return;
     }
-}
 
-function showNotification(message, type = "info") {
-    const toast = document.getElementById("notificationToast");
-    const toastMessage = document.getElementById("toastMessage");
+    showLoading(true);
 
-    toastMessage.textContent = message;
-    toast.className = `toast bg-${type === "error" ? "danger" : type === "success" ? "success" : "info"} text-white`;
-
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-}
-
-// Placeholder functions for admin actions
-function editUser(userId) {
-    showNotification("Edit user functionality coming soon", "info");
-}
-
-async function deleteUser(userId) {
-    if (confirm("Are you sure you want to delete this user?")) {
-        try {
-            const response = await fetch("api/admin.php?action=delete_user", {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: `user_id=${userId}`,
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                showNotification("User deleted successfully", "success");
-                loadUsers();
-            } else {
-                showNotification("Delete failed: " + data.message, "error");
-            }
-        } catch (error) {
-            console.error("Delete failed:", error);
-            showNotification("Delete failed", "error");
+    fetch('api/youtube_sync.php?action=sync_my_channel', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
         }
-    }
-}
-
-function editVideo(videoId) {
-    showNotification("Edit video functionality coming soon", "info");
-}
-
-async function deleteVideo(videoId) {
-    if (confirm("Are you sure you want to delete this video?")) {
-        try {
-            const response = await fetch("api/videos.php", {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: `id=${videoId}`,
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                showNotification("Video deleted successfully", "success");
-                loadMyVideos();
-                loadVideos();
-                loadOverviewStats();
-            } else {
-                showNotification("Delete failed: " + data.message, "error");
+    })
+        .then(response => {
+            console.log('Sync response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        } catch (error) {
-            console.error("Delete failed:", error);
-            showNotification("Delete failed", "error");
-        }
-    }
-}
-
-function showAddUserModal() {
-    showNotification("Add user modal coming soon", "info");
+            return response.json();
+        })
+        .then(data => {
+            showLoading(false);
+            console.log('Sync response data:', data);
+            if (data.success) {
+                showAlert('success', data.message);
+                // Refresh video list
+                if (currentVideoFilter === 'my_videos') {
+                    loadMyVideos();
+                } else {
+                    loadVideos();
+                }
+            } else {
+                showAlert('danger', data.message || 'Sync failed');
+                if (data.debug) {
+                    console.error('Sync debug info:', data.debug);
+                }
+            }
+        })
+        .catch(error => {
+            showLoading(false);
+            console.error('Sync error:', error);
+            showAlert('danger', 'Failed to sync channel: ' + error.message);
+        });
 }

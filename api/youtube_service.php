@@ -35,7 +35,7 @@ class YouTubeService {
     // YouTube API configuration
     const CLIENT_ID = '824425517340-c4g9ilvg3i7cddl75hvq1a8gromuc95n.apps.googleusercontent.com';
     const CLIENT_SECRET = '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';
-    const REDIRECT_URI = 'https://2733f99a-66a9-4862-80b8-e425887aaf93-00-2d3swh2tz1w71.pike.replit.dev/api/youtube_oauth.php';
+    const REDIRECT_URI = 'http://localhost/api/youtube_oauth.php';
     
     public function __construct($user_id = null) {
         $this->user_id = $user_id;

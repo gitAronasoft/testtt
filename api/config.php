@@ -35,11 +35,11 @@ function getConnection() {
     } else {
         // MySQL connection
         $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-        
+
         if ($conn->connect_error) {
             die("MySQL Connection failed: " . $conn->connect_error);
         }
-        
+
         $conn->set_charset("utf8");
         return $conn;
     }
@@ -56,7 +56,7 @@ function initializeDatabase() {
 
 function initializePostgreSQL() {
     $pdo = getConnection();
-    
+
     // Create users table
     $users_table = "
     CREATE TABLE IF NOT EXISTS users (
@@ -67,7 +67,7 @@ function initializePostgreSQL() {
         role VARCHAR(20) CHECK (role IN ('admin', 'editor', 'viewer')) NOT NULL DEFAULT 'viewer',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )";
-    
+
     // Create videos table
     $videos_table = "
     CREATE TABLE IF NOT EXISTS videos (
@@ -79,10 +79,13 @@ function initializePostgreSQL() {
         views INTEGER DEFAULT 0,
         file_path VARCHAR(500),
         category VARCHAR(100),
+        youtube_id VARCHAR(255),
+        youtube_thumbnail VARCHAR(500),
+        is_youtube_synced BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (uploader_id) REFERENCES users(id) ON DELETE CASCADE
     )";
-    
+
     // Create purchases table
     $purchases_table = "
     CREATE TABLE IF NOT EXISTS purchases (
@@ -94,20 +97,20 @@ function initializePostgreSQL() {
         FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
         UNIQUE (user_id, video_id)
     )";
-    
+
     try {
         $pdo->exec($users_table);
         echo "Users table created successfully\n";
-        
+
         $pdo->exec($videos_table);
         echo "Videos table created successfully\n";
-        
+
         $pdo->exec($purchases_table);
         echo "Purchases table created successfully\n";
-        
+
         // Insert default users
         insertDefaultUsers($pdo);
-        
+
     } catch (PDOException $e) {
         echo "Error creating tables: " . $e->getMessage() . "\n";
     }
@@ -115,7 +118,7 @@ function initializePostgreSQL() {
 
 function initializeMySQL() {
     $conn = getConnection();
-    
+
     // Create users table
     $users_table = "
     CREATE TABLE IF NOT EXISTS users (
@@ -126,26 +129,30 @@ function initializeMySQL() {
         role ENUM('admin', 'editor', 'viewer') NOT NULL DEFAULT 'viewer',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )";
-    
+
     // Create videos table
     $videos_table = "
     CREATE TABLE IF NOT EXISTS videos (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT,
-        price DECIMAL(10,2) DEFAULT 0.00,
-        uploader_id VARCHAR(50) NOT NULL,
-        views INT DEFAULT 0,
-        file_path VARCHAR(500),
-        category VARCHAR(100),
-        youtube_id VARCHAR(255),
-        youtube_thumbnail VARCHAR(500),
-        is_youtube_synced BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (uploader_id) REFERENCES users(id) ON DELETE CASCADE,
-        UNIQUE KEY unique_youtube_id (youtube_id)
+            title VARCHAR(255) NOT NULL,
+            description TEXT,
+            price DECIMAL(10,2) DEFAULT 0.00,
+            uploader_id VARCHAR(50) NOT NULL,
+            views INT DEFAULT 0,
+            file_path VARCHAR(500),
+            category VARCHAR(100),
+            youtube_id VARCHAR(50) UNIQUE,
+            youtube_thumbnail VARCHAR(500),
+            youtube_channel_id VARCHAR(50),
+            youtube_channel_title VARCHAR(255),
+            youtube_views INT DEFAULT 0,
+            youtube_likes INT DEFAULT 0,
+            youtube_comments INT DEFAULT 0,
+            is_youtube_synced BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (uploader_id) REFERENCES users(id) ON DELETE CASCADE
     )";
-    
+
     // Create purchases table
     $purchases_table = "
     CREATE TABLE IF NOT EXISTS purchases (
@@ -158,39 +165,36 @@ function initializeMySQL() {
         FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
         UNIQUE KEY unique_purchase (user_id, video_id)
     )";
-    
+
     // Create youtube_tokens table
     $youtube_tokens_table = "
     CREATE TABLE IF NOT EXISTS youtube_tokens (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id VARCHAR(50) NOT NULL,
         access_token TEXT NOT NULL,
-        refresh_token TEXT NOT NULL,
+        refresh_token TEXT,
         expires_at DATETIME NOT NULL,
-        channel_id VARCHAR(255),
-        channel_title VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         UNIQUE KEY unique_user_token (user_id)
     )";
-    
+
     if ($conn->query($users_table) === TRUE) {
         echo "Users table created successfully\n";
     }
-    
+
     if ($conn->query($videos_table) === TRUE) {
         echo "Videos table created successfully\n";
     }
-    
+
     if ($conn->query($purchases_table) === TRUE) {
         echo "Purchases table created successfully\n";
     }
-    
+
     if ($conn->query($youtube_tokens_table) === TRUE) {
         echo "YouTube tokens table created successfully\n";
     }
-    
+
     insertDefaultUsers($conn);
     $conn->close();
 }
@@ -201,13 +205,13 @@ function insertDefaultUsers($connection) {
         ['creator_001', 'Content Creator', 'creator@example.com', 'creator123', 'editor'],
         ['viewer_001', 'Video Viewer', 'viewer@example.com', 'viewer123', 'viewer']
     ];
-    
+
     if (DB_TYPE === 'postgresql') {
         foreach ($users_data as $user) {
             try {
                 $stmt = $connection->prepare("SELECT id FROM users WHERE email = ?");
                 $stmt->execute([$user[2]]);
-                
+
                 if ($stmt->rowCount() == 0) {
                     $stmt = $connection->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
                     $hashed_password = password_hash($user[3], PASSWORD_DEFAULT);
@@ -223,7 +227,7 @@ function insertDefaultUsers($connection) {
             $check->bind_param("s", $user[2]);
             $check->execute();
             $result = $check->get_result();
-            
+
             if ($result->num_rows == 0) {
                 $stmt = $connection->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
                 $hashed_password = password_hash($user[3], PASSWORD_DEFAULT);
@@ -232,14 +236,14 @@ function insertDefaultUsers($connection) {
             }
         }
     }
-    
+
     echo "Default users created\n";
 }
 
 // Database query helper function
 function executeQuery($query, $params = []) {
     $connection = getConnection();
-    
+
     if (DB_TYPE === 'postgresql') {
         try {
             $stmt = $connection->prepare($query);

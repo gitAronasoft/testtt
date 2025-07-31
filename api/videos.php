@@ -98,7 +98,17 @@ function handleGetVideos() {
             'purchased' => (bool)$row['purchased'],
             'file_path' => $row['file_path'],
             'category' => $row['category'],
-            'created_at' => $row['created_at']
+            'created_at' => $row['created_at'],
+            'youtube_id' => $row['youtube_id'],
+            'youtube_thumbnail' => $row['youtube_thumbnail'],
+            'youtube_channel_id' => $row['youtube_channel_id'],
+            'youtube_channel_title' => $row['youtube_channel_title'],
+            'youtube_views' => (int)($row['youtube_views'] ?? 0),
+            'youtube_likes' => (int)($row['youtube_likes'] ?? 0),
+            'youtube_comments' => (int)($row['youtube_comments'] ?? 0),
+            'is_youtube_synced' => (bool)$row['is_youtube_synced'],
+            'video_url' => $row['youtube_id'] ? "https://www.youtube.com/watch?v={$row['youtube_id']}" : null,
+            'embed_html' => $row['youtube_id'] ? "<iframe width='560' height='315' src='https://www.youtube.com/embed/{$row['youtube_id']}' frameborder='0' allowfullscreen></iframe>" : null
         ];
     }
     

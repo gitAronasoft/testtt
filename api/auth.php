@@ -85,26 +85,26 @@ function handleRegister($data) {
     }
 
     $conn = getConnection();
-    
+
     // Check if email already exists
     $check_email = $conn->prepare("SELECT id FROM users WHERE email = ?");
     $check_email->bind_param("s", $email);
     $check_email->execute();
     $result = $check_email->get_result();
-    
+
     if ($result->num_rows > 0) {
         echo json_encode(['success' => false, 'message' => 'Email already exists']);
         $conn->close();
         return;
     }
-    
+
     // Hash password and insert user
     $user_id = uniqid();
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    
+
     $insert_user = $conn->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
     $insert_user->bind_param("sssss", $user_id, $name, $email, $hashed_password, $role);
-    
+
     if ($insert_user->execute()) {
         $_SESSION['user'] = [
             'id' => $user_id,
@@ -122,7 +122,7 @@ function handleRegister($data) {
     } else {
         echo json_encode(['success' => false, 'message' => 'Registration failed']);
     }
-    
+
     $conn->close();
 }
 
@@ -144,16 +144,16 @@ function handleLogin($data) {
     }
 
     $conn = getConnection();
-    
+
     // Get user from database
     $get_user = $conn->prepare("SELECT id, name, email, password, role, created_at FROM users WHERE email = ?");
     $get_user->bind_param("s", $email);
     $get_user->execute();
     $result = $get_user->get_result();
-    
+
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
-        
+
         // Verify password
         if (password_verify($password, $user['password'])) {
             // Login successful
@@ -164,6 +164,9 @@ function handleLogin($data) {
                 'role' => $user['role'],
                 'created_at' => $user['created_at']
             ];
+
+            // Set a cookie for session persistence
+            setcookie('user_id', $user['id'], time() + 86400, '/', '', false, true);
 
             echo json_encode([
                 'success' => true,
@@ -176,7 +179,7 @@ function handleLogin($data) {
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
     }
-    
+
     $conn->close();
 }
 
