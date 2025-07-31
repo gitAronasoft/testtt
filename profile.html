@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - YouTube Video Manager</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <div class="container">
+        <div class="page-header">
+            <h2>My Profile</h2>
+        </div>
+
+        <!-- Dashboard Navigation -->
+            <div class="page-navigation">
+                <a href="dashboard.html" class="btn btn-primary nav-btn">
+                    <span>🏠</span> Back to Dashboard
+                </a>
+            </div>
+
+            <div class="profile-grid">
+            <!-- Profile Information -->
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    <div class="avatar-circle" id="profileAvatar">U</div>
+                    <button class="btn-link" onclick="changeAvatar()">Change Photo</button>
+                </div>
+                
+                <div class="profile-form">
+                    <h3>Personal Information</h3>
+                    
+                    <div class="form-group">
+                        <label for="fullName">Full Name</label>
+                        <input type="text" id="fullName" placeholder="Enter your full name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" placeholder="Enter your email" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="role">Account Role</label>
+                        <input type="text" id="role" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bio">Bio</label>
+                        <textarea id="bio" placeholder="Tell us about yourself" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="website">Website</label>
+                        <input type="url" id="website" placeholder="https://yourwebsite.com">
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="updateProfile()">Save Changes</button>
+                </div>
+            </div>
+
+            <!-- Account Settings -->
+            <div class="settings-card">
+                <h3>Account Settings</h3>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <strong>Email Notifications</strong>
+                        <p>Receive updates about new videos and activities</p>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="emailNotifications" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <strong>Marketing Emails</strong>
+                        <p>Receive promotional content and offers</p>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="marketingEmails">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <strong>Two-Factor Authentication</strong>
+                        <p>Add an extra layer of security to your account</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="setup2FA()">Enable</button>
+                </div>
+                
+                <div class="setting-item viewer-only">
+                    <div class="setting-info">
+                        <strong>Subscription Status</strong>
+                        <p id="subscriptionStatus">Free Plan</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="manageSubscription()">Manage</button>
+                </div>
+                
+                <div class="danger-zone">
+                    <h4>Danger Zone</h4>
+                    <button class="btn btn-danger" onclick="deleteAccount()">Delete Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/header.js"></script>
+    <script src="assets/js/profile.js"></script>
+</body>
+</html>

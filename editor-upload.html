@@ -1,0 +1,421 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Video - YouTube Video Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">📤 Upload Video to YouTube</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <!-- Video File Upload -->
+                            <div class="mb-4">
+                                <label for="videoFile" class="form-label">Select Video File *</label>
+                                <input type="file" class="form-control" id="videoFile" accept="video/*" required>
+                                <div class="form-text">Supported formats: MP4, MOV, AVI, WMV (Max: 2GB)</div>
+                                <div id="fileInfo" class="mt-2"></div>
+                            </div>
+
+                            <!-- Thumbnail Upload -->
+                            <div class="mb-4">
+                                <label for="thumbnailFile" class="form-label">Custom Thumbnail (Optional)</label>
+                                <input type="file" class="form-control" id="thumbnailFile" accept="image/*">
+                                <div class="form-text">Recommended: 1280x720px, JPG/PNG format</div>
+                                <div id="thumbnailPreview" class="mt-2"></div>
+                            </div>
+
+                            <!-- Video Details -->
+                            <div class="mb-3">
+                                <label for="videoTitle" class="form-label">Video Title *</label>
+                                <input type="text" class="form-control" id="videoTitle" maxlength="100" required>
+                                <div class="form-text"><span id="titleCount">0</span>/100 characters</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="videoDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="videoDescription" rows="5" maxlength="5000"></textarea>
+                                <div class="form-text"><span id="descCount">0</span>/5000 characters</div>
+                            </div>
+
+                            <!-- Tags -->
+                            <div class="mb-3">
+                                <label for="videoTags" class="form-label">Tags</label>
+                                <input type="text" class="form-control" id="videoTags" placeholder="Enter tags separated by commas">
+                                <div class="form-text">Example: gaming, tutorial, entertainment</div>
+                            </div>
+
+                            <!-- Category -->
+                            <div class="mb-3">
+                                <label for="videoCategory" class="form-label">Category</label>
+                                <select class="form-select" id="videoCategory">
+                                    <option value="">Select Category</option>
+                                    <option value="1">Film & Animation</option>
+                                    <option value="2">Autos & Vehicles</option>
+                                    <option value="10">Music</option>
+                                    <option value="15">Pets & Animals</option>
+                                    <option value="17">Sports</option>
+                                    <option value="19">Travel & Events</option>
+                                    <option value="20">Gaming</option>
+                                    <option value="22">People & Blogs</option>
+                                    <option value="23">Comedy</option>
+                                    <option value="24">Entertainment</option>
+                                    <option value="25">News & Politics</option>
+                                    <option value="26">Howto & Style</option>
+                                    <option value="27">Education</option>
+                                    <option value="28">Science & Technology</option>
+                                </select>
+                            </div>
+
+                            <!-- Privacy Settings -->
+                            <div class="mb-3">
+                                <label class="form-label">Privacy Settings</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="privacy" id="privacyPublic" value="public" checked>
+                                    <label class="form-check-label" for="privacyPublic">
+                                        🌍 Public - Anyone can view
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="privacy" id="privacyUnlisted" value="unlisted">
+                                    <label class="form-check-label" for="privacyUnlisted">
+                                        🔗 Unlisted - Only people with link can view
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="privacy" id="privacyPrivate" value="private">
+                                    <label class="form-check-label" for="privacyPrivate">
+                                        🔒 Private - Only you can view
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Schedule -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="scheduleUpload">
+                                    <label class="form-check-label" for="scheduleUpload">
+                                        📅 Schedule for later
+                                    </label>
+                                </div>
+                                <div id="scheduleOptions" class="mt-2" style="display: none;">
+                                    <input type="datetime-local" class="form-control" id="scheduleDateTime">
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div id="uploadProgress" class="mb-3" style="display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <small id="progressText">Preparing upload...</small>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="dashboard.html" class="btn btn-secondary">Cancel</a>
+                                <button type="button" class="btn btn-outline-primary" onclick="saveDraft()">Save Draft</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="btn-text">🚀 Upload to YouTube</span>
+                                    <span class="btn-spinner spinner-border spinner-border-sm d-none" role="status"></span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Upload Guidelines -->
+                <div class="card mt-4 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">📋 Upload Guidelines</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li>Ensure your video complies with YouTube's Community Guidelines</li>
+                            <li>Use descriptive titles and detailed descriptions for better discoverability</li>
+                            <li>Custom thumbnails can significantly improve click-through rates</li>
+                            <li>Add relevant tags to help people find your content</li>
+                            <li>Consider your target audience when setting privacy options</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/header.js"></script>
+    <script src="assets/js/visual-enhancements.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is editor
+            const userRole = localStorage.getItem('userRole');
+            if (userRole !== 'editor') {
+                showAlert('Access denied. This page is for editors only.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+                return;
+            }
+
+            setupUploadForm();
+        });
+
+        function setupUploadForm() {
+            const form = document.getElementById('uploadForm');
+            const videoFile = document.getElementById('videoFile');
+            const thumbnailFile = document.getElementById('thumbnailFile');
+            const videoTitle = document.getElementById('videoTitle');
+            const videoDescription = document.getElementById('videoDescription');
+            const scheduleCheckbox = document.getElementById('scheduleUpload');
+
+            // File change handlers
+            videoFile.addEventListener('change', handleVideoFileSelect);
+            thumbnailFile.addEventListener('change', handleThumbnailSelect);
+
+            // Character counters
+            videoTitle.addEventListener('input', updateTitleCount);
+            videoDescription.addEventListener('input', updateDescCount);
+
+            // Schedule toggle
+            scheduleCheckbox.addEventListener('change', toggleScheduleOptions);
+
+            // Form submission
+            form.addEventListener('submit', handleUpload);
+        }
+
+        function handleVideoFileSelect(event) {
+            const file = event.target.files[0];
+            const fileInfo = document.getElementById('fileInfo');
+
+            if (file) {
+                const size = (file.size / (1024 * 1024)).toFixed(2);
+                const type = file.type;
+                
+                fileInfo.innerHTML = `
+                    <div class="alert alert-info mb-0">
+                        <strong>Selected:</strong> ${file.name}<br>
+                        <strong>Size:</strong> ${size} MB<br>
+                        <strong>Type:</strong> ${type}
+                    </div>
+                `;
+
+                // Auto-fill title if empty
+                const titleInput = document.getElementById('videoTitle');
+                if (!titleInput.value) {
+                    const fileName = file.name.replace(/\.[^/.]+$/, "");
+                    titleInput.value = fileName.charAt(0).toUpperCase() + fileName.slice(1);
+                    updateTitleCount();
+                }
+            }
+        }
+
+        function handleThumbnailSelect(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('thumbnailPreview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="${e.target.result}" alt="Thumbnail Preview" 
+                                 style="width: 120px; height: 68px; object-fit: cover; border-radius: 4px;">
+                            <div>
+                                <strong>Thumbnail Preview</strong><br>
+                                <small class="text-muted">${file.name}</small>
+                            </div>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateTitleCount() {
+            const title = document.getElementById('videoTitle');
+            const count = document.getElementById('titleCount');
+            count.textContent = title.value.length;
+        }
+
+        function updateDescCount() {
+            const desc = document.getElementById('videoDescription');
+            const count = document.getElementById('descCount');
+            count.textContent = desc.value.length;
+        }
+
+        function toggleScheduleOptions() {
+            const checkbox = document.getElementById('scheduleUpload');
+            const options = document.getElementById('scheduleOptions');
+            options.style.display = checkbox.checked ? 'block' : 'none';
+        }
+
+        function saveDraft() {
+            const formData = gatherFormData();
+            const drafts = JSON.parse(localStorage.getItem('videoDrafts') || '[]');
+            
+            const draft = {
+                id: Date.now(),
+                title: formData.title,
+                description: formData.description,
+                tags: formData.tags,
+                category: formData.category,
+                privacy: formData.privacy,
+                savedAt: new Date().toISOString()
+            };
+
+            drafts.unshift(draft);
+            localStorage.setItem('videoDrafts', JSON.stringify(drafts.slice(0, 10))); // Keep only 10 drafts
+
+            showAlert('Draft saved successfully!', 'success');
+        }
+
+        function handleUpload(event) {
+            event.preventDefault();
+
+            const formData = gatherFormData();
+            
+            if (!formData.videoFile) {
+                showAlert('Please select a video file', 'error');
+                return;
+            }
+
+            if (!formData.title.trim()) {
+                showAlert('Please enter a video title', 'error');
+                return;
+            }
+
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnSpinner = submitBtn.querySelector('.btn-spinner');
+
+            // Show upload progress
+            showUploadProgress();
+            btnText.classList.add('d-none');
+            btnSpinner.classList.remove('d-none');
+            submitBtn.disabled = true;
+
+            // Simulate upload process
+            simulateUpload(formData).then(result => {
+                if (result.success) {
+                    showAlert('Video uploaded successfully to YouTube!', 'success');
+                    
+                    // Save to local storage for demo
+                    saveUploadedVideo(result.video);
+                    
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 2000);
+                } else {
+                    showAlert('Upload failed: ' + result.message, 'error');
+                }
+            }).finally(() => {
+                hideUploadProgress();
+                btnText.classList.remove('d-none');
+                btnSpinner.classList.add('d-none');
+                submitBtn.disabled = false;
+            });
+        }
+
+        function gatherFormData() {
+            return {
+                videoFile: document.getElementById('videoFile').files[0],
+                thumbnailFile: document.getElementById('thumbnailFile').files[0],
+                title: document.getElementById('videoTitle').value.trim(),
+                description: document.getElementById('videoDescription').value.trim(),
+                tags: document.getElementById('videoTags').value.trim(),
+                category: document.getElementById('videoCategory').value,
+                privacy: document.querySelector('input[name="privacy"]:checked').value,
+                scheduled: document.getElementById('scheduleUpload').checked,
+                scheduleDateTime: document.getElementById('scheduleDateTime').value
+            };
+        }
+
+        function showUploadProgress() {
+            const progressContainer = document.getElementById('uploadProgress');
+            const progressBar = progressContainer.querySelector('.progress-bar');
+            const progressText = document.getElementById('progressText');
+
+            progressContainer.style.display = 'block';
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 95) progress = 95;
+
+                progressBar.style.width = progress + '%';
+                
+                if (progress < 30) {
+                    progressText.textContent = 'Preparing upload...';
+                } else if (progress < 60) {
+                    progressText.textContent = 'Uploading video...';
+                } else if (progress < 90) {
+                    progressText.textContent = 'Processing video...';
+                } else {
+                    progressText.textContent = 'Finalizing upload...';
+                }
+
+                if (progress >= 95) {
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    progressText.textContent = 'Upload complete!';
+                }
+            }, 500);
+
+            return interval;
+        }
+
+        function hideUploadProgress() {
+            const progressContainer = document.getElementById('uploadProgress');
+            progressContainer.style.display = 'none';
+        }
+
+        function simulateUpload(formData) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // Simulate successful upload
+                    const videoId = 'YT_' + Date.now();
+                    resolve({
+                        success: true,
+                        video: {
+                            id: videoId,
+                            title: formData.title,
+                            description: formData.description,
+                            tags: formData.tags.split(',').map(tag => tag.trim()),
+                            category: formData.category,
+                            privacy: formData.privacy,
+                            uploadedBy: localStorage.getItem('userName'),
+                            uploadedAt: new Date().toISOString(),
+                            status: formData.scheduled ? 'scheduled' : 'published',
+                            views: 0,
+                            likes: 0,
+                            duration: '10:30' // Mock duration
+                        }
+                    });
+                }, 3000);
+            });
+        }
+
+        function saveUploadedVideo(video) {
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            uploadedVideos.unshift(video);
+            localStorage.setItem('uploadedVideos', JSON.stringify(uploadedVideos));
+        }
+    </script>
+</body>
+</html>

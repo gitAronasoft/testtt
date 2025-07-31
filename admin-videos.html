@@ -1,0 +1,656 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Management - YouTube Video Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>🎥 Video Management</h2>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" onclick="refreshVideos()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <a href="dashboard.html" class="btn btn-secondary">Back to Dashboard</a>
+            </div>
+        </div>
+
+        <!-- Filter and Search -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="searchVideos" placeholder="🔍 Search videos...">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="published">Published</option>
+                            <option value="private">Private</option>
+                            <option value="unlisted">Unlisted</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="revoked">Revoked</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="uploaderFilter">
+                            <option value="">All Uploaders</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="sortFilter">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="most_viewed">Most Viewed</option>
+                            <option value="title">Title A-Z</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">Clear Filters</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="card mb-4" id="bulkActions" style="display: none;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <span><strong id="selectedCount">0</strong> videos selected</span>
+                    <button class="btn btn-sm btn-warning" onclick="bulkChangePrivacy('private')">Make Private</button>
+                    <button class="btn btn-sm btn-success" onclick="bulkChangePrivacy('public')">Make Public</button>
+                    <button class="btn btn-sm btn-danger" onclick="bulkRevoke()">Revoke Access</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">Clear Selection</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Videos Table -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th width="80">Thumbnail</th>
+                                <th>Title</th>
+                                <th width="120">Uploader</th>
+                                <th width="100">Status</th>
+                                <th width="80">Views</th>
+                                <th width="100">Upload Date</th>
+                                <th width="150">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="videosTableBody">
+                            <!-- Videos will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="noVideos" class="text-center py-5" style="display: none;">
+                    <div class="text-muted">
+                        <i class="fas fa-video fa-3x mb-3"></i>
+                        <h5>No videos found</h5>
+                        <p>No videos match your current filters.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Videos pagination" class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Edit Video Modal -->
+    <div class="modal fade" id="editVideoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Video</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editVideoForm">
+                        <input type="hidden" id="editVideoId">
+                        <div class="mb-3">
+                            <label for="editTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="editTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editDescription" rows="4"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPrivacy" class="form-label">Privacy</label>
+                            <select class="form-select" id="editPrivacy">
+                                <option value="public">Public</option>
+                                <option value="unlisted">Unlisted</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" id="editTags" placeholder="tag1, tag2, tag3">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveVideoEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/header.js"></script>
+    <script src="assets/js/visual-enhancements.js"></script>
+    <script>
+        let allVideos = [];
+        let filteredVideos = [];
+        let selectedVideos = new Set();
+        let currentPage = 1;
+        const videosPerPage = 10;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is admin
+            const userRole = localStorage.getItem('userRole');
+            if (userRole !== 'admin') {
+                showAlert('Access denied. This page is for admins only.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+                return;
+            }
+
+            loadVideos();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('searchVideos').addEventListener('input', applyFilters);
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('uploaderFilter').addEventListener('change', applyFilters);
+            document.getElementById('sortFilter').addEventListener('change', applyFilters);
+        }
+
+        function loadVideos() {
+            // Get uploaded videos and mock channel videos
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            const mockChannelVideos = getMockChannelVideos();
+            
+            allVideos = [...uploadedVideos, ...mockChannelVideos];
+            
+            // Populate uploader filter
+            populateUploaderFilter();
+            
+            applyFilters();
+        }
+
+        function getMockChannelVideos() {
+            return [
+                {
+                    id: 'CH_001',
+                    title: 'Welcome to Our Channel',
+                    description: 'Introduction video for our YouTube channel',
+                    uploadedBy: 'Channel Admin',
+                    uploadedAt: '2024-01-15T10:00:00Z',
+                    status: 'published',
+                    privacy: 'public',
+                    views: 15420,
+                    likes: 892,
+                    duration: '5:30',
+                    thumbnail: '🎬'
+                },
+                {
+                    id: 'CH_002',
+                    title: 'Tutorial: Getting Started',
+                    description: 'Complete beginner tutorial for new users',
+                    uploadedBy: 'Editor User',
+                    uploadedAt: '2024-01-20T14:30:00Z',
+                    status: 'published',
+                    privacy: 'public',
+                    views: 8750,
+                    likes: 456,
+                    duration: '12:45',
+                    thumbnail: '📚'
+                },
+                {
+                    id: 'CH_003',
+                    title: 'Behind the Scenes',
+                    description: 'Exclusive behind the scenes content',
+                    uploadedBy: 'Editor User',
+                    uploadedAt: '2024-02-01T09:15:00Z',
+                    status: 'private',
+                    privacy: 'private',
+                    views: 245,
+                    likes: 23,
+                    duration: '8:20',
+                    thumbnail: '🎭'
+                }
+            ];
+        }
+
+        function populateUploaderFilter() {
+            const uploaders = [...new Set(allVideos.map(v => v.uploadedBy))];
+            const filter = document.getElementById('uploaderFilter');
+            
+            filter.innerHTML = '<option value="">All Uploaders</option>';
+            uploaders.forEach(uploader => {
+                filter.innerHTML += `<option value="${uploader}">${uploader}</option>`;
+            });
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchVideos').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const uploaderFilter = document.getElementById('uploaderFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+
+            filteredVideos = allVideos.filter(video => {
+                const matchesSearch = !searchTerm || 
+                    video.title.toLowerCase().includes(searchTerm) ||
+                    video.description.toLowerCase().includes(searchTerm);
+                
+                const matchesStatus = !statusFilter || video.status === statusFilter;
+                const matchesUploader = !uploaderFilter || video.uploadedBy === uploaderFilter;
+
+                return matchesSearch && matchesStatus && matchesUploader;
+            });
+
+            // Sort videos
+            sortVideos(sortFilter);
+            
+            currentPage = 1;
+            renderVideos();
+            renderPagination();
+        }
+
+        function sortVideos(sortBy) {
+            switch(sortBy) {
+                case 'newest':
+                    filteredVideos.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+                    break;
+                case 'oldest':
+                    filteredVideos.sort((a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt));
+                    break;
+                case 'most_viewed':
+                    filteredVideos.sort((a, b) => b.views - a.views);
+                    break;
+                case 'title':
+                    filteredVideos.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+            }
+        }
+
+        function renderVideos() {
+            const tbody = document.getElementById('videosTableBody');
+            const noVideos = document.getElementById('noVideos');
+            
+            if (filteredVideos.length === 0) {
+                tbody.innerHTML = '';
+                noVideos.style.display = 'block';
+                return;
+            }
+
+            noVideos.style.display = 'none';
+            
+            const startIndex = (currentPage - 1) * videosPerPage;
+            const endIndex = startIndex + videosPerPage;
+            const pageVideos = filteredVideos.slice(startIndex, endIndex);
+
+            tbody.innerHTML = pageVideos.map(video => `
+                <tr>
+                    <td>
+                        <input type="checkbox" class="video-checkbox" value="${video.id}" 
+                               onchange="updateSelection()">
+                    </td>
+                    <td>
+                        <div class="video-thumbnail-small">
+                            ${video.thumbnail || '🎥'}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="video-title-cell">
+                            <strong>${video.title}</strong>
+                            <br>
+                            <small class="text-muted">${truncateText(video.description, 50)}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">${video.uploadedBy}</span>
+                    </td>
+                    <td>
+                        ${getStatusBadge(video.status)}
+                    </td>
+                    <td>
+                        ${formatNumber(video.views)}
+                    </td>
+                    <td>
+                        ${formatDate(video.uploadedAt)}
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editVideo('${video.id}')" 
+                                    title="Edit">✏️</button>
+                            <button class="btn btn-outline-warning" onclick="changeVideoPrivacy('${video.id}')" 
+                                    title="Change Privacy">🔒</button>
+                            <button class="btn btn-outline-danger" onclick="revokeVideo('${video.id}')" 
+                                    title="Revoke Access">🚫</button>
+                            <button class="btn btn-outline-info" onclick="viewVideoStats('${video.id}')" 
+                                    title="View Stats">📊</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'published': '<span class="badge bg-success">Published</span>',
+                'private': '<span class="badge bg-warning">Private</span>',
+                'unlisted': '<span class="badge bg-info">Unlisted</span>',
+                'scheduled': '<span class="badge bg-primary">Scheduled</span>',
+                'revoked': '<span class="badge bg-danger">Revoked</span>'
+            };
+            return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString();
+        }
+
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(filteredVideos.length / videosPerPage);
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+            </li>`;
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+            }
+
+            // Next button
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+            </li>`;
+
+            pagination.innerHTML = html;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredVideos.length / videosPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderVideos();
+                renderPagination();
+            }
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.video-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+                if (selectAll.checked) {
+                    selectedVideos.add(checkbox.value);
+                } else {
+                    selectedVideos.delete(checkbox.value);
+                }
+            });
+            
+            updateSelectionUI();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.video-checkbox');
+            selectedVideos.clear();
+            
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedVideos.add(checkbox.value);
+                }
+            });
+            
+            document.getElementById('selectAll').checked = 
+                checkboxes.length > 0 && selectedVideos.size === checkboxes.length;
+            
+            updateSelectionUI();
+        }
+
+        function updateSelectionUI() {
+            const bulkActions = document.getElementById('bulkActions');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            selectedCount.textContent = selectedVideos.size;
+            bulkActions.style.display = selectedVideos.size > 0 ? 'block' : 'none';
+        }
+
+        function clearSelection() {
+            selectedVideos.clear();
+            document.querySelectorAll('.video-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateSelectionUI();
+        }
+
+        function editVideo(videoId) {
+            const video = allVideos.find(v => v.id === videoId);
+            if (!video) return;
+
+            document.getElementById('editVideoId').value = video.id;
+            document.getElementById('editTitle').value = video.title;
+            document.getElementById('editDescription').value = video.description || '';
+            document.getElementById('editPrivacy').value = video.privacy || 'public';
+            document.getElementById('editTags').value = (video.tags || []).join(', ');
+
+            new bootstrap.Modal(document.getElementById('editVideoModal')).show();
+        }
+
+        function saveVideoEdit() {
+            const videoId = document.getElementById('editVideoId').value;
+            const title = document.getElementById('editTitle').value;
+            const description = document.getElementById('editDescription').value;
+            const privacy = document.getElementById('editPrivacy').value;
+            const tags = document.getElementById('editTags').value.split(',').map(t => t.trim());
+
+            // Update video in arrays
+            const updateVideo = (videos) => {
+                const video = videos.find(v => v.id === videoId);
+                if (video) {
+                    video.title = title;
+                    video.description = description;
+                    video.privacy = privacy;
+                    video.tags = tags;
+                    video.status = privacy === 'private' ? 'private' : 'published';
+                }
+            };
+
+            updateVideo(allVideos);
+            updateVideo(filteredVideos);
+
+            // Update localStorage if it's an uploaded video
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            updateVideo(uploadedVideos);
+            localStorage.setItem('uploadedVideos', JSON.stringify(uploadedVideos));
+
+            bootstrap.Modal.getInstance(document.getElementById('editVideoModal')).hide();
+            renderVideos();
+            showAlert('Video updated successfully!', 'success');
+        }
+
+        function changeVideoPrivacy(videoId) {
+            const video = allVideos.find(v => v.id === videoId);
+            if (!video) return;
+
+            const newPrivacy = prompt('Enter new privacy setting (public/unlisted/private):', video.privacy);
+            if (newPrivacy && ['public', 'unlisted', 'private'].includes(newPrivacy)) {
+                video.privacy = newPrivacy;
+                video.status = newPrivacy === 'private' ? 'private' : 'published';
+                
+                updateVideoInStorage(video);
+                renderVideos();
+                showAlert(`Video privacy changed to ${newPrivacy}`, 'success');
+            }
+        }
+
+        function revokeVideo(videoId) {
+            if (confirm('Are you sure you want to revoke access to this video? Users will no longer be able to view it.')) {
+                const video = allVideos.find(v => v.id === videoId);
+                if (video) {
+                    video.status = 'revoked';
+                    video.privacy = 'private';
+                    
+                    updateVideoInStorage(video);
+                    renderVideos();
+                    showAlert('Video access revoked successfully!', 'success');
+                }
+            }
+        }
+
+        function viewVideoStats(videoId) {
+            const video = allVideos.find(v => v.id === videoId);
+            if (!video) return;
+
+            showAlert(`Video Stats:\nViews: ${formatNumber(video.views)}\nLikes: ${video.likes || 0}\nDuration: ${video.duration}`, 'info');
+        }
+
+        function bulkChangePrivacy(privacy) {
+            if (selectedVideos.size === 0) return;
+
+            if (confirm(`Change privacy of ${selectedVideos.size} videos to ${privacy}?`)) {
+                selectedVideos.forEach(videoId => {
+                    const video = allVideos.find(v => v.id === videoId);
+                    if (video) {
+                        video.privacy = privacy;
+                        video.status = privacy === 'private' ? 'private' : 'published';
+                        updateVideoInStorage(video);
+                    }
+                });
+
+                clearSelection();
+                renderVideos();
+                showAlert(`${selectedVideos.size} videos updated successfully!`, 'success');
+            }
+        }
+
+        function bulkRevoke() {
+            if (selectedVideos.size === 0) return;
+
+            if (confirm(`Revoke access to ${selectedVideos.size} videos?`)) {
+                selectedVideos.forEach(videoId => {
+                    const video = allVideos.find(v => v.id === videoId);
+                    if (video) {
+                        video.status = 'revoked';
+                        video.privacy = 'private';
+                        updateVideoInStorage(video);
+                    }
+                });
+
+                clearSelection();
+                renderVideos();
+                showAlert(`${selectedVideos.size} videos revoked successfully!`, 'success');
+            }
+        }
+
+        function updateVideoInStorage(video) {
+            const uploadedVideos = JSON.parse(localStorage.getItem('uploadedVideos') || '[]');
+            const index = uploadedVideos.findIndex(v => v.id === video.id);
+            if (index !== -1) {
+                uploadedVideos[index] = video;
+                localStorage.setItem('uploadedVideos', JSON.stringify(uploadedVideos));
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('searchVideos').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('uploaderFilter').value = '';
+            document.getElementById('sortFilter').value = 'newest';
+            applyFilters();
+        }
+
+        function refreshVideos() {
+            showAlert('Refreshing videos...', 'info');
+            setTimeout(() => {
+                loadVideos();
+                showAlert('Videos refreshed!', 'success');
+            }, 1000);
+        }
+    </script>
+
+    <style>
+        .video-thumbnail-small {
+            width: 60px;
+            height: 34px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .video-title-cell {
+            max-width: 300px;
+        }
+
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .table th {
+            background-color: #495057;
+            color: white;
+            border: none;
+        }
+
+        .badge {
+            font-size: 0.75em;
+        }
+    </style>
+</body>
+</html>
