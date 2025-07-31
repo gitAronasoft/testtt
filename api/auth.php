@@ -1,4 +1,6 @@
 <?php
+require_once 'config.php';
+
 // Configure session settings before starting
 ini_set('session.cookie_lifetime', 86400);
 ini_set('session.cookie_httponly', 1);
@@ -82,21 +84,46 @@ function handleRegister($data) {
         return;
     }
 
-    // TODO: Database integration - check if email exists, hash password, insert user
-    // For now, simulate successful registration
-    $_SESSION['user'] = [
-        'id' => uniqid(),
-        'name' => $name,
-        'email' => $email,
-        'role' => $role,
-        'created_at' => date('Y-m-d H:i:s')
-    ];
+    $conn = getConnection();
+    
+    // Check if email already exists
+    $check_email = $conn->prepare("SELECT id FROM users WHERE email = ?");
+    $check_email->bind_param("s", $email);
+    $check_email->execute();
+    $result = $check_email->get_result();
+    
+    if ($result->num_rows > 0) {
+        echo json_encode(['success' => false, 'message' => 'Email already exists']);
+        $conn->close();
+        return;
+    }
+    
+    // Hash password and insert user
+    $user_id = uniqid();
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    
+    $insert_user = $conn->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
+    $insert_user->bind_param("sssss", $user_id, $name, $email, $hashed_password, $role);
+    
+    if ($insert_user->execute()) {
+        $_SESSION['user'] = [
+            'id' => $user_id,
+            'name' => $name,
+            'email' => $email,
+            'role' => $role,
+            'created_at' => date('Y-m-d H:i:s')
+        ];
 
-    echo json_encode([
-        'success' => true,
-        'message' => 'Registration successful',
-        'user' => $_SESSION['user']
-    ]);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Registration successful',
+            'user' => $_SESSION['user']
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Registration failed']);
+    }
+    
+    $conn->close();
 }
 
 function handleLogin($data) {
@@ -116,38 +143,19 @@ function handleLogin($data) {
         return;
     }
 
-    // Predefined test users for different roles
-    $testUsers = [
-        'admin@example.com' => [
-            'password' => 'admin123',
-            'id' => 'admin_001',
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'role' => 'admin',
-            'created_at' => '2024-01-01 10:00:00'
-        ],
-        'creator@example.com' => [
-            'password' => 'creator123',
-            'id' => 'creator_001',
-            'name' => 'Content Creator',
-            'email' => 'creator@example.com',
-            'role' => 'editor',
-            'created_at' => '2024-01-02 11:00:00'
-        ],
-        'viewer@example.com' => [
-            'password' => 'viewer123',
-            'id' => 'viewer_001',
-            'name' => 'Video Viewer',
-            'email' => 'viewer@example.com',
-            'role' => 'viewer',
-            'created_at' => '2024-01-03 12:00:00'
-        ]
-    ];
-
-    // Check if user exists and password matches
-    if (isset($testUsers[$email])) {
-        $user = $testUsers[$email];
-        if ($password === $user['password']) {
+    $conn = getConnection();
+    
+    // Get user from database
+    $get_user = $conn->prepare("SELECT id, name, email, password, role, created_at FROM users WHERE email = ?");
+    $get_user->bind_param("s", $email);
+    $get_user->execute();
+    $result = $get_user->get_result();
+    
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        
+        // Verify password
+        if (password_verify($password, $user['password'])) {
             // Login successful
             $_SESSION['user'] = [
                 'id' => $user['id'],
@@ -162,12 +170,14 @@ function handleLogin($data) {
                 'message' => 'Login successful',
                 'user' => $_SESSION['user']
             ]);
-            return;
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
         }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
     }
-
-    // Invalid credentials
-    echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
+    
+    $conn->close();
 }
 
 function handleLogout() {

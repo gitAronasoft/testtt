@@ -1,4 +1,6 @@
 <?php
+require_once 'config.php';
+
 // Configure session settings before starting
 ini_set('session.cookie_lifetime', 86400);
 ini_set('session.cookie_httponly', 1);
@@ -8,7 +10,7 @@ session_start();
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true');
 
@@ -18,62 +20,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Check authentication for POST requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['user'])) {
+// Check authentication for POST, PUT, DELETE requests
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE']) && !isset($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Authentication required']);
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    handleGetVideos();
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    handleUploadVideo();
+switch ($_SERVER['REQUEST_METHOD']) {
+    case 'GET':
+        handleGetVideos();
+        break;
+    case 'POST':
+        handleUploadVideo();
+        break;
+    case 'PUT':
+        handleUpdateVideo();
+        break;
+    case 'DELETE':
+        handleDeleteVideo();
+        break;
 }
 
 function handleGetVideos() {
-    // TODO: Database integration - fetch videos from database
-    // For now, return sample data
-    $videos = [
-        [
-            'id' => 1,
-            'title' => 'Introduction to Web Development',
-            'description' => 'Learn the basics of HTML, CSS, and JavaScript',
-            'price' => 0,
-            'uploader' => 'John Doe',
-            'views' => 1250,
-            'purchased' => false,
-            'file_path' => 'uploads/sample1.mp4',
-            'created_at' => '2024-01-15 10:30:00'
-        ],
-        [
-            'id' => 2,
-            'title' => 'Advanced React Concepts',
-            'description' => 'Deep dive into React hooks, context, and performance optimization',
-            'price' => 29.99,
-            'uploader' => 'Jane Smith',
-            'views' => 850,
-            'purchased' => false,
-            'file_path' => 'uploads/sample2.mp4',
-            'created_at' => '2024-01-20 14:45:00'
-        ],
-        [
-            'id' => 3,
-            'title' => 'PHP Backend Development',
-            'description' => 'Building robust server-side applications with PHP',
-            'price' => 39.99,
-            'uploader' => 'Mike Johnson',
-            'views' => 675,
-            'purchased' => true,
-            'file_path' => 'uploads/sample3.mp4',
-            'created_at' => '2024-01-25 09:15:00'
-        ]
-    ];
-
+    $conn = getConnection();
+    
+    // Get filter parameters
+    $filter = $_GET['filter'] ?? 'all';
+    $user_id = $_SESSION['user']['id'] ?? null;
+    
+    $sql = "
+        SELECT v.*, u.name as uploader_name,
+               CASE WHEN p.user_id IS NOT NULL THEN 1 ELSE 0 END as purchased
+        FROM videos v 
+        JOIN users u ON v.uploader_id = u.id 
+        LEFT JOIN purchases p ON v.id = p.video_id AND p.user_id = ?
+    ";
+    
+    $params = [$user_id];
+    $types = "s";
+    
+    // Apply filters
+    switch ($filter) {
+        case 'free':
+            $sql .= " WHERE v.price = 0";
+            break;
+        case 'paid':
+            $sql .= " WHERE v.price > 0";
+            break;
+        case 'purchased':
+            $sql .= " WHERE p.user_id IS NOT NULL";
+            break;
+        case 'my_videos':
+            $sql .= " WHERE v.uploader_id = ?";
+            $params[] = $user_id;
+            $types .= "s";
+            break;
+    }
+    
+    $sql .= " ORDER BY v.created_at DESC";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $videos = [];
+    while ($row = $result->fetch_assoc()) {
+        $videos[] = [
+            'id' => (int)$row['id'],
+            'title' => $row['title'],
+            'description' => $row['description'],
+            'price' => (float)$row['price'],
+            'uploader' => $row['uploader_name'],
+            'uploader_id' => $row['uploader_id'],
+            'views' => (int)$row['views'],
+            'purchased' => (bool)$row['purchased'],
+            'file_path' => $row['file_path'],
+            'category' => $row['category'],
+            'created_at' => $row['created_at']
+        ];
+    }
+    
     echo json_encode([
         'success' => true,
         'videos' => $videos
     ]);
+    
+    $conn->close();
 }
 
 function handleUploadVideo() {
@@ -93,7 +127,7 @@ function handleUploadVideo() {
     }
 
     // Validate required fields
-    $required = ['title', 'description', 'price', 'file_path'];
+    $required = ['title', 'description', 'price'];
     foreach ($required as $field) {
         if (!isset($input[$field])) {
             echo json_encode(['success' => false, 'message' => 'Missing required field: ' . $field]);
@@ -104,7 +138,8 @@ function handleUploadVideo() {
     $title = trim($input['title']);
     $description = trim($input['description']);
     $price = floatval($input['price']);
-    $file_path = $input['file_path'];
+    $category = $input['category'] ?? 'other';
+    $file_path = $input['file_path'] ?? '';
 
     // Validate data
     if (empty($title)) {
@@ -117,24 +152,125 @@ function handleUploadVideo() {
         return;
     }
 
-    // TODO: Database integration - insert video record
-    // For now, simulate successful upload
-    $video = [
-        'id' => rand(100, 999),
-        'title' => $title,
-        'description' => $description,
-        'price' => $price,
-        'uploader' => $_SESSION['user']['name'],
-        'views' => 0,
-        'purchased' => false,
-        'file_path' => $file_path,
-        'created_at' => date('Y-m-d H:i:s')
-    ];
+    $conn = getConnection();
+    
+    // Insert video
+    $insert_video = $conn->prepare("INSERT INTO videos (title, description, price, uploader_id, file_path, category) VALUES (?, ?, ?, ?, ?, ?)");
+    $uploader_id = $_SESSION['user']['id'];
+    $insert_video->bind_param("ssdsss", $title, $description, $price, $uploader_id, $file_path, $category);
+    
+    if ($insert_video->execute()) {
+        $video_id = $conn->insert_id;
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Video uploaded successfully',
+            'video' => [
+                'id' => $video_id,
+                'title' => $title,
+                'description' => $description,
+                'price' => $price,
+                'uploader' => $_SESSION['user']['name'],
+                'views' => 0,
+                'purchased' => false,
+                'file_path' => $file_path,
+                'category' => $category,
+                'created_at' => date('Y-m-d H:i:s')
+            ]
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to upload video']);
+    }
+    
+    $conn->close();
+}
 
-    echo json_encode([
-        'success' => true,
-        'message' => 'Video uploaded successfully',
-        'video' => $video
-    ]);
+function handleUpdateVideo() {
+    parse_str(file_get_contents("php://input"), $input);
+    $video_id = $input['id'] ?? null;
+    
+    if (!$video_id) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Video ID is required']);
+        return;
+    }
+    
+    $conn = getConnection();
+    
+    // Check if user owns the video or is admin
+    $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
+    $check_owner->bind_param("i", $video_id);
+    $check_owner->execute();
+    $result = $check_owner->get_result();
+    
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Video not found']);
+        $conn->close();
+        return;
+    }
+    
+    $video = $result->fetch_assoc();
+    if ($video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Not authorized to edit this video']);
+        $conn->close();
+        return;
+    }
+    
+    // Increment view count
+    if (isset($input['action']) && $input['action'] === 'increment_views') {
+        $update_views = $conn->prepare("UPDATE videos SET views = views + 1 WHERE id = ?");
+        $update_views->bind_param("i", $video_id);
+        $update_views->execute();
+        
+        echo json_encode(['success' => true, 'message' => 'View count updated']);
+    }
+    
+    $conn->close();
+}
+
+function handleDeleteVideo() {
+    parse_str(file_get_contents("php://input"), $input);
+    $video_id = $input['id'] ?? null;
+    
+    if (!$video_id) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Video ID is required']);
+        return;
+    }
+    
+    $conn = getConnection();
+    
+    // Check if user owns the video or is admin
+    $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
+    $check_owner->bind_param("i", $video_id);
+    $check_owner->execute();
+    $result = $check_owner->get_result();
+    
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Video not found']);
+        $conn->close();
+        return;
+    }
+    
+    $video = $result->fetch_assoc();
+    if ($video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Not authorized to delete this video']);
+        $conn->close();
+        return;
+    }
+    
+    // Delete video
+    $delete_video = $conn->prepare("DELETE FROM videos WHERE id = ?");
+    $delete_video->bind_param("i", $video_id);
+    
+    if ($delete_video->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Video deleted successfully']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to delete video']);
+    }
+    
+    $conn->close();
 }
 ?>

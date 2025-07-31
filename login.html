@@ -101,7 +101,7 @@
             }
         };
 
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -112,8 +112,55 @@
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
 
-            // Simulate network delay
-            setTimeout(() => {
+            try {
+                // First try API authentication
+                const response = await fetch('api/auth.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'login',
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store user in localStorage for consistency
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    showNotification('Login successful! Redirecting to dashboard...', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } else {
+                    // Fallback to test users for demo purposes
+                    if (testUsers[email] && testUsers[email].password === password) {
+                        const user = {
+                            id: testUsers[email].id,
+                            name: testUsers[email].name,
+                            email: testUsers[email].email,
+                            role: testUsers[email].role,
+                            created_at: testUsers[email].created_at
+                        };
+
+                        localStorage.setItem('currentUser', JSON.stringify(user));
+                        showNotification('Login successful! Redirecting to dashboard...', 'success');
+
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1000);
+                    } else {
+                        showNotification('Invalid email or password', 'error');
+                        resetSubmitButton(submitBtn, originalText);
+                    }
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                // Fallback to test users
                 if (testUsers[email] && testUsers[email].password === password) {
                     const user = {
                         id: testUsers[email].id,
@@ -133,7 +180,7 @@
                     showNotification('Invalid email or password', 'error');
                     resetSubmitButton(submitBtn, originalText);
                 }
-            }, 1000);
+            }
         });
 
         function quickLogin(email) {

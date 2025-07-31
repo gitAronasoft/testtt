@@ -1,110 +1,76 @@
-
-// Static data for the video platform
-let currentUser = {
-    id: 'admin_001',
-    name: 'Admin User',
-    email: 'admin@example.com',
-    role: 'admin',
-    created_at: '2024-01-01 10:00:00'
-};
-
-let allVideos = [
-    {
-        id: 1,
-        title: 'Introduction to Web Development',
-        description: 'Learn the basics of HTML, CSS, and JavaScript',
-        price: 0,
-        uploader: 'John Doe',
-        views: 1250,
-        purchased: false,
-        file_path: 'https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_1mb.mp4',
-        created_at: '2024-01-15 10:30:00',
-        category: 'web-development'
-    },
-    {
-        id: 2,
-        title: 'Advanced React Concepts',
-        description: 'Deep dive into React hooks, context, and performance optimization',
-        price: 29.99,
-        uploader: 'Jane Smith',
-        views: 850,
-        purchased: false,
-        file_path: 'https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_2mb.mp4',
-        created_at: '2024-01-20 14:45:00',
-        category: 'web-development'
-    },
-    {
-        id: 3,
-        title: 'PHP Backend Development',
-        description: 'Building robust server-side applications with PHP',
-        price: 39.99,
-        uploader: 'Mike Johnson',
-        views: 675,
-        purchased: true,
-        file_path: 'https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_3mb.mp4',
-        created_at: '2024-01-25 09:15:00',
-        category: 'web-development'
-    },
-    {
-        id: 4,
-        title: 'Mobile App Development with Flutter',
-        description: 'Complete guide to building cross-platform mobile applications',
-        price: 49.99,
-        uploader: 'Sarah Wilson',
-        views: 920,
-        purchased: false,
-        file_path: 'https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_4mb.mp4',
-        created_at: '2024-01-28 16:20:00',
-        category: 'mobile-development'
-    },
-    {
-        id: 5,
-        title: 'Data Science Fundamentals',
-        description: 'Introduction to data analysis, visualization, and machine learning',
-        price: 0,
-        uploader: 'David Chen',
-        views: 1580,
-        purchased: false,
-        file_path: 'https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_5mb.mp4',
-        created_at: '2024-02-01 11:15:00',
-        category: 'data-science'
-    }
-];
-
-let allUsers = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'editor', joined: '2024-01-15' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'viewer', joined: '2024-01-20' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', role: 'viewer', joined: '2024-01-25' },
-    { id: 4, name: 'Sarah Wilson', email: 'sarah@example.com', role: 'editor', joined: '2024-01-28' },
-    { id: 5, name: 'David Chen', email: 'david@example.com', role: 'editor', joined: '2024-02-01' }
-];
-
+// Global variables
+let currentUser = null;
+let allVideos = [];
+let allUsers = [];
 let purchaseVideoId = null;
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is logged in (stored in localStorage)
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-        currentUser = JSON.parse(storedUser);
-    } else {
-        // Redirect to login if no user data
-        window.location.href = 'login.html';
-        return;
-    }
-    
-    setupUserRole();
-    setupDashboard();
-    loadVideos();
-    loadOverviewStats();
+    // Check if user is logged in
+    checkAuth();
+
+
 });
+
+async function checkAuth() {
+    try {
+        // First check localStorage for user data
+        const storedUser = localStorage.getItem('currentUser');
+
+        if (storedUser) {
+            currentUser = JSON.parse(storedUser);
+            setupUserRole();
+            setupDashboard();
+            loadVideos();
+            loadOverviewStats();
+            return;
+        }
+
+        // If no localStorage data, try API as fallback
+        const response = await fetch('api/auth.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: 'get_user' })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentUser = data.user;
+            // Also store in localStorage for consistency
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            setupUserRole();
+            setupDashboard();
+            loadVideos();
+            loadOverviewStats();
+        } else {
+            // Redirect to login if no user data
+            window.location.href = 'login.html';
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+        // Check localStorage one more time before redirecting
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            currentUser = JSON.parse(storedUser);
+            setupUserRole();
+            setupDashboard();
+            loadVideos();
+            loadOverviewStats();
+        } else {
+            window.location.href = 'login.html';
+        }
+    }
+}
 
 function setupUserRole() {
     // Update user info in navigation
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
     document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
-    
+
     // Update welcome section
     document.getElementById('welcomeName').textContent = currentUser.name;
     document.getElementById('welcomeRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
@@ -131,7 +97,7 @@ function setupUserRole() {
 function setupDashboard() {
     // Show overview panel by default
     showPanel('overview');
-    
+
     // Setup upload form handler
     const uploadForm = document.getElementById('uploadForm');
     if (uploadForm) {
@@ -156,7 +122,7 @@ function showPanel(panelName) {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
-    
+
     // Find and activate the clicked nav link
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
@@ -204,19 +170,50 @@ function showPanel(panelName) {
     }
 }
 
-function loadVideos() {
+async function loadVideos() {
     showLoading(true);
-    
-    // Simulate network delay
-    setTimeout(() => {
-        renderVideos(allVideos);
-        showLoading(false);
-    }, 500);
+
+    try {
+        const response = await fetch('api/videos.php');
+        const data = await response.json();
+
+        if (data.success) {
+            allVideos = data.videos;
+            renderVideos(allVideos);
+        } else {
+            showNotification('Failed to load videos: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to load videos:', error);
+        showNotification('Failed to load videos', 'error');
+    }
+
+    showLoading(false);
+}
+
+async function loadMyVideos() {
+    showLoading(true);
+
+    try {
+        const response = await fetch('api/videos.php?filter=my_videos');
+        const data = await response.json();
+
+        if (data.success) {
+            renderMyVideos(data.videos);
+        } else {
+            showNotification('Failed to load videos: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to load my videos:', error);
+        showNotification('Failed to load videos', 'error');
+    }
+
+    showLoading(false);
 }
 
 function renderVideos(videos) {
     const container = document.getElementById('videosContainer');
-    
+
     if (videos.length === 0) {
         container.innerHTML = '<div class="col-12"><div class="alert alert-info">No videos available</div></div>';
         return;
@@ -245,86 +242,15 @@ function renderVideos(videos) {
     `).join('');
 }
 
-function renderVideoActions(video) {
-    const canWatch = video.price === 0 || video.purchased || currentUser.role === 'admin';
-
-    if (canWatch) {
-        return `<button class="btn btn-success w-100" onclick="watchVideo(${video.id})">
-                    <i class="fas fa-play me-2"></i>Watch Now
-                </button>`;
-    } else {
-        return `<button class="btn btn-primary w-100" onclick="purchaseVideo(${video.id}, ${video.price})">
-                    <i class="fas fa-shopping-cart me-2"></i>Purchase for $${video.price}
-                </button>`;
-    }
-}
-
-function filterVideos(filter) {
-    let filteredVideos = allVideos;
-
-    switch (filter) {
-        case 'free':
-            filteredVideos = allVideos.filter(video => video.price === 0);
-            break;
-        case 'paid':
-            filteredVideos = allVideos.filter(video => video.price > 0);
-            break;
-        case 'purchased':
-            filteredVideos = allVideos.filter(video => video.purchased);
-            break;
-    }
-
-    renderVideos(filteredVideos);
-}
-
-function loadOverviewStats() {
-    document.getElementById('totalVideos').textContent = allVideos.length;
-    document.getElementById('activeUsers').textContent = allUsers.length;
-    
-    // Calculate total revenue from purchased videos
-    const totalRevenue = allVideos
-        .filter(video => video.purchased)
-        .reduce((sum, video) => sum + video.price, 0);
-    document.getElementById('totalRevenue').textContent = `$${totalRevenue.toFixed(2)}`;
-    
-    // Calculate total views
-    const totalViews = allVideos.reduce((sum, video) => sum + video.views, 0);
-    document.getElementById('totalViews').textContent = totalViews.toLocaleString();
-}
-
-function loadUsers() {
-    const container = document.getElementById('usersTableBody');
-    
-    container.innerHTML = allUsers.map(user => `
-        <tr>
-            <td>${user.name}</td>
-            <td>${user.email}</td>
-            <td><span class="badge bg-${user.role === 'admin' ? 'danger' : user.role === 'editor' ? 'warning' : 'success'}">${user.role}</span></td>
-            <td>${user.joined}</td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser(${user.id})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function loadMyVideos() {
+function renderMyVideos(videos) {
     const container = document.getElementById('myVideosContainer');
-    
-    // Filter videos uploaded by current user
-    const myVideos = allVideos.filter(video => video.uploader === currentUser.name);
-    
-    if (myVideos.length === 0) {
+
+    if (videos.length === 0) {
         container.innerHTML = '<div class="col-12"><div class="alert alert-info">You haven\'t uploaded any videos yet</div></div>';
         return;
     }
 
-    container.innerHTML = myVideos.map(video => `
+    container.innerHTML = videos.map(video => `
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card video-card h-100">
                 <div class="video-thumbnail position-relative bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
@@ -356,18 +282,326 @@ function loadMyVideos() {
     `).join('');
 }
 
-function loadPurchases() {
+function renderVideoActions(video) {
+    const canWatch = video.price === 0 || video.purchased || currentUser.role === 'admin';
+
+    if (canWatch) {
+        return `<button class="btn btn-success w-100" onclick="watchVideo(${video.id})">
+                    <i class="fas fa-play me-2"></i>Watch Now
+                </button>`;
+    } else {
+        return `<button class="btn btn-primary w-100" onclick="purchaseVideo(${video.id}, ${video.price})">
+                    <i class="fas fa-shopping-cart me-2"></i>Purchase for $${video.price}
+                </button>`;
+    }
+}
+
+async function filterVideos(filter) {
+    showLoading(true);
+
+    try {
+        const response = await fetch(`api/videos.php?filter=${filter}`);
+        const data = await response.json();
+
+        if (data.success) {
+            renderVideos(data.videos);
+        } else {
+            showNotification('Failed to filter videos: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to filter videos:', error);
+        showNotification('Failed to filter videos', 'error');
+    }
+
+    showLoading(false);
+}
+
+async function loadOverviewStats() {
+    if (currentUser.role === 'admin') {
+        try {
+            const response = await fetch('api/admin.php?action=analytics');
+            const data = await response.json();
+
+            if (data.success) {
+                const analytics = data.analytics;
+                document.getElementById('totalVideos').textContent = analytics.total_videos;
+                document.getElementById('activeUsers').textContent = analytics.total_users;
+                document.getElementById('totalRevenue').textContent = `$${analytics.total_revenue.toFixed(2)}`;
+                document.getElementById('totalViews').textContent = analytics.total_views.toLocaleString();
+            }
+        } catch (error) {
+            console.error('Failed to load analytics:', error);
+        }
+    } else {
+        // For non-admin users, show basic stats
+        document.getElementById('totalVideos').textContent = allVideos.length;
+        document.getElementById('activeUsers').textContent = '-';
+        document.getElementById('totalRevenue').textContent = '-';
+
+        const totalViews = allVideos.reduce((sum, video) => sum + video.views, 0);
+        document.getElementById('totalViews').textContent = totalViews.toLocaleString();
+    }
+}
+
+
+    const channelInfoDiv = document.getElementById('youtubeChannelInfo');
+    const uploadForm = document.getElementById('youtubeUploadForm');
+    const videosDiv = document.getElementById('youtubeVideos');
+    const statsDiv = document.getElementById('youtubeStats');
+
+    if (connected && channelInfo) {
+        statusDiv.innerHTML = `
+            <div class="alert alert-success">
+                <i class="fab fa-youtube me-2"></i>
+                Connected to YouTube channel: <strong>${channelInfo.channel_title}</strong>
+            </div>
+        `;
+
+        controlsDiv.innerHTML = `
+            <button class="btn btn-outline-danger btn-sm" onclick="disconnectYouTube()">
+                <i class="fas fa-unlink me-1"></i>Disconnect
+            </button>
+        `;
+
+        channelInfoDiv.style.display = 'block';
+        uploadForm.style.display = 'block';
+        videosDiv.style.display = 'block';
+        statsDiv.style.display = 'block';
+
+        channelInfoDiv.innerHTML = `
+            <div class="card">
+                <div class="card-body">
+                    <h5><i class="fab fa-youtube text-danger me-2"></i>${channelInfo.channel_title}</h5>
+                    <p class="text-muted">Channel ID: ${channelInfo.channel_id}</p>
+                </div>
+            </div>
+        `;
+    } else {
+        statusDiv.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                YouTube channel not connected<br>
+                <small>Please add YouTube tokens to the database youtube_tokens table</small>
+            </div>
+        `;
+
+        controlsDiv.innerHTML = `
+            <button class="btn btn-info" onclick="performAutoSync()">
+                <i class="fas fa-sync me-1"></i>Check Connection
+            </button>
+        `;
+
+        channelInfoDiv.style.display = 'none';
+        uploadForm.style.display = 'none';
+        videosDiv.style.display = 'none';
+        statsDiv.style.display = 'none';
+    }
+}
+
+async function connectYouTube() {
+    try {
+        const response = await fetch('api/youtube_api.php?action=connect');
+        const data = await response.json();
+
+        if (data.success) {
+            window.location.href = data.auth_url;
+        } else {
+            showToast('Failed to initiate YouTube connection', 'error');
+        }
+    } catch (error) {
+        console.error('Failed to connect YouTube:', error);
+        showToast('Failed to connect YouTube', 'error');
+    }
+}
+
+async function loadYouTubeData() {
+    await Promise.all([
+        loadYouTubeVideos(),
+        loadYouTubeStatistics()
+    ]);
+}
+
+async function loadYouTubeVideos() {
+    try {
+        const response = await fetch('api/youtube_api.php?action=videos');
+        const data = await response.json();
+
+        if (data.success) {
+            displayYouTubeVideos(data.videos);
+        }
+    } catch (error) {
+        console.error('Failed to load YouTube videos:', error);
+    }
+}
+
+function displayYouTubeVideos(videos) {
+    const container = document.getElementById('youtubeVideosList');
+
+    if (videos.length === 0) {
+        container.innerHTML = '<p class="text-muted">No videos found on your YouTube channel.</p>';
+        return;
+    }
+
+    container.innerHTML = videos.map(video => `
+        <div class="row mb-3 border-bottom pb-3">
+            <div class="col-md-3">
+                <img src="${video.thumbnail}" class="img-fluid rounded" alt="${video.title}">
+            </div>
+            <div class="col-md-9">
+                <h6>${video.title}</h6>
+                <p class="text-muted small">${video.description.substring(0, 150)}${video.description.length > 150 ? '...' : ''}</p>
+                <small class="text-muted">Published: ${new Date(video.published_at).toLocaleDateString()}</small>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadYouTubeStatistics() {
+    try {
+        const response = await fetch('api/youtube_api.php?action=statistics');
+        const data = await response.json();
+
+        if (data.success) {
+            const stats = data.statistics;
+            document.getElementById('ytSubscribers').textContent = parseInt(stats.subscriber_count).toLocaleString();
+            document.getElementById('ytTotalViews').textContent = parseInt(stats.view_count).toLocaleString();
+            document.getElementById('ytVideoCount').textContent = parseInt(stats.video_count).toLocaleString();
+        }
+    } catch (error) {
+        console.error('Failed to load YouTube statistics:', error);
+    }
+}
+
+async function syncYouTubeVideos() {
+    showSpinner();
+
+    try {
+        const response = await fetch('api/youtube_sync.php?action=force_sync');
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            await loadVideos(); // Refresh local videos list
+            await loadYouTubeVideos(); // Refresh YouTube videos
+        } else {
+            showToast('Failed to sync videos: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to sync YouTube videos:', error);
+        showToast('Failed to sync videos', 'error');
+    } finally {
+        hideSpinner();
+    }
+}
+
+// YouTube Upload Form Handler
+document.addEventListener('DOMContentLoaded', function() {
+    const youtubeUploadForm = document.getElementById('youtubeUpload');
+    if (youtubeUploadForm) {
+        youtubeUploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('title', document.getElementById('ytTitle').value);
+            formData.append('description', document.getElementById('ytDescription').value);
+            formData.append('tags', document.getElementById('ytTags').value);
+            formData.append('privacy', document.getElementById('ytPrivacy').value);
+            formData.append('video', document.getElementById('ytVideo').files[0]);
+
+            showSpinner();
+
+            try {
+                const response = await fetch('api/youtube_api.php?action=upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Video uploaded to YouTube successfully!', 'success');
+                    youtubeUploadForm.reset();
+                    await loadYouTubeData();
+                } else {
+                    showToast('Upload failed: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('Upload failed', 'error');
+            } finally {
+                hideSpinner();
+            }
+        });
+    }
+});
+
+async function loadUsers() {
+    try {
+        const response = await fetch('api/admin.php?action=users');
+        const data = await response.json();
+
+        if (data.success) {
+            allUsers = data.users;
+            renderUsers(allUsers);
+        } else {
+            showNotification('Failed to load users: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to load users:', error);
+        showNotification('Failed to load users', 'error');
+    }
+}
+
+function renderUsers(users) {
+    const container = document.getElementById('usersTableBody');
+
+    container.innerHTML = users.map(user => `
+        <tr>
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td><span class="badge bg-${user.role === 'admin' ? 'danger' : user.role === 'editor' ? 'warning' : 'success'}">${user.role}</span></td>
+            <td>${user.joined}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser('${user.id}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                ${user.role !== 'admin' ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${user.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadPurchases() {
+    showLoading(true);
+
+    try {
+        const response = await fetch('api/purchase.php');
+        const data = await response.json();
+
+        if (data.success) {
+            renderPurchases(data.purchases);
+        } else {
+            showNotification('Failed to load purchases: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to load purchases:', error);
+        showNotification('Failed to load purchases', 'error');
+    }
+
+    showLoading(false);
+}
+
+function renderPurchases(purchases) {
     const container = document.getElementById('purchasesContainer');
-    
-    // Filter purchased videos
-    const purchasedVideos = allVideos.filter(video => video.purchased);
-    
-    if (purchasedVideos.length === 0) {
+
+    if (purchases.length === 0) {
         container.innerHTML = '<div class="col-12"><div class="alert alert-info">You haven\'t purchased any videos yet</div></div>';
         return;
     }
 
-    container.innerHTML = purchasedVideos.map(video => `
+    container.innerHTML = purchases.map(purchase => `
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card video-card h-100">
                 <div class="video-thumbnail position-relative bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
@@ -375,13 +609,13 @@ function loadPurchases() {
                     <span class="position-absolute top-0 end-0 badge bg-info m-2">PURCHASED</span>
                 </div>
                 <div class="card-body">
-                    <h5 class="video-title">${video.title}</h5>
-                    <p class="video-description text-muted">${video.description}</p>
+                    <h5 class="video-title">${purchase.title}</h5>
+                    <p class="video-description text-muted">${purchase.description}</p>
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <small class="text-muted">By ${video.uploader}</small>
-                        <small class="text-muted">${video.views} views</small>
+                        <small class="text-muted">By ${purchase.uploader}</small>
+                        <small class="text-muted">$${purchase.price}</small>
                     </div>
-                    <button class="btn btn-success w-100" onclick="watchVideo(${video.id})">
+                    <button class="btn btn-success w-100" onclick="watchVideo(${purchase.video_id})">
                         <i class="fas fa-play me-2"></i>Watch Now
                     </button>
                 </div>
@@ -396,144 +630,61 @@ function loadWatchlist() {
 }
 
 function loadEarnings() {
-    // Simulate earnings data
-    document.getElementById('totalEarnings').textContent = '$1,250.00';
-    document.getElementById('monthlyEarnings').textContent = '$350.00';
-    document.getElementById('pendingEarnings').textContent = '$125.00';
-
-    const transactionsContainer = document.getElementById('transactionsTableBody');
-    const transactions = [
-        { date: '2024-01-30', video: 'Advanced React Concepts', buyer: 'viewer@example.com', amount: '$29.99' },
-        { date: '2024-01-29', video: 'PHP Backend Development', buyer: 'user@example.com', amount: '$39.99' },
-        { date: '2024-01-28', video: 'Advanced React Concepts', buyer: 'test@example.com', amount: '$29.99' }
-    ];
-
-    transactionsContainer.innerHTML = transactions.map(transaction => `
-        <tr>
-            <td>${transaction.date}</td>
-            <td>${transaction.video}</td>
-            <td>${transaction.buyer}</td>
-            <td>${transaction.amount}</td>
-        </tr>
-    `).join('');
+    showNotification('Earnings feature coming soon', 'info');
 }
 
 function loadPaidUsers() {
-    const container = document.getElementById('paidUsersContainer');
-    
-    // Simulate paid users data for creator's videos
-    const paidUsers = [
-        { 
-            user: 'viewer@example.com', 
-            name: 'John Viewer',
-            video: 'Advanced React Concepts', 
-            purchaseDate: '2024-01-30',
-            amount: '$29.99'
-        },
-        { 
-            user: 'user@example.com', 
-            name: 'Sarah User',
-            video: 'PHP Backend Development', 
-            purchaseDate: '2024-01-29',
-            amount: '$39.99'
-        },
-        { 
-            user: 'test@example.com', 
-            name: 'Mike Test',
-            video: 'Advanced React Concepts', 
-            purchaseDate: '2024-01-28',
-            amount: '$29.99'
-        }
-    ];
-
-    if (paidUsers.length === 0) {
-        container.innerHTML = '<div class="col-12"><div class="alert alert-info">No paid users yet</div></div>';
-        return;
-    }
-
-    container.innerHTML = `
-        <div class="card">
-            <div class="card-header">
-                <h5>Users Who Purchased Your Videos</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>User Name</th>
-                                <th>Email</th>
-                                <th>Video Purchased</th>
-                                <th>Purchase Date</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${paidUsers.map(user => `
-                                <tr>
-                                    <td>${user.name}</td>
-                                    <td>${user.user}</td>
-                                    <td>${user.video}</td>
-                                    <td>${user.purchaseDate}</td>
-                                    <td>${user.amount}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    `;
+    showNotification('Paid users feature coming soon', 'info');
 }
 
 function loadAnalytics() {
     showNotification('Analytics charts will be implemented with Chart.js', 'info');
 }
 
-function handleVideoUpload(event) {
+async function handleVideoUpload(event) {
     event.preventDefault();
-    
+
     const formData = {
         title: document.getElementById('videoTitle').value,
         description: document.getElementById('videoDescription').value,
         price: parseFloat(document.getElementById('videoPrice').value),
         category: document.getElementById('videoCategory').value,
-        file: document.getElementById('videoFile').files[0]
+        file_path: 'uploads/sample.mp4' // Placeholder for actual file upload
     };
 
     // Validate form
-    if (!formData.title || !formData.description || !formData.category || !formData.file) {
+    if (!formData.title || !formData.description || !formData.category) {
         showNotification('Please fill in all required fields', 'error');
         return;
     }
 
-    // Simulate upload
     showLoading(true);
-    setTimeout(() => {
-        // Add new video to allVideos array
-        const newVideo = {
-            id: allVideos.length + 1,
-            title: formData.title,
-            description: formData.description,
-            price: formData.price,
-            uploader: currentUser.name,
-            views: 0,
-            purchased: false,
-            file_path: URL.createObjectURL(formData.file),
-            created_at: new Date().toISOString(),
-            category: formData.category
-        };
-        
-        allVideos.unshift(newVideo);
-        
-        showNotification('Video uploaded successfully!', 'success');
-        document.getElementById('uploadForm').reset();
-        showLoading(false);
-        
-        // Refresh video lists
-        loadVideos();
-        loadOverviewStats();
-    }, 2000);
+
+    try {
+        const response = await fetch('api/videos.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification('Video uploaded successfully!', 'success');
+            document.getElementById('uploadForm').reset();
+            loadVideos();
+            loadOverviewStats();
+        } else {
+            showNotification('Upload failed: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Upload failed:', error);
+        showNotification('Upload failed', 'error');
+    }
+
+    showLoading(false);
 }
 
 function purchaseVideo(videoId, price) {
@@ -543,36 +694,152 @@ function purchaseVideo(videoId, price) {
     modal.show();
 }
 
-function confirmPurchase() {
-    // Find and mark video as purchased
-    const video = allVideos.find(v => v.id === purchaseVideoId);
-    if (video) {
-        video.purchased = true;
-        showNotification('Purchase successful!', 'success');
-        loadVideos(); // Refresh videos to show purchased status
+async function confirmPurchase() {
+    try {
+        const response = await fetch('api/purchase.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ video_id: purchaseVideoId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification('Purchase successful!', 'success');
+            loadVideos(); // Refresh videos to show purchased status
+        } else {
+            showNotification('Purchase failed: ' + data.message, 'error');
+        }
+
         const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
         modal.hide();
-    } else {
+    } catch (error) {
+        console.error('Purchase failed:', error);
         showNotification('Purchase failed', 'error');
     }
 }
 
-function watchVideo(videoId) {
+async function watchVideo(videoId) {
     const video = allVideos.find(v => v.id === videoId);
     if (video) {
         document.getElementById('videoModalTitle').textContent = video.title;
-        document.getElementById('videoPlayer').src = video.file_path;
+        document.getElementById('videoPlayer').src = video.file_path || 'https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_1mb.mp4';
         const modal = new bootstrap.Modal(document.getElementById('videoModal'));
         modal.show();
-        
+
         // Increment view count
-        video.views += 1;
+        try {
+            await fetch('api/videos.php', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `id=${videoId}&action=increment_views`
+            });
+        } catch (error) {
+            console.error('Failed to increment view count:', error);
+        }
     }
 }
 
-function logout() {
-    localStorage.removeItem('currentUser');
-    window.location.href = 'login.html';
+function showPanel(panelName) {
+    // Hide all panels
+    document.querySelectorAll('.panel').forEach(panel => {
+        panel.style.display = 'none';
+    });
+
+    // Show selected panel
+    const selectedPanel = document.getElementById(panelName + 'Panel');
+    if (selectedPanel) {
+        selectedPanel.style.display = 'block';
+
+        // Load panel-specific data
+        switch(panelName) {
+            case 'overview':
+                loadOverviewStats();
+                break;
+            case 'videos':
+                loadVideos();
+                break;
+            case 'myVideos':
+                loadMyVideos();
+                break;
+            case 'users':
+                if (currentUser.role === 'admin') {
+                    loadUsers();
+                }
+                break;
+            case 'purchases':
+                loadPurchases();
+                break;
+            case 'youtube':
+                if (currentUser.role === 'editor' || currentUser.role === 'admin') {
+                    loadYouTubePanel();
+                }
+                break;
+        }
+    }
+
+    // Update navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+async function logout() {
+    try {
+        // Clear localStorage first
+        localStorage.removeItem('currentUser');
+
+        // Try to logout from server session as well
+        const response = await fetch('api/auth.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: 'logout' })
+        });
+
+        const data = await response.json();
+
+        // Always redirect regardless of API response since we cleared localStorage
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error('Logout failed:', error);
+        // Still redirect since we cleared localStorage
+        window.location.href = 'login.html';
+    }
+}
+
+// Make logout globally accessible
+window.logout = logout;
+
+async function checkAuth() {
+    try {
+        // Clear localStorage first
+        localStorage.removeItem('currentUser');
+
+        // Try to logout from server session as well
+        const response = await fetch('api/auth.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: 'logout' })
+        });
+
+        const data = await response.json();
+
+        // Always redirect regardless of API response since we cleared localStorage
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error('Logout failed:', error);
+        // Still redirect since we cleared localStorage
+        window.location.href = 'login.html';
+    }
 }
 
 function showLoading(show) {
@@ -585,10 +852,10 @@ function showLoading(show) {
 function showNotification(message, type = 'info') {
     const toast = document.getElementById('notificationToast');
     const toastMessage = document.getElementById('toastMessage');
-    
+
     toastMessage.textContent = message;
     toast.className = `toast bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} text-white`;
-    
+
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();
 }
@@ -598,61 +865,64 @@ function editUser(userId) {
     showNotification('Edit user functionality coming soon', 'info');
 }
 
-function deleteUser(userId) {
-    showNotification('Delete user functionality coming soon', 'info');
+async function deleteUser(userId) {
+    if (confirm('Are you sure you want to delete this user?')) {
+        try {
+            const response = await fetch('api/admin.php?action=delete_user', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `user_id=${userId}`
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showNotification('User deleted successfully', 'success');
+                loadUsers();
+            } else {
+                showNotification('Delete failed: ' + data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Delete failed:', error);
+            showNotification('Delete failed', 'error');
+        }
+    }
 }
 
 function editVideo(videoId) {
     showNotification('Edit video functionality coming soon', 'info');
 }
 
-function deleteVideo(videoId) {
+async function deleteVideo(videoId) {
     if (confirm('Are you sure you want to delete this video?')) {
-        // Remove video from array
-        const index = allVideos.findIndex(v => v.id === videoId);
-        if (index > -1) {
-            allVideos.splice(index, 1);
-            showNotification('Video deleted successfully', 'success');
-            loadMyVideos();
-            loadVideos();
-            loadOverviewStats();
+        try {
+            const response = await fetch('api/videos.php', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `id=${videoId}`
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showNotification('Video deleted successfully', 'success');
+                loadMyVideos();
+                loadVideos();
+                loadOverviewStats();
+            } else {
+                showNotification('Delete failed: ' + data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Delete failed:', error);
+            showNotification('Delete failed', 'error');
         }
     }
 }
 
 function showAddUserModal() {
     showNotification('Add user modal coming soon', 'info');
-}
-
-// Demo user switching functionality
-function switchUser(userEmail) {
-    const users = {
-        'admin@example.com': {
-            id: 'admin_001',
-            name: 'Admin User',
-            email: 'admin@example.com',
-            role: 'admin',
-            created_at: '2024-01-01 10:00:00'
-        },
-        'creator@example.com': {
-            id: 'creator_001',
-            name: 'Content Creator',
-            email: 'creator@example.com',
-            role: 'editor',
-            created_at: '2024-01-02 11:00:00'
-        },
-        'viewer@example.com': {
-            id: 'viewer_001',
-            name: 'Video Viewer',
-            email: 'viewer@example.com',
-            role: 'viewer',
-            created_at: '2024-01-03 12:00:00'
-        }
-    };
-    
-    if (users[userEmail]) {
-        currentUser = users[userEmail];
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        location.reload();
-    }
 }

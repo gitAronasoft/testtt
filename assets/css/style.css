@@ -161,6 +161,8 @@ h6 { font-size: 1.125rem; }
     align-items: center;
     font-size: 0.95rem;
     letter-spacing: -0.025em;
+    border: none;
+    background: none;
 }
 
 .nav-link:hover {
@@ -184,6 +186,15 @@ h6 { font-size: 1.125rem; }
     width: 24px;
     text-align: center;
     margin-right: 12px;
+}
+
+/* Sidebar Container */
+.sidebar-container {
+    background: var(--background-color);
+    border-right: 1px solid var(--border-light);
+    min-height: calc(100vh - 56px);
+    position: sticky;
+    top: 56px;
 }
 
 /* Welcome Section */
