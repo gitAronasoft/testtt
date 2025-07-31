@@ -7,103 +7,139 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
-$pdo = getDB();
-
-if (!$pdo) {
-    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
-    exit;
-}
-
-$method = $_SERVER['REQUEST_METHOD'];
-
-switch ($method) {
-    case 'GET':
-        handleGetVideos($pdo);
-        break;
-    case 'POST':
-        handleCreateVideo($pdo);
-        break;
-    case 'PUT':
-        handleUpdateVideo($pdo);
-        break;
-    case 'DELETE':
-        handleDeleteVideo($pdo);
-        break;
-    default:
-        http_response_code(405);
-        echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-        break;
+try {
+    $pdo = getDB();
+    if (!$pdo) {
+        throw new Exception('Database connection failed');
+    }
+    
+    $method = $_SERVER['REQUEST_METHOD'];
+    
+    switch ($method) {
+        case 'GET':
+            handleGetVideos($pdo);
+            break;
+        case 'POST':
+            handleCreateVideo($pdo);
+            break;
+        case 'PUT':
+            handleUpdateVideo($pdo);
+            break;
+        case 'DELETE':
+            handleDeleteVideo($pdo);
+            break;
+        default:
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    }
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 
 function handleGetVideos($pdo) {
+    $session = checkAuth();
+    
     try {
-        // Get all videos from database
-        $stmt = $pdo->prepare("SELECT * FROM videos ORDER BY created_at DESC");
-        $stmt->execute();
-        $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $pdo->prepare("
+            SELECT v.*, u.name as uploader_name,
+                   CASE WHEN p.id IS NOT NULL THEN true ELSE false END as purchased
+            FROM videos v 
+            LEFT JOIN users u ON v.uploaded_by = u.id 
+            LEFT JOIN purchases p ON v.id = p.video_id AND p.user_id = ?
+            ORDER BY v.created_at DESC
+        ");
+        $stmt->execute([$session['user_id'] ?? 0]);
+        $videos = $stmt->fetchAll();
         
-        // Format videos for frontend
         $formattedVideos = [];
         foreach ($videos as $video) {
             $formattedVideos[] = [
-                'id' => $video['video_id'],
+                'id' => $video['id'],
                 'title' => $video['title'],
                 'description' => $video['description'],
-                'thumbnail' => $video['thumbnail_url'] ?: 'https://via.placeholder.com/320x180/667eea/ffffff?text=' . urlencode($video['title']),
-                'duration' => $video['duration'] ?: '10:30',
-                'views' => number_format($video['view_count']),
-                'likes' => number_format($video['like_count']),
-                'price' => floatval($video['price']),
-                'publishedAt' => $video['published_at'] ?: $video['created_at'],
-                'channel_id' => $video['channel_id']
+                'price' => (float)$video['price'],
+                'duration' => $video['duration'],
+                'views' => $video['views'],
+                'uploader' => $video['uploader_name'],
+                'purchased' => $video['purchased'],
+                'created_at' => $video['created_at']
             ];
         }
         
         echo json_encode([
             'success' => true,
-            'videos' => $formattedVideos,
-            'count' => count($formattedVideos)
+            'videos' => $formattedVideos
         ]);
     } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error fetching videos: ' . $e->getMessage()
-        ]);
+        throw new Exception('Error fetching videos: ' . $e->getMessage());
     }
 }
 
 function handleCreateVideo($pdo) {
+    $userRole = requireRole(['editor', 'admin']);
+    
     $input = json_decode(file_get_contents('php://input'), true);
     
-    try {
-        $stmt = $pdo->prepare("INSERT INTO videos (channel_id, video_id, title, description, thumbnail_url, duration, price) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $input['channel_id'] ?? 'UC_DemoChannel123',
-            $input['video_id'] ?? 'VID_' . time(),
-            $input['title'],
-            $input['description'] ?? '',
-            $input['thumbnail'] ?? '',
-            $input['duration'] ?? '10:30',
-            $input['price'] ?? 0
-        ]);
-        
-        echo json_encode(['success' => true, 'message' => 'Video created successfully']);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'Error creating video: ' . $e->getMessage()]);
-    }
-}
-
-function handleUpdateVideo($pdo) {
-    $input = json_decode(file_get_contents('php://input'), true);
-    $videoId = $_GET['id'] ?? null;
+    $title = $input['title'] ?? '';
+    $description = $input['description'] ?? '';
+    $price = $input['price'] ?? 0;
+    $file_path = $input['file_path'] ?? '';
     
-    if (!$videoId) {
-        echo json_encode(['success' => false, 'message' => 'Video ID required']);
+    if (empty($title) || empty($file_path)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Title and file path required']);
         return;
     }
     
     try {
-        $stmt = $pdo->prepare("UPDATE videos SET title = ?, description = ?, price = ? WHERE video_id = ?");
+        $stmt = $pdo->prepare("
+            INSERT INTO videos (title, description, price, file_path, uploaded_by) 
+            VALUES (?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$title, $description, $price, $file_path, $_SESSION['user_id']]);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Video uploaded successfully',
+            'video_id' => $pdo->lastInsertId()
+        ]);
+    } catch (Exception $e) {
+        throw new Exception('Error creating video: ' . $e->getMessage());
+    }
+}
+
+function handleUpdateVideo($pdo) {
+    $userRole = requireRole(['editor', 'admin']);
+    
+    $input = json_decode(file_get_contents('php://input'), true);
+    $videoId = $_GET['id'] ?? $input['id'] ?? null;
+    
+    if (!$videoId) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Video ID required']);
+        return;
+    }
+    
+    // Check ownership or admin role
+    if ($userRole !== 'admin') {
+        $stmt = $pdo->prepare("SELECT uploaded_by FROM videos WHERE id = ?");
+        $stmt->execute([$videoId]);
+        $video = $stmt->fetch();
+        
+        if (!$video || $video['uploaded_by'] != $_SESSION['user_id']) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied']);
+            return;
+        }
+    }
+    
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE videos 
+            SET title = ?, description = ?, price = ?, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = ?
+        ");
         $stmt->execute([
             $input['title'],
             $input['description'],
@@ -113,84 +149,41 @@ function handleUpdateVideo($pdo) {
         
         echo json_encode(['success' => true, 'message' => 'Video updated successfully']);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'Error updating video: ' . $e->getMessage()]);
+        throw new Exception('Error updating video: ' . $e->getMessage());
     }
 }
 
 function handleDeleteVideo($pdo) {
+    $userRole = requireRole(['editor', 'admin']);
+    
     $videoId = $_GET['id'] ?? null;
     
     if (!$videoId) {
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Video ID required']);
         return;
     }
     
+    // Check ownership or admin role
+    if ($userRole !== 'admin') {
+        $stmt = $pdo->prepare("SELECT uploaded_by FROM videos WHERE id = ?");
+        $stmt->execute([$videoId]);
+        $video = $stmt->fetch();
+        
+        if (!$video || $video['uploaded_by'] != $_SESSION['user_id']) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied']);
+            return;
+        }
+    }
+    
     try {
-        $stmt = $pdo->prepare("DELETE FROM videos WHERE video_id = ?");
+        $stmt = $pdo->prepare("DELETE FROM videos WHERE id = ?");
         $stmt->execute([$videoId]);
         
         echo json_encode(['success' => true, 'message' => 'Video deleted successfully']);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'Error deleting video: ' . $e->getMessage()]);
+        throw new Exception('Error deleting video: ' . $e->getMessage());
     }
-}
-?>
-
-try {
-    $pdo = getDB();
-    
-    if (!$pdo) {
-        throw new Exception('Database connection failed');
-    }
-    
-    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        // Get all videos with channel information
-        $stmt = $pdo->prepare("
-            SELECT 
-                v.*,
-                c.title as channel_title,
-                c.user_id as channel_user_id
-            FROM videos v 
-            LEFT JOIN channels c ON v.channel_id = c.channel_id 
-            ORDER BY v.published_at DESC
-        ");
-        $stmt->execute();
-        $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Format videos for frontend
-        $formattedVideos = [];
-        foreach ($videos as $video) {
-            $formattedVideos[] = [
-                'id' => $video['video_id'],
-                'title' => $video['title'],
-                'description' => $video['description'],
-                'thumbnail' => $video['thumbnail_url'] ?: '🎥',
-                'duration' => $video['duration'] ?: 'PT0M0S',
-                'views' => (int)$video['view_count'],
-                'likes' => (int)$video['like_count'],
-                'price' => (float)($video['price'] ?? 0),
-                'uploadedBy' => $video['channel_title'] ?: 'Unknown Channel',
-                'uploadedAt' => $video['published_at'],
-                'category' => 'education', // Default category
-                'rating' => 4.5, // Default rating
-                'status' => 'published'
-            ];
-        }
-        
-        echo json_encode([
-            'success' => true,
-            'videos' => $formattedVideos,
-            'count' => count($formattedVideos)
-        ]);
-        
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-    }
-    
-} catch (Exception $e) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error fetching videos: ' . $e->getMessage()
-    ]);
 }
 ?>
