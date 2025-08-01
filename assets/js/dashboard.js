@@ -143,18 +143,31 @@ async function checkAuth() {
 }
 
 function setupUserRole() {
-    // Update user info in navigation
-    document.getElementById("userName").textContent = currentUser.name;
-    document.getElementById("userRole").textContent =
-        currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
-    document.getElementById("userAvatar").textContent = currentUser.name
-        .charAt(0)
-        .toUpperCase();
+    // Update user info in navigation - check if elements exist
+    const userNameElement = document.getElementById("userName");
+    const userRoleElement = document.getElementById("userRole");
+    const userAvatarElement = document.getElementById("userAvatar");
+    
+    if (userNameElement) {
+        userNameElement.textContent = currentUser.name;
+    }
+    if (userRoleElement) {
+        userRoleElement.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+    }
+    if (userAvatarElement) {
+        userAvatarElement.textContent = currentUser.name.charAt(0).toUpperCase();
+    }
 
-    // Update welcome section
-    document.getElementById("welcomeName").textContent = currentUser.name;
-    document.getElementById("welcomeRole").textContent =
-        currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+    // Update welcome section if exists
+    const welcomeNameElement = document.getElementById("welcomeName");
+    const welcomeRoleElement = document.getElementById("welcomeRole");
+    
+    if (welcomeNameElement) {
+        welcomeNameElement.textContent = currentUser.name;
+    }
+    if (welcomeRoleElement) {
+        welcomeRoleElement.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+    }
 
     // Hide all role-specific sidebar sections first
     const adminSidebar = document.getElementById("adminSidebar");
@@ -2103,6 +2116,162 @@ function setLoadingState(operation, isLoading) {
     showLoading(loadingStates.size > 0);
 }
 
+// Video management functions for creators
+async function editVideo(videoId) {
+    const video = allVideos.find(v => v.id === videoId);
+    if (!video) {
+        showNotification('Video not found', 'error');
+        return;
+    }
+
+    // Create edit modal
+    const editModalHTML = `
+        <div class="modal fade" id="editVideoModal" tabindex="-1" aria-labelledby="editVideoModalTitle" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editVideoModalTitle">Edit Video</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editVideoForm">
+                            <div class="mb-3">
+                                <label for="editTitle" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="editTitle" value="${escapeHtml(video.title)}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="editDescription" rows="3" required>${escapeHtml(video.description)}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editPrice" class="form-label">Price ($)</label>
+                                <input type="number" class="form-control" id="editPrice" min="0" step="0.01" value="${video.price}" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="saveVideoEdit(${videoId})">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('editVideoModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', editModalHTML);
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editVideoModal'));
+    modal.show();
+}
+
+async function saveVideoEdit(videoId) {
+    const title = document.getElementById('editTitle').value.trim();
+    const description = document.getElementById('editDescription').value.trim();
+    const price = parseFloat(document.getElementById('editPrice').value) || 0;
+
+    if (!title || !description) {
+        showNotification('Title and description are required', 'error');
+        return;
+    }
+
+    try {
+        showLoading(true);
+
+        const response = await fetch('api/videos.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'update_video',
+                id: videoId,
+                title: title,
+                description: description,
+                price: price
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification('Video updated successfully!', 'success');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editVideoModal'));
+            modal.hide();
+            
+            // Refresh videos
+            loadMyVideos();
+            loadVideos();
+        } else {
+            showNotification('Failed to update video: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Edit video error:', error);
+        showNotification('Failed to update video', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function deleteVideo(videoId) {
+    const video = allVideos.find(v => v.id === videoId);
+    if (!video) {
+        showNotification('Video not found', 'error');
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to delete "${video.title}"? This action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        showLoading(true);
+
+        const response = await fetch('api/videos.php', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'delete_video',
+                id: videoId
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification('Video deleted successfully!', 'success');
+            
+            // Remove from allVideos array
+            const index = allVideos.findIndex(v => v.id === videoId);
+            if (index !== -1) {
+                allVideos.splice(index, 1);
+            }
+            
+            // Refresh videos
+            loadMyVideos();
+            loadVideos();
+        } else {
+            showNotification('Failed to delete video: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Delete video error:', error);
+        showNotification('Failed to delete video', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
 // Make functions globally accessible
 window.logout = logout;
 window.showPanel = showPanel;
@@ -2110,6 +2279,12 @@ window.playYouTubeVideo = playYouTubeVideo;
 window.handleYouTubeUpload = handleYouTubeUpload;
 window.toggleMobileNav = toggleMobileNav;
 window.closeMobileNav = closeMobileNav;
+window.editVideo = editVideo;
+window.saveVideoEdit = saveVideoEdit;
+window.deleteVideo = deleteVideo;
+window.watchVideo = watchVideo;
+window.purchaseVideo = purchaseVideo;
+window.confirmPurchase = confirmPurchase;
 
 async function checkYouTubeStatus() {
     // Prevent multiple simultaneous calls

@@ -55,6 +55,9 @@ switch ($_SERVER['REQUEST_METHOD']) {
     case 'DELETE':
         handleDeleteVideo();
         break;
+    default:
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Method not allowed']);
 }
 
 function handleGetVideos() {
@@ -219,22 +222,61 @@ function handleUploadVideo() {
 }
 
 function handleUpdateVideo() {
-    parse_str(file_get_contents("php://input"), $input);
-    $video_id = $input['id'] ?? null;
+    // Handle view increment
+    if (isset($_POST['action']) && $_POST['action'] === 'increment_views') {
+        $video_id = $_POST['id'] ?? '';
 
-    if (!$video_id) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Video ID is required']);
+        if (empty($video_id)) {
+            echo json_encode(['success' => false, 'message' => 'Video ID required']);
+            return;
+        }
+
+        $conn = getConnection();
+        $update_views = $conn->prepare("UPDATE videos SET views = views + 1 WHERE id = ?");
+        $update_views->bind_param("s", $video_id);
+
+        if ($update_views->execute()) {
+            echo json_encode(['success' => true, 'message' => 'View count updated']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update view count']);
+        }
+
+        $conn->close();
+        return;
+    }
+
+    // Handle video update
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!$input || $input['action'] !== 'update_video') {
+        echo json_encode(['success' => false, 'message' => 'Invalid request']);
+        return;
+    }
+
+    session_start();
+    if (!isset($_SESSION['user'])) {
+        echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+        return;
+    }
+
+    $user = $_SESSION['user'];
+    $video_id = $input['id'] ?? '';
+    $title = trim($input['title'] ?? '');
+    $description = trim($input['description'] ?? '');
+    $price = floatval($input['price'] ?? 0);
+
+    if (empty($video_id) || empty($title) || empty($description)) {
+        echo json_encode(['success' => false, 'message' => 'Video ID, title, and description are required']);
         return;
     }
 
     $conn = getConnection();
 
     // Check if user owns the video or is admin
-    $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
-    $check_owner->bind_param("i", $video_id);
-    $check_owner->execute();
-    $result = $check_owner->get_result();
+    $check_ownership = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
+    $check_ownership->bind_param("s", $video_id);
+    $check_ownership->execute();
+    $result = $check_ownership->get_result();
 
     if ($result->num_rows === 0) {
         echo json_encode(['success' => false, 'message' => 'Video not found']);
@@ -243,61 +285,92 @@ function handleUpdateVideo() {
     }
 
     $video = $result->fetch_assoc();
-    if ($video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Not authorized to edit this video']);
+    if ($video['uploader_id'] !== $user['id'] && $user['role'] !== 'admin') {
+        echo json_encode(['success' => false, 'message' => 'Permission denied']);
         $conn->close();
         return;
     }
 
-    // Increment view count
-    if (isset($input['action']) && $input['action'] === 'increment_views') {
-        $update_views = $conn->prepare("UPDATE videos SET views = views + 1 WHERE id = ?");
-        $update_views->bind_param("i", $video_id);
-        $update_views->execute();
+    // Update video
+    $update_video = $conn->prepare("UPDATE videos SET title = ?, description = ?, price = ?, updated_at = NOW() WHERE id = ?");
+    $update_video->bind_param("ssds", $title, $description, $price, $video_id);
 
-        echo json_encode(['success' => true, 'message' => 'View count updated']);
+    if ($update_video->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Video updated successfully']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to update video']);
     }
 
     $conn->close();
 }
 
 function handleDeleteVideo() {
-    if (!isset($_POST['id'])) {
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!$input || $input['action'] !== 'delete_video') {
+        echo json_encode(['success' => false, 'message' => 'Invalid request']);
+        return;
+    }
+
+    session_start();
+    if (!isset($_SESSION['user'])) {
+        echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+        return;
+    }
+
+    $user = $_SESSION['user'];
+    $video_id = $input['id'] ?? '';
+
+    if (empty($video_id)) {
         echo json_encode(['success' => false, 'message' => 'Video ID is required']);
         return;
     }
 
     $conn = getConnection();
-    $video_id = $_POST['id'];
-    $user_id = $_SESSION['user']['id'];
+
+    // Check if user owns the video or is admin
+    $check_ownership = $conn->prepare("SELECT uploader_id, file_path FROM videos WHERE id = ?");
+    $check_ownership->bind_param("s", $video_id);
+    $check_ownership->execute();
+    $result = $check_ownership->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Video not found']);
+        $conn->close();
+        return;
+    }
+
+    $video = $result->fetch_assoc();
+    if ($video['uploader_id'] !== $user['id'] && $user['role'] !== 'admin') {
+        echo json_encode(['success' => false, 'message' => 'Permission denied']);
+        $conn->close();
+        return;
+    }
+
+    // Start transaction
+    $conn->begin_transaction();
 
     try {
-        // Check if user owns the video or is admin
-        $stmt = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
-        $stmt->bind_param("i", $video_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        // Delete related purchases first
+        $delete_purchases = $conn->prepare("DELETE FROM purchases WHERE video_id = ?");
+        $delete_purchases->bind_param("s", $video_id);
+        $delete_purchases->execute();
 
-        if ($result->num_rows === 0) {
-            echo json_encode(['success' => false, 'message' => 'Video not found']);
-            return;
+        // Delete video record
+        $delete_video = $conn->prepare("DELETE FROM videos WHERE id = ?");
+        $delete_video->bind_param("s", $video_id);
+        $delete_video->execute();
+
+        // Delete physical file if it exists
+        if (!empty($video['file_path']) && file_exists($video['file_path'])) {
+            unlink($video['file_path']);
         }
 
-        $video = $result->fetch_assoc();
-        if ($video['uploader_id'] !== $user_id && $_SESSION['user']['role'] !== 'admin') {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-            return;
-        }
-
-        // Delete video
-        $stmt = $conn->prepare("DELETE FROM videos WHERE id = ?");
-        $stmt->bind_param("i", $video_id);
-        $stmt->execute();
-
+        $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Video deleted successfully']);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'Error deleting video: ' . $e->getMessage()]);
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'Failed to delete video: ' . $e->getMessage()]);
     }
 
     $conn->close();
@@ -392,4 +465,3 @@ if (function_exists('handleGetVideos')) {
     exit();
 }
 ?>
-</replit_final_file>

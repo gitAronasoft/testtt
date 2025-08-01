@@ -1,206 +1,291 @@
 
-// Login functionality
-document.addEventListener("DOMContentLoaded", function () {
-    const loginForm = document.getElementById("loginForm");
+// Enhanced Login Form Handler
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginButton = document.getElementById('loginButton');
+    const demoButtons = document.querySelectorAll('.demo-login');
     
-    if (loginForm) {
-        loginForm.addEventListener("submit", handleLogin);
+    // Auto-focus email input
+    emailInput.focus();
+    
+    // Enhanced form validation
+    function validateField(field, errorElementId, validationFn, errorMessage) {
+        const value = field.value.trim();
+        const errorElement = document.getElementById(errorElementId);
+        
+        if (!validationFn(value)) {
+            field.classList.add('is-invalid');
+            errorElement.textContent = errorMessage;
+            errorElement.style.display = 'block';
+            return false;
+        } else {
+            field.classList.remove('is-invalid');
+            errorElement.textContent = '';
+            errorElement.style.display = 'none';
+            return true;
+        }
     }
-
-    // Quick login buttons
-    window.quickLogin = quickLogin;
+    
+    // Real-time validation
+    emailInput.addEventListener('blur', function() {
+        validateField(this, 'emailError', (value) => {
+            return value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        }, 'Please enter a valid email address');
+    });
+    
+    passwordInput.addEventListener('blur', function() {
+        validateField(this, 'passwordError', (value) => {
+            return value && value.length >= 6;
+        }, 'Password must be at least 6 characters long');
+    });
+    
+    // Password visibility toggle
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordField = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordField.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+    
+    // Demo account handlers
+    demoButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const email = this.dataset.email;
+            const password = this.dataset.password;
+            const role = this.dataset.role;
+            
+            // Animate button
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+            
+            // Fill form fields with animation
+            typewriterEffect(emailInput, email, () => {
+                typewriterEffect(passwordInput, password, () => {
+                    showToast(`Demo ${role} account selected`, 'success');
+                });
+            });
+        });
+    });
+    
+    // Typewriter effect for demo accounts
+    function typewriterEffect(element, text, callback) {
+        element.value = '';
+        element.focus();
+        let i = 0;
+        
+        function type() {
+            if (i < text.length) {
+                element.value += text.charAt(i);
+                i++;
+                setTimeout(type, 50);
+            } else if (callback) {
+                setTimeout(callback, 200);
+            }
+        }
+        
+        type();
+    }
+    
+    // Enhanced form submission
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Clear previous errors
+        document.querySelectorAll('.invalid-feedback').forEach(el => {
+            el.textContent = '';
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('.form-control').forEach(el => {
+            el.classList.remove('is-invalid');
+        });
+        
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const rememberMe = document.getElementById('rememberMe').checked;
+        
+        // Client-side validation
+        let isValid = true;
+        
+        if (!validateField(emailInput, 'emailError', (value) => {
+            return value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        }, 'Please enter a valid email address')) {
+            isValid = false;
+        }
+        
+        if (!validateField(passwordInput, 'passwordError', (value) => {
+            return value && value.length >= 1;
+        }, 'Password is required')) {
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            showToast('Please fix the errors above', 'error');
+            return;
+        }
+        
+        // Show loading state
+        setLoadingState(true);
+        
+        try {
+            const response = await fetch('api/auth.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'login',
+                    email: email,
+                    password: password
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Store user data
+                localStorage.setItem('currentUser', JSON.stringify(data.user));
+                
+                // Success animation
+                showSuccessAnimation();
+                
+                showToast(`Welcome back, ${data.user.name}!`, 'success');
+                
+                // Redirect with delay for UX
+                setTimeout(() => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect') || 'dashboard.html';
+                    window.location.href = redirect;
+                }, 1500);
+                
+            } else {
+                showToast(data.message || 'Login failed', 'error');
+                
+                // Shake animation for failed login
+                shakeForm();
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showToast('Login failed. Please check your connection and try again.', 'error');
+            shakeForm();
+        } finally {
+            setLoadingState(false);
+        }
+    });
+    
+    function setLoadingState(loading) {
+        const btnText = document.getElementById('loginButtonText');
+        const btnLoading = document.getElementById('loginButtonLoading');
+        
+        loginButton.disabled = loading;
+        
+        if (loading) {
+            btnText.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+        } else {
+            btnText.classList.remove('hidden');
+            btnLoading.classList.add('hidden');
+        }
+    }
+    
+    function showSuccessAnimation() {
+        const icon = document.querySelector('#loginButtonText i');
+        icon.classList.remove('fa-sign-in-alt');
+        icon.classList.add('fa-check', 'success-checkmark');
+        icon.style.color = '#22c55e';
+    }
+    
+    function shakeForm() {
+        const form = loginForm;
+        form.style.animation = 'shake 0.5s ease-in-out';
+        setTimeout(() => {
+            form.style.animation = '';
+        }, 500);
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        const icon = document.getElementById('toastIcon');
+        const messageEl = document.getElementById('toastMessage');
+        
+        // Set icon based on type
+        let iconClass = 'fas fa-info-circle';
+        let iconColor = 'hsl(var(--primary))';
+        
+        if (type === 'success') {
+            iconClass = 'fas fa-check-circle';
+            iconColor = '#22c55e';
+            toast.classList.add('success');
+        } else if (type === 'error') {
+            iconClass = 'fas fa-exclamation-circle';
+            iconColor = 'hsl(var(--destructive))';
+            toast.classList.add('error');
+        } else if (type === 'warning') {
+            iconClass = 'fas fa-exclamation-triangle';
+            iconColor = '#f59e0b';
+            toast.classList.add('warning');
+        }
+        
+        icon.innerHTML = `<i class="${iconClass}" style="color: ${iconColor}"></i>`;
+        messageEl.textContent = message;
+        
+        toast.classList.remove('hidden');
+        
+        // Auto hide after 5 seconds
+        setTimeout(() => {
+            hideToast();
+        }, 5000);
+    }
+    
+    function hideToast() {
+        const toast = document.getElementById('toast');
+        toast.classList.add('hidden');
+        toast.classList.remove('success', 'error', 'warning');
+    }
+    
+    // Make hideToast globally available
+    window.hideToast = hideToast;
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Alt + D for demo admin account
+        if (e.altKey && e.key === 'd') {
+            e.preventDefault();
+            document.querySelector('[data-role="Admin"]').click();
+        }
+        
+        // Alt + C for demo creator account
+        if (e.altKey && e.key === 'c') {
+            e.preventDefault();
+            document.querySelector('[data-role="Creator"]').click();
+        }
+        
+        // Alt + V for demo viewer account
+        if (e.altKey && e.key === 'v') {
+            e.preventDefault();
+            document.querySelector('[data-role="Viewer"]').click();
+        }
+    });
+    
+    // Add shake animation to CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+    `;
+    document.head.appendChild(style);
 });
-
-async function handleLogin(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-
-    // Clear previous errors
-    clearFormErrors(form);
-
-    // Enhanced validation
-    let hasErrors = false;
-
-    if (!email) {
-        showFieldError(document.getElementById("email"), "Email is required");
-        hasErrors = true;
-    } else if (!isValidEmail(email)) {
-        showFieldError(document.getElementById("email"), "Please enter a valid email address");
-        hasErrors = true;
-    }
-
-    if (!password) {
-        showFieldError(document.getElementById("password"), "Password is required");
-        hasErrors = true;
-    } else if (password.length < 6) {
-        showFieldError(document.getElementById("password"), "Password must be at least 6 characters");
-        hasErrors = true;
-    }
-
-    if (hasErrors) {
-        showNotification("Please fix the errors above", "error");
-        return;
-    }
-
-    // Update button state
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing in...';
-    
-    showLoading(true);
-
-    try {
-        const response = await fetch("api/auth.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                action: "login",
-                email: email,
-                password: password,
-            }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // Store user data in localStorage
-            localStorage.setItem("currentUser", JSON.stringify(data.user));
-            
-            showNotification("Login successful!", "success");
-            
-            // Redirect based on user role
-            redirectToRoleDashboard(data.user.role);
-        } else {
-            showNotification("Login failed: " + data.message, "error");
-        }
-    } catch (error) {
-        console.error("Login failed:", error);
-        showNotification("Login failed", "error");
-    }
-
-    showLoading(false);
-}
-
-function redirectToRoleDashboard(role) {
-    // All roles go to the same dashboard.html but with different default panels
-    const roleParams = {
-        'admin': 'overview',
-        'editor': 'myVideos',
-        'creator': 'myVideos',
-        'viewer': 'videos'
-    };
-    
-    const defaultPanel = roleParams[role] || 'overview';
-    window.location.href = `dashboard.html?panel=${defaultPanel}`;
-}
-
-async function quickLogin(email) {
-    // Predefined passwords for testing
-    const testCredentials = {
-        'admin@example.com': 'admin123',
-        'creator@example.com': 'creator123',
-        'viewer@example.com': 'viewer123'
-    };
-
-    const password = testCredentials[email];
-    if (!password) {
-        showNotification("Invalid test account", "error");
-        return;
-    }
-
-    showLoading(true);
-
-    try {
-        const response = await fetch("api/auth.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                action: "login",
-                email: email,
-                password: password,
-            }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            localStorage.setItem("currentUser", JSON.stringify(data.user));
-            showNotification("Login successful!", "success");
-            redirectToRoleDashboard(data.user.role);
-        } else {
-            showNotification("Quick login failed: " + data.message, "error");
-        }
-    } catch (error) {
-        console.error("Quick login failed:", error);
-        showNotification("Quick login failed", "error");
-    }
-
-    showLoading(false);
-}
-
-function showLoading(show) {
-    const spinner = document.getElementById("loadingSpinner");
-    if (spinner) {
-        spinner.style.display = show ? "block" : "none";
-    }
-}
-
-function showNotification(message, type = "info") {
-    const toast = document.getElementById("notificationToast");
-    const toastMessage = document.getElementById("toastMessage");
-
-    if (toast && toastMessage) {
-        toastMessage.textContent = message;
-        toast.className = `toast bg-${type === "error" ? "danger" : type === "success" ? "success" : "info"} text-white`;
-
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
-    } else {
-        // Fallback to alert if toast elements not found
-        alert(message);
-    }
-}
-
-// Form validation utilities
-function showFieldError(field, message) {
-    field.classList.add('is-invalid');
-    
-    // Remove existing error message
-    const existingError = field.parentNode.querySelector('.invalid-feedback');
-    if (existingError) {
-        existingError.remove();
-    }
-    
-    // Add new error message
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'invalid-feedback d-block';
-    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${message}`;
-    field.parentNode.appendChild(errorDiv);
-}
-
-function clearFormErrors(form) {
-    form.querySelectorAll('.form-control, .form-select').forEach(field => {
-        field.classList.remove('is-invalid', 'is-valid');
-    });
-    form.querySelectorAll('.invalid-feedback').forEach(error => {
-        error.remove();
-    });
-}
-
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
-
-function resetSubmitButton(button, originalText) {
-    button.disabled = false;
-    button.innerHTML = originalText;
-}

@@ -1,153 +1,203 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Video Platform</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <title>Sign In - Video Platform</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="min-h-screen bg-background">
-    <div class="flex min-h-screen items-center justify-center p-4">
-        <div class="w-full max-w-md">
+<body>
+    <!-- Authentication Container -->
+    <div class="auth-container">
+        <!-- Background Animation Elements -->
+        <div style="position: absolute; top: 10%; left: 10%; width: 200px; height: 200px; background: hsl(var(--primary) / 0.1); border-radius: 50%; animation: float 6s ease-in-out infinite;"></div>
+        <div style="position: absolute; top: 60%; right: 15%; width: 150px; height: 150px; background: hsl(var(--primary) / 0.05); border-radius: 50%; animation: float 8s ease-in-out infinite reverse;"></div>
+        
+        <!-- Login Card -->
+        <div class="auth-card">
             <!-- Header -->
-            <div class="text-center mb-8 animate-fade-in">
-                <div class="nav-brand-icon mx-auto mb-6 w-16 h-16 text-2xl">
-                    <i class="fas fa-video"></i>
+            <div class="auth-header">
+                <div class="nav-logo justify-center mb-4">
+                    <i class="fas fa-play-circle text-2xl"></i>
+                    <span>VideoHub</span>
                 </div>
-                <h2 class="text-3xl font-bold">Welcome back</h2>
-                <p class="text-sm text-muted-foreground mt-2">Sign in to your Video Platform account</p>
+                <h1 class="auth-title">Welcome back</h1>
+                <p class="auth-description">Sign in to your account to continue</p>
             </div>
 
             <!-- Login Form -->
-            <div class="card animate-slide-in-bottom">
-                <div class="card-content">
-                    <form id="loginForm" class="flex flex-col gap-4">
-                        <div class="form-group">
-                            <label class="label" for="email">Email address</label>
-                            <input
-                                id="email"
-                                type="email"
-                                required
-                                class="input"
-                                placeholder="Enter your email"
-                            />
-                        </div>
+            <form id="loginForm" class="space-y-6">
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope mr-2"></i>
+                        Email address
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-control"
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                    >
+                    <div class="invalid-feedback" id="emailError"></div>
+                </div>
 
-                        <div class="form-group">
-                            <label class="label" for="password">Password</label>
-                            <input
-                                id="password"
-                                type="password"
-                                required
-                                class="input"
-                                placeholder="Enter your password"
-                            />
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-full">
-                            <i class="fas fa-sign-in-alt"></i>
-                            Sign in
-                        </button>
-                    </form>
-
-                    <!-- Divider -->
-                    <div class="relative my-6">
-                        <div class="absolute inset-0 flex items-center">
-                            <span class="w-full border-t border-border"></span>
-                        </div>
-                        <div class="relative flex justify-center text-xs uppercase">
-                            <span class="px-2 text-muted-foreground bg-card">Demo Accounts</span>
-                        </div>
-                    </div>
-
-                    <!-- Quick Login Options -->
-                    <div class="flex flex-col gap-3">
-                        <button
-                            type="button"
-                            onclick="quickLogin('admin@example.com')"
-                            class="btn btn-outline w-full"
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock mr-2"></i>
+                        Password
+                    </label>
+                    <div style="position: relative;">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-control"
+                            placeholder="Enter your password"
+                            required
+                            autocomplete="current-password"
                         >
-                            <i class="fas fa-crown text-warning"></i>
+                        <button 
+                            type="button" 
+                            id="togglePassword"
+                            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: hsl(var(--muted-foreground)); cursor: pointer;"
+                        >
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="invalid-feedback" id="passwordError"></div>
+                </div>
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="flex justify-between items-center text-sm">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="rememberMe" style="width: 16px; height: 16px;">
+                        <span class="text-muted-foreground">Remember me</span>
+                    </label>
+                    <a href="#" class="text-primary hover:underline">Forgot password?</a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-default w-full btn-lg" id="loginButton">
+                    <span id="loginButtonText">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Sign In
+                    </span>
+                    <span id="loginButtonLoading" class="hidden">
+                        <div class="spinner mr-2"></div>
+                        Signing in...
+                    </span>
+                </button>
+
+                <!-- Demo Accounts -->
+                <div class="mt-6">
+                    <div class="text-center text-sm text-muted-foreground mb-4">
+                        Or try a demo account
+                    </div>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button type="button" class="btn btn-outline btn-sm demo-login" data-email="admin@example.com" data-password="admin123" data-role="Admin">
+                            <i class="fas fa-user-shield mr-2"></i>
                             Demo Admin
                         </button>
-
-                        <button
-                            type="button"
-                            onclick="quickLogin('creator@example.com')"
-                            class="btn btn-outline w-full"
-                        >
-                            <i class="fas fa-video text-primary"></i>
-                            Demo Creator
-                        </button>
-
-                        <button
-                            type="button"
-                            onclick="quickLogin('viewer@example.com')"
-                            class="btn btn-outline w-full"
-                        >
-                            <i class="fas fa-eye text-success"></i>
-                            Demo Viewer
-                        </button>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" class="btn btn-outline btn-sm demo-login" data-email="creator@example.com" data-password="creator123" data-role="Creator">
+                                <i class="fas fa-video mr-2"></i>
+                                Creator
+                            </button>
+                            <button type="button" class="btn btn-outline btn-sm demo-login" data-email="viewer@example.com" data-password="viewer123" data-role="Viewer">
+                                <i class="fas fa-eye mr-2"></i>
+                                Viewer
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </form>
 
-            <!-- Footer Links -->
-            <div class="text-center mt-6 animate-fade-in">
+            <!-- Footer -->
+            <div class="text-center mt-6">
                 <p class="text-sm text-muted-foreground">
-                    Don't have an account?{' '}
-                    <a href="signup.html" class="font-medium text-primary hover:underline transition-colors">
+                    Don't have an account?
+                    <a href="signup.html" class="text-primary hover:underline font-medium">
                         Sign up
                     </a>
                 </p>
-                <a href="index.html" class="mt-2 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    Back to home
-                </a>
+                <div class="mt-4">
+                    <a href="index.html" class="text-sm text-muted-foreground hover:text-foreground">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to home
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification Container -->
-    <div class="toast-viewport" id="toast-container"></div>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <div class="flex items-center gap-3">
+            <div id="toastIcon"></div>
+            <div id="toastMessage" class="flex-1"></div>
+            <button onclick="hideToast()" class="text-muted-foreground hover:text-foreground">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
 
+    <!-- Scripts -->
     <script src="assets/js/login.js"></script>
-    <script>
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-
-            const typeClass = type === 'success' ? 'toast-success' : 
-                             type === 'error' ? 'toast-error' : 
-                             type === 'warning' ? 'toast-warning' : '';
-
-            toast.className = `toast-item ${typeClass}`;
-            toast.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                                      type === 'error' ? 'exclamation-circle' : 
-                                      type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
-                    <span class="text-sm font-medium">${message}</span>
-                </div>
-                <button onclick="this.parentElement.remove()" class="btn btn-ghost btn-icon btn-sm">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-
-            container.appendChild(toast);
-
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.style.animation = 'slideInFromRight 0.3s ease-out reverse';
-                    setTimeout(() => toast.remove(), 300);
-                }
-            }, 5000);
+    
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
         }
-
-        // Override the original showNotification function if it exists
-        window.showNotification = showToast;
-    </script>
+        
+        .space-y-6 > * + * {
+            margin-top: 1.5rem;
+        }
+        
+        .hover\:underline:hover {
+            text-decoration: underline;
+        }
+        
+        .hover\:text-foreground:hover {
+            color: hsl(var(--foreground));
+        }
+        
+        .mr-2 {
+            margin-right: 0.5rem;
+        }
+        
+        /* Enhanced form styling */
+        .form-control:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2), var(--shadow-md);
+        }
+        
+        /* Demo button hover effects */
+        .demo-login:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        /* Loading state animation */
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        /* Success animation */
+        @keyframes checkmark {
+            0% { transform: scale(0.8) rotate(-45deg); opacity: 0; }
+            100% { transform: scale(1) rotate(-45deg); opacity: 1; }
+        }
+        
+        .success-checkmark {
+            animation: checkmark 0.3s ease-out;
+        }
+    </style>
 </body>
 </html>
