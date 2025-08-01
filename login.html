@@ -1,12 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - Video Platform</title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <title>Login - VideoHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <!-- Authentication Container -->
@@ -14,7 +14,7 @@
         <!-- Background Animation Elements -->
         <div style="position: absolute; top: 10%; left: 10%; width: 200px; height: 200px; background: hsl(var(--primary) / 0.1); border-radius: 50%; animation: float 6s ease-in-out infinite;"></div>
         <div style="position: absolute; top: 60%; right: 15%; width: 150px; height: 150px; background: hsl(var(--primary) / 0.05); border-radius: 50%; animation: float 8s ease-in-out infinite reverse;"></div>
-        
+
         <!-- Login Card -->
         <div class="auth-card">
             <!-- Header -->
@@ -147,57 +147,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/login.js"></script>
-    
-    <style>
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-        
-        .space-y-6 > * + * {
-            margin-top: 1.5rem;
-        }
-        
-        .hover\:underline:hover {
-            text-decoration: underline;
-        }
-        
-        .hover\:text-foreground:hover {
-            color: hsl(var(--foreground));
-        }
-        
-        .mr-2 {
-            margin-right: 0.5rem;
-        }
-        
-        /* Enhanced form styling */
-        .form-control:focus {
-            transform: translateY(-1px);
-            box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2), var(--shadow-md);
-        }
-        
-        /* Demo button hover effects */
-        .demo-login:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-sm);
-        }
-        
-        /* Loading state animation */
-        .btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-        
-        /* Success animation */
-        @keyframes checkmark {
-            0% { transform: scale(0.8) rotate(-45deg); opacity: 0; }
-            100% { transform: scale(1) rotate(-45deg); opacity: 1; }
-        }
-        
-        .success-checkmark {
-            animation: checkmark 0.3s ease-out;
-        }
-    </style>
 </body>
 </html>

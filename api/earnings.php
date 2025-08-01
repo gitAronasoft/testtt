@@ -49,7 +49,7 @@ switch ($action) {
 
 function getEarnings($user_id, $user_role) {
     $conn = getConnection();
-    
+
     // Build query based on user role
     if ($user_role === 'admin') {
         // Admin sees all earnings
@@ -81,7 +81,7 @@ function getEarnings($user_id, $user_role) {
             WHERE v.uploader_id = ?
         ";
     }
-    
+
     if ($user_role === 'admin') {
         $stmt = $conn->prepare($earnings_query);
         $stmt->execute();
@@ -90,16 +90,16 @@ function getEarnings($user_id, $user_role) {
         $stmt->bind_param("s", $user_id);
         $stmt->execute();
     }
-    
+
     $result = $stmt->get_result();
     $earnings = $result->fetch_assoc();
-    
+
     // Convert null values to 0
     $earnings['total_earnings'] = $earnings['total_earnings'] ?? 0;
     $earnings['total_sales'] = $earnings['total_sales'] ?? 0;
     $earnings['monthly_earnings'] = $earnings['monthly_earnings'] ?? 0;
     $earnings['pending_earnings'] = $earnings['pending_earnings'] ?? 0;
-    
+
     echo json_encode([
         'success' => true,
         'earnings' => [
@@ -109,13 +109,13 @@ function getEarnings($user_id, $user_role) {
             'total_sales' => (int)$earnings['total_sales']
         ]
     ]);
-    
+
     $conn->close();
 }
 
 function getPaidUsers($user_id, $user_role) {
     $conn = getConnection();
-    
+
     if ($user_role === 'admin') {
         // Admin sees all paid users
         $query = "
@@ -151,10 +151,10 @@ function getPaidUsers($user_id, $user_role) {
         $stmt->bind_param("s", $user_id);
         $stmt->execute();
     }
-    
+
     $result = $stmt->get_result();
     $paid_users = [];
-    
+
     while ($row = $result->fetch_assoc()) {
         $paid_users[] = [
             'name' => $row['name'],
@@ -164,18 +164,18 @@ function getPaidUsers($user_id, $user_role) {
             'last_purchase' => $row['last_purchase']
         ];
     }
-    
+
     echo json_encode([
         'success' => true,
         'paid_users' => $paid_users
     ]);
-    
+
     $conn->close();
 }
 
 function getTransactions($user_id, $user_role) {
     $conn = getConnection();
-    
+
     if ($user_role === 'admin') {
         // Admin sees all transactions
         $query = "
@@ -213,10 +213,10 @@ function getTransactions($user_id, $user_role) {
         $stmt->bind_param("s", $user_id);
         $stmt->execute();
     }
-    
+
     $result = $stmt->get_result();
     $transactions = [];
-    
+
     while ($row = $result->fetch_assoc()) {
         $transactions[] = [
             'date' => $row['purchase_date'],
@@ -226,12 +226,176 @@ function getTransactions($user_id, $user_role) {
             'amount' => (float)$row['price']
         ];
     }
-    
+
     echo json_encode([
         'success' => true,
         'transactions' => $transactions
     ]);
-    
+
+    $conn->close();
+}
+?>
+<?php
+session_start();
+require_once 'config.php';
+
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Authentication required']);
+    exit();
+}
+
+$action = $_GET['action'] ?? '';
+
+switch ($action) {
+    case 'stats':
+        handleStats();
+        break;
+    case 'earnings':
+        handleEarnings();
+        break;
+    case 'transactions':
+        handleTransactions();
+        break;
+    case 'paid_users':
+        handlePaidUsers();
+        break;
+    default:
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid action']);
+}
+
+function handleStats() {
+    $conn = getConnection();
+    $user_id = $_SESSION['user']['id'];
+
+    // Get creator stats
+    $stats_query = $conn->prepare("
+        SELECT 
+            COUNT(v.id) as total_videos,
+            COALESCE(SUM(v.views), 0) as total_views,
+            0 as total_subscribers,
+            COALESCE(SUM(CASE WHEN p.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH) THEN v.price ELSE 0 END), 0) as monthly_earnings
+        FROM videos v
+        LEFT JOIN purchases p ON v.id = p.video_id
+        WHERE v.uploader_id = ?
+    ");
+    $stats_query->bind_param("s", $user_id);
+    $stats_query->execute();
+    $result = $stats_query->get_result();
+    $stats = $result->fetch_assoc();
+
+    echo json_encode([
+        'success' => true,
+        'stats' => $stats
+    ]);
+
+    $conn->close();
+}
+
+function handleEarnings() {
+    $conn = getConnection();
+    $user_id = $_SESSION['user']['id'];
+
+    $stmt = $conn->prepare("
+        SELECT 
+            v.id as video_id,
+            v.title as video_title,
+            v.price,
+            v.created_at,
+            COUNT(p.id) as purchase_count,
+            SUM(v.price) as total_earned
+        FROM videos v 
+        LEFT JOIN purchases p ON v.id = p.video_id 
+        WHERE v.uploader_id = ?
+        GROUP BY v.id, v.title, v.price, v.created_at
+        ORDER BY v.created_at DESC
+        ");
+    $stmt->bind_param("s", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $earnings = [];
+    while ($row = $result->fetch_assoc()) {
+        $earnings[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'earnings' => $earnings
+    ]);
+
+    $conn->close();
+}
+
+function handleTransactions() {
+    $conn = getConnection();
+    $user_id = $_SESSION['user']['id'];
+
+    $transactions_query = $conn->prepare("
+        SELECT 
+            p.created_at as date,
+            v.title as video_title,
+            u.name as buyer_name,
+            v.price as amount
+        FROM purchases p
+        JOIN videos v ON p.video_id = v.id
+        JOIN users u ON p.user_id = u.id
+        WHERE v.uploader_id = ?
+        ORDER BY p.created_at DESC
+        LIMIT 50
+    ");
+    $transactions_query->bind_param("s", $user_id);
+    $transactions_query->execute();
+    $result = $transactions_query->get_result();
+
+    $transactions = [];
+    while ($row = $result->fetch_assoc()) {
+        $transactions[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'transactions' => $transactions
+    ]);
+
+    $conn->close();
+}
+
+function handlePaidUsers() {
+    $conn = getConnection();
+    $user_id = $_SESSION['user']['id'];
+
+    $paid_users_query = $conn->prepare("
+        SELECT 
+            u.name,
+            u.email,
+            COUNT(p.id) as purchases_count,
+            SUM(v.price) as total_spent,
+            MAX(p.created_at) as last_purchase
+        FROM users u
+        JOIN purchases p ON u.id = p.user_id
+        JOIN videos v ON p.video_id = v.id
+        WHERE v.uploader_id = ?
+        GROUP BY u.id, u.name, u.email
+        ORDER BY total_spent DESC
+    ");
+    $paid_users_query->bind_param("s", $user_id);
+    $paid_users_query->execute();
+    $result = $paid_users_query->get_result();
+
+    $paid_users = [];
+    while ($row = $result->fetch_assoc()) {
+        $paid_users[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'paid_users' => $paid_users
+    ]);
+
     $conn->close();
 }
 ?>

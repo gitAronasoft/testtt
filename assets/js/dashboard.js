@@ -1,9 +1,57 @@
+// Role-based redirect logic for generic dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    checkForRoleRedirect();
+});
+
+async function checkForRoleRedirect() {
+    // Only redirect if we're on the generic dashboard.html
+    if (!window.location.pathname.includes('dashboard.html')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/auth.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: 'get_user' })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.user) {
+            const user = data.user;
+
+            // Redirect to role-specific dashboard only from generic dashboard
+            switch(user.role) {
+                case 'admin':
+                    window.location.href = 'admin-dashboard.html';
+                    break;
+                case 'editor':
+                case 'creator':
+                    window.location.href = 'creator-dashboard.html';
+                    break;
+                case 'viewer':
+                    window.location.href = 'viewer-dashboard.html';
+                    break;
+                default:
+                    window.location.href = 'login.html';
+                    break;
+            }
+        } else {
+            window.location.href = 'login.html';
+        }
+    } catch (error) {
+        console.error('Failed to check user role:', error);
+        window.location.href = 'login.html';
+    }
+}
+
 // Global variables
 let currentUser = null;
-let allVideos = [];
-let allUsers = [];
-let purchaseVideoId = null;
 let mobileNavOpen = false;
+let allVideos = [];
 
 // Utility functions
 function showLoading(show = true) {
@@ -147,7 +195,7 @@ function setupUserRole() {
     const userNameElement = document.getElementById("userName");
     const userRoleElement = document.getElementById("userRole");
     const userAvatarElement = document.getElementById("userAvatar");
-    
+
     if (userNameElement) {
         userNameElement.textContent = currentUser.name;
     }
@@ -161,7 +209,7 @@ function setupUserRole() {
     // Update welcome section if exists
     const welcomeNameElement = document.getElementById("welcomeName");
     const welcomeRoleElement = document.getElementById("welcomeRole");
-    
+
     if (welcomeNameElement) {
         welcomeNameElement.textContent = currentUser.name;
     }
@@ -221,6 +269,15 @@ function setupDashboard() {
         uploadForm.addEventListener("submit", handleVideoUpload);
     }
 
+    // Setup YouTube upload form handler
+    const youtubeUploadForm = document.getElementById("youtubeUpload");
+    if (youtubeUploadForm) {
+        youtubeUploadForm.addEventListener("submit", async function (e) {
+            e.preventDefault();
+            await handleYouTubeUpload(e);
+        });
+    }
+
     // Clear URL parameters after loading to prevent issues with navigation
     window.history.replaceState({}, document.title, window.location.pathname);
 }
@@ -228,7 +285,7 @@ function setupDashboard() {
 function showPanel(panelName) {
     // Close mobile navigation when panel changes
     closeMobileNav();
-    
+
     // Check if user has permission to access this panel
     if (!hasPermissionForPanel(panelName)) {
         showNotification(
@@ -1088,61 +1145,7 @@ async function syncYouTubeVideos() {
     }
 }
 
-// YouTube Upload Form Handler
-document.addEventListener("DOMContentLoaded", function () {
-    const youtubeUploadForm = document.getElementById("youtubeUpload");
-    if (youtubeUploadForm) {
-        youtubeUploadForm.addEventListener("submit", async function (e) {
-            e.preventDefault();
 
-            const formData = new FormData();
-            formData.append("title", document.getElementById("ytTitle").value);
-            formData.append(
-                "description",
-                document.getElementById("ytDescription").value,
-            );
-            formData.append("tags", document.getElementById("ytTags").value);
-            formData.append(
-                "privacy",
-                document.getElementById("ytPrivacy").value,
-            );
-            formData.append(
-                "video",
-                document.getElementById("ytVideo").files[0],
-            );
-
-            showSpinner();
-
-            try {
-                const response = await fetch(
-                    "api/youtube_api.php?action=upload",
-                    {
-                        method: "POST",
-                        body: formData,
-                    },
-                );
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(
-                        "Video uploaded to YouTube successfully!",
-                        "success",
-                    );
-                    youtubeUploadForm.reset();
-                    await loadYouTubeData();
-                } else {
-                    showToast("Upload failed: " + data.message, "error");
-                }
-            } catch (error) {
-                console.error("Upload error:", error);
-                showToast("Upload failed", "error");
-            } finally {
-                hideSpinner();
-            }
-        });
-    }
-});
 
 async function loadUsers() {
     try {
@@ -1638,19 +1641,19 @@ async function uploadWithRetry(url, options, maxRetries = 3, delay = 1000) {
 // Form Validation Utilities
 function showFieldError(field, message) {
     field.classList.add('is-invalid');
-    
+
     // Remove existing error message
     const existingError = field.parentNode.querySelector('.invalid-feedback');
     if (existingError) {
         existingError.remove();
     }
-    
+
     // Add new error message
     const errorDiv = document.createElement('div');
     errorDiv.className = 'invalid-feedback d-block';
     errorDiv.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>${message}`;
     field.parentNode.appendChild(errorDiv);
-    
+
     // Add animation
     errorDiv.style.animation = 'slideInUp 0.3s ease-out';
 }
@@ -1671,21 +1674,21 @@ function validateVideoFile(file) {
         'video/avi', 'video/mov', 'video/wmv', 
         'video/flv', 'video/mkv'
     ];
-    
+
     if (file.size > maxSize) {
         return {
             valid: false,
             message: 'File size must be less than 100MB'
         };
     }
-    
+
     if (!allowedTypes.includes(file.type)) {
         return {
             valid: false,
             message: 'Please select a valid video file (MP4, WebM, OGG, AVI, MOV, etc.)'
         };
     }
-    
+
     return { valid: true };
 }
 
@@ -1992,8 +1995,8 @@ async function handleYouTubeUpload(event) {
     const description = document.getElementById('ytUploadDescription').value.trim();
     const tags = document.getElementById('ytUploadTags').value.trim().split(',').map(tag => tag.trim()).filter(tag => tag);
     const privacy = document.getElementById('ytUploadPrivacy').value;
-    const fileInput =
- document.getElementById('ytUploadFile');
+	const fileInput = 
+document.getElementById('ytUploadFile');
 
     if (!fileInput.files[0]) {
         showNotification('Please select a video file', 'error');
@@ -2049,9 +2052,9 @@ async function handleYouTubeUpload(event) {
 function toggleMobileNav() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('mobileNavOverlay');
-    
+
     mobileNavOpen = !mobileNavOpen;
-    
+
     if (mobileNavOpen) {
         sidebar.classList.add('show');
         if (!overlay) {
@@ -2091,15 +2094,15 @@ function closeMobileNav() {
 // Enhanced Error Handling
 function handleApiError(error, operation = 'operation') {
     console.error(`${operation} failed:`, error);
-    
+
     let message = `${operation} failed`;
-    
+
     if (error.message) {
         message += `: ${error.message}`;
     } else if (typeof error === 'string') {
         message += `: ${error}`;
     }
-    
+
     showNotification(message, 'error');
 }
 
@@ -2112,7 +2115,7 @@ function setLoadingState(operation, isLoading) {
     } else {
         loadingStates.delete(operation);
     }
-    
+
     showLoading(loadingStates.size > 0);
 }
 
@@ -2203,11 +2206,11 @@ async function saveVideoEdit(videoId) {
 
         if (data.success) {
             showNotification('Video updated successfully!', 'success');
-            
+
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('editVideoModal'));
             modal.hide();
-            
+
             // Refresh videos
             loadMyVideos();
             loadVideos();
@@ -2251,13 +2254,13 @@ async function deleteVideo(videoId) {
 
         if (data.success) {
             showNotification('Video deleted successfully!', 'success');
-            
+
             // Remove from allVideos array
             const index = allVideos.findIndex(v => v.id === videoId);
             if (index !== -1) {
                 allVideos.splice(index, 1);
             }
-            
+
             // Refresh videos
             loadMyVideos();
             loadVideos();
@@ -2810,8 +2813,7 @@ async function syncMyChannel() {
 
     if (!window.youtubeAPI.isSignedIn()) {
         showNotification('Please connect to YouTube first', 'error');
-        return;
-    }
+        return;    }
 
     showLoading(true);
 

@@ -1,12 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Video Platform</title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <title>Sign Up - VideoHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <!-- Authentication Container -->
@@ -14,7 +14,7 @@
         <!-- Background Animation Elements -->
         <div style="position: absolute; top: 20%; right: 10%; width: 180px; height: 180px; background: hsl(var(--primary) / 0.08); border-radius: 50%; animation: float 7s ease-in-out infinite;"></div>
         <div style="position: absolute; bottom: 20%; left: 15%; width: 120px; height: 120px; background: hsl(var(--primary) / 0.06); border-radius: 50%; animation: float 9s ease-in-out infinite reverse;"></div>
-        
+
         <!-- Signup Card -->
         <div class="auth-card" style="max-width: 450px;">
             <!-- Header -->
@@ -90,7 +90,7 @@
                         </button>
                     </div>
                     <div class="invalid-feedback" id="passwordError"></div>
-                    
+
                     <!-- Password Strength Indicator -->
                     <div class="mt-2">
                         <div class="flex gap-1 mb-1">
@@ -212,24 +212,24 @@
         function checkPasswordStrength(password) {
             let score = 0;
             let feedback = [];
-            
+
             if (password.length >= 8) score++;
             if (/[a-z]/.test(password)) score++;
             if (/[A-Z]/.test(password)) score++;
             if (/[0-9]/.test(password)) score++;
             if (/[^A-Za-z0-9]/.test(password)) score++;
-            
+
             const strengthBars = document.querySelectorAll('[id^="strength"]');
             const strengthLevel = document.getElementById('strengthLevel');
-            
+
             // Reset all bars
             strengthBars.forEach(bar => {
                 bar.style.backgroundColor = 'hsl(var(--border))';
             });
-            
+
             let level = 'Weak';
             let color = '#ef4444'; // red
-            
+
             if (score >= 4) {
                 level = 'Strong';
                 color = '#22c55e'; // green
@@ -253,16 +253,16 @@
                 color = '#ef4444'; // red
                 strengthBars[0].style.backgroundColor = color;
             }
-            
+
             strengthLevel.textContent = level;
             strengthLevel.style.color = color;
         }
-        
+
         // Password visibility toggle
         document.getElementById('togglePassword').addEventListener('click', function() {
             const password = document.getElementById('password');
             const icon = this.querySelector('i');
-            
+
             if (password.type === 'password') {
                 password.type = 'text';
                 icon.classList.remove('fa-eye');
@@ -273,20 +273,20 @@
                 icon.classList.add('fa-eye');
             }
         });
-        
+
         // Password strength monitoring
         document.getElementById('password').addEventListener('input', function() {
             checkPasswordStrength(this.value);
         });
-        
+
         // Form validation and submission
         document.getElementById('signupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const submitBtn = document.getElementById('signupButton');
             const btnText = document.getElementById('signupButtonText');
             const btnLoading = document.getElementById('signupButtonLoading');
-            
+
             // Clear previous errors
             document.querySelectorAll('.invalid-feedback').forEach(el => {
                 el.textContent = '';
@@ -295,7 +295,7 @@
             document.querySelectorAll('.form-control').forEach(el => {
                 el.classList.remove('is-invalid');
             });
-            
+
             // Get form data
             const formData = {
                 name: document.getElementById('name').value.trim(),
@@ -304,45 +304,45 @@
                 role: document.getElementById('role').value,
                 agreeTerms: document.getElementById('agreeTerms').checked
             };
-            
+
             // Client-side validation
             let hasErrors = false;
-            
+
             if (!formData.name || formData.name.length < 2) {
                 showFieldError('name', 'Name must be at least 2 characters long');
                 hasErrors = true;
             }
-            
+
             if (!formData.email || !isValidEmail(formData.email)) {
                 showFieldError('email', 'Please enter a valid email address');
                 hasErrors = true;
             }
-            
+
             if (!formData.password || formData.password.length < 6) {
                 showFieldError('password', 'Password must be at least 6 characters long');
                 hasErrors = true;
             }
-            
+
             if (!formData.role) {
                 showFieldError('role', 'Please select an account type');
                 hasErrors = true;
             }
-            
+
             if (!formData.agreeTerms) {
                 showFieldError('terms', 'You must agree to the terms of service');
                 hasErrors = true;
             }
-            
+
             if (hasErrors) {
                 showToast('Please fix the errors above', 'error');
                 return;
             }
-            
+
             // Show loading state
             submitBtn.disabled = true;
             btnText.classList.add('hidden');
             btnLoading.classList.remove('hidden');
-            
+
             try {
                 const response = await fetch('api/auth.php', {
                     method: 'POST',
@@ -357,15 +357,15 @@
                         role: formData.role
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     showToast('Account created successfully! Redirecting...', 'success');
-                    
+
                     // Store user data
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
-                    
+
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1500);
@@ -382,31 +382,31 @@
                 btnLoading.classList.add('hidden');
             }
         });
-        
+
         function showFieldError(fieldName, message) {
             const field = document.getElementById(fieldName);
             const errorEl = document.getElementById(fieldName + 'Error') || document.getElementById('termsError');
-            
+
             if (field) field.classList.add('is-invalid');
             if (errorEl) {
                 errorEl.textContent = message;
                 errorEl.style.display = 'block';
             }
         }
-        
+
         function isValidEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
-        
+
         function showToast(message, type = 'info') {
             const toast = document.getElementById('toast');
             const icon = document.getElementById('toastIcon');
             const messageEl = document.getElementById('toastMessage');
-            
+
             // Set icon based on type
             let iconClass = 'fas fa-info-circle';
             let iconColor = 'hsl(var(--primary))';
-            
+
             if (type === 'success') {
                 iconClass = 'fas fa-check-circle';
                 iconColor = '#22c55e';
@@ -420,81 +420,81 @@
                 iconColor = '#f59e0b';
                 toast.classList.add('warning');
             }
-            
+
             icon.innerHTML = `<i class="${iconClass}" style="color: ${iconColor}"></i>`;
             messageEl.textContent = message;
-            
+
             toast.classList.remove('hidden');
-            
+
             // Auto hide after 5 seconds
             setTimeout(() => {
                 hideToast();
             }, 5000);
         }
-        
+
         function hideToast() {
             const toast = document.getElementById('toast');
             toast.classList.add('hidden');
             toast.classList.remove('success', 'error', 'warning');
         }
     </script>
-    
+
     <style>
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-15px); }
         }
-        
+
         .space-y-6 > * + * {
             margin-top: 1.5rem;
         }
-        
+
         .hover\:underline:hover {
             text-decoration: underline;
         }
-        
+
         .hover\:text-foreground:hover {
             color: hsl(var(--foreground));
         }
-        
+
         .mr-2 {
             margin-right: 0.5rem;
         }
-        
+
         .text-xs {
             font-size: 0.75rem;
         }
-        
+
         .h-1 {
             height: 0.25rem;
         }
-        
+
         .h-px {
             height: 1px;
         }
-        
+
         /* Enhanced form styling */
         .form-control:focus {
             transform: translateY(-1px);
             box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2), var(--shadow-md);
         }
-        
+
         /* Checkbox styling */
         input[type="checkbox"] {
             accent-color: hsl(var(--primary));
         }
-        
+
         /* Role selection hover effect */
         .form-select:hover {
             border-color: hsl(var(--ring));
         }
-        
+
         /* Social button disabled state */
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
         .btn:disabled:hover {
             transform: none;
             box-shadow: none;

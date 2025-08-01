@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 require_once 'config.php';
@@ -44,7 +45,17 @@ if (in_array($action, $admin_only_actions) && $_SESSION['user']['role'] !== 'adm
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        handleGetVideos();
+        $get_action = $_GET['action'] ?? 'get_videos';
+        switch ($get_action) {
+            case 'all':
+            case 'featured':
+            case 'my_videos':
+                handleGetVideos();
+                break;
+            default:
+                handleGetVideos();
+                break;
+        }
         break;
     case 'POST':
         handleUploadVideo();
@@ -147,6 +158,12 @@ function handleUploadVideo() {
         return;
     }
 
+    // Handle YouTube sync
+    if (isset($input['action']) && $input['action'] === 'sync_youtube_videos') {
+        handleYouTubeSyncVideos($input);
+        return;
+    }
+
     // Check if user has permission to upload
     if (!in_array($_SESSION['user']['role'], ['editor', 'admin'])) {
         http_response_code(403);
@@ -220,6 +237,8 @@ function handleUploadVideo() {
 
     $conn->close();
 }
+
+
 
 function handleUpdateVideo() {
     // Handle view increment
@@ -376,92 +395,4 @@ function handleDeleteVideo() {
     $conn->close();
 }
 
-function handleYouTubeSync() {
-    $input = json_decode(file_get_contents('php://input'), true);
-
-    if (!isset($input['videos']) || !is_array($input['videos'])) {
-        echo json_encode(['success' => false, 'message' => 'Videos data is required']);
-        return;
-    }
-
-    $conn = getConnection();
-    $user_id = $_SESSION['user']['id'];
-    $videos = $input['videos'];
-    $synced_count = 0;
-    $errors = [];
-
-    try {
-        foreach ($videos as $video) {
-            // Check if video already exists
-            $check_stmt = $conn->prepare("SELECT id FROM videos WHERE youtube_id = ?");
-            $check_stmt->bind_param("s", $video['youtube_id']);
-            $check_stmt->execute();
-            $existing = $check_stmt->get_result();
-
-            if ($existing->num_rows > 0) {
-                // Update existing video
-                $update_stmt = $conn->prepare("
-                    UPDATE videos SET 
-                    title = ?, 
-                    description = ?, 
-                    youtube_thumbnail = ?, 
-                    youtube_channel_id = ?, 
-                    youtube_channel_title = ?,
-                    is_youtube_synced = TRUE
-                    WHERE youtube_id = ?
-                ");
-                $update_stmt->bind_param("ssssss", 
-                    $video['title'], 
-                    $video['description'], 
-                    $video['youtube_thumbnail'],
-                    $video['youtube_channel_id'],
-                    $video['youtube_channel_title'],
-                    $video['youtube_id']
-                );
-                $update_stmt->execute();
-            } else {
-                // Insert new video
-                $insert_stmt = $conn->prepare("
-                    INSERT INTO videos (
-                        title, description, uploader_id, youtube_id, 
-                        youtube_thumbnail, youtube_channel_id, youtube_channel_title,
-                        is_youtube_synced, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE, ?)
-                ");
-                $created_at = date('Y-m-d H:i:s', strtotime($video['created_at']));
-                $insert_stmt->bind_param("ssssssss", 
-                    $video['title'], 
-                    $video['description'], 
-                    $user_id,
-                    $video['youtube_id'],
-                    $video['youtube_thumbnail'],
-                    $video['youtube_channel_id'],
-                    $video['youtube_channel_title'],
-                    $created_at
-                );
-                $insert_stmt->execute();
-            }
-            $synced_count++;
-        }
-
-        echo json_encode([
-            'success' => true, 
-            'message' => "Successfully synced {$synced_count} videos from YouTube",
-            'synced_count' => $synced_count
-        ]);
-
-    } catch (Exception $e) {
-        echo json_encode([
-            'success' => false, 
-            'message' => 'Error syncing videos: ' . $e->getMessage()
-        ]);
-    }
-
-    $conn->close();
-}
-
-// Check if action is already handled above
-if (function_exists('handleGetVideos')) {
-    exit();
-}
 ?>

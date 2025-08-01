@@ -1,4 +1,5 @@
 
+
 // Enhanced Login Form Handler
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -98,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
         type();
     }
     
-    // Enhanced form submission
+    // Enhanced form submission with role-based redirection
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -162,11 +163,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 showToast(`Welcome back, ${data.user.name}!`, 'success');
                 
+                // Role-based redirection
+                let redirectUrl = '';
+                switch(data.user.role) {
+                    case 'admin':
+                        redirectUrl = 'admin-dashboard.html';
+                        break;
+                    case 'editor':
+                    case 'creator':
+                        redirectUrl = 'creator-dashboard.html';
+                        break;
+                    case 'viewer':
+                        redirectUrl = 'viewer-dashboard.html';
+                        break;
+                    default:
+                        redirectUrl = 'index.html';
+                }
+                
+                // Check for custom redirect parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const customRedirect = urlParams.get('redirect');
+                if (customRedirect) {
+                    redirectUrl = customRedirect;
+                }
+                
                 // Redirect with delay for UX
                 setTimeout(() => {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirect = urlParams.get('redirect') || 'dashboard.html';
-                    window.location.href = redirect;
+                    window.location.href = redirectUrl;
                 }, 1500);
                 
             } else {
@@ -289,3 +312,4 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 });
+
