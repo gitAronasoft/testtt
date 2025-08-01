@@ -262,7 +262,7 @@ function showPanel(panelName) {
             break;
         case "myVideos":
             if (currentUser.role === "editor" || currentUser.role === "admin") {
-                loadMyVideosFromYouTube();
+                // loadMyVideosFromYouTube();
             }
             break;
         case "upload":
@@ -396,34 +396,17 @@ async function loadVideosFromYouTube() {
 
             renderVideos(allVideos);
         } else {
+            console.log('load Dummy Data')
             // No YouTube videos found, fallback to database
-            await loadVideosFromDatabase();
+            await loadDummyVideos();
         }
     } catch (error) {
         console.error("Failed to load YouTube videos:", error);
         showNotification("Failed to load YouTube videos, loading dummy data", "warning");
-        // Fallback to dummy videos on error
+        // Fallback to dummy videos on error       
         await loadDummyVideos();
     } finally {
         showLoading(false);
-    }
-}
-
-// Fallback function to load videos from database
-async function loadVideosFromDatabase() {
-    try {
-        const response = await fetch("api/videos.php");
-        const data = await response.json();
-
-        if (data.success) {
-            allVideos = data.videos;
-            renderVideos(allVideos);
-        } else {
-            showNotification("Failed to load videos: " + data.message, "error");
-        }
-    } catch (error) {
-        console.error("Failed to load videos from database:", error);
-        showNotification("Failed to load videos", "error");
     }
 }
 
@@ -435,7 +418,7 @@ async function loadMyVideosFromYouTube() {
         // Check if YouTube API client is available
         if (!window.youtubeAPI) {
             console.warn('YouTube API client not available');
-            await loadMyVideosFromDatabase();
+            await loadDummyVideos();
             return;
         }
 
@@ -447,7 +430,7 @@ async function loadMyVideosFromYouTube() {
         // Check if YouTube is connected
         if (!window.youtubeAPI.isSignedIn()) {
             showNotification("Please connect to YouTube to view your videos", "warning");
-            await loadMyVideosFromDatabase();
+            await loadDummyVideos();
             return;
         }
 
@@ -466,40 +449,14 @@ async function loadMyVideosFromYouTube() {
     } catch (error) {
         console.error("Failed to load my videos from YouTube:", error);
         showNotification("Failed to load YouTube videos", "error");
-        await loadMyVideosFromDatabase();
+        await loadDummyVideos();
     }
 
     showLoading(false);
 }
 
-// Fallback function to load my videos from database
-async function loadMyVideosFromDatabase() {
-    try {
-        const response = await fetch("api/videos.php?filter=my_videos");
-        const data = await response.json();
-
-        if (data.success) {
-            renderMyVideos(data.videos);
-        } else {
-            showNotification("Failed to load videos: " + data.message, "error");
-        }
-    } catch (error) {
-        console.error("Failed to load my videos:", error);
-        showNotification("Failed to load videos", "error");
-    }
-}
-
-// Legacy function - kept for backward compatibility
-async function loadVideos() {
-    await loadVideosFromYouTube();
-}
-
-// Legacy function - kept for backward compatibility
-async function loadMyVideos() {
-    await loadMyVideosFromYouTube();
-}
-
 function renderVideos(videos) {
+    console.log(videos);
     const container = document.getElementById("videosContainer");
 
     if (!container) {
@@ -1885,11 +1842,11 @@ async function logout() {
 // Function to load dummy videos from a JSON file
 async function loadDummyVideos() {
     try {
-        const response = await fetch('dummy_videos.json');
-        const data = await response.json();
+        const response = await fetch('assets/data/dummy-videos.json');
+        const data = await response.json();  
 
-        if (data.success) {
-            allVideos = data.videos;
+        if (data) {
+            allVideos = data.videos;            
             renderVideos(allVideos);
             showNotification("Loaded videos from local dummy data", "info");
         } else {
