@@ -1,8 +1,4 @@
 <?php
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 // Database configuration - supports both PostgreSQL (Replit) and MySQL
 if (isset($_ENV['DATABASE_URL'])) {
     // PostgreSQL configuration for Replit
@@ -170,47 +166,17 @@ function initializeMySQL() {
         UNIQUE KEY unique_purchase (user_id, video_id)
     )";
 
-    // Create youtube_tokens table (global tokens, not per user)
+    // Create youtube_tokens table
     $youtube_tokens_table = "
     CREATE TABLE IF NOT EXISTS youtube_tokens (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        token_type ENUM('global', 'backup') DEFAULT 'global',
+        user_id VARCHAR(50) NOT NULL,
         access_token TEXT NOT NULL,
         refresh_token TEXT,
         expires_at DATETIME NOT NULL,
-        scope TEXT,
-        token_info JSON,
-        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_token_type (token_type, is_active)
-    )";
-
-    // Create youtube_videos table for synced video metadata
-    $youtube_videos_table = "
-    CREATE TABLE IF NOT EXISTS youtube_videos (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        youtube_video_id VARCHAR(50) UNIQUE NOT NULL,
-        title VARCHAR(500) NOT NULL,
-        description TEXT,
-        thumbnail_url VARCHAR(500),
-        duration VARCHAR(20),
-        published_at DATETIME,
-        view_count BIGINT DEFAULT 0,
-        like_count BIGINT DEFAULT 0,
-        comment_count BIGINT DEFAULT 0,
-        privacy_status VARCHAR(20),
-        upload_status VARCHAR(20),
-        channel_id VARCHAR(50),
-        channel_title VARCHAR(255),
-        tags JSON,
-        category_id VARCHAR(10),
-        default_language VARCHAR(10),
-        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_youtube_video_id (youtube_video_id),
-        INDEX idx_channel_id (channel_id),
-        INDEX idx_published_at (published_at)
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_user_token (user_id)
     )";
 
     if ($conn->query($users_table) === TRUE) {
@@ -224,28 +190,6 @@ function initializeMySQL() {
     if ($conn->query($purchases_table) === TRUE) {
         echo "Purchases table created successfully\n";
     }
-
-    if ($conn->query($youtube_tokens_table) === TRUE) {
-        echo "YouTube tokens table created successfully\n";
-    }
-
-    if ($conn->query($youtube_videos_table) === TRUE) {
-        echo "YouTube videos metadata table created successfully\n";
-    }
-
-    // Create YouTube tokens table
-    $youtube_tokens_table = "
-    CREATE TABLE IF NOT EXISTS youtube_tokens (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id VARCHAR(50) NOT NULL,
-        access_token TEXT NOT NULL,
-        refresh_token TEXT,
-        token_type VARCHAR(50) DEFAULT 'Bearer',
-        expires_at DATETIME NOT NULL,
-        scope TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )";
 
     if ($conn->query($youtube_tokens_table) === TRUE) {
         echo "YouTube tokens table created successfully\n";
@@ -272,7 +216,6 @@ function insertDefaultUsers($connection) {
                     $stmt = $connection->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
                     $hashed_password = password_hash($user[3], PASSWORD_DEFAULT);
                     $stmt->execute([$user[0], $user[1], $user[2], $hashed_password, $user[4]]);
-                    echo "Created user: " . $user[2] . " with hashed password\n";
                 }
             } catch (PDOException $e) {
                 echo "Error inserting user: " . $e->getMessage() . "\n";
@@ -289,18 +232,12 @@ function insertDefaultUsers($connection) {
                 $stmt = $connection->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
                 $hashed_password = password_hash($user[3], PASSWORD_DEFAULT);
                 $stmt->bind_param("sssss", $user[0], $user[1], $user[2], $hashed_password, $user[4]);
-                if ($stmt->execute()) {
-                    echo "Created user: " . $user[2] . " with hashed password\n";
-                } else {
-                    echo "Failed to create user: " . $user[2] . "\n";
-                }
-            } else {
-                echo "User already exists: " . $user[2] . "\n";
+                $stmt->execute();
             }
         }
     }
 
-    echo "Default users processing completed\n";
+    echo "Default users created\n";
 }
 
 // Database query helper function

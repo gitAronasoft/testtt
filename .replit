@@ -1,5 +1,5 @@
 run = "php -S 0.0.0.0:8000 -t ."
-modules = ["nodejs-20", "web", "php-8.2", "nix"]
+modules = ["php-8.2", "nodejs-20", "web", "nix"]
 
 [nix]
 channel = "stable-25_05"
@@ -17,7 +17,7 @@ localPort = 8000
 externalPort = 80
 
 [workflows]
-runButton = "Run Web Server"
+runButton = "Run PHP Server"
 
 [[workflows.workflow]]
 name = "Run PHP Server"
@@ -35,4 +35,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "php -S 0.0.0.0:5000 -t ."
+args = "php -S 0.0.0.0:8000 -t ."

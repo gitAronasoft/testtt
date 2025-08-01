@@ -3,502 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - VideoHub</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <title>Sign Up - Video Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
 </head>
-<body>
-    <!-- Authentication Container -->
-    <div class="auth-container">
-        <!-- Background Animation Elements -->
-        <div style="position: absolute; top: 20%; right: 10%; width: 180px; height: 180px; background: hsl(var(--primary) / 0.08); border-radius: 50%; animation: float 7s ease-in-out infinite;"></div>
-        <div style="position: absolute; bottom: 20%; left: 15%; width: 120px; height: 120px; background: hsl(var(--primary) / 0.06); border-radius: 50%; animation: float 9s ease-in-out infinite reverse;"></div>
-
-        <!-- Signup Card -->
-        <div class="auth-card" style="max-width: 450px;">
-            <!-- Header -->
-            <div class="auth-header">
-                <div class="nav-logo justify-center mb-4">
-                    <i class="fas fa-play-circle text-2xl"></i>
-                    <span>VideoHub</span>
-                </div>
-                <h1 class="auth-title">Create your account</h1>
-                <p class="auth-description">Join thousands of creators and viewers</p>
-            </div>
-
-            <!-- Signup Form -->
-            <form id="signupForm" class="space-y-6">
-                <div class="form-group">
-                    <label for="name" class="form-label">
-                        <i class="fas fa-user mr-2"></i>
-                        Full Name
-                    </label>
-                    <input 
-                        type="text" 
-                        id="name" 
-                        name="name" 
-                        class="form-control"
-                        placeholder="Enter your full name"
-                        required
-                        autocomplete="name"
-                    >
-                    <div class="invalid-feedback" id="nameError"></div>
+<body class="bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="text-center mt-5 mb-4">
+                    <h2><i class="fas fa-video me-2"></i>Video Platform</h2>
+                    <p class="text-muted">Create your account</p>
                 </div>
 
-                <div class="form-group">
-                    <label for="email" class="form-label">
-                        <i class="fas fa-envelope mr-2"></i>
-                        Email address
-                    </label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        class="form-control"
-                        placeholder="Enter your email"
-                        required
-                        autocomplete="email"
-                    >
-                    <div class="invalid-feedback" id="emailError"></div>
-                    <div class="text-xs text-muted-foreground mt-1">
-                        We'll never share your email with anyone else.
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <form id="signupForm">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" required minlength="6">
+                            </div>
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Account Type</label>
+                                <select class="form-select" id="role" required>
+                                    <option value="viewer">Viewer (Watch videos)</option>
+                                    <option value="editor">Editor (Upload videos)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-user-plus me-2"></i>Sign Up
+                            </button>
+                        </form>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="password" class="form-label">
-                        <i class="fas fa-lock mr-2"></i>
-                        Password
-                    </label>
-                    <div style="position: relative;">
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            class="form-control"
-                            placeholder="Create a strong password"
-                            required
-                            autocomplete="new-password"
-                        >
-                        <button 
-                            type="button" 
-                            id="togglePassword"
-                            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: hsl(var(--muted-foreground)); cursor: pointer;"
-                        >
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                    <div class="invalid-feedback" id="passwordError"></div>
-
-                    <!-- Password Strength Indicator -->
-                    <div class="mt-2">
-                        <div class="flex gap-1 mb-1">
-                            <div class="h-1 flex-1 rounded-full bg-border" id="strength1"></div>
-                            <div class="h-1 flex-1 rounded-full bg-border" id="strength2"></div>
-                            <div class="h-1 flex-1 rounded-full bg-border" id="strength3"></div>
-                            <div class="h-1 flex-1 rounded-full bg-border" id="strength4"></div>
-                        </div>
-                        <div class="text-xs text-muted-foreground" id="strengthText">
-                            Password strength: <span id="strengthLevel">Weak</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="role" class="form-label">
-                        <i class="fas fa-user-tag mr-2"></i>
-                        Account Type
-                    </label>
-                    <select id="role" name="role" class="form-control form-select" required>
-                        <option value="">Select your role</option>
-                        <option value="viewer">Viewer - Watch and purchase videos</option>
-                        <option value="editor">Creator - Upload and monetize content</option>
-                    </select>
-                    <div class="invalid-feedback" id="roleError"></div>
-                </div>
-
-                <!-- Terms and Privacy -->
-                <div class="form-group">
-                    <label class="flex items-start gap-3">
-                        <input type="checkbox" id="agreeTerms" required style="width: 16px; height: 16px; margin-top: 2px;">
-                        <span class="text-sm text-muted-foreground">
-                            I agree to the 
-                            <a href="#" class="text-primary hover:underline">Terms of Service</a> 
-                            and 
-                            <a href="#" class="text-primary hover:underline">Privacy Policy</a>
-                        </span>
-                    </label>
-                    <div class="invalid-feedback" id="termsError"></div>
-                </div>
-
-                <!-- Marketing Consent -->
-                <div class="form-group">
-                    <label class="flex items-start gap-3">
-                        <input type="checkbox" id="marketingConsent" style="width: 16px; height: 16px; margin-top: 2px;">
-                        <span class="text-sm text-muted-foreground">
-                            Send me updates, tips, and special offers via email
-                        </span>
-                    </label>
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" class="btn btn-default w-full btn-lg" id="signupButton">
-                    <span id="signupButtonText">
-                        <i class="fas fa-user-plus mr-2"></i>
-                        Create Account
-                    </span>
-                    <span id="signupButtonLoading" class="hidden">
-                        <div class="spinner mr-2"></div>
-                        Creating account...
-                    </span>
-                </button>
-
-                <!-- Social Signup (Placeholder) -->
-                <div class="mt-6">
-                    <div class="flex items-center mb-4">
-                        <div class="flex-1 h-px bg-border"></div>
-                        <span class="px-4 text-sm text-muted-foreground">Or continue with</span>
-                        <div class="flex-1 h-px bg-border"></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button type="button" class="btn btn-outline" disabled>
-                            <i class="fab fa-google mr-2"></i>
-                            Google
-                        </button>
-                        <button type="button" class="btn btn-outline" disabled>
-                            <i class="fab fa-github mr-2"></i>
-                            GitHub
-                        </button>
-                    </div>
-                    <div class="text-center mt-2">
-                        <span class="text-xs text-muted-foreground">Social login coming soon</span>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Footer -->
-            <div class="text-center mt-6">
-                <p class="text-sm text-muted-foreground">
-                    Already have an account?
-                    <a href="login.html" class="text-primary hover:underline font-medium">
-                        Sign in
-                    </a>
-                </p>
-                <div class="mt-4">
-                    <a href="index.html" class="text-sm text-muted-foreground hover:text-foreground">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back to home
-                    </a>
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="login.html">Login</a></p>
+                    <a href="index.html" class="text-muted">← Back to home</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast hidden">
-        <div class="flex items-center gap-3">
-            <div id="toastIcon"></div>
-            <div id="toastMessage" class="flex-1"></div>
-            <button onclick="hideToast()" class="text-muted-foreground hover:text-foreground">
-                <i class="fas fa-times"></i>
-            </button>
+    <!-- Toast container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notificationToast" class="toast" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toastMessage"></div>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Password strength checker
-        function checkPasswordStrength(password) {
-            let score = 0;
-            let feedback = [];
-
-            if (password.length >= 8) score++;
-            if (/[a-z]/.test(password)) score++;
-            if (/[A-Z]/.test(password)) score++;
-            if (/[0-9]/.test(password)) score++;
-            if (/[^A-Za-z0-9]/.test(password)) score++;
-
-            const strengthBars = document.querySelectorAll('[id^="strength"]');
-            const strengthLevel = document.getElementById('strengthLevel');
-
-            // Reset all bars
-            strengthBars.forEach(bar => {
-                bar.style.backgroundColor = 'hsl(var(--border))';
-            });
-
-            let level = 'Weak';
-            let color = '#ef4444'; // red
-
-            if (score >= 4) {
-                level = 'Strong';
-                color = '#22c55e'; // green
-                for (let i = 0; i < 4; i++) {
-                    strengthBars[i].style.backgroundColor = color;
-                }
-            } else if (score >= 3) {
-                level = 'Good';
-                color = '#f59e0b'; // yellow
-                for (let i = 0; i < 3; i++) {
-                    strengthBars[i].style.backgroundColor = color;
-                }
-            } else if (score >= 2) {
-                level = 'Fair';
-                color = '#f97316'; // orange
-                for (let i = 0; i < 2; i++) {
-                    strengthBars[i].style.backgroundColor = color;
-                }
-            } else if (score >= 1) {
-                level = 'Weak';
-                color = '#ef4444'; // red
-                strengthBars[0].style.backgroundColor = color;
-            }
-
-            strengthLevel.textContent = level;
-            strengthLevel.style.color = color;
-        }
-
-        // Password visibility toggle
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const password = document.getElementById('password');
-            const icon = this.querySelector('i');
-
-            if (password.type === 'password') {
-                password.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                password.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        });
-
-        // Password strength monitoring
-        document.getElementById('password').addEventListener('input', function() {
-            checkPasswordStrength(this.value);
-        });
-
-        // Form validation and submission
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const submitBtn = document.getElementById('signupButton');
-            const btnText = document.getElementById('signupButtonText');
-            const btnLoading = document.getElementById('signupButtonLoading');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
 
-            // Clear previous errors
-            document.querySelectorAll('.invalid-feedback').forEach(el => {
-                el.textContent = '';
-                el.style.display = 'none';
-            });
-            document.querySelectorAll('.form-control').forEach(el => {
-                el.classList.remove('is-invalid');
-            });
-
-            // Get form data
-            const formData = {
-                name: document.getElementById('name').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                password: document.getElementById('password').value,
-                role: document.getElementById('role').value,
-                agreeTerms: document.getElementById('agreeTerms').checked
-            };
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
 
             // Client-side validation
-            let hasErrors = false;
-
-            if (!formData.name || formData.name.length < 2) {
-                showFieldError('name', 'Name must be at least 2 characters long');
-                hasErrors = true;
-            }
-
-            if (!formData.email || !isValidEmail(formData.email)) {
-                showFieldError('email', 'Please enter a valid email address');
-                hasErrors = true;
-            }
-
-            if (!formData.password || formData.password.length < 6) {
-                showFieldError('password', 'Password must be at least 6 characters long');
-                hasErrors = true;
-            }
-
-            if (!formData.role) {
-                showFieldError('role', 'Please select an account type');
-                hasErrors = true;
-            }
-
-            if (!formData.agreeTerms) {
-                showFieldError('terms', 'You must agree to the terms of service');
-                hasErrors = true;
-            }
-
-            if (hasErrors) {
-                showToast('Please fix the errors above', 'error');
+            if (!validateForm(name, email, password, role)) {
+                resetSubmitButton(submitBtn, originalText);
                 return;
             }
 
-            // Show loading state
-            submitBtn.disabled = true;
-            btnText.classList.add('hidden');
-            btnLoading.classList.remove('hidden');
+            // Simulate network delay
+            setTimeout(() => {
+                // Create new user
+                const newUser = {
+                    id: 'user_' + Date.now(),
+                    name: name,
+                    email: email,
+                    role: role,
+                    created_at: new Date().toISOString()
+                };
 
-            try {
-                const response = await fetch('api/auth.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'register',
-                        name: formData.name,
-                        email: formData.email,
-                        password: formData.password,
-                        role: formData.role
-                    })
-                });
+                // Store user in localStorage
+                localStorage.setItem('currentUser', JSON.stringify(newUser));
 
-                const data = await response.json();
+                showNotification('Account created successfully! Redirecting to dashboard...', 'success');
 
-                if (data.success) {
-                    showToast('Account created successfully! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+            }, 1000);
+        });
 
-                    // Store user data
-                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+        function validateForm(name, email, password, role) {
+            // Clear previous error states
+            clearErrors();
 
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1500);
-                } else {
-                    showToast(data.message || 'Registration failed', 'error');
-                }
-            } catch (error) {
-                console.error('Registration error:', error);
-                showToast('Registration failed. Please try again.', 'error');
-            } finally {
-                // Reset button state
-                submitBtn.disabled = false;
-                btnText.classList.remove('hidden');
-                btnLoading.classList.add('hidden');
+            let isValid = true;
+
+            // Validate name
+            if (!name || name.length < 2) {
+                showFieldError('name', 'Name must be at least 2 characters long');
+                isValid = false;
+            }
+
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email || !emailRegex.test(email)) {
+                showFieldError('email', 'Please enter a valid email address');
+                isValid = false;
+            }
+
+            // Validate password
+            if (!password || password.length < 6) {
+                showFieldError('password', 'Password must be at least 6 characters long');
+                isValid = false;
+            } else if (!/(?=.*[a-z])(?=.*[A-Z])|(?=.*\d)/.test(password)) {
+                showFieldError('password', 'Password should contain uppercase, lowercase, or numbers');
+                isValid = false;
+            }
+
+            // Validate role
+            if (!role || !['viewer', 'editor'].includes(role)) {
+                showFieldError('role', 'Please select a valid account type');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            field.classList.add('is-invalid');
+            
+            // Remove existing error message
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            // Add error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            field.parentNode.appendChild(errorDiv);
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.form-control, .form-select').forEach(field => {
+                field.classList.remove('is-invalid');
+            });
+            document.querySelectorAll('.invalid-feedback').forEach(error => {
+                error.remove();
+            });
+        }
+
+        function resetSubmitButton(button, originalText) {
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }
+
+        function showNotification(message, type) {
+            const toast = document.getElementById('notificationToast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toastMessage.textContent = message;
+            toast.className = `toast ${type === 'success' ? 'bg-success' : 'bg-danger'} text-white`;
+
+            new bootstrap.Toast(toast).show();
+        }
+
+        // Real-time validation feedback
+        document.getElementById('email').addEventListener('blur', function() {
+            const email = this.value.trim();
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
             }
         });
 
-        function showFieldError(fieldName, message) {
-            const field = document.getElementById(fieldName);
-            const errorEl = document.getElementById(fieldName + 'Error') || document.getElementById('termsError');
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strengthIndicator = document.getElementById('passwordStrength') || createPasswordStrengthIndicator();
+            updatePasswordStrength(password, strengthIndicator);
+        });
 
-            if (field) field.classList.add('is-invalid');
-            if (errorEl) {
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
+        function createPasswordStrengthIndicator() {
+            const indicator = document.createElement('div');
+            indicator.id = 'passwordStrength';
+            indicator.className = 'form-text';
+            document.getElementById('password').parentNode.appendChild(indicator);
+            return indicator;
+        }
+
+        function updatePasswordStrength(password, indicator) {
+            if (!password) {
+                indicator.textContent = '';
+                return;
+            }
+
+            let strength = 0;
+            let feedback = [];
+
+            if (password.length >= 6) strength++;
+            else feedback.push('at least 6 characters');
+
+            if (/[a-z]/.test(password)) strength++;
+            else feedback.push('lowercase letter');
+
+            if (/[A-Z]/.test(password)) strength++;
+            else feedback.push('uppercase letter');
+
+            if (/\d/.test(password)) strength++;
+            else feedback.push('number');
+
+            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+            const strengthText = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'][strength];
+            const strengthColor = ['text-danger', 'text-warning', 'text-info', 'text-success', 'text-success'][strength];
+
+            if (feedback.length > 0 && password.length < 8) {
+                indicator.innerHTML = `<span class="${strengthColor}">Strength: ${strengthText}</span> - Add: ${feedback.slice(0, 2).join(', ')}`;
+            } else {
+                indicator.innerHTML = `<span class="${strengthColor}">Password strength: ${strengthText}</span>`;
             }
         }
 
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            const icon = document.getElementById('toastIcon');
-            const messageEl = document.getElementById('toastMessage');
-
-            // Set icon based on type
-            let iconClass = 'fas fa-info-circle';
-            let iconColor = 'hsl(var(--primary))';
-
-            if (type === 'success') {
-                iconClass = 'fas fa-check-circle';
-                iconColor = '#22c55e';
-                toast.classList.add('success');
-            } else if (type === 'error') {
-                iconClass = 'fas fa-exclamation-circle';
-                iconColor = 'hsl(var(--destructive))';
-                toast.classList.add('error');
-            } else if (type === 'warning') {
-                iconClass = 'fas fa-exclamation-triangle';
-                iconColor = '#f59e0b';
-                toast.classList.add('warning');
+        // Check if already logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                window.location.href = 'dashboard.html';
             }
-
-            icon.innerHTML = `<i class="${iconClass}" style="color: ${iconColor}"></i>`;
-            messageEl.textContent = message;
-
-            toast.classList.remove('hidden');
-
-            // Auto hide after 5 seconds
-            setTimeout(() => {
-                hideToast();
-            }, 5000);
-        }
-
-        function hideToast() {
-            const toast = document.getElementById('toast');
-            toast.classList.add('hidden');
-            toast.classList.remove('success', 'error', 'warning');
-        }
+        });
     </script>
-
-    <style>
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-        }
-
-        .space-y-6 > * + * {
-            margin-top: 1.5rem;
-        }
-
-        .hover\:underline:hover {
-            text-decoration: underline;
-        }
-
-        .hover\:text-foreground:hover {
-            color: hsl(var(--foreground));
-        }
-
-        .mr-2 {
-            margin-right: 0.5rem;
-        }
-
-        .text-xs {
-            font-size: 0.75rem;
-        }
-
-        .h-1 {
-            height: 0.25rem;
-        }
-
-        .h-px {
-            height: 1px;
-        }
-
-        /* Enhanced form styling */
-        .form-control:focus {
-            transform: translateY(-1px);
-            box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2), var(--shadow-md);
-        }
-
-        /* Checkbox styling */
-        input[type="checkbox"] {
-            accent-color: hsl(var(--primary));
-        }
-
-        /* Role selection hover effect */
-        .form-select:hover {
-            border-color: hsl(var(--ring));
-        }
-
-        /* Social button disabled state */
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn:disabled:hover {
-            transform: none;
-            box-shadow: none;
-        }
-    </style>
 </body>
 </html>
