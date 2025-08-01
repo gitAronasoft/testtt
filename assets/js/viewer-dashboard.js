@@ -1,20 +1,32 @@
-
-// Viewer Dashboard JavaScript
 let currentUser = null;
 let mobileNavOpen = false;
 
 // Initialize viewer dashboard
-document.addEventListener('DOMContentLoaded', function() {
+function initializeViewerDashboard() {
     checkAuthentication();
     setupTheme();
     setupMobileNavigation();
-    initializeViewerDashboard();
-    setupSearch();
-});
+}
 
 // Check if user is authenticated and has viewer role
 async function checkAuthentication() {
     try {
+        // First check localStorage
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            currentUser = JSON.parse(storedUser);
+
+            // Check if user has viewer role
+            if (currentUser.role !== 'viewer') {
+                redirectToAppropriateRole(currentUser.role);
+                return;
+            }
+
+            setupUserInfo();
+            loadViewerData();
+            return;
+        }
+
         const response = await fetch('/api/auth.php', {
             method: 'POST',
             headers: {
@@ -27,44 +39,132 @@ async function checkAuthentication() {
 
         if (data.success && data.user) {
             currentUser = data.user;
-            
-            // Allow access for all roles, but redirect admins and creators to their dashboards
-            if (currentUser.role === 'admin') {
-                // Show option to switch to admin dashboard but allow viewing
-            } else if (['editor', 'creator'].includes(currentUser.role)) {
-                // Show option to switch to creator dashboard but allow viewing
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+            // Check if user has viewer role
+            if (currentUser.role !== 'viewer') {
+                redirectToAppropriateRole(currentUser.role);
+                return;
             }
-            
+
             setupUserInfo();
             loadViewerData();
         } else {
-            window.location.href = 'login.html';
+            window.location.replace('login.html');
         }
     } catch (error) {
         console.error('Authentication check failed:', error);
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
     }
 }
 
-// Setup user information in the UI
+// Redirect to appropriate dashboard based on role
+function redirectToAppropriateRole(role) {
+    switch(role) {
+        case 'admin':
+            window.location.href = 'admin-dashboard.html';
+            break;
+        case 'editor':
+        case 'creator':
+            window.location.href = 'creator-dashboard.html';
+            break;
+        default:
+            window.location.href = 'login.html';
+    }
+}
+
 function setupUserInfo() {
-    const userNameElement = document.getElementById('userName');
-    const userAvatarElement = document.getElementById('userAvatar');
+    const userNameEl = document.getElementById('userName');
+    const userRoleEl = document.getElementById('userRole');
+    const userAvatarEl = document.getElementById('userAvatar');
 
-    if (userNameElement) {
-        userNameElement.textContent = currentUser.name;
-    }
-    if (userAvatarElement) {
-        userAvatarElement.textContent = currentUser.name.charAt(0).toUpperCase();
+    if (currentUser) {
+        if (userNameEl) userNameEl.textContent = currentUser.name;
+        if (userRoleEl) userRoleEl.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+        if (userAvatarEl) userAvatarEl.textContent = currentUser.name.charAt(0).toUpperCase();
     }
 }
 
-// Initialize viewer dashboard
-function initializeViewerDashboard() {
-    showPanel('discover');
+function setupTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
+}
+
+function setupMobileNavigation() {
+    const mobileToggle = document.getElementById('mobileToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    if (mobileToggle && sidebar) {
+        mobileToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+            mobileNavOpen = !mobileNavOpen;
+        });
+    }
+}
+
+async function loadViewerData() {
+    try {
+        showLoading(true);
+
+        // Load viewer statistics (placeholder for now)
+        updateDashboardStats({
+            available_videos: 0,
+            free_videos: 0,
+            my_purchases: 0,
+            total_spent: 0
+        });
+
+    } catch (error) {
+        console.error('Failed to load viewer data:', error);
+        showNotification('Failed to load dashboard data', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function updateDashboardStats(stats) {
+    const elements = {
+        availableVideos: document.getElementById('availableVideos'),
+        freeVideos: document.getElementById('freeVideos'),
+        myPurchases: document.getElementById('myPurchases'),
+        totalSpent: document.getElementById('totalSpent')
+    };
+
+    if (stats) {
+        if (elements.availableVideos) elements.availableVideos.textContent = stats.available_videos || 0;
+        if (elements.freeVideos) elements.freeVideos.textContent = stats.free_videos || 0;
+        if (elements.myPurchases) elements.myPurchases.textContent = stats.my_purchases || 0;
+        if (elements.totalSpent) elements.totalSpent.textContent = '$' + (stats.total_spent || 0).toFixed(2);
+    }
+}
+
+function showLoading(show, message = 'Loading...') {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        if (show) {
+            overlay.classList.remove('hidden');
+        } else {
+            overlay.classList.add('hidden');
+        }
+    }
+}
+
+function showNotification(message, type = 'info') {
+    if (typeof showToast === 'function') {
+        showToast(message, type);
+    } else {
+        console.log(`${type.toUpperCase()}: ${message}`);
+    }
+}
+
+// Viewer Dashboard JavaScript
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeViewerDashboard();
+    setupSearch();
     loadFeaturedVideos();
     loadAllVideos();
-}
+});
 
 // Load featured videos
 async function loadFeaturedVideos() {
@@ -99,7 +199,7 @@ function displayFeaturedVideos(videos) {
 
     // Show only first 3 featured videos
     const featuredVideos = videos.slice(0, 3);
-    
+
     container.innerHTML = featuredVideos.map(video => `
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card border-0 shadow-lg hover-lift position-relative overflow-hidden">
@@ -465,26 +565,13 @@ function openVideoPlayer(videoId) {
 }
 
 // Theme management
-function setupTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    const body = document.body;
-    const themeIcon = document.querySelector('.theme-icon');
-    
-    if (savedTheme === 'dark') {
-        body.setAttribute('data-theme', 'dark');
-        body.classList.add('dark');
-        if (themeIcon) {
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-        }
-    }
-}
+
 
 function toggleTheme() {
     const body = document.body;
     const themeIcon = document.querySelector('.theme-icon');
     const currentTheme = body.getAttribute('data-theme');
-    
+
     if (currentTheme === 'light') {
         body.setAttribute('data-theme', 'dark');
         body.classList.add('dark');
@@ -505,12 +592,7 @@ function toggleTheme() {
 }
 
 // Mobile navigation
-function setupMobileNavigation() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar && window.innerWidth < 992) {
-        sidebar.classList.add('d-none');
-    }
-}
+
 
 function toggleMobileNav() {
     const sidebar = document.getElementById('sidebar');
@@ -558,10 +640,7 @@ function debounce(func, wait) {
     };
 }
 
-function showNotification(message, type = 'info') {
-    console.log(`${type.toUpperCase()}: ${message}`);
-    // Enhanced notification implementation can be added here
-}
+
 
 // Logout function
 async function logout() {
@@ -595,3 +674,4 @@ window.addToWatchlist = addToWatchlist;
 window.filterVideos = filterVideos;
 window.filterByCategory = filterByCategory;
 window.sortVideos = sortVideos;
+window.showNotification = showNotification;

@@ -1,19 +1,32 @@
-
-// Creator Dashboard JavaScript
 let currentUser = null;
 let mobileNavOpen = false;
 
 // Initialize creator dashboard
-document.addEventListener('DOMContentLoaded', function() {
+function initializeCreatorDashboard() {
     checkAuthentication();
     setupTheme();
     setupMobileNavigation();
-    initializeCreatorDashboard();
-});
+}
 
-// Check if user is authenticated and has creator role
+// Check if user is authenticated and has creator/editor role
 async function checkAuthentication() {
     try {
+        // First check localStorage
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            currentUser = JSON.parse(storedUser);
+
+            // Check if user has creator/editor role
+            if (!['editor', 'creator', 'admin'].includes(currentUser.role)) {
+                redirectToAppropriateRole(currentUser.role);
+                return;
+            }
+
+            setupUserInfo();
+            loadCreatorData();
+            return;
+        }
+
         const response = await fetch('/api/auth.php', {
             method: 'POST',
             headers: {
@@ -26,49 +39,121 @@ async function checkAuthentication() {
 
         if (data.success && data.user) {
             currentUser = data.user;
-            
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
             // Check if user has creator/editor role
             if (!['editor', 'creator', 'admin'].includes(currentUser.role)) {
-                // Redirect to appropriate dashboard based on role
-                switch(currentUser.role) {
-                    case 'viewer':
-                        window.location.href = 'viewer-dashboard.html';
-                        break;
-                    default:
-                        window.location.href = 'login.html';
-                }
+                redirectToAppropriateRole(currentUser.role);
                 return;
             }
-            
+
             setupUserInfo();
             loadCreatorData();
         } else {
-            window.location.href = 'login.html';
+            window.location.replace('login.html');
         }
     } catch (error) {
         console.error('Authentication check failed:', error);
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
     }
 }
 
-// Setup user information in the UI
+// Redirect to appropriate dashboard based on role
+function redirectToAppropriateRole(role) {
+    switch(role) {
+        case 'admin':
+            window.location.href = 'admin-dashboard.html';
+            break;
+        case 'viewer':
+            window.location.href = 'viewer-dashboard.html';
+            break;
+        default:
+            window.location.href = 'login.html';
+    }
+}
+
 function setupUserInfo() {
-    const userNameElement = document.getElementById('userName');
-    const userAvatarElement = document.getElementById('userAvatar');
+    const userNameEl = document.getElementById('userName');
+    const userRoleEl = document.getElementById('userRole');
+    const userAvatarEl = document.getElementById('userAvatar');
 
-    if (userNameElement) {
-        userNameElement.textContent = currentUser.name;
-    }
-    if (userAvatarElement) {
-        userAvatarElement.textContent = currentUser.name.charAt(0).toUpperCase();
+    if (currentUser) {
+        if (userNameEl) userNameEl.textContent = currentUser.name;
+        if (userRoleEl) userRoleEl.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+        if (userAvatarEl) userAvatarEl.textContent = currentUser.name.charAt(0).toUpperCase();
     }
 }
 
-// Initialize creator dashboard
-function initializeCreatorDashboard() {
-    showPanel('overview');
-    loadCreatorStats();
-    loadRecentVideos();
+function setupTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
+}
+
+function setupMobileNavigation() {
+    const mobileToggle = document.getElementById('mobileToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    if (mobileToggle && sidebar) {
+        mobileToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+            mobileNavOpen = !mobileNavOpen;
+        });
+    }
+}
+
+async function loadCreatorData() {
+    try {
+        showLoading(true);
+
+        // Load creator statistics (placeholder for now)
+        updateDashboardStats({
+            total_videos: 0,
+            total_views: 0,
+            total_earnings: 0,
+            total_customers: 0
+        });
+
+    } catch (error) {
+        console.error('Failed to load creator data:', error);
+        showNotification('Failed to load dashboard data', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function updateDashboardStats(stats) {
+    const elements = {
+        totalVideos: document.getElementById('totalVideos'),
+        totalViews: document.getElementById('totalViews'),
+        totalEarnings: document.getElementById('totalEarnings'),
+        totalCustomers: document.getElementById('totalCustomers')
+    };
+
+    if (stats) {
+        if (elements.totalVideos) elements.totalVideos.textContent = stats.total_videos || 0;
+        if (elements.totalViews) elements.totalViews.textContent = (stats.total_views || 0).toLocaleString();
+        if (elements.totalEarnings) elements.totalEarnings.textContent = '$' + (stats.total_earnings || 0).toFixed(2);
+        if (elements.totalCustomers) elements.totalCustomers.textContent = stats.total_customers || 0;
+    }
+}
+
+function showLoading(show, message = 'Loading...') {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        if (show) {
+            overlay.classList.remove('hidden');
+        } else {
+            overlay.classList.add('hidden');
+        }
+    }
+}
+
+function showNotification(message, type = 'info') {
+    if (typeof showToast === 'function') {
+        showToast(message, type);
+    } else {
+        console.log(`${type.toUpperCase()}: ${message}`);
+    }
 }
 
 // Load creator statistics
@@ -338,13 +423,13 @@ function setupUploadForm() {
 // Handle video upload
 async function handleVideoUpload(event) {
     event.preventDefault();
-    
+
     const formData = new FormData(event.target);
     formData.append('action', 'upload');
 
     try {
         showNotification('Uploading video...', 'info');
-        
+
         const response = await fetch('/api/videos.php', {
             method: 'POST',
             body: formData
@@ -365,27 +450,11 @@ async function handleVideoUpload(event) {
     }
 }
 
-// Theme management
-function setupTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    const body = document.body;
-    const themeIcon = document.querySelector('.theme-icon');
-    
-    if (savedTheme === 'dark') {
-        body.setAttribute('data-theme', 'dark');
-        body.classList.add('dark');
-        if (themeIcon) {
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-        }
-    }
-}
-
 function toggleTheme() {
     const body = document.body;
     const themeIcon = document.querySelector('.theme-icon');
     const currentTheme = body.getAttribute('data-theme');
-    
+
     if (currentTheme === 'light') {
         body.setAttribute('data-theme', 'dark');
         body.classList.add('dark');
@@ -406,12 +475,6 @@ function toggleTheme() {
 }
 
 // Mobile navigation
-function setupMobileNavigation() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar && window.innerWidth < 992) {
-        sidebar.classList.add('d-none');
-    }
-}
 
 function toggleMobileNav() {
     const sidebar = document.getElementById('sidebar');
@@ -450,11 +513,6 @@ function formatDuration(seconds) {
 function truncateText(text, maxLength) {
     if (!text) return '';
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-}
-
-function showNotification(message, type = 'info') {
-    console.log(`${type.toUpperCase()}: ${message}`);
-    // Enhanced notification implementation can be added here
 }
 
 // Video actions

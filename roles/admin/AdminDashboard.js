@@ -38,7 +38,7 @@ class AdminDashboard {
 
     async checkAuth() {
         try {
-            const response = await fetch('/api/auth.php', {
+            const response = await fetch('api/auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'get_user' })
@@ -129,7 +129,7 @@ class AdminDashboard {
         try {
             localStorage.removeItem('currentUser');
             
-            await fetch('/api/auth.php', {
+            await fetch('api/auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'logout' })
@@ -188,7 +188,7 @@ class AdminOverviewPanel extends AdminPanelBase {
     }
 
     async fetchData() {
-        const response = await fetch('/api/admin.php?action=analytics');
+        const response = await fetch('api/admin.php?action=analytics');
         const result = await response.json();
         
         if (result.success) {

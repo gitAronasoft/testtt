@@ -3,76 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VideoHub - Viewer Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Viewer Dashboard</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-
-<body class="bg-background text-foreground" data-theme="light">
-    <!-- Mobile Navigation Toggle -->
-    <button class="mobile-nav-toggle btn btn-outline-primary d-lg-none position-fixed" style="top: 1rem; left: 1rem; z-index: 1060;">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- Dashboard Container -->
-    <div class="min-vh-100 d-flex">
-        <!-- Viewer Sidebar -->
-        <aside class="sidebar border-end bg-card shadow-sm" id="sidebar">
-            <!-- Navigation will be rendered here -->
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="flex-grow-1 overflow-auto">
-            <!-- Header -->
-            <header class="border-bottom bg-card p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 class="h3 mb-0">VideoHub</h1>
-                        <p class="text-muted mb-0">Discover amazing content</p>
-                    </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <!-- Header actions will be added by individual panels -->
-                    </div>
-                </div>
-            </header>
-
-            <!-- Page Content -->
-            <div class="flex-grow-1 overflow-auto bg-gradient-bg-1">
-                <!-- Overview Panel -->
-                <div id="overviewPanel" class="panel">
-                    <!-- Content will be dynamically loaded -->
-                </div>
-
-                <!-- Videos Panel -->
-                <div id="videosPanel" class="panel" style="display: none;">
-                    <!-- Content will be dynamically loaded -->
-                </div>
-
-                <!-- Purchases Panel -->
-                <div id="purchasesPanel" class="panel" style="display: none;">
-                    <div class="container-fluid p-4">
-                        <h2>My Purchases</h2>
-                        <p class="text-muted">Videos you have purchased</p>
-                    </div>
-                </div>
-
-                <!-- Watchlist Panel -->
-                <div id="watchlistPanel" class="panel" style="display: none;">
-                    <div class="container-fluid p-4">
-                        <h2>My Watchlist</h2>
-                        <p class="text-muted">Videos saved for later</p>
-                    </div>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <div class="flex items-center justify-between">
+                <h1 class="dashboard-title">Viewer Dashboard</h1>
+                <div class="flex items-center gap-4">
+                    <span id="userWelcome">Welcome, Viewer</span>
+                    <button id="logoutButton" class="btn btn-outline btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
             </div>
-        </main>
+        </div>
+
+        <div class="dashboard-content">
+            <div id="viewerDashboard">
+                <div class="dashboard-card">
+                    <h2>Available Videos</h2>
+                    <p>Loading viewer dashboard...</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="components/ui/Notification.js"></script>
-    <script src="components/ui/Modal.js"></script>
     <script src="components/core/Navigation.js"></script>
     <script src="roles/viewer/ViewerDashboard.js"></script>
+    <script src="assets/js/viewer-dashboard.js"></script>
 </body>
 </html>

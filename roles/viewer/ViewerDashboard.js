@@ -1,4 +1,3 @@
-
 class ViewerDashboard {
     constructor() {
         this.currentUser = null;
@@ -13,7 +12,7 @@ class ViewerDashboard {
         try {
             // Check authentication and get user data
             this.currentUser = await this.checkAuth();
-            
+
             if (!this.currentUser || this.currentUser.role !== 'viewer') {
                 window.location.href = '/login.html';
                 return;
@@ -49,9 +48,9 @@ class ViewerDashboard {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'get_user' })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 return data.user;
             } else {
@@ -114,7 +113,7 @@ class ViewerDashboard {
     async loadInitialData() {
         try {
             showLoading(true, 'Loading dashboard data...');
-            
+
             // Load overview statistics
             if (this.panels.has('overview')) {
                 await this.panels.get('overview').load();
@@ -130,10 +129,10 @@ class ViewerDashboard {
 
     async purchaseVideo(videoId, price) {
         const video = { id: videoId, price: price, title: 'Video', description: 'Video description' };
-        
+
         this.purchaseModal.showPurchase(video, async () => {
             try {
-                const response = await fetch('/api/purchase.php', {
+                const response = await fetch('api/purchase.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ video_id: videoId })
@@ -144,7 +143,7 @@ class ViewerDashboard {
                 if (result.success) {
                     showNotification('Video purchased successfully!', 'success');
                     this.purchaseModal.hide();
-                    
+
                     // Refresh current panel to show updated data
                     if (this.currentPanel && this.panels.has(this.currentPanel)) {
                         await this.panels.get(this.currentPanel).refresh();
@@ -163,7 +162,7 @@ class ViewerDashboard {
         try {
             // Find video data (this would typically come from the panel)
             const video = { id: videoId, title: 'Video Title', file_path: '/path/to/video.mp4' };
-            
+
             this.videoPlayerModal.playVideo(video);
 
             // Increment view count
@@ -182,7 +181,7 @@ class ViewerDashboard {
     async logout() {
         try {
             localStorage.removeItem('currentUser');
-            
+
             await fetch('/api/auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -207,7 +206,7 @@ class ViewerPanelBase {
 
     async load() {
         if (this.isLoaded) return;
-        
+
         try {
             showLoading(true, `Loading ${this.panelName}...`);
             await this.fetchData();
@@ -244,7 +243,7 @@ class ViewerOverviewPanel extends ViewerPanelBase {
     async fetchData() {
         const [videosResponse, purchasesResponse] = await Promise.all([
             fetch('/api/videos.php'),
-            fetch('/api/purchase.php')
+            fetch('api/purchase.php')
         ]);
 
         const videosResult = await videosResponse.json();
@@ -418,7 +417,7 @@ class ViewerVideosPanel extends ViewerPanelBase {
     async fetchData() {
         const response = await fetch('/api/videos.php');
         const result = await response.json();
-        
+
         if (result.success) {
             this.data = result.videos;
         } else {
@@ -441,7 +440,7 @@ class ViewerVideosPanel extends ViewerPanelBase {
                         <button type="button" class="btn btn-outline-primary" onclick="filterVideos('purchased')">Purchased</button>
                     </div>
                 </div>
-                
+
                 <div class="row" id="videosContainer">
                     ${this.renderVideos()}
                 </div>
@@ -536,9 +535,9 @@ class ViewerPurchasesPanel extends ViewerPanelBase {
     }
 
     async fetchData() {
-        const response = await fetch('/api/purchase.php');
+        const response = await fetch('api/purchase.php');
         const result = await response.json();
-        
+
         if (result.success) {
             this.data = result.purchases;
         } else {

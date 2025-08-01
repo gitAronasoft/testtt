@@ -1,4 +1,3 @@
-
 // Admin Dashboard JavaScript
 let currentUser = null;
 let mobileNavOpen = false;
@@ -26,45 +25,44 @@ async function checkAuthentication() {
 
         if (data.success && data.user) {
             currentUser = data.user;
-            
+
             // Check if user has admin role
             if (currentUser.role !== 'admin') {
                 // Redirect to appropriate dashboard based on role
                 switch(currentUser.role) {
                     case 'editor':
                     case 'creator':
-                        window.location.href = 'creator-dashboard.html';
+                        window.location.replace('creator-dashboard.html');
                         break;
                     case 'viewer':
-                        window.location.href = 'viewer-dashboard.html';
+                        window.location.replace('viewer-dashboard.html');
                         break;
                     default:
-                        window.location.href = 'login.html';
+                        window.location.replace('login.html');
                 }
                 return;
             }
-            
+
             setupUserInfo();
             loadAdminData();
         } else {
-            window.location.href = 'login.html';
+            window.location.replace('login.html');
         }
     } catch (error) {
         console.error('Authentication check failed:', error);
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
     }
 }
 
-// Setup user information in the UI
 function setupUserInfo() {
-    const userNameElement = document.getElementById('userName');
-    const userAvatarElement = document.getElementById('userAvatar');
+    const userNameEl = document.getElementById('userName');
+    const userRoleEl = document.getElementById('userRole');
+    const userAvatarEl = document.getElementById('userAvatar');
 
-    if (userNameElement) {
-        userNameElement.textContent = currentUser.name;
-    }
-    if (userAvatarElement) {
-        userAvatarElement.textContent = currentUser.name.charAt(0).toUpperCase();
+    if (currentUser) {
+        if (userNameEl) userNameEl.textContent = currentUser.name || 'User';
+        if (userRoleEl) userRoleEl.textContent = (currentUser.role || 'user').charAt(0).toUpperCase() + (currentUser.role || 'user').slice(1);
+        if (userAvatarEl) userAvatarEl.textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
     }
 }
 
@@ -299,27 +297,17 @@ function getRoleBadgeColor(role) {
     return colors[role] || 'secondary';
 }
 
-// Theme management
 function setupTheme() {
+    // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
-    const body = document.body;
-    const themeIcon = document.querySelector('.theme-icon');
-    
-    if (savedTheme === 'dark') {
-        body.setAttribute('data-theme', 'dark');
-        body.classList.add('dark');
-        if (themeIcon) {
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-        }
-    }
+    document.body.setAttribute('data-theme', savedTheme);
 }
 
 function toggleTheme() {
     const body = document.body;
     const themeIcon = document.querySelector('.theme-icon');
     const currentTheme = body.getAttribute('data-theme');
-    
+
     if (currentTheme === 'light') {
         body.setAttribute('data-theme', 'dark');
         body.classList.add('dark');
@@ -339,11 +327,17 @@ function toggleTheme() {
     }
 }
 
-// Mobile navigation
 function setupMobileNavigation() {
+    const mobileToggle = document.getElementById('mobileToggle');
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && window.innerWidth < 992) {
-        sidebar.classList.add('d-none');
+
+    if (mobileToggle && sidebar) {
+        mobileToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+            mobileNavOpen = !mobileNavOpen;
+        });
+    } else {
+        console.log('Mobile navigation elements not found');
     }
 }
 
@@ -372,6 +366,81 @@ function toggleMobileNav() {
     }
 }
 
+async function loadAdminData() {
+    try {
+        showLoading(true);
+
+        // Load dashboard statistics
+        const response = await fetch('/api/admin.php?action=analytics');
+        const data = await response.json();
+
+        if (data.success) {
+            updateDashboardStats(data.analytics);
+        }
+
+        // Load recent activity
+        const activityResponse = await fetch('/api/admin.php?action=recent_activity');
+        const activityData = await activityResponse.json();
+
+        if (activityData.success) {
+            updateRecentActivity(activityData.activities);
+        }
+
+    } catch (error) {
+        console.error('Failed to load admin data:', error);
+        showNotification('Failed to load dashboard data', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function updateDashboardStats(analytics) {
+    const elements = {
+        totalVideos: document.getElementById('totalVideos'),
+        totalUsers: document.getElementById('totalUsers'),
+        totalViews: document.getElementById('totalViews'),
+        totalRevenue: document.getElementById('totalRevenue')
+    };
+
+    if (analytics) {
+        if (elements.totalVideos) elements.totalVideos.textContent = analytics.total_videos || 0;
+        if (elements.totalUsers) elements.totalUsers.textContent = analytics.total_users || 0;
+        if (elements.totalViews) elements.totalViews.textContent = (analytics.total_views || 0).toLocaleString();
+        if (elements.totalRevenue) elements.totalRevenue.textContent = '$' + (analytics.total_revenue || 0).toFixed(2);
+    }
+}
+
+function updateRecentActivity(activities) {
+    const container = document.getElementById('recentActivity');
+    if (!container) return;
+
+    if (!activities || activities.length === 0) {
+        container.innerHTML = '<div class="text-muted-foreground text-center py-4">No recent activity</div>';
+        return;
+    }
+
+    container.innerHTML = activities.map(activity => `
+        <div class="flex items-center gap-3 py-2">
+            <div class="w-2 h-2 bg-primary rounded-full"></div>
+            <div class="flex-1">
+                <div class="text-sm font-medium">${activity.title || 'Activity'}</div>
+                <div class="text-xs text-muted-foreground">${activity.time || 'Recently'}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showLoading(show, message = 'Loading...') {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        if (show) {
+            overlay.classList.remove('hidden');
+        } else {
+            overlay.classList.add('hidden');
+        }
+    }
+}
+
 // Utility functions
 function formatTimeAgo(timestamp) {
     const now = new Date();
@@ -385,9 +454,12 @@ function formatTimeAgo(timestamp) {
 }
 
 function showNotification(message, type = 'info') {
-    // Simple notification implementation
-    console.log(`${type.toUpperCase()}: ${message}`);
-    // You can enhance this with actual toast notifications
+    // Use the existing notification system
+    if (typeof showToast === 'function') {
+        showToast(message, type);
+    } else {
+        console.log(`${type.toUpperCase()}: ${message}`);
+    }
 }
 
 // Logout function

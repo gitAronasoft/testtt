@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Database configuration - supports both PostgreSQL (Replit) and MySQL
 if (isset($_ENV['DATABASE_URL'])) {
     // PostgreSQL configuration for Replit
@@ -268,6 +272,7 @@ function insertDefaultUsers($connection) {
                     $stmt = $connection->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
                     $hashed_password = password_hash($user[3], PASSWORD_DEFAULT);
                     $stmt->execute([$user[0], $user[1], $user[2], $hashed_password, $user[4]]);
+                    echo "Created user: " . $user[2] . " with hashed password\n";
                 }
             } catch (PDOException $e) {
                 echo "Error inserting user: " . $e->getMessage() . "\n";
@@ -284,12 +289,18 @@ function insertDefaultUsers($connection) {
                 $stmt = $connection->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)");
                 $hashed_password = password_hash($user[3], PASSWORD_DEFAULT);
                 $stmt->bind_param("sssss", $user[0], $user[1], $user[2], $hashed_password, $user[4]);
-                $stmt->execute();
+                if ($stmt->execute()) {
+                    echo "Created user: " . $user[2] . " with hashed password\n";
+                } else {
+                    echo "Failed to create user: " . $user[2] . "\n";
+                }
+            } else {
+                echo "User already exists: " . $user[2] . "\n";
             }
         }
     }
 
-    echo "Default users created\n";
+    echo "Default users processing completed\n";
 }
 
 // Database query helper function

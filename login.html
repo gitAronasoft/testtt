@@ -3,151 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - VideoHub</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Login - Video Platform</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
-    <!-- Authentication Container -->
-    <div class="auth-container">
-        <!-- Background Animation Elements -->
-        <div style="position: absolute; top: 10%; left: 10%; width: 200px; height: 200px; background: hsl(var(--primary) / 0.1); border-radius: 50%; animation: float 6s ease-in-out infinite;"></div>
-        <div style="position: absolute; top: 60%; right: 15%; width: 150px; height: 150px; background: hsl(var(--primary) / 0.05); border-radius: 50%; animation: float 8s ease-in-out infinite reverse;"></div>
-
-        <!-- Login Card -->
-        <div class="auth-card">
-            <!-- Header -->
-            <div class="auth-header">
-                <div class="nav-logo justify-center mb-4">
-                    <i class="fas fa-play-circle text-2xl"></i>
-                    <span>VideoHub</span>
-                </div>
-                <h1 class="auth-title">Welcome back</h1>
-                <p class="auth-description">Sign in to your account to continue</p>
+<body class="bg-background text-foreground" data-theme="light">
+    <div class="toast-container">
+        <div id="toast" class="toast hidden">
+            <div class="toast-content">
+                <i class="toast-icon"></i>
+                <span class="toast-message"></span>
             </div>
-
-            <!-- Login Form -->
-            <form id="loginForm" class="space-y-6">
-                <div class="form-group">
-                    <label for="email" class="form-label">
-                        <i class="fas fa-envelope mr-2"></i>
-                        Email address
-                    </label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        class="form-control"
-                        placeholder="Enter your email"
-                        required
-                        autocomplete="email"
-                    >
-                    <div class="invalid-feedback" id="emailError"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="password" class="form-label">
-                        <i class="fas fa-lock mr-2"></i>
-                        Password
-                    </label>
-                    <div style="position: relative;">
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            class="form-control"
-                            placeholder="Enter your password"
-                            required
-                            autocomplete="current-password"
-                        >
-                        <button 
-                            type="button" 
-                            id="togglePassword"
-                            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: hsl(var(--muted-foreground)); cursor: pointer;"
-                        >
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                    <div class="invalid-feedback" id="passwordError"></div>
-                </div>
-
-                <!-- Remember Me & Forgot Password -->
-                <div class="flex justify-between items-center text-sm">
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" id="rememberMe" style="width: 16px; height: 16px;">
-                        <span class="text-muted-foreground">Remember me</span>
-                    </label>
-                    <a href="#" class="text-primary hover:underline">Forgot password?</a>
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" class="btn btn-default w-full btn-lg" id="loginButton">
-                    <span id="loginButtonText">
-                        <i class="fas fa-sign-in-alt mr-2"></i>
-                        Sign In
-                    </span>
-                    <span id="loginButtonLoading" class="hidden">
-                        <div class="spinner mr-2"></div>
-                        Signing in...
-                    </span>
-                </button>
-
-                <!-- Demo Accounts -->
-                <div class="mt-6">
-                    <div class="text-center text-sm text-muted-foreground mb-4">
-                        Or try a demo account
-                    </div>
-                    <div class="grid grid-cols-1 gap-2">
-                        <button type="button" class="btn btn-outline btn-sm demo-login" data-email="admin@example.com" data-password="admin123" data-role="Admin">
-                            <i class="fas fa-user-shield mr-2"></i>
-                            Demo Admin
-                        </button>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="button" class="btn btn-outline btn-sm demo-login" data-email="creator@example.com" data-password="creator123" data-role="Creator">
-                                <i class="fas fa-video mr-2"></i>
-                                Creator
-                            </button>
-                            <button type="button" class="btn btn-outline btn-sm demo-login" data-email="viewer@example.com" data-password="viewer123" data-role="Viewer">
-                                <i class="fas fa-eye mr-2"></i>
-                                Viewer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Footer -->
-            <div class="text-center mt-6">
-                <p class="text-sm text-muted-foreground">
-                    Don't have an account?
-                    <a href="signup.html" class="text-primary hover:underline font-medium">
-                        Sign up
-                    </a>
-                </p>
-                <div class="mt-4">
-                    <a href="index.html" class="text-sm text-muted-foreground hover:text-foreground">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back to home
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast hidden">
-        <div class="flex items-center gap-3">
-            <div id="toastIcon"></div>
-            <div id="toastMessage" class="flex-1"></div>
-            <button onclick="hideToast()" class="text-muted-foreground hover:text-foreground">
+            <button class="toast-close" onclick="hideToast()">
                 <i class="fas fa-times"></i>
             </button>
         </div>
     </div>
 
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                
+                <div class="flex items-center justify-center mb-4">
+                    <div
+                        class="w-12 h-12 bg-primary rounded-full flex items-center justify-center"
+                    >
+                        <i
+                            class="fas fa-video text-primary-foreground text-xl"
+                        ></i>
+                    </div>
+                </div>
+                
+                <h1 class="auth-title">Welcome Back</h1>
+                <p class="auth-description">Sign in to your account to continue</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-control focus-visible"
+                        placeholder="Enter your email"
+                        required
+                    />
+                    <div id="emailError" class="invalid-feedback" style="display: none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-group relative">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-control focus-visible"
+                            placeholder="Enter your password"
+                            required
+                        />
+                        <button type="button" id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div id="passwordError" class="invalid-feedback" style="display: none;"></div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" class="rounded border-border" />
+                        <span>Remember me</span>
+                    </label>
+                    <a href="#" class="text-sm text-primary hover:underline">Forgot password?</a>
+                </div>
+
+                <button type="submit" id="loginButton" class="btn btn-default w-full">
+                    <span id="loginButtonText">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </span>
+                    <div id="loginSpinner" class="loading-spinner hidden ml-2"></div>
+                </button>
+
+                <div class="text-center">
+                    <p class="text-sm text-muted-foreground">
+                        Don't have an account?
+                        <a href="signup.html" class="text-primary hover:underline font-medium">Sign up</a>
+                    </p>
+                </div>
+            </form>
+
+            <!-- Demo Login Options -->
+            <div class="mt-6 pt-6 border-t">
+                <p class="text-xs text-muted-foreground text-center mb-4">Quick Demo Login</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="demo-login btn btn-outline btn-sm" 
+                            data-email="admin@example.com" 
+                            data-password="admin123" 
+                            data-role="Admin">
+                        <i class="fas fa-crown mr-1"></i> Admin
+                    </button>
+                    <button class="demo-login btn btn-outline btn-sm" 
+                            data-email="creator@example.com" 
+                            data-password="creator123" 
+                            data-role="Creator">
+                        <i class="fas fa-video mr-1"></i> Creator
+                    </button>
+                    <button class="demo-login btn btn-outline btn-sm" 
+                            data-email="editor@example.com" 
+                            data-password="editor123" 
+                            data-role="Editor">
+                        <i class="fas fa-edit mr-1"></i> Editor
+                    </button>
+                    <button class="demo-login btn btn-outline btn-sm" 
+                            data-email="viewer@example.com" 
+                            data-password="viewer123" 
+                            data-role="Viewer">
+                        <i class="fas fa-eye mr-1"></i> Viewer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button
+        class="fixed top-4 right-4 btn btn-outline btn-sm"
+        onclick="toggleTheme()"
+    >
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    
+
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="components/ui/Notification.js"></script>
     <script src="assets/js/login.js"></script>
+
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute("data-theme");
+            const newTheme = currentTheme === "dark" ? "light" : "dark";
+            body.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+
+            const themeIcon = document.getElementById("themeIcon");
+            if (themeIcon) {
+                themeIcon.className =
+                    newTheme === "dark" ? "fas fa-sun" : "fas fa-moon";
+            }
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.body.setAttribute("data-theme", savedTheme);
+        const themeIcon = document.getElementById("themeIcon");
+        if (themeIcon) {
+            themeIcon.className =
+                savedTheme === "dark" ? "fas fa-sun" : "fas fa-moon";
+        }
+
+        // Add smooth animations
+        document.addEventListener("DOMContentLoaded", function () {
+            const authCard = document.querySelector(".auth-card");
+            if (authCard) {
+                authCard.classList.add("animate-fade-in");
+            }
+        });
+    </script>
 </body>
 </html>

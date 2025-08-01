@@ -24,7 +24,7 @@
         document.addEventListener('DOMContentLoaded', async function() {
             try {
                 // Check if user is authenticated
-                const response = await fetch('/api/auth.php', {
+                const response = await fetch('api/auth.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

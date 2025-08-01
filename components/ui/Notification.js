@@ -1,202 +1,204 @@
 
-class NotificationSystem {
+// Enhanced Toast Notification System
+class NotificationManager {
     constructor() {
         this.container = null;
-        this.notifications = new Map();
+        this.activeToasts = new Set();
         this.init();
     }
 
     init() {
-        // Create toast container if it doesn't exist
-        if (!document.getElementById('toastContainer')) {
-            const container = document.createElement('div');
-            container.id = 'toastContainer';
-            container.className = 'toast-container position-fixed top-0 end-0 p-3';
-            container.style.zIndex = '9999';
-            document.body.appendChild(container);
+        // Create notification container if it doesn't exist
+        if (!document.getElementById('notification-container')) {
+            this.createContainer();
         }
-        this.container = document.getElementById('toastContainer');
+        this.container = document.getElementById('notification-container');
     }
 
-    show(message, type = 'info', options = {}) {
-        const id = 'toast_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        const duration = options.duration || (type === 'error' ? 8000 : 5000);
-        const showProgress = options.showProgress !== false;
+    createContainer() {
+        const container = document.createElement('div');
+        container.id = 'notification-container';
+        container.className = 'fixed top-4 right-4 z-50 space-y-2';
+        container.style.cssText = `
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+            max-width: 400px;
+            pointer-events: none;
+        `;
+        document.body.appendChild(container);
+    }
 
+    show(message, type = 'info', duration = 5000) {
+        if (!this.container) {
+            this.init();
+        }
+
+        const toast = this.createToast(message, type);
+        this.container.appendChild(toast);
+        this.activeToasts.add(toast);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
+        });
+
+        // Auto remove
+        if (duration > 0) {
+            setTimeout(() => {
+                this.remove(toast);
+            }, duration);
+        }
+
+        return toast;
+    }
+
+    createToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `notification-toast ${type}`;
+        toast.style.cssText = `
+            background: var(--background, #ffffff);
+            border: 1px solid var(--border, #e5e7eb);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            word-wrap: break-word;
+        `;
+
+        // Type-specific styling
         const typeConfig = {
-            success: { icon: 'fas fa-check-circle', bgClass: 'bg-success', title: 'Success' },
-            error: { icon: 'fas fa-exclamation-circle', bgClass: 'bg-danger', title: 'Error' },
-            warning: { icon: 'fas fa-exclamation-triangle', bgClass: 'bg-warning', title: 'Warning' },
-            info: { icon: 'fas fa-info-circle', bgClass: 'bg-info', title: 'Info' }
+            success: {
+                icon: 'fas fa-check-circle',
+                color: '#22c55e',
+                bgColor: '#f0fdf4',
+                borderColor: '#bbf7d0'
+            },
+            error: {
+                icon: 'fas fa-exclamation-circle',
+                color: '#ef4444',
+                bgColor: '#fef2f2',
+                borderColor: '#fecaca'
+            },
+            warning: {
+                icon: 'fas fa-exclamation-triangle',
+                color: '#f59e0b',
+                bgColor: '#fffbeb',
+                borderColor: '#fed7aa'
+            },
+            info: {
+                icon: 'fas fa-info-circle',
+                color: '#3b82f6',
+                bgColor: '#eff6ff',
+                borderColor: '#bfdbfe'
+            }
         };
 
         const config = typeConfig[type] || typeConfig.info;
+        
+        toast.style.backgroundColor = config.bgColor;
+        toast.style.borderColor = config.borderColor;
 
-        const toastHTML = `
-            <div class="toast ${config.bgClass} text-white" id="${id}" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header ${config.bgClass} text-white border-0">
-                    <i class="${config.icon} me-2"></i>
-                    <strong class="me-auto">${options.title || config.title}</strong>
-                    <small class="text-white-50">${new Date().toLocaleTimeString()}</small>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body">
-                    ${message}
-                    ${showProgress ? `
-                    <div class="progress mt-2" style="height: 3px;">
-                        <div class="progress-bar bg-white" role="progressbar" style="width: 100%" id="${id}_progress"></div>
-                    </div>
-                    ` : ''}
-                </div>
+        toast.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i class="${config.icon}" style="color: ${config.color}; font-size: 1.125rem; flex-shrink: 0;"></i>
+                <span style="flex: 1; color: var(--foreground, #1f2937); font-size: 0.875rem; line-height: 1.25;">${message}</span>
+                <button class="toast-close" style="
+                    background: none;
+                    border: none;
+                    color: var(--muted-foreground, #6b7280);
+                    cursor: pointer;
+                    padding: 0.25rem;
+                    border-radius: 0.25rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                " onmouseover="this.style.background='var(--muted, #f3f4f6)'" onmouseout="this.style.background='none'">
+                    <i class="fas fa-times" style="font-size: 0.75rem;"></i>
+                </button>
             </div>
         `;
 
-        this.container.insertAdjacentHTML('beforeend', toastHTML);
-
-        const toastElement = document.getElementById(id);
-        const progressBar = document.getElementById(`${id}_progress`);
-
-        // Initialize Bootstrap toast
-        const bsToast = new bootstrap.Toast(toastElement, {
-            autohide: duration > 0,
-            delay: duration
-        });
-
-        // Store reference
-        this.notifications.set(id, { element: toastElement, bsToast, progressBar });
-
-        // Show toast
-        bsToast.show();
-
-        // Handle progress animation
-        if (showProgress && progressBar && duration > 0) {
-            let startTime = Date.now();
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const remaining = Math.max(0, (duration - elapsed) / duration * 100);
-                progressBar.style.width = remaining + '%';
-
-                if (remaining > 0 && this.notifications.has(id)) {
-                    requestAnimationFrame(animate);
-                }
-            };
-            requestAnimationFrame(animate);
+        // Add close functionality
+        const closeBtn = toast.querySelector('.toast-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.remove(toast);
+            });
         }
 
-        // Auto-remove from memory when hidden
-        toastElement.addEventListener('hidden.bs.toast', () => {
-            this.notifications.delete(id);
-            toastElement.remove();
-        });
-
-        return id;
+        return toast;
     }
 
-    hide(id) {
-        const notification = this.notifications.get(id);
-        if (notification) {
-            notification.bsToast.hide();
+    remove(toast) {
+        if (!toast || !this.activeToasts.has(toast)) {
+            return;
         }
+
+        this.activeToasts.delete(toast);
+        
+        // Animate out
+        toast.style.transform = 'translateX(100%)';
+        toast.style.opacity = '0';
+
+        // Remove from DOM
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
     }
 
     clear() {
-        this.notifications.forEach((notification, id) => {
-            notification.bsToast.hide();
+        this.activeToasts.forEach(toast => {
+            this.remove(toast);
         });
-        this.notifications.clear();
-    }
-
-    // Convenience methods
-    success(message, options = {}) {
-        return this.show(message, 'success', options);
-    }
-
-    error(message, options = {}) {
-        return this.show(message, 'error', options);
-    }
-
-    warning(message, options = {}) {
-        return this.show(message, 'warning', options);
-    }
-
-    info(message, options = {}) {
-        return this.show(message, 'info', options);
     }
 }
 
-// Loading overlay system
-class LoadingSystem {
-    constructor() {
-        this.activeLoaders = new Set();
-        this.overlay = null;
-    }
+// Create global instance
+const notificationManager = new NotificationManager();
 
-    show(message = 'Loading...') {
-        if (!this.overlay) {
-            this.createOverlay();
-        }
-
-        const loaderId = 'loader_' + Date.now();
-        this.activeLoaders.add(loaderId);
-
-        this.updateMessage(message);
-        this.overlay.style.display = 'flex';
-
-        return loaderId;
-    }
-
-    hide(loaderId) {
-        if (loaderId) {
-            this.activeLoaders.delete(loaderId);
-        } else {
-            this.activeLoaders.clear();
-        }
-
-        if (this.activeLoaders.size === 0 && this.overlay) {
-            this.overlay.style.display = 'none';
-        }
-    }
-
-    createOverlay() {
-        this.overlay = document.createElement('div');
-        this.overlay.id = 'globalLoadingOverlay';
-        this.overlay.innerHTML = `
-            <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
-                 style="background: rgba(255, 255, 255, 0.9); z-index: 9998; backdrop-filter: blur(4px);">
-                <div class="text-center">
-                    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <div class="h5 text-muted" id="loadingMessage">Loading...</div>
-                </div>
-            </div>
-        `;
-        this.overlay.style.display = 'none';
-        document.body.appendChild(this.overlay);
-    }
-
-    updateMessage(message) {
-        const messageElement = document.getElementById('loadingMessage');
-        if (messageElement) {
-            messageElement.textContent = message;
-        }
-    }
+// Global function for backward compatibility
+function showNotification(message, type = 'info', duration = 5000) {
+    return notificationManager.show(message, type, duration);
 }
 
-// Initialize global instances
-const notificationSystem = new NotificationSystem();
-const loadingSystem = new LoadingSystem();
+// Additional helper functions
+function showToast(message, type = 'info', duration = 5000) {
+    return showNotification(message, type, duration);
+}
 
-// Global helper functions
-window.showNotification = (message, type, options) => notificationSystem.show(message, type, options);
-window.showLoading = (show = true, message = 'Loading...') => {
-    if (show) {
-        return loadingSystem.show(message);
-    } else {
-        loadingSystem.hide();
-    }
-};
+function hideToast() {
+    // This function exists for backward compatibility
+    // Individual toasts now auto-hide or can be closed manually
+    console.log('hideToast called - toasts now auto-hide');
+}
 
-// Export classes
-window.NotificationSystem = NotificationSystem;
-window.LoadingSystem = LoadingSystem;
+function clearAllNotifications() {
+    notificationManager.clear();
+}
+
+// Make functions globally available
+window.showNotification = showNotification;
+window.showToast = showToast;
+window.hideToast = hideToast;
+window.clearAllNotifications = clearAllNotifications;
+window.notificationManager = notificationManager;
+
+// Initialize on DOM load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        notificationManager.init();
+    });
+} else {
+    notificationManager.init();
+}

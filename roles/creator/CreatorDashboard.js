@@ -1,4 +1,3 @@
-
 class CreatorDashboard {
     constructor() {
         this.currentUser = null;
@@ -11,7 +10,7 @@ class CreatorDashboard {
         try {
             // Check authentication and get user data
             this.currentUser = await this.checkAuth();
-            
+
             if (!this.currentUser || !['creator', 'editor'].includes(this.currentUser.role)) {
                 window.location.href = '/login.html';
                 return;
@@ -43,9 +42,9 @@ class CreatorDashboard {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'get_user' })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 return data.user;
             } else {
@@ -109,7 +108,7 @@ class CreatorDashboard {
     async loadInitialData() {
         try {
             showLoading(true, 'Loading dashboard data...');
-            
+
             // Load overview statistics
             if (this.panels.has('overview')) {
                 await this.panels.get('overview').load();
@@ -126,7 +125,7 @@ class CreatorDashboard {
     async logout() {
         try {
             localStorage.removeItem('currentUser');
-            
+
             await fetch('/api/auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -151,7 +150,7 @@ class CreatorPanelBase {
 
     async load() {
         if (this.isLoaded) return;
-        
+
         try {
             showLoading(true, `Loading ${this.panelName}...`);
             await this.fetchData();
@@ -189,7 +188,7 @@ class CreatorOverviewPanel extends CreatorPanelBase {
         // Fetch creator-specific data
         const [videosResponse, earningsResponse] = await Promise.all([
             fetch('/api/videos.php?filter=my_videos'),
-            fetch('/api/earnings.php?action=earnings')
+            fetch('api/earnings.php?action=earnings')
         ]);
 
         const videosResult = await videosResponse.json();
@@ -365,7 +364,7 @@ class CreatorVideosPanel extends CreatorPanelBase {
     async fetchData() {
         const response = await fetch('/api/videos.php?filter=my_videos');
         const result = await response.json();
-        
+
         if (result.success) {
             this.data = result.videos;
         } else {
@@ -385,7 +384,7 @@ class CreatorVideosPanel extends CreatorPanelBase {
                         <i class="fas fa-plus me-2"></i>Upload New Video
                     </button>
                 </div>
-                
+
                 <div class="row" id="myVideosContainer">
                     ${this.renderVideos()}
                 </div>
@@ -469,9 +468,9 @@ class CreatorEarningsPanel extends CreatorPanelBase {
     }
 
     async fetchData() {
-        const response = await fetch('/api/earnings.php?action=earnings');
+        const response = await fetch('api/earnings.php?action=earnings');
         const result = await response.json();
-        
+
         if (result.success) {
             this.data = result.earnings;
         } else {
@@ -492,7 +491,7 @@ class CreatorCustomersPanel extends CreatorPanelBase {
     async fetchData() {
         const response = await fetch('/api/earnings.php?action=paid_users');
         const result = await response.json();
-        
+
         if (result.success) {
             this.data = result.paid_users;
         } else {
