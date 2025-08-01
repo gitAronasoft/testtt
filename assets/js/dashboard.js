@@ -97,7 +97,7 @@ async function checkAuth() {
             currentUser = JSON.parse(storedUser);
             setupUserRole();
             setupDashboard();
-            loadVideos();
+            await loadVideosFromYouTube();
             loadOverviewStats();
             return;
         }
@@ -119,7 +119,7 @@ async function checkAuth() {
             localStorage.setItem("currentUser", JSON.stringify(data.user));
             setupUserRole();
             setupDashboard();
-            loadVideos();
+            await loadVideosFromYouTube();
             loadOverviewStats();
         } else {
             // Redirect to login if no user data
@@ -133,7 +133,7 @@ async function checkAuth() {
             currentUser = JSON.parse(storedUser);
             setupUserRole();
             setupDashboard();
-            loadVideos();
+            await loadVideosFromYouTube();
             loadOverviewStats();
         } else {
             window.location.href = "login.html";
@@ -253,7 +253,7 @@ function showPanel(panelName) {
             loadOverviewStats();
             break;
         case "videos":
-            loadVideos();
+            loadVideosFromYouTube();
             break;
         case "users":
             if (currentUser.role === "admin") {
@@ -262,7 +262,7 @@ function showPanel(panelName) {
             break;
         case "myVideos":
             if (currentUser.role === "editor" || currentUser.role === "admin") {
-                loadMyVideos();
+                loadMyVideosFromYouTube();
             }
             break;
         case "upload":
@@ -341,9 +341,76 @@ function hasPermissionForPanel(panelName) {
     return permissions[role] && permissions[role].includes(panelName);
 }
 
-async function loadVideos() {
-    showLoading(true);
+// New function to load videos directly from YouTube API
+async function loadVideosFromYouTube() {
+    try {
+        showLoading(true);
 
+        // Check if YouTube is connected
+        if (!window.youtubeAPI.isSignedIn()) {
+            // Fallback to dummy data if YouTube not connected
+            await loadDummyVideos();
+            return;
+        }
+
+        // Get channel information
+        const channelInfo = await window.youtubeAPI.getMyChannelInfo();
+        if (!channelInfo) {
+            showNotification("Unable to fetch channel information, loading dummy data", "warning");
+            await loadDummyVideos();
+            return;
+        }
+
+        // Get videos from YouTube
+        const result = await window.youtubeAPI.getMyVideos(50);
+
+        if (result.videos && result.videos.length > 0) {
+            // Get detailed video statistics
+            const videoIds = result.videos.map(v => v.youtube_id);
+            const detailedVideos = await window.youtubeAPI.getVideoDetails(videoIds);
+
+            // Convert YouTube videos to our format
+            allVideos = detailedVideos.map(video => ({
+                id: video.youtube_id,
+                title: video.title,
+                description: video.description,
+                price: 0, // YouTube videos are free to view
+                uploader: video.channel_title,
+                uploader_id: video.channel_id,
+                views: video.view_count,
+                purchased: true, // Always accessible since they're from YouTube
+                file_path: null,
+                category: 'youtube',
+                created_at: video.published_at,
+                youtube_id: video.youtube_id,
+                youtube_thumbnail: video.thumbnail,
+                youtube_channel_id: video.channel_id,
+                youtube_channel_title: video.channel_title,
+                youtube_views: video.view_count,
+                youtube_likes: video.like_count,
+                youtube_comments: video.comment_count,
+                is_youtube_synced: true,
+                video_url: window.youtubeAPI.generateVideoURL(video.youtube_id),
+                embed_html: window.youtubeAPI.generateEmbedHTML(video.youtube_id)
+            }));
+
+            renderVideos(allVideos);
+        } else {
+            // No YouTube videos found, fallback to database
+            await loadVideosFromDatabase();
+        }
+    } catch (error) {
+        console.error("Failed to load YouTube videos:", error);
+        showNotification("Failed to load YouTube videos, loading dummy data", "warning");
+        // Fallback to dummy videos on error
+        await loadDummyVideos();
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Fallback function to load videos from database
+async function loadVideosFromDatabase() {
     try {
         const response = await fetch("api/videos.php");
         const data = await response.json();
@@ -355,16 +422,58 @@ async function loadVideos() {
             showNotification("Failed to load videos: " + data.message, "error");
         }
     } catch (error) {
-        console.error("Failed to load videos:", error);
+        console.error("Failed to load videos from database:", error);
         showNotification("Failed to load videos", "error");
+    }
+}
+
+// New function to load user's videos from YouTube
+async function loadMyVideosFromYouTube() {
+    showLoading(true);
+
+    try {
+        // Check if YouTube API client is available
+        if (!window.youtubeAPI) {
+            console.warn('YouTube API client not available');
+            await loadMyVideosFromDatabase();
+            return;
+        }
+
+        // Initialize YouTube API if not already done
+        if (!window.youtubeAPI.isInitialized) {
+            await window.youtubeAPI.initialize();
+        }
+
+        // Check if YouTube is connected
+        if (!window.youtubeAPI.isSignedIn()) {
+            showNotification("Please connect to YouTube to view your videos", "warning");
+            await loadMyVideosFromDatabase();
+            return;
+        }
+
+        // Get videos from YouTube
+        const result = await window.youtubeAPI.getMyVideos(50);
+
+        if (result.videos && result.videos.length > 0) {
+            // Get detailed video statistics
+            const videoIds = result.videos.map(v => v.youtube_id);
+            const detailedVideos = await window.youtubeAPI.getVideoDetails(videoIds);
+
+            renderMyVideosFromYouTube(detailedVideos);
+        } else {
+            renderMyVideosFromYouTube([]);
+        }
+    } catch (error) {
+        console.error("Failed to load my videos from YouTube:", error);
+        showNotification("Failed to load YouTube videos", "error");
+        await loadMyVideosFromDatabase();
     }
 
     showLoading(false);
 }
 
-async function loadMyVideos() {
-    showLoading(true);
-
+// Fallback function to load my videos from database
+async function loadMyVideosFromDatabase() {
     try {
         const response = await fetch("api/videos.php?filter=my_videos");
         const data = await response.json();
@@ -378,8 +487,16 @@ async function loadMyVideos() {
         console.error("Failed to load my videos:", error);
         showNotification("Failed to load videos", "error");
     }
+}
 
-    showLoading(false);
+// Legacy function - kept for backward compatibility
+async function loadVideos() {
+    await loadVideosFromYouTube();
+}
+
+// Legacy function - kept for backward compatibility
+async function loadMyVideos() {
+    await loadMyVideosFromYouTube();
 }
 
 function renderVideos(videos) {
@@ -427,24 +544,32 @@ function createVideoElement(video) {
     const col = document.createElement('div');
     col.className = 'col-md-6 col-lg-4 mb-4';
 
-    const badgeHTML = video.price === 0
-        ? '<span class="position-absolute top-0 end-0 badge bg-success m-2">FREE</span>'
-        : video.purchased
-            ? '<span class="position-absolute top-0 end-0 badge bg-info m-2">PURCHASED</span>'
-            : `<span class="position-absolute top-0 end-0 badge bg-warning m-2">$${video.price}</span>`;
+    const thumbnail = video.youtube_thumbnail || '/api/placeholder/300/200';
+    const isYouTubeVideo = video.youtube_id && video.is_youtube_synced;
+
+    const badgeHTML = isYouTubeVideo
+        ? '<span class="position-absolute top-0 start-0 badge bg-danger m-2"><i class="fab fa-youtube me-1"></i>YouTube</span>'
+        : video.price === 0
+            ? '<span class="position-absolute top-0 end-0 badge bg-success m-2">FREE</span>'
+            : video.purchased
+                ? '<span class="position-absolute top-0 end-0 badge bg-info m-2">PURCHASED</span>'
+                : `<span class="position-absolute top-0 end-0 badge bg-warning m-2">$${video.price}</span>`;
 
     col.innerHTML = `
         <div class="card video-card h-100">
             <div class="video-thumbnail position-relative bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                <i class="fas fa-play-circle fa-3x text-primary"></i>
+                <img src="${thumbnail}" alt="${escapeHtml(video.title)}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;">
+                <div class="position-absolute top-50 start-50 translate-middle">
+                    <i class="fas fa-play-circle fa-3x text-white opacity-75"></i>
+                </div>
                 ${badgeHTML}
             </div>
             <div class="card-body">
                 <h5 class="video-title">${escapeHtml(video.title)}</h5>
-                <p class="video-description text-muted">${escapeHtml(video.description)}</p>
+                <p class="video-description text-muted">${escapeHtml(video.description.substring(0, 100))}${video.description.length > 100 ? '...' : ''}</p>
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <small class="text-muted">By ${escapeHtml(video.uploader)}</small>
-                    <small class="text-muted">${video.views.toLocaleString()} views</small>
+                    <small class="text-muted">${formatNumber(video.views)} views</small>
                 </div>
                 ${renderVideoActions(video)}
             </div>
@@ -454,10 +579,62 @@ function createVideoElement(video) {
     return col;
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function renderMyVideosFromYouTube(videos) {
+    const container = document.getElementById("myVideosContainer");
+
+    if (videos.length === 0) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h5><i class="fab fa-youtube me-2"></i>No YouTube videos found</h5>
+                    <p>Upload videos to your YouTube channel to see them here, or use the upload form to add videos directly to this platform.</p>
+                </div>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = videos
+        .map(
+            (video) => `
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card video-card h-100">
+                <div class="video-thumbnail position-relative bg-light" style="height: 200px;">
+                    <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" class="img-fluid w-100 h-100" style="object-fit: cover;">
+                    <div class="position-absolute top-0 start-0 m-2">
+                        <span class="badge bg-danger"><i class="fab fa-youtube me-1"></i>YouTube</span>
+                    </div>
+                    <div class="position-absolute top-50 start-50 translate-middle">
+                        <i class="fas fa-play-circle fa-3x text-white opacity-75"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5 class="video-title">${escapeHtml(video.title)}</h5>
+                    <p class="video-description text-muted">${escapeHtml(video.description.substring(0, 100))}${video.description.length > 100 ? '...' : ''}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">${formatNumber(video.view_count)} views</small>
+                        <small class="text-muted">${formatNumber(video.like_count)} likes</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">Published: ${formatTimeAgo(video.published_at)}</small>
+                        <small class="text-muted">${formatNumber(video.comment_count)} comments</small>
+                    </div>
+                    <div class="btn-group w-100" role="group">
+                        <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                        <button class="btn btn-outline-success" onclick="watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-outline-info" onclick="syncVideoToDatabase('${video.youtube_id}')">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+        )
+        .join("");
 }
 
 function renderMyVideos(videos) {
@@ -509,8 +686,21 @@ function renderMyVideos(videos) {
 }
 
 function renderVideoActions(video) {
-    const canWatch =
-        video.price === 0 || video.purchased || currentUser?.role === "admin";
+    const isYouTubeVideo = video.youtube_id && video.is_youtube_synced;
+
+    if (isYouTubeVideo) {
+        return `
+            <div class="btn-group w-100" role="group">
+                <button class="btn btn-success" onclick="watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                    <i class="fas fa-play me-2"></i>Watch
+                </button>
+                <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
+                    <i class="fab fa-youtube"></i>
+                </a>
+            </div>`;
+    }
+
+    const canWatch = video.price === 0 || video.purchased || currentUser?.role === "admin";
 
     if (canWatch) {
         return `<button class="btn btn-success w-100" 
@@ -530,6 +720,84 @@ function renderVideoActions(video) {
     }
 }
 
+// Function to watch YouTube videos in embed modal
+function watchYouTubeVideo(youtubeId, title) {
+    document.getElementById("videoModalTitle").textContent = title;
+
+    // Create YouTube embed iframe
+    const embedHtml = window.youtubeAPI.generateEmbedHTML(youtubeId, 560, 315);
+    document.getElementById("videoPlayer").outerHTML = `<div id="videoPlayer">${embedHtml}</div>`;
+
+    const modal = new bootstrap.Modal(document.getElementById("videoModal"));
+    modal.show();
+}
+
+// Function to sync individual YouTube video to database
+async function syncVideoToDatabase(youtubeId) {
+    try {
+        showLoading(true);
+
+        // Get video details from YouTube
+        const videoDetails = await window.youtubeAPI.getVideoDetails([youtubeId]);
+
+        if (videoDetails.length === 0) {
+            showNotification("Video not found on YouTube", "error");
+            return;
+        }
+
+        const video = videoDetails[0];
+
+        // Sync to database
+        const success = await window.youtubeAPI.syncVideoToDatabase({
+            id: video.youtube_id,
+            snippet: {
+                title: video.title,
+                description: video.description,
+                channelId: video.channel_id,
+                channelTitle: video.channel_title,
+                thumbnails: { medium: { url: video.thumbnail } }
+            }
+        });
+
+        if (success) {
+            showNotification("Video synced to database successfully", "success");
+        } else {
+            showNotification("Failed to sync video to database", "error");
+        }
+    } catch (error) {
+        console.error("Failed to sync video:", error);
+        showNotification("Failed to sync video: " + error.message, "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
+}
+
 // Debounced filter function to prevent excessive API calls
 const debouncedFilterVideos = debounce(async function(filter) {
     // Prevent duplicate requests
@@ -543,18 +811,24 @@ const debouncedFilterVideos = debounce(async function(filter) {
     showLoading(true);
 
     try {
-        const response = await fetch(`api/videos.php?filter=${filter}`);
-        const data = await response.json();
-
-        if (data.success) {
-            renderVideos(data.videos);
-            // Update filter button states
-            updateFilterButtonStates(filter);
+        if (filter === 'youtube') {
+            // Load YouTube videos directly
+            await loadVideosFromYouTube();
         } else {
-            showNotification(
-                "Failed to filter videos: " + data.message,
-                "error",
-            );
+            // Load from database with filter
+            const response = await fetch(`api/videos.php?filter=${filter}`);
+            const data = await response.json();
+
+            if (data.success) {
+                renderVideos(data.videos);
+                // Update filter button states
+                updateFilterButtonStates(filter);
+            } else {
+                showNotification(
+                    "Failed to filter videos: " + data.message,
+                    "error",
+                );
+            }
         }
     } catch (error) {
         console.error("Failed to filter videos:", error);
@@ -694,45 +968,62 @@ function updatePopularVideos(videos) {
     `).join('');
 }
 
-function formatTimeAgo(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    return `${Math.floor(diffInSeconds / 86400)} days ago`;
-}
-
-const channelInfoDiv = document.getElementById("youtubeChannelInfo");
-const uploadForm = document.getElementById("youtubeUploadForm");
-const videosDiv = document.getElementById("youtubeVideos");
-const statsDiv = document.getElementById("youtubeStats");
-
-// Initialize YouTube status check on page load
-document.addEventListener('DOMContentLoaded', function() {
-    checkYouTubeStatus();
-});
-
+// YouTube Panel Functions
 async function connectYouTube() {
-    window.location.href = 'api/youtube_oauth.php';
+    try {
+        showLoading(true);
+        const success = await window.youtubeAPI.signIn();
+
+        if (success) {
+            showNotification("Connected to YouTube successfully!", "success");
+            await checkYouTubeStatus();
+            await loadYouTubeData();
+        } else {
+            showNotification("Failed to connect to YouTube", "error");
+        }
+    } catch (error) {
+        console.error("YouTube connection failed:", error);
+        showNotification("YouTube connection failed: " + error.message, "error");
+    } finally {
+        showLoading(false);
+    }
 }
 
-function debugYouTubeConnection() {
-    fetch('api/debug_youtube_connection.php', {
-        method: 'GET',
-        credentials: 'same-origin'
-    })
-        .then(response => response.json())
-        .then(data => {
-            console.log('YouTube Debug Info:', data);
-            alert('Debug info logged to console. Check browser dev tools.');
-        })
-        .catch(error => {
-            console.error('Debug error:', error);
-            alert('Debug failed: ' + error.message);
-        });
+async function disconnectYouTube() {
+    try {
+        showLoading(true);
+        const success = await window.youtubeAPI.signOut();
+
+        if (success) {
+            showNotification("Disconnected from YouTube", "success");
+            await checkYouTubeStatus();
+        } else {
+            showNotification("Failed to disconnect from YouTube", "error");
+        }
+    } catch (error) {
+        console.error("YouTube disconnection failed:", error);
+        showNotification("YouTube disconnection failed: " + error.message, "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function checkYouTubeStatus() {
+    try {
+        if (!window.youtubeAPI.isInitialized) {
+            await window.youtubeAPI.initialize();
+        }
+
+        if (window.youtubeAPI.isSignedIn()) {
+            const channelInfo = await window.youtubeAPI.getMyChannelInfo();
+            updateYouTubeStatus(true, channelInfo);
+        } else {
+            updateYouTubeStatus(false, null);
+        }
+    } catch (error) {
+        console.error("Failed to check YouTube status:", error);
+        updateYouTubeStatus(false, null);
+    }
 }
 
 async function loadYouTubeData() {
@@ -741,143 +1032,185 @@ async function loadYouTubeData() {
 
 async function loadYouTubeVideos() {
     try {
-        const response = await fetch("api/youtube_api.php?action=videos");
-        const data = await response.json();
+        if (!window.youtubeAPI.isSignedIn()) {
+            console.log("Not signed in to YouTube");
+            return;
+        }
 
-        if (data.success) {
-            displayYouTubeVideos(data.videos);
+        const result = await window.youtubeAPI.getMyVideos(50);
+
+        if (result.videos && result.videos.length > 0) {
+            // Get detailed statistics for the videos
+            const videoIds = result.videos.map(v => v.youtube_id);
+            const detailedVideos = await window.youtubeAPI.getVideoDetails(videoIds);
+
+            displayYouTubeVideos(detailedVideos);
+        } else {
+            displayYouTubeVideos([]);
         }
     } catch (error) {
         console.error("Failed to load YouTube videos:", error);
+        showNotification("Failed to load YouTube videos: " + error.message, "error");
     }
 }
 
 function displayYouTubeVideos(videos) {
-    const container = document.getElementById("youtubeVideosList");
+    const videosDiv = document.getElementById("youtubeVideos");
+    if (!videosDiv) return;
 
-    if (videos.length === 0) {
-        container.innerHTML =
-            '<p class="text-muted">No videos found on your YouTube channel.</p>';
+    if (!videos || videos.length === 0) {
+        videosDiv.innerHTML = `
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <p class="text-muted">No YouTube videos found</p>
+                    </div>
+                </div>
+            </div>
+        `;
         return;
     }
 
-    container.innerHTML = videos
-        .map(
-            (video) => `
-        <div class="row mb-3 border-bottom pb-3">
-            <div class="col-md-3">
-                <img src="${video.thumbnail}" class="img-fluid rounded" alt="${video.title}">
-            </div>
-            <div class="col-md-9">
-                <h6>${video.title}</h6>
-                <p class="text-muted small">${video.description.substring(0, 150)}${video.description.length > 150 ? "..." : ""}</p>
-                <small class="text-muted">Published: ${new Date(video.published_at).toLocaleDateString()}</small>
+    const videosHTML = videos.map(video => `
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h6 class="card-title">${video.title}</h6>
+                    <p class="card-text small text-muted">${video.description ? video.description.substring(0, 100) + '...' : 'No description'}</p>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">Views</small>
+                            <div class="fw-bold">${window.youtubeAPI.formatNumber(video.view_count)}</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Likes</small>
+                            <div class="fw-bold">${window.youtubeAPI.formatNumber(video.like_count)}</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Comments</small>
+                            <div class="fw-bold">${window.youtubeAPI.formatNumber(video.comment_count)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">Published: ${formatTimeAgo(video.published_at)}</small>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-success me-2" onclick="watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                            <i class="fas fa-play me-1"></i>Watch
+                        </button>
+                        <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-sm btn-outline-danger">
+                            <i class="fab fa-youtube me-1"></i>YouTube
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
-    `,
-        )
-        .join("");
+    `).join('');
+
+    videosDiv.innerHTML = `
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fab fa-youtube me-2"></i>My YouTube Videos (${videos.length})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        ${videosHTML}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 async function loadYouTubeStatistics() {
     try {
-        const response = await fetch("api/youtube_api.php?action=statistics");
-        const data = await response.json();
+        if (!window.youtubeAPI.isSignedIn()) {
+            return;
+        }
 
-        if (data.success) {
-            const stats = data.statistics;
-            document.getElementById("ytSubscribers").textContent = parseInt(
-                stats.subscriber_count,
-            ).toLocaleString();
-            document.getElementById("ytTotalViews").textContent = parseInt(
-                stats.view_count,
-            ).toLocaleString();
-            document.getElementById("ytVideoCount").textContent = parseInt(
-                stats.video_count,
-            ).toLocaleString();
+        const channelInfo = await window.youtubeAPI.getMyChannelInfo();
+
+        if (channelInfo) {
+            // Update statistics in the UI
+            const subscriberCount = document.getElementById("ytSubscribers");
+            const videoCount = document.getElementById("ytVideoCount");
+            const viewCount = document.getElementById("ytTotalViews");
+
+            if (subscriberCount) subscriberCount.textContent = window.youtubeAPI.formatNumber(channelInfo.subscriber_count);
+            if (videoCount) videoCount.textContent = window.youtubeAPI.formatNumber(channelInfo.video_count);
+            if (viewCount) viewCount.textContent = window.youtubeAPI.formatNumber(channelInfo.view_count);
+
+            // Update channel info display
+            const channelInfoDiv = document.getElementById("youtubeChannelInfo");
+            if (channelInfoDiv) {
+                channelInfoDiv.innerHTML = `
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <img src="${channelInfo.thumbnail}" alt="${channelInfo.title}" class="rounded-circle mb-3" style="width: 80px; height: 80px;">
+                            <h5>${channelInfo.title}</h5>
+                            <p class="text-muted">${channelInfo.description ? channelInfo.description.substring(0, 150) + '...' : 'No description'}</p>
+                        </div>
+                    </div>
+                `;
+            }
         }
     } catch (error) {
         console.error("Failed to load YouTube statistics:", error);
     }
 }
 
+// Sync YouTube video metadata with database
 async function syncYouTubeVideos() {
-    showSpinner();
-
     try {
-        const response = await fetch("api/youtube_sync.php?action=force_sync");
-        const data = await response.json();
+        if (!window.youtubeAPI.isSignedIn()) {
+            showNotification("Please connect to YouTube first", "error");
+            return;
+        }
 
-        if (data.success) {
-            showToast(data.message, "success");
-            await loadVideos(); // Refresh local videos list
-            await loadYouTubeVideos(); // Refresh YouTube videos
+        showLoading(true);
+        showNotification("Syncing YouTube videos...", "info");
+
+        const result = await window.youtubeAPI.getMyVideos(50);
+
+        if (result.videos && result.videos.length > 0) {
+            // Get detailed statistics
+            const videoIds = result.videos.map(v => v.youtube_id);
+            const detailedVideos = await window.youtubeAPI.getVideoDetails(videoIds);
+
+            // Sync each video with the database
+            let syncedCount = 0;
+            for (const video of detailedVideos) {
+                try {
+                    const success = await window.youtubeAPI.syncVideoToDatabase({
+                        id: video.youtube_id,
+                        snippet: {
+                            title: video.title,
+                            description: video.description,
+                            channelId: video.channel_id,
+                            channelTitle: video.channel_title,
+                            thumbnails: { medium: { url: video.thumbnail } }
+                        }
+                    });
+
+                    if (success) syncedCount++;
+                } catch (error) {
+                    console.error(`Failed to sync video ${video.youtube_id}:`, error);
+                }
+            }
+
+            showNotification(`Successfully synced ${syncedCount}/${detailedVideos.length} videos`, "success");
         } else {
-            showToast("Failed to sync videos: " + data.message, "error");
+            showNotification("No YouTube videos found to sync", "info");
         }
     } catch (error) {
         console.error("Failed to sync YouTube videos:", error);
-        showToast("Failed to sync videos", "error");
+        showNotification("Failed to sync YouTube videos: " + error.message, "error");
     } finally {
-        hideSpinner();
+        showLoading(false);
     }
 }
-
-// YouTube Upload Form Handler
-document.addEventListener("DOMContentLoaded", function () {
-    const youtubeUploadForm = document.getElementById("youtubeUpload");
-    if (youtubeUploadForm) {
-        youtubeUploadForm.addEventListener("submit", async function (e) {
-            e.preventDefault();
-
-            const formData = new FormData();
-            formData.append("title", document.getElementById("ytTitle").value);
-            formData.append(
-                "description",
-                document.getElementById("ytDescription").value,
-            );
-            formData.append("tags", document.getElementById("ytTags").value);
-            formData.append(
-                "privacy",
-                document.getElementById("ytPrivacy").value,
-            );
-            formData.append(
-                "video",
-                document.getElementById("ytVideo").files[0],
-            );
-
-            showSpinner();
-
-            try {
-                const response = await fetch(
-                    "api/youtube_api.php?action=upload",
-                    {
-                        method: "POST",
-                        body: formData,
-                    },
-                );
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(
-                        "Video uploaded to YouTube successfully!",
-                        "success",
-                    );
-                    youtubeUploadForm.reset();
-                    await loadYouTubeData();
-                } else {
-                    showToast("Upload failed: " + data.message, "error");
-                }
-            } catch (error) {
-                console.error("Upload error:", error);
-                showToast("Upload failed", "error");
-            } finally {
-                hideSpinner();
-            }
-        });
-    }
-});
 
 async function loadUsers() {
     try {
@@ -1439,7 +1772,7 @@ async function confirmPurchase() {
             // Reload current panel to reflect changes
             const activePanel = document.querySelector('.panel[style*="block"], .panel:not([style*="none"])');
             if (activePanel && activePanel.id === 'videosPanel') {
-                loadVideos();
+                loadVideosFromYouTube();
             } else if (activePanel && activePanel.id === 'purchasesPanel') {
                 loadPurchases();
             }
@@ -1549,61 +1882,46 @@ async function logout() {
     }
 }
 
-// Make functions globally accessible
-window.logout = logout;
-window.showPanel = showPanel;
-
-async function checkYouTubeStatus() {
+// Function to load dummy videos from a JSON file
+async function loadDummyVideos() {
     try {
-        const response = await fetch('api/youtube_sync.php?action=status');
+        const response = await fetch('dummy_videos.json');
         const data = await response.json();
 
-        const statusElement = document.getElementById('youtubeStatus');
-        const connectBtn = document.getElementById('connectYouTubeBtn');
-        const syncBtn = document.getElementById('syncChannelBtn');
-
-        if (data.connected && data.channel_info) {
-            statusElement.innerHTML = `
-                <span class="text-success">✅ Connected to: ${data.channel_info.title || 'Unknown Channel'}</span>
-            `;
-            if (connectBtn) connectBtn.style.display = 'none';
-            if (syncBtn) syncBtn.style.display = 'inline-block';
+        if (data.success) {
+            allVideos = data.videos;
+            renderVideos(allVideos);
+            showNotification("Loaded videos from local dummy data", "info");
         } else {
-            statusElement.innerHTML = '<span class="text-warning">❌ Not connected to YouTube</span>';
-            if (connectBtn) connectBtn.style.display = 'inline-block';
-            if (syncBtn) syncBtn.style.display = 'none';
+            showNotification("Failed to load dummy videos: " + data.message, "error");
         }
     } catch (error) {
-        console.error('YouTube status error:', error);
-        const statusElement = document.getElementById('youtubeStatus');
-        if (statusElement) {
-            statusElement.innerHTML = '<span class="text-danger">❌ Error checking YouTube status</span>';
-        }
+        console.error("Failed to load dummy videos:", error);
+        showNotification("Failed to load dummy videos", "error");
+    } finally {
+        showLoading(false);
     }
-}
-
-function showSpinner() {
-    showLoading(true);
-}
-
-function hideSpinner() {
-    showLoading(false);
-}
-
-function showToast(message, type) {
-    showNotification(message, type);
 }
 
 async function loadYouTubePanel() {
     try {
-        const response = await fetch("api/youtube_sync.php?action=check_status");
-        const data = await response.json();
+        // Check if YouTube API client is available
+        if (!window.youtubeAPI) {
+            console.warn('YouTube API client not available');
+            updateYouTubeStatus(false, null);
+            return;
+        }
 
-        if (data.success) {
-            updateYouTubeStatus(data.connected, data.channel_info);
-            if (data.connected) {
-                await loadYouTubeData();
-            }
+        if (!window.youtubeAPI.isInitialized) {
+            await window.youtubeAPI.initialize();
+        }
+
+        const isSignedIn = window.youtubeAPI.isSignedIn();
+
+        if (isSignedIn) {
+            const channelInfo = await window.youtubeAPI.getMyChannelInfo();
+            updateYouTubeStatus(true, channelInfo);
+            await loadYouTubeData();
         } else {
             updateYouTubeStatus(false, null);
         }
@@ -1611,56 +1929,6 @@ async function loadYouTubePanel() {
         console.error("Failed to load YouTube panel:", error);
         updateYouTubeStatus(false, null);
     }
-}
-
-async function syncChannelById() {
-    const channelIdInput = document.getElementById('channelIdInput');
-    const channelId = channelIdInput ? channelIdInput.value.trim() : '';
-
-    if (!channelId) {
-        showNotification('Please enter a channel ID', 'error');
-        return;
-    }
-
-    showLoading(true);
-
-    try {
-        const response = await fetch(`api/youtube_sync.php?action=sync_channel&channel_id=${encodeURIComponent(channelId)}`);
-        const data = await response.json();
-
-        if (data.success) {
-            showNotification(data.message, 'success');
-            channelIdInput.value = '';
-            await loadVideos(); // Refresh videos list
-        } else {
-            showNotification(data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Failed to sync channel:', error);
-        showNotification('Failed to sync channel', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-async function performChannelSearch() {
-    const searchInput = document.getElementById('channelSearchInput');
-    const query = searchInput ? searchInput.value.trim() : '';
-
-    if (!query) {
-        showNotification('Please enter a search term', 'error');
-        return;
-    }
-
-    showNotification('Channel search functionality coming soon', 'info');
-}
-
-async function disconnectYouTube() {
-    if (!confirm('Are you sure you want to disconnect your YouTube account?')) {
-        return;
-    }
-
-    showNotification('Disconnect functionality coming soon', 'info');
 }
 
 function updateYouTubeStatus(connected, channelInfo) {
@@ -1677,7 +1945,7 @@ function updateYouTubeStatus(connected, channelInfo) {
         statusDiv.innerHTML = `
             <div class="alert alert-success">
                 <i class="fab fa-youtube me-2"></i>
-                Connected to YouTube channel: <strong>${channelInfo.channel_title}</strong>
+                Connected to YouTube channel: <strong>${channelInfo.title}</strong>
             </div>
         `;
 
@@ -1685,56 +1953,26 @@ function updateYouTubeStatus(connected, channelInfo) {
             <button class="btn btn-outline-danger btn-sm" onclick="disconnectYouTube()">
                 <i class="fas fa-unlink me-1"></i>Disconnect
             </button>
+            <button class="btn btn-primary btn-sm ms-2" onclick="syncYouTubeVideos()">
+                <i class="fas fa-sync me-1"></i>Sync Videos
+            </button>
         `;
 
         if (channelInfoDiv) channelInfoDiv.style.display = "block";
         if (uploadForm) uploadForm.style.display = "block";
         if (videosDiv) videosDiv.style.display = "block";
         if (statsDiv) statsDiv.style.display = "block";
-
-        if (channelInfoDiv) {
-            channelInfoDiv.innerHTML = `
-                <div class="card">
-                    <div class="card-body">
-                        <h5><i class="fab fa-youtube text-danger me-2"></i>${channelInfo.channel_title}</h5>
-                        <p class="text-muted">Channel ID: ${channelInfo.channel_id}</p>
-                    </div>
-                </div>
-
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h6><i class="fas fa-search me-2"></i>Sync Other Channels</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" id="channelSearchInput" placeholder="Search for YouTube channels...">
-                            <button class="btn btn-outline-secondary" type="button" onclick="performChannelSearch()">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" id="channelIdInput" placeholder="Or enter Channel ID directly...">
-                            <button class="btn btn-primary" type="button" onclick="syncChannelById()">
-                                <i class="fas fa-sync me-1"></i>Sync Channel
-                            </button>
-                        </div>
-                        <div id="channelSearchResults"></div>
-                    </div>
-                </div>
-            `;
-        }
     } else {
         statusDiv.innerHTML = `
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2"></i>
-                YouTube channel not connected<br>
-                <small>Please add YouTube tokens to the database youtube_tokens table</small>
+                YouTube not connected. Please sign in to access your YouTube channel.
             </div>
         `;
 
         controlsDiv.innerHTML = `
-            <button class="btn btn-info" onclick="performAutoSync()">
-                <i class="fas fa-sync me-1"></i>Check Connection
+            <button class="btn btn-danger" onclick="connectYouTube()">
+                <i class="fab fa-youtube me-1"></i>Connect YouTube
             </button>
         `;
 
@@ -1745,48 +1983,88 @@ function updateYouTubeStatus(connected, channelInfo) {
     }
 }
 
-function syncMyChannel() {
-    if (!confirm('Are you sure you want to sync your YouTube channel? This will fetch all your videos.')) {
-        return;
-    }
+// YouTube Upload Form Handler
+document.addEventListener("DOMContentLoaded", function () {
+    const youtubeUploadForm = document.getElementById("youtubeUpload");
+    if (youtubeUploadForm) {
+        youtubeUploadForm.addEventListener("submit", async function (e) {
+            e.preventDefault();
 
-    showLoading(true);
+            const title = document.getElementById("ytTitle").value;
+            const description = document.getElementById("ytDescription").value;
+            const tags = document.getElementById("ytTags").value.split(',').map(tag => tag.trim()).filter(tag => tag);
+            const privacy = document.getElementById("ytPrivacy").value;
+            const videoFile = document.getElementById("ytVideo").files[0];
 
-    fetch('api/youtube_sync.php?action=sync_my_channel', {
-        method: 'GET',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-        .then(response => {
-            console.log('Sync response status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (!videoFile) {
+                showNotification("Please select a video file", "error");
+                return;
             }
-            return response.json();
-        })
-        .then(data => {
-            showLoading(false);
-            console.log('Sync response data:', data);
-            if (data.success) {
-                showAlert('success', data.message);
-                // Refresh video list
-                if (currentVideoFilter === 'my_videos') {
-                    loadMyVideos();
+
+            if (!title.trim()) {
+                showNotification("Please enter a video title", "error");
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                // Check if YouTube API is initialized and user is signed in
+                if (!window.youtubeAPI.isSignedIn()) {
+                    const signedIn = await window.youtubeAPI.signIn();
+                    if (!signedIn) {
+                        showNotification("Please sign in to YouTube first", "error");
+                        showLoading(false);
+                        return;
+                    }
+                }
+
+                // Prepare metadata
+                const metadata = {
+                    title: title,
+                    description: description,
+                    tags: tags,
+                    privacy: privacy,
+                    categoryId: '22' // People & Blogs
+                };
+
+                // Show upload progress
+                const progressDiv = document.createElement('div');
+                progressDiv.innerHTML = `
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: 0%" id="uploadProgress">0%</div>
+                    </div>
+                `;
+                youtubeUploadForm.appendChild(progressDiv);
+
+                // Upload video with progress callback
+                const result = await window.youtubeAPI.uploadVideo(videoFile, metadata, (progress) => {
+                    const progressBar = document.getElementById('uploadProgress');
+                    if (progressBar) {
+                        progressBar.style.width = progress + '%';
+                        progressBar.textContent = progress + '%';
+                    }
+                });
+
+                // Remove progress bar
+                progressDiv.remove();
+
+                if (result.success) {
+                    showNotification("Video uploaded to YouTube successfully!", "success");
+                    youtubeUploadForm.reset();
+                    await loadYouTubeData();
+
+                    // Show success details
+                    showNotification(`Video "${result.video.snippet.title}" uploaded with ID: ${result.youtube_id}`, "info");
                 } else {
-                    loadVideos();
+                    showNotification("Upload failed: " + (result.message || "Unknown error"), "error");
                 }
-            } else {
-                showAlert('danger', data.message || 'Sync failed');
-                if (data.debug) {
-                    console.error('Sync debug info:', data.debug);
-                }
+            } catch (error) {
+                console.error("Upload error:", error);
+                showNotification("Upload failed: " + error.message, "error");
+            } finally {
+                showLoading(false);
             }
-        })
-        .catch(error => {
-            showLoading(false);
-            console.error('Sync error:', error);
-            showAlert('danger', 'Failed to sync channel: ' + error.message);
         });
-}
+    }
+});

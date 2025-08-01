@@ -137,7 +137,7 @@ function handleUploadVideo() {
     }
 
     // Validate required fields
-    $required = ['title', 'description', 'price'];
+    $required = ['title', 'description'];
     foreach ($required as $field) {
         if (!isset($input[$field])) {
             echo json_encode(['success' => false, 'message' => 'Missing required field: ' . $field]);
@@ -147,9 +147,19 @@ function handleUploadVideo() {
 
     $title = trim($input['title']);
     $description = trim($input['description']);
-    $price = floatval($input['price']);
+    $price = floatval($input['price'] ?? 0);
     $category = $input['category'] ?? 'other';
     $file_path = $input['file_path'] ?? '';
+    
+    // YouTube-specific fields
+    $youtube_id = $input['youtube_id'] ?? null;
+    $youtube_thumbnail = $input['youtube_thumbnail'] ?? null;
+    $youtube_channel_id = $input['youtube_channel_id'] ?? null;
+    $youtube_channel_title = $input['youtube_channel_title'] ?? null;
+    $youtube_views = intval($input['youtube_views'] ?? 0);
+    $youtube_likes = intval($input['youtube_likes'] ?? 0);
+    $youtube_comments = intval($input['youtube_comments'] ?? 0);
+    $is_youtube_synced = isset($input['is_youtube_synced']) ? (bool)$input['is_youtube_synced'] : false;
 
     // Validate data
     if (empty($title)) {
@@ -164,10 +174,29 @@ function handleUploadVideo() {
 
     $conn = getConnection();
     
-    // Insert video
-    $insert_video = $conn->prepare("INSERT INTO videos (title, description, price, uploader_id, file_path, category) VALUES (?, ?, ?, ?, ?, ?)");
+    // Check if YouTube video already exists
+    if ($youtube_id) {
+        $check_existing = $conn->prepare("SELECT id FROM videos WHERE youtube_id = ?");
+        $check_existing->bind_param("s", $youtube_id);
+        $check_existing->execute();
+        $existing = $check_existing->get_result();
+        
+        if ($existing->num_rows > 0) {
+            echo json_encode(['success' => false, 'message' => 'Video already exists in database']);
+            $conn->close();
+            return;
+        }
+    }
+    
+    // Insert video with YouTube metadata
+    $sql = "INSERT INTO videos (title, description, price, uploader_id, file_path, category, youtube_id, youtube_thumbnail, youtube_channel_id, youtube_channel_title, youtube_views, youtube_likes, youtube_comments, is_youtube_synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $insert_video = $conn->prepare($sql);
     $uploader_id = $_SESSION['user']['id'];
-    $insert_video->bind_param("ssdsss", $title, $description, $price, $uploader_id, $file_path, $category);
+    $insert_video->bind_param("ssdsssssssiiib", 
+        $title, $description, $price, $uploader_id, $file_path, $category,
+        $youtube_id, $youtube_thumbnail, $youtube_channel_id, $youtube_channel_title,
+        $youtube_views, $youtube_likes, $youtube_comments, $is_youtube_synced
+    );
     
     if ($insert_video->execute()) {
         $video_id = $conn->insert_id;
@@ -185,11 +214,19 @@ function handleUploadVideo() {
                 'purchased' => false,
                 'file_path' => $file_path,
                 'category' => $category,
+                'youtube_id' => $youtube_id,
+                'youtube_thumbnail' => $youtube_thumbnail,
+                'youtube_channel_id' => $youtube_channel_id,
+                'youtube_channel_title' => $youtube_channel_title,
+                'youtube_views' => $youtube_views,
+                'youtube_likes' => $youtube_likes,
+                'youtube_comments' => $youtube_comments,
+                'is_youtube_synced' => $is_youtube_synced,
                 'created_at' => date('Y-m-d H:i:s')
             ]
         ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to upload video']);
+        echo json_encode(['success' => false, 'message' => 'Failed to upload video: ' . $conn->error]);
     }
     
     $conn->close();
