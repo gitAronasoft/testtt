@@ -265,7 +265,7 @@ function showPanel(panelName) {
             }
             break;
         case "myVideos":
-            if (currentUser.role === "editor" || currentUser.role === "admin") {
+            if (currentUser.role === "editor" || currentUser.role === "creator" || currentUser.role === "admin") {
                 loadMyVideos();
             }
             break;
@@ -279,12 +279,12 @@ function showPanel(panelName) {
             loadWatchlist();
             break;
         case "earnings":
-            if (currentUser.role === "editor" || currentUser.role === "admin") {
+            if (currentUser.role === "editor" || currentUser.role === "creator" || currentUser.role === "admin") {
                 loadEarnings();
             }
             break;
         case "paidUsers":
-            if (currentUser.role === "editor" || currentUser.role === "admin") {
+            if (currentUser.role === "editor" || currentUser.role === "creator" || currentUser.role === "admin") {
                 loadPaidUsers();
             }
             break;
@@ -294,7 +294,7 @@ function showPanel(panelName) {
             }
             break;
         case "youtube":
-            if (currentUser.role === "editor" || currentUser.role === "admin") {
+            if (currentUser.role === "admin") {
                 loadYouTubePanel();
             }
             break;
@@ -316,7 +316,6 @@ function hasPermissionForPanel(panelName) {
             "upload",
             "earnings",
             "paidUsers",
-            "youtube",
         ],
         creator: [
             "overview",
@@ -325,7 +324,6 @@ function hasPermissionForPanel(panelName) {
             "upload",
             "earnings",
             "paidUsers",
-            "youtube",
         ],
         admin: [
             "overview",

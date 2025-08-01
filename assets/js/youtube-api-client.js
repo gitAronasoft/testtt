@@ -1,5 +1,4 @@
 
-
 class YouTubeAPIClient {
     constructor() {
         this.accessToken = null;
@@ -7,9 +6,6 @@ class YouTubeAPIClient {
         this.isInitialized = false;
         this.clientId = '824425517340-c4g9ilvg3i7cddl75hvq1a8gromuc95n.apps.googleusercontent.com';
         this.clientSecret = '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';
-        this.requestQueue = [];
-        this.isRefreshing = false;
-        this.tokenCheckInterval = null;
     }
 
     async initialize() {
@@ -18,44 +14,10 @@ class YouTubeAPIClient {
         try {
             const success = await this.loadStoredTokens();
             this.isInitialized = true;
-            
-            // Set up automatic token validation
-            this.startTokenValidation();
-            
             return success;
         } catch (error) {
             console.error('Failed to initialize YouTube API:', error);
             return false;
-        }
-    }
-
-    startTokenValidation() {
-        // Check token validity every 10 minutes
-        this.tokenCheckInterval = setInterval(async () => {
-            if (this.accessToken) {
-                await this.validateCurrentToken();
-            }
-        }, 10 * 60 * 1000);
-    }
-
-    stopTokenValidation() {
-        if (this.tokenCheckInterval) {
-            clearInterval(this.tokenCheckInterval);
-            this.tokenCheckInterval = null;
-        }
-    }
-
-    async validateCurrentToken() {
-        try {
-            const response = await fetch('api/youtube_tokens.php?action=validate_token');
-            const result = await response.json();
-            
-            if (!result.success || !result.valid) {
-                console.log('Token validation failed, refreshing...');
-                await this.loadStoredTokens();
-            }
-        } catch (error) {
-            console.error('Token validation error:', error);
         }
     }
 
@@ -81,7 +43,7 @@ class YouTubeAPIClient {
                 console.log('Token expired, attempting refresh...');
                 return await this.refreshAccessToken(result.refresh_token);
             }
-            
+
             return false;
         } catch (error) {
             console.error('Error loading stored tokens:', error);
@@ -90,14 +52,6 @@ class YouTubeAPIClient {
     }
 
     async refreshAccessToken(refreshToken) {
-        if (this.isRefreshing) {
-            return new Promise((resolve) => {
-                this.requestQueue.push(resolve);
-            });
-        }
-
-        this.isRefreshing = true;
-
         try {
             const response = await fetch('api/youtube_tokens.php', {
                 method: 'POST',
@@ -116,24 +70,14 @@ class YouTubeAPIClient {
             if (result.success && result.tokens) {
                 this.accessToken = result.tokens.access_token;
                 this.refreshToken = result.tokens.refresh_token;
-
-                this.requestQueue.forEach(resolve => resolve(true));
-                this.requestQueue = [];
-                
                 return true;
             } else {
                 console.error('Token refresh failed:', result.message);
-                this.requestQueue.forEach(resolve => resolve(false));
-                this.requestQueue = [];
                 return false;
             }
         } catch (error) {
             console.error('Token refresh failed:', error);
-            this.requestQueue.forEach(resolve => resolve(false));
-            this.requestQueue = [];
             return false;
-        } finally {
-            this.isRefreshing = false;
         }
     }
 
@@ -175,7 +119,6 @@ class YouTubeAPIClient {
     }
 
     async signOut() {
-        this.stopTokenValidation();
         this.accessToken = null;
         this.refreshToken = null;
         await this.clearStoredTokens();
@@ -198,239 +141,295 @@ class YouTubeAPIClient {
         }
     }
 
-    async makeAuthenticatedRequest(endpoint, params = {}) {
-        // Create cache key for request deduplication
-        const cacheKey = `${endpoint}_${JSON.stringify(params)}`;
-        const now = Date.now();
-        
-        // Check if same request was made recently (within 5 seconds)
-        if (this.requestCache && this.requestCache[cacheKey] && (now - this.requestCache[cacheKey].timestamp) < 5000) {
-            console.log('Using cached request result for:', endpoint);
-            return this.requestCache[cacheKey].response;
-        }
+    async signIn() {
+        return new Promise((resolve) => {
+            const width = 500;
+            const height = 600;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
 
-        // Initialize cache if needed
-        if (!this.requestCache) {
-            this.requestCache = {};
-        }
+            const authUrl = `https://accounts.google.com/oauth/authorize?` +
+                `client_id=${this.clientId}&` +
+                `redirect_uri=${encodeURIComponent(window.location.origin + '/oauth/youtube')}&` +
+                `scope=${encodeURIComponent('https://www.googleapis.com/auth/youtube')}&` +
+                `response_type=code&` +
+                `access_type=offline&` +
+                `prompt=consent`;
 
-        let attempts = 0;
-        const maxAttempts = 3;
+            const popup = window.open(
+                authUrl,
+                'youtube_auth',
+                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+            );
 
-        while (attempts < maxAttempts) {
-            if (!this.accessToken) {
-                const loaded = await this.loadStoredTokens();
-                if (!loaded) {
-                    throw new Error('No access token available. Please authenticate first.');
+            const checkClosed = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkClosed);
+                    this.loadStoredTokens().then(success => {
+                        resolve(success);
+                    });
                 }
-            }
+            }, 1000);
 
-            const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
-            Object.keys(params).forEach(key => {
-                if (params[key] !== undefined && params[key] !== null) {
-                    url.searchParams.append(key, params[key]);
+            window.addEventListener('message', async (event) => {
+                if (event.origin !== window.location.origin) return;
+
+                if (event.data.type === 'YOUTUBE_AUTH_SUCCESS') {
+                    clearInterval(checkClosed);
+                    popup.close();
+
+                    const success = await this.loadStoredTokens();
+                    resolve(success);
+                } else if (event.data.type === 'YOUTUBE_AUTH_ERROR') {
+                    clearInterval(checkClosed);
+                    popup.close();
+                    resolve(false);
                 }
             });
-
-            try {
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (response.status === 401 && attempts < maxAttempts - 1 && this.refreshToken) {
-                    console.log('Token expired, attempting refresh...');
-                    const refreshed = await this.refreshAccessToken(this.refreshToken);
-                    if (refreshed) {
-                        attempts++;
-                        continue;
-                    }
-                }
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                // Cache successful response
-                this.requestCache[cacheKey] = {
-                    response: response.clone(),
-                    timestamp: now
-                };
-
-                return response;
-            } catch (error) {
-                if (attempts === maxAttempts - 1) {
-                    throw error;
-                }
-                attempts++;
-            }
-        }
-    }
-
-    async syncVideoToDatabase(video) {
-        try {
-            const response = await fetch('api/videos.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    action: 'sync_youtube_video',
-                    video: video
-                })
-            });
-
-            return await response.json();
-        } catch (error) {
-            console.error('Error syncing video to database:', error);
-            throw error;
-        }
-    }
-
-    async getMyChannelInfo() {
-        try {
-            const response = await this.makeAuthenticatedRequest('channels', {
-                part: 'snippet,statistics,brandingSettings,contentDetails',
-                mine: 'true'
-            });
-
-            const data = await response.json();
-
-            if (data.items && data.items.length > 0) {
-                const channel = data.items[0];
-                return {
-                    channel_id: channel.id,
-                    title: channel.snippet.title,
-                    description: channel.snippet.description,
-                    thumbnail: channel.snippet.thumbnails.high?.url || channel.snippet.thumbnails.default?.url,
-                    subscriber_count: parseInt(channel.statistics.subscriberCount) || 0,
-                    video_count: parseInt(channel.statistics.videoCount) || 0,
-                    view_count: parseInt(channel.statistics.viewCount) || 0,
-                    published_at: channel.snippet.publishedAt,
-                    custom_url: channel.snippet.customUrl || '',
-                    country: channel.snippet.country || '',
-                    uploads_playlist: channel.contentDetails?.relatedPlaylists?.uploads
-                };
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching my channel info:', error);
-            throw error;
-        }
+        });
     }
 
     async getMyVideos(maxResults = 50, pageToken = '') {
         try {
-            const channelInfo = await this.getMyChannelInfo();
-            if (!channelInfo) {
-                throw new Error('Could not get channel information');
+            if (!this.accessToken) {
+                await this.loadStoredTokens();
             }
 
-            return await this.getVideosByChannelId(channelInfo.channel_id, maxResults, pageToken);
+            let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&forMine=true&type=video&maxResults=${maxResults}`;
+            if (pageToken) {
+                url += `&pageToken=${pageToken}`;
+            }
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Try to refresh token
+                    const refreshed = await this.refreshAccessToken(this.refreshToken);
+                    if (refreshed) {
+                        // Retry with new token
+                        const retryResponse = await fetch(url, {
+                            headers: {
+                                'Authorization': `Bearer ${this.accessToken}`
+                            }
+                        });
+                        const retryData = await retryResponse.json();
+                        return this.processVideoResponse(retryData);
+                    }
+                }
+                throw new Error(`Failed to get videos: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return this.processVideoResponse(data);
         } catch (error) {
             console.error('Error fetching my videos:', error);
             throw error;
         }
     }
 
-    async getVideosByChannelId(channelId, maxResults = 50, pageToken = '') {
+    processVideoResponse(data) {
+        if (data.error) {
+            throw new Error(data.error.message || 'Failed to fetch videos');
+        }
+
+        const videos = (data.items || []).map(item => ({
+            youtube_id: item.id.videoId,
+            title: item.snippet.title,
+            description: item.snippet.description,
+            thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+            channel_title: item.snippet.channelTitle,
+            channel_id: item.snippet.channelId,
+            published_at: item.snippet.publishedAt,
+            view_count: 0, // Will be populated by getVideoDetails if needed
+            like_count: 0,
+            comment_count: 0
+        }));
+
+        return {
+            videos: videos,
+            nextPageToken: data.nextPageToken || null
+        };
+    }
+
+    async getMyChannelInfo() {
         try {
-            const params = {
-                part: 'snippet',
-                channelId: channelId,
-                type: 'video',
-                order: 'date',
-                maxResults: Math.min(maxResults, 50)
-            };
-
-            if (pageToken) {
-                params.pageToken = pageToken;
+            if (!this.accessToken) {
+                await this.loadStoredTokens();
             }
 
-            const response = await this.makeAuthenticatedRequest('search', params);
-            const data = await response.json();
-
-            if (!data.items) {
-                return { videos: [], nextPageToken: null, totalResults: 0 };
-            }
-
-            const videoIds = data.items.map(item => item.id.videoId);
-            const detailedVideos = await this.getVideoDetails(videoIds);
-
-            // Sync videos to database
-            for (const video of detailedVideos) {
-                try {
-                    await this.syncVideoToDatabase(video);
-                } catch (syncError) {
-                    console.error('Failed to sync video to database:', syncError);
+            const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true', {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
                 }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Try to refresh token
+                    const refreshed = await this.refreshAccessToken(this.refreshToken);
+                    if (refreshed) {
+                        // Retry with new token
+                        const retryResponse = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true', {
+                            headers: {
+                                'Authorization': `Bearer ${this.accessToken}`
+                            }
+                        });
+                        const retryData = await retryResponse.json();
+                        return this.processChannelResponse(retryData);
+                    }
+                }
+                throw new Error(`Failed to get channel info: ${response.statusText}`);
             }
 
-            return {
-                videos: detailedVideos,
-                nextPageToken: data.nextPageToken || null,
-                totalResults: data.pageInfo?.totalResults || 0
-            };
+            const data = await response.json();
+            return this.processChannelResponse(data);
         } catch (error) {
-            console.error('Error fetching videos by channel ID:', error);
+            console.error('Error fetching channel info:', error);
             throw error;
         }
     }
 
+    processChannelResponse(data) {
+        if (data.error) {
+            throw new Error(data.error.message || 'Failed to fetch channel info');
+        }
+
+        if (data.items && data.items.length > 0) {
+            const channel = data.items[0];
+            return {
+                channel_id: channel.id,
+                title: channel.snippet.title,
+                description: channel.snippet.description,
+                thumbnail: channel.snippet.thumbnails.high?.url || channel.snippet.thumbnails.default?.url,
+                subscriber_count: parseInt(channel.statistics.subscriberCount) || 0,
+                video_count: parseInt(channel.statistics.videoCount) || 0,
+                view_count: parseInt(channel.statistics.viewCount) || 0
+            };
+        }
+        return null;
+    }
+
     async getVideoDetails(videoIds) {
         try {
-            if (!Array.isArray(videoIds)) {
-                videoIds = [videoIds];
+            if (!this.accessToken) {
+                await this.loadStoredTokens();
             }
 
-            if (videoIds.length === 0) {
+            if (!Array.isArray(videoIds) || videoIds.length === 0) {
                 return [];
             }
 
-            const batchSize = 50;
-            const allVideos = [];
-
-            for (let i = 0; i < videoIds.length; i += batchSize) {
-                const batch = videoIds.slice(i, i + batchSize);
-                
-                const response = await this.makeAuthenticatedRequest('videos', {
-                    part: 'snippet,statistics,contentDetails,status',
-                    id: batch.join(',')
-                });
-
-                const data = await response.json();
-
-                if (data.items) {
-                    const batchVideos = data.items.map(item => ({
-                        youtube_id: item.id,
-                        title: item.snippet.title,
-                        description: item.snippet.description,
-                        thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
-                        published_at: item.snippet.publishedAt,
-                        channel_id: item.snippet.channelId,
-                        channel_title: item.snippet.channelTitle,
-                        duration: item.contentDetails.duration,
-                        view_count: parseInt(item.statistics.viewCount) || 0,
-                        like_count: parseInt(item.statistics.likeCount) || 0,
-                        comment_count: parseInt(item.statistics.commentCount) || 0,
-                        tags: item.snippet.tags || [],
-                        category_id: item.snippet.categoryId,
-                        default_language: item.snippet.defaultLanguage,
-                        privacy_status: item.status.privacyStatus,
-                        upload_status: item.status.uploadStatus
-                    }));
-                    
-                    allVideos.push(...batchVideos);
+            const idsString = videoIds.join(',');
+            const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${idsString}`, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
                 }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to get video details: ${response.statusText}`);
             }
 
-            return allVideos;
+            const data = await response.json();
+
+            return (data.items || []).map(item => ({
+                youtube_id: item.id,
+                title: item.snippet.title,
+                description: item.snippet.description,
+                thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+                channel_title: item.snippet.channelTitle,
+                channel_id: item.snippet.channelId,
+                published_at: item.snippet.publishedAt,
+                view_count: parseInt(item.statistics.viewCount) || 0,
+                like_count: parseInt(item.statistics.likeCount) || 0,
+                comment_count: parseInt(item.statistics.commentCount) || 0,
+                duration: item.contentDetails.duration
+            }));
         } catch (error) {
             console.error('Error fetching video details:', error);
+            throw error;
+        }
+    }
+
+    async searchChannels(query, maxResults = 10) {
+        try {
+            if (!this.accessToken) {
+                await this.loadStoredTokens();
+            }
+
+            const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=${maxResults}`, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to search channels: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            return (data.items || []).map(item => ({
+                channel_id: item.id.channelId,
+                title: item.snippet.title,
+                description: item.snippet.description,
+                thumbnail: item.snippet.thumbnails.default?.url
+            }));
+        } catch (error) {
+            console.error('Error searching channels:', error);
+            throw error;
+        }
+    }
+
+    async getVideosByChannelId(channelId, maxResults = 50) {
+        try {
+            if (!this.accessToken) {
+                await this.loadStoredTokens();
+            }
+
+            const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&maxResults=${maxResults}`, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to get channel videos: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return this.processVideoResponse(data);
+        } catch (error) {
+            console.error('Error fetching channel videos:', error);
+            throw error;
+        }
+    }
+
+    async getChannelInfo(channelId) {
+        try {
+            if (!this.accessToken) {
+                await this.loadStoredTokens();
+            }
+
+            const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}`, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to get channel info: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return this.processChannelResponse(data);
+        } catch (error) {
+            console.error('Error fetching channel info:', error);
             throw error;
         }
     }
@@ -489,21 +488,6 @@ class YouTubeAPIClient {
             }
 
             const result = await uploadResponse.json();
-            
-            // Sync uploaded video to database
-            const videoData = {
-                youtube_id: result.id,
-                title: result.snippet.title,
-                description: result.snippet.description,
-                thumbnail: result.snippet.thumbnails?.default?.url,
-                published_at: result.snippet.publishedAt,
-                channel_id: result.snippet.channelId,
-                channel_title: result.snippet.channelTitle,
-                privacy_status: result.status.privacyStatus,
-                upload_status: result.status.uploadStatus
-            };
-
-            await this.syncVideoToDatabase(videoData);
 
             return {
                 success: true,
@@ -516,73 +500,7 @@ class YouTubeAPIClient {
         }
     }
 
-    async getChannelInfo(channelId) {
-        try {
-            const response = await this.makeAuthenticatedRequest('channels', {
-                part: 'snippet,statistics',
-                id: channelId
-            });
-
-            const data = await response.json();
-
-            if (data.items && data.items.length > 0) {
-                const channel = data.items[0];
-                return {
-                    channel_id: channel.id,
-                    title: channel.snippet.title,
-                    description: channel.snippet.description,
-                    thumbnail: channel.snippet.thumbnails.high?.url || channel.snippet.thumbnails.default?.url,
-                    subscriber_count: parseInt(channel.statistics.subscriberCount) || 0,
-                    video_count: parseInt(channel.statistics.videoCount) || 0,
-                    view_count: parseInt(channel.statistics.viewCount) || 0
-                };
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching channel info:', error);
-            throw error;
-        }
-    }
-
-    async searchChannels(query, maxResults = 25) {
-        try {
-            const response = await this.makeAuthenticatedRequest('search', {
-                part: 'snippet',
-                q: query,
-                type: 'channel',
-                maxResults: Math.min(maxResults, 50)
-            });
-
-            const data = await response.json();
-
-            return data.items ? data.items.map(item => ({
-                channel_id: item.snippet.channelId,
-                title: item.snippet.title,
-                description: item.snippet.description,
-                thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
-                published_at: item.snippet.publishedAt
-            })) : [];
-        } catch (error) {
-            console.error('Error searching channels:', error);
-            throw error;
-        }
-    }
-
-    formatDuration(duration) {
-        const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-        if (!match) return '0:00';
-
-        const hours = (match[1] || '').replace('H', '');
-        const minutes = (match[2] || '').replace('M', '');
-        const seconds = (match[3] || '').replace('S', '');
-
-        if (hours) {
-            return `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
-        } else {
-            return `${minutes || '0'}:${seconds.padStart(2, '0')}`;
-        }
-    }
-
+    // Utility methods
     formatNumber(num) {
         if (num >= 1000000) {
             return (num / 1000000).toFixed(1) + 'M';
@@ -592,15 +510,30 @@ class YouTubeAPIClient {
         return num.toString();
     }
 
-    generateEmbedHTML(videoId, width = 560, height = 315) {
-        return `<iframe width="${width}" height="${height}" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+    formatDuration(duration) {
+        // Convert ISO 8601 duration to readable format
+        const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+        if (!match) return '';
+        
+        const hours = parseInt(match[1]) || 0;
+        const minutes = parseInt(match[2]) || 0;
+        const seconds = parseInt(match[3]) || 0;
+        
+        if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
     }
 
     generateVideoURL(videoId) {
         return `https://www.youtube.com/watch?v=${videoId}`;
     }
+
+    generateEmbedHTML(videoId, width = 560, height = 315) {
+        return `<iframe width="${width}" height="${height}" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+    }
 }
 
 // Create global instance
 window.youtubeAPI = new YouTubeAPIClient();
-

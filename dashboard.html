@@ -4,336 +4,375 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Video Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg global-navbar">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
-                <i class="fas fa-video me-2"></i>Video Platform
-            </a>
-            <button class="mobile-nav-toggle d-lg-none" type="button" onclick="toggleMobileNav()">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="navbar-nav ms-auto d-flex align-items-center">
-                <div class="d-flex align-items-center me-3">
-                    <div class="user-avatar me-3" id="userAvatar">A</div>
-                    <div class="d-none d-sm-block">
-                        <div class="user-name" id="userName">Admin User</div>
-                        <div class="user-role" id="userRole">Admin</div>
-                    </div>
-                </div>
-                <button class="btn btn-outline-primary btn-sm" onclick="logout()">
-                    <i class="fas fa-sign-out-alt me-1"></i>
-                    <span class="d-none d-sm-inline">Logout</span>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="d-none position-fixed w-100 h-100" style="top: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 9999;">
-        <div class="d-flex justify-content-center align-items-center h-100">
-            <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingSpinner" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p class="text-sm text-muted-foreground">Loading...</p>
         </div>
     </div>
 
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-            <!-- Sidebar -->
-            <div class="col-lg-3 col-xl-2">
-                <div class="sidebar" id="sidebar">
-                    <div class="p-4">
-                        <div class="welcome-section mb-4">
-                            <h5>Welcome back,</h5>
-                            <p class="text-muted mb-1" id="welcomeName">Admin User</p>
-                            <small class="text-muted" id="welcomeRole">Admin</small>
-                        </div>
+    <!-- Mobile Navigation Toggle -->
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()">
+        <i class="fas fa-bars"></i>
+    </button>
 
-                        <nav class="nav flex-column">
-                            <a class="nav-link active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
-                                <i class="fas fa-chart-bar me-2"></i>Overview
-                            </a>
-                            <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
-                                <i class="fas fa-video me-2"></i>All Videos
-                            </a>
-
-                            <!-- Viewer Sidebar -->
-                            <div id="viewerSidebar">
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('purchases'); return false;">
-                                    <i class="fas fa-shopping-cart me-2"></i>My Purchases
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('watchlist'); return false;">
-                                    <i class="fas fa-bookmark me-2"></i>Watchlist
-                                </a>
-                            </div>
-
-                            <!-- Creator Sidebar -->
-                            <div id="creatorSidebar">
-                                <hr>
-                                <h6 class="text-muted px-3">Creator Tools</h6>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('myVideos'); return false;">
-                                    <i class="fas fa-film me-2"></i>My Videos
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('upload'); return false;">
-                                    <i class="fas fa-upload me-2"></i>Upload Video
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('youtube'); return false;">
-                                    <i class="fab fa-youtube me-2"></i>YouTube Integration
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('earnings'); return false;">
-                                    <i class="fas fa-dollar-sign me-2"></i>Earnings
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('paidUsers'); return false;">
-                                    <i class="fas fa-users me-2"></i>Paid Users
-                                </a>
-                            </div>
-
-                            <!-- Admin Sidebar -->
-                            <div id="adminSidebar">
-                                <hr>
-                                <h6 class="text-muted px-3">Admin Panel</h6>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('users'); return false;">
-                                    <i class="fas fa-users me-2"></i>Manage Users
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('analytics'); return false;">
-                                    <i class="fas fa-chart-line me-2"></i>Analytics
-                                </a>
-                            </div>
-                        </nav>
+    <div class="dashboard-layout">
+        <!-- Enhanced Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <!-- Welcome Card -->
+            <div class="sidebar-section">
+                <div class="card">
+                    <div class="card-content">
+                        <h5 class="welcome-title">Welcome back,</h5>
+                        <p class="welcome-name" id="welcomeName">Admin User</p>
+                        <span class="badge badge-default" id="welcomeRole">Admin</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-lg-9 col-xl-10">
-                <div class="main-content p-4 p-lg-6">
-                    <!-- Loading Spinner -->
-                    <div id="loadingSpinner" class="text-center py-5" style="display: none;">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+            <!-- Main Navigation -->
+            <nav class="sidebar-section">
+                <a class="sidebar-nav-item active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
+                    <i class="fas fa-chart-bar"></i>
+                    Overview
+                </a>
+                <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
+                    <i class="fas fa-video"></i>
+                    All Videos
+                </a>
+            </nav>
 
+            <!-- Viewer Section -->
+            <div id="viewerSidebar" class="sidebar-section">
+                <div class="sidebar-section-title">Viewer</div>
+                <nav>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('purchases'); return false;">
+                        <i class="fas fa-shopping-cart"></i>
+                        My Purchases
+                    </a>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('watchlist'); return false;">
+                        <i class="fas fa-bookmark"></i>
+                        Watchlist
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Creator Section -->
+            <div id="creatorSidebar" class="sidebar-section">
+                <div class="sidebar-section-title">Creator Tools</div>
+                <nav>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('myVideos'); return false;">
+                        <i class="fas fa-film"></i>
+                        My Videos
+                    </a>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('upload'); return false;">
+                        <i class="fas fa-upload"></i>
+                        Upload Video
+                    </a>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('earnings'); return false;">
+                        <i class="fas fa-dollar-sign"></i>
+                        Earnings
+                    </a>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('paidUsers'); return false;">
+                        <i class="fas fa-users"></i>
+                        Paid Users
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Admin Section -->
+            <div id="adminSidebar" class="sidebar-section">
+                <div class="sidebar-section-title">Admin Panel</div>
+                <nav>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('users'); return false;">
+                        <i class="fas fa-users"></i>
+                        Manage Users
+                    </a>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('youtube'); return false;">
+                        <i class="fab fa-youtube"></i>
+                        YouTube Integration
+                    </a>
+                    <a class="sidebar-nav-item" href="#" onclick="event.preventDefault(); showPanel('analytics'); return false;">
+                        <i class="fas fa-chart-line"></i>
+                        Analytics
+                    </a>
+                </nav>
+            </div>
+
+            <!-- User Actions -->
+            <div class="sidebar-section">
+                <a class="sidebar-nav-item" href="#" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <main class="main-content-inner">
+                <div class="container">
                     <!-- Overview Panel -->
-                    <div id="overviewPanel" class="panel">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>Dashboard Overview</h2>
+                    <div id="overviewPanel" class="panel animate-fade-in">
+                        <div class="panel-header">
+                            <h1 class="panel-title">Dashboard Overview</h1>
                         </div>
 
-                        <div class="row g-4 mb-5">
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="card bg-primary text-white h-100">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h6 class="card-title mb-2">Total Videos</h6>
-                                                <h3 class="mb-0" id="totalVideos">25</h3>
-                                            </div>
-                                            <div class="opacity-75">
-                                                <i class="fas fa-video fa-2x"></i>
-                                            </div>
-                                        </div>
-                                    </div>
+                        <!-- Stats Grid -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon primary">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="totalVideos">0</div>
+                                    <div class="stat-label">Total Videos</div>
                                 </div>
                             </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="card bg-success text-white h-100">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h6 class="card-title mb-2">Active Users</h6>
-                                                <h3 class="mb-0" id="activeUsers">150</h3>
-                                            </div>
-                                            <div class="opacity-75">
-                                                <i class="fas fa-users fa-2x"></i>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div class="stat-card">
+                                <div class="stat-icon success">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="activeUsers">0</div>
+                                    <div class="stat-label">Active Users</div>
                                 </div>
                             </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="card bg-warning text-white h-100">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h6 class="card-title mb-2">Total Revenue</h6>
-                                                <h3 class="mb-0" id="totalRevenue">$2,450</h3>
-                                            </div>
-                                            <div class="opacity-75">
-                                                <i class="fas fa-dollar-sign fa-2x"></i>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div class="stat-card">
+                                <div class="stat-icon info">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="totalViews">0</div>
+                                    <div class="stat-label">Total Views</div>
                                 </div>
                             </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="card bg-info text-white h-100">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h6 class="card-title mb-2">Total Views</h6>
-                                                <h3 class="mb-0" id="totalViews">12,580</h3>
-                                            </div>
-                                            <div class="opacity-75">
-                                                <i class="fas fa-eye fa-2x"></i>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div class="stat-card">
+                                <div class="stat-icon warning">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="totalRevenue">$0.00</div>
+                                    <div class="stat-label">Total Revenue</div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>Recent Activity</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="list-group list-group-flush">
-                                            <div class="list-group-item">
-                                                <i class="fas fa-video text-primary me-2"></i>
-                                                New video uploaded: "Advanced React Concepts"
-                                                <small class="text-muted d-block">2 hours ago</small>
-                                            </div>
-                                            <div class="list-group-item">
-                                                <i class="fas fa-shopping-cart text-success me-2"></i>
-                                                Video purchased by viewer@example.com
-                                                <small class="text-muted d-block">4 hours ago</small>
-                                            </div>
-                                            <div class="list-group-item">
-                                                <i class="fas fa-user text-info me-2"></i>
-                                                New user registered: John Smith
-                                                <small class="text-muted d-block">1 day ago</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                        <!-- Recent Activity -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Recent Activity</h3>
                             </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>Popular Videos</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="list-group list-group-flush">
-                                            <div class="list-group-item d-flex justify-content-between">
-                                                <span>Introduction to Web Development</span>
-                                                <span class="badge bg-primary">1,250 views</span>
-                                            </div>
-                                            <div class="list-group-item d-flex justify-content-between">
-                                                <span>Advanced React Concepts</span>
-                                                <span class="badge bg-primary">850 views</span>
-                                            </div>
-                                            <div class="list-group-item d-flex justify-content-between">
-                                                <span>PHP Backend Development</span>
-                                                <span class="badge bg-primary">675 views</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div class="card-content">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Recent activity will appear here once you start using the platform.
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Videos Panel -->
-                    <div id="videosPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>All Videos</h2>
-                            <div class="btn-group">
-                                <button class="btn btn-outline-primary" onclick="filterVideos('all')">All</button>
-                                <button class="btn btn-outline-success" onclick="filterVideos('free')">Free</button>
-                                <button class="btn btn-outline-warning" onclick="filterVideos('paid')">Paid</button>
-                                <button class="btn btn-outline-info" onclick="filterVideos('purchased')">Purchased</button>
+                    <div id="videosPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">All Videos</h1>
+                        </div>
+
+                        <!-- Filter Controls -->
+                        <div class="card mb-6">
+                            <div class="card-content">
+                                <div class="flex gap-4">
+                                    <button class="btn btn-outline" onclick="filterVideos('all')">All Videos</button>
+                                    <button class="btn btn-outline" onclick="filterVideos('free')">Free</button>
+                                    <button class="btn btn-outline" onclick="filterVideos('paid')">Paid</button>
+                                    <button class="btn btn-outline" onclick="filterVideos('youtube')">YouTube</button>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="row" id="videosContainer">
+                        <div class="video-grid" id="videosContainer">
                             <!-- Videos will be populated by JavaScript -->
                         </div>
                     </div>
 
                     <!-- My Videos Panel -->
-                    <div id="myVideosPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>My Videos</h2>
-                            <button class="btn btn-primary" onclick="event.preventDefault(); showPanel('upload'); return false;">
-                                <i class="fas fa-plus me-2"></i>Upload New Video
-                            </button>
+                    <div id="myVideosPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">My Videos</h1>
                         </div>
 
-                        <div class="row" id="myVideosContainer">
+                        <div class="video-grid" id="myVideosContainer">
                             <!-- My videos will be populated by JavaScript -->
                         </div>
                     </div>
 
                     <!-- Upload Panel -->
-                    <div id="uploadPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>Upload Video</h2>
+                    <div id="uploadPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">Upload Video</h1>
                         </div>
 
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <form id="uploadForm">
-                                            <div class="mb-3">
-                                                <label for="videoTitle" class="form-label">Video Title</label>
-                                                <input type="text" class="form-control" id="videoTitle" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="videoDescription" class="form-label">Description</label>
-                                                <textarea class="form-control" id="videoDescription" rows="3" required></textarea>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="videoPrice" class="form-label">Price ($)</label>
-                                                <input type="number" class="form-control" id="videoPrice" min="0" step="0.01" value="0">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="videoCategory" class="form-label">Category</label>
-                                                <select class="form-select" id="videoCategory" required>
-                                                    <option value="">Select category</option>
-                                                    <option value="web-development">Web Development</option>
-                                                    <option value="mobile-development">Mobile Development</option>
-                                                    <option value="data-science">Data Science</option>
-                                                    <option value="design">Design</option>
-                                                    <option value="other">Other</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="videoFile" class="form-label">Video File</label>
-                                                <input type="file" class="form-control" id="videoFile" accept="video/*" required>
-                                            </div>
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="fas fa-upload me-2"></i>Upload Video
-                                            </button>
-                                        </form>
+                        <div class="card">
+                            <div class="card-content">
+                                <form id="uploadForm">
+                                    <div class="form-group">
+                                        <label for="videoTitle" class="form-label">Video Title</label>
+                                        <input type="text" id="videoTitle" name="videoTitle" class="form-control" required>
                                     </div>
+
+                                    <div class="form-group">
+                                        <label for="videoDescription" class="form-label">Description</label>
+                                        <textarea id="videoDescription" name="videoDescription" class="form-control textarea" rows="4" required></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="videoCategory" class="form-label">Category</label>
+                                        <select id="videoCategory" name="videoCategory" class="form-control select" required>
+                                            <option value="">Select a category</option>
+                                            <option value="education">Education</option>
+                                            <option value="entertainment">Entertainment</option>
+                                            <option value="music">Music</option>
+                                            <option value="gaming">Gaming</option>
+                                            <option value="sports">Sports</option>
+                                            <option value="news">News</option>
+                                            <option value="technology">Technology</option>
+                                            <option value="lifestyle">Lifestyle</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="videoPrice" class="form-label">Price ($)</label>
+                                        <input type="number" id="videoPrice" name="videoPrice" class="form-control" min="0" step="0.01" value="0">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">Video File</label>
+                                        <div class="file-upload-area" onclick="document.getElementById('videoFile').click()">
+                                            <i class="fas fa-cloud-upload-alt text-2xl text-muted-foreground"></i>
+                                            <div class="file-upload-text">Click to select a video file or drag and drop</div>
+                                            <input type="file" id="videoFile" name="videoFile" accept="video/*" style="display: none;" required>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-upload mr-2"></i>Upload Video
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Purchases Panel -->
+                    <div id="purchasesPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">My Purchases</h1>
+                        </div>
+
+                        <div class="video-grid" id="purchasesContainer">
+                            <!-- Purchased videos will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Watchlist Panel -->
+                    <div id="watchlistPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">My Watchlist</h1>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Watchlist feature coming soon...
+                        </div>
+                    </div>
+
+                    <!-- Earnings Panel -->
+                    <div id="earningsPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">Earnings Dashboard</h1>
+                        </div>
+
+                        <div class="stats-grid mb-8">
+                            <div class="stat-card">
+                                <div class="stat-icon success">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="totalEarnings">$0.00</div>
+                                    <div class="stat-label">Total Earnings</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon info">
+                                    <i class="fas fa-calendar-month"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="monthlyEarnings">$0.00</div>
+                                    <div class="stat-label">This Month</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon warning">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="pendingEarnings">$0.00</div>
+                                    <div class="stat-label">Pending</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Recent Transactions</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Video</th>
+                                                <th>Buyer</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="transactionsTableBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted-foreground">No transactions yet</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Users Panel -->
-                    <div id="usersPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>Manage Users</h2>
-                            <button class="btn btn-primary" onclick="showAddUserModal()">
-                                <i class="fas fa-plus me-2"></i>Add User
-                            </button>
+                    <!-- Paid Users Panel -->
+                    <div id="paidUsersPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">Paid Users</h1>
+                        </div>
+
+                        <div id="paidUsersContainer">
+                            <!-- Paid users will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Users Panel (Admin Only) -->
+                    <div id="usersPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">Manage Users</h1>
                         </div>
 
                         <div class="card">
-                            <div class="card-body">
+                            <div class="card-content">
                                 <div class="table-responsive">
-                                    <table class="table table-hover">
+                                    <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Name</th>
@@ -352,274 +391,77 @@
                         </div>
                     </div>
 
-                    <!-- Purchases Panel -->
-                    <div id="purchasesPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>My Purchases</h2>
-                        </div>
-
-                        <div class="row" id="purchasesContainer">
-                            <!-- Purchased videos will be populated by JavaScript -->
-                        </div>
-                    </div>
-
-                    <!-- Watchlist Panel -->
-                    <div id="watchlistPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>My Watchlist</h2>
-                        </div>
-
-                        <div class="row" id="watchlistContainer">
-                            <div class="col-12">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Watchlist feature coming soon...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Earnings Panel -->
-                    <div id="earningsPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>Earnings Dashboard</h2>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <div class="card bg-success text-white">
-                                    <div class="card-body">
-                                        <h5>Total Earnings</h5>
-                                        <h3 id="totalEarnings">$1,250.00</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-primary text-white">
-                                    <div class="card-body">
-                                        <h5>This Month</h5>
-                                        <h3 id="monthlyEarnings">$350.00</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-warning text-white">
-                                    <div class="card-body">
-                                        <h5>Pending</h5>
-                                        <h3 id="pendingEarnings">$125.00</h3>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Recent Transactions</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Video</th>
-                                                <th>Buyer</th>
-                                                <th>Amount</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="transactionsTableBody">
-                                            <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Paid Users Panel -->
-                    <div id="paidUsersPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>Paid Users</h2>
-                        </div>
-
-                        <div id="paidUsersContainer">
-                            <!-- Paid users will be populated by JavaScript -->
-                        </div>
-                    </div>
-
                     <!-- Analytics Panel -->
-                    <div id="analyticsPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>Analytics</h2>
+                    <div id="analyticsPanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">Analytics</h1>
                         </div>
 
                         <div class="alert alert-info">
-                            <i class="fas fa-chart-line me-2"></i>
+                            <i class="fas fa-chart-line mr-2"></i>
                             Analytics charts will be implemented with Chart.js
                         </div>
                     </div>
 
                     <!-- YouTube Panel -->
-                    <div id="youtubePanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2><i class="fab fa-youtube text-danger me-2"></i>YouTube Integration</h2>
+                    <div id="youtubePanel" class="panel hidden">
+                        <div class="panel-header">
+                            <h1 class="panel-title">
+                                <i class="fab fa-youtube text-destructive mr-2"></i>
+                                YouTube Integration
+                            </h1>
                         </div>
 
                         <!-- Connection Status -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5>Connection Status</h5>
-                                        <div id="youtubeStatus" class="mb-3">
-                            <span class="text-muted">Checking YouTube connection...</span>
-                        </div>
-                        <div id="youtubeControls" class="mt-3">
-                            <button id="connectYouTubeBtn" class="btn btn-primary me-2" onclick="connectYouTube()">
-                                <i class="fas fa-link"></i> Connect YouTube
-                            </button>
-                            <button id="syncChannelBtn" class="btn btn-success me-2" onclick="syncMyChannel()" style="display: none;">
-                                <i class="fas fa-sync"></i> Sync My Channel
-                            </button>
-                        </div>
-
-                        <div class="mt-4">
-                            <h6>Sync Other Channels</h6>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="channelIdInput" placeholder="Enter YouTube Channel ID">
-                                <button class="btn btn-outline-primary" onclick="syncChannelById()">
-                                    <i class="fas fa-sync"></i> Sync
-                                </button>
+                        <div class="card mb-6">
+                            <div class="card-header">
+                                <h3 class="card-title">Connection Status</h3>
                             </div>
-                        </div>
-                                    </div>
+                            <div class="card-content">
+                                <div id="youtubeStatus" class="mb-4">
+                                    <span class="text-muted-foreground">Checking YouTube connection...</span>
+                                </div>
+                                <div id="youtubeControls">
+                                    <!-- YouTube controls will be populated by JavaScript -->
                                 </div>
                             </div>
                         </div>
 
                         <!-- Channel Info -->
-                        <div id="youtubeChannelInfo" class="row mb-4" style="display: none;">
-                            <div class="col-12">
-                                <!-- Channel info will be populated by JavaScript -->
-                            </div>
-                        </div>
-
-                        <!-- Statistics -->
-                        <div id="youtubeStats" class="row mb-4" style="display: none;">
-                            <div class="col-md-4">
-                                <div class="card bg-danger text-white">
-                                    <div class="card-body text-center">
-                                        <h5>Subscribers</h5>
-                                        <h3 id="ytSubscribers">0</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-primary text-white">
-                                    <div class="card-body text-center">
-                                        <h5>Total Views</h5>
-                                        <h3 id="ytTotalViews">0</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-success text-white">
-                                    <div class="card-body text-center">
-                                        <h5>Videos</h5>
-                                        <h3 id="ytVideoCount">0</h3>
-                                    </div>
-                                </div>
-                            </div>
+                        <div id="youtubeChannelInfo" class="hidden">
+                            <!-- Channel info will be populated by JavaScript -->
                         </div>
 
                         <!-- Upload Form -->
-                        <div id="youtubeUploadForm" class="row mb-4" style="display: none;">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5><i class="fas fa-upload me-2"></i>Upload to YouTube</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <form id="youtubeUpload">
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="mb-3">
-                                                        <label for="ytTitle" class="form-label">Title</label>
-                                                        <input type="text" class="form-control" id="ytTitle" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="ytDescription" class="form-label">Description</label>
-                                                        <textarea class="form-control" id="ytDescription" rows="3"></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="mb-3">
-                                                        <label for="ytTags" class="form-label">Tags (comma separated)</label>
-                                                        <input type="text" class="form-control" id="ytTags">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="ytPrivacy" class="form-label">Privacy</label>
-                                                        <select class="form-select" id="ytPrivacy">
-                                                            <option value="private">Private</option>
-                                                            <option value="unlisted">Unlisted</option>
-                                                            <option value="public">Public</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="ytVideo" class="form-label">Video File</label>
-                                                        <input type="file" class="form-control" id="ytVideo" accept="video/*" required>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button type="submit" class="btn btn-danger">
-                                                <i class="fab fa-youtube me-2"></i>Upload to YouTube
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
+                        <div id="youtubeUploadForm" class="hidden">
+                            <!-- Upload form will be populated by JavaScript -->
                         </div>
 
                         <!-- Videos List -->
-                        <div id="youtubeVideos" class="row" style="display: none;">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5><i class="fab fa-youtube me-2"></i>YouTube Videos</h5>
-                                        <div class="btn-group">
-                                            <button class="btn btn-outline-primary btn-sm" onclick="loadYouTubeVideos()">
-                                                <i class="fas fa-refresh me-1"></i>Refresh
-                                            </button>
-                                            <button class="btn btn-outline-success btn-sm" onclick="syncYouTubeVideos()">
-                                                <i class="fas fa-sync me-1"></i>Sync All
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="youtubeVideosList">
-                                            <!-- Videos will be populated by JavaScript -->
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div id="youtubeVideos" class="hidden">
+                            <!-- Videos will be populated by JavaScript -->
+                        </div>
+
+                        <!-- Statistics -->
+                        <div id="youtubeStats" class="hidden">
+                            <!-- Stats will be populated by JavaScript -->
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
     <!-- Video Modal -->
-    <div class="modal fade" id="videoModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <div id="videoModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="videoModalTitle">Video Title</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="videoModalTitle">Video Player</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <video id="videoPlayer" class="w-100" controls>
-                        <source src="" type="video/mp4">
+                    <video id="videoPlayer" class="w-full" controls>
                         Your browser does not support the video tag.
                     </video>
                 </div>
@@ -628,42 +470,195 @@
     </div>
 
     <!-- Purchase Modal -->
-    <div class="modal fade" id="purchaseModal" tabindex="-1">
+    <div id="purchaseModal" class="modal fade" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Confirm Purchase</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title">Purchase Video</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p>Are you sure you want to purchase this video for $<span id="purchasePrice">0.00</span>?</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmPurchase()">Confirm Purchase</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmPurchase()">Purchase</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Toast Notification -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="notificationToast" class="toast" role="alert">
-            <div class="toast-header">
-                <strong class="me-auto">Notification</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-            </div>
-            <div class="toast-body" id="toastMessage"></div>
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-body" id="toastMessage">
+            <!-- Notification message -->
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/youtube-api-client.js"></script>
     <script src="assets/js/dashboard.js"></script>
 
-    <!-- Ensure functions are available -->
     <script>
-        // Fallback logout function if main script fails to load
+        // Enhanced panel navigation with proper active state management
+        function updateActiveNavItem(activePanel) {
+            // Remove active class from all navigation items
+            document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Map panel names to their corresponding navigation selectors
+            const panelToSelector = {
+                'overview': '[href="#"][onclick*="overview"]',
+                'videos': '[href="#"][onclick*="videos"]',
+                'myVideos': '[href="#"][onclick*="myVideos"]',
+                'upload': '[href="#"][onclick*="upload"]',
+                'purchases': '[href="#"][onclick*="purchases"]',
+                'watchlist': '[href="#"][onclick*="watchlist"]',
+                'earnings': '[href="#"][onclick*="earnings"]',
+                'paidUsers': '[href="#"][onclick*="paidUsers"]',
+                'users': '[href="#"][onclick*="users"]',
+                'youtube': '[href="#"][onclick*="youtube"]',
+                'analytics': '[href="#"][onclick*="analytics"]'
+            };
+
+            const selector = panelToSelector[activePanel];
+            if (selector) {
+                const activeItem = document.querySelector(`.sidebar-nav-item${selector}`);
+                if (activeItem) {
+                    activeItem.classList.add('active');
+                }
+            }
+        }
+
+        // Enhanced panel switching with animations
+        function showPanel(panelName) {
+            // Hide all panels
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.add('hidden');
+                panel.classList.remove('animate-fade-in');
+            });
+
+            // Show target panel with animation
+            const targetPanel = document.getElementById(panelName + 'Panel');
+            if (targetPanel) {
+                targetPanel.classList.remove('hidden');
+                targetPanel.classList.add('animate-fade-in');
+            }
+
+            // Update active navigation item
+            updateActiveNavItem(panelName);
+
+            // Load panel-specific data
+            loadPanelData(panelName);
+
+            // Close mobile nav if open
+            if (window.closeMobileNav) {
+                closeMobileNav();
+            }
+        }
+
+        function loadPanelData(panelName) {
+            switch(panelName) {
+                case 'overview':
+                    if (typeof loadOverviewStats === 'function') {
+                        loadOverviewStats();
+                    } else {
+                        loadDashboardStats();
+                    }
+                    break;
+                case 'videos':
+                    if (typeof loadVideos === 'function') {
+                        loadVideos();
+                    }
+                    break;
+                case 'myVideos':
+                    if (typeof loadMyVideos === 'function') {
+                        loadMyVideos();
+                    }
+                    break;
+                case 'purchases':
+                    if (typeof loadPurchases === 'function') {
+                        loadPurchases();
+                    }
+                    break;
+                case 'earnings':
+                    if (typeof loadEarnings === 'function') {
+                        loadEarnings();
+                    }
+                    break;
+                case 'users':
+                    if (typeof loadUsers === 'function') {
+                        loadUsers();
+                    }
+                    break;
+                case 'youtube':
+                    if (typeof loadYouTubePanel === 'function') {
+                        loadYouTubePanel();
+                    }
+                    break;
+                case 'paidUsers':
+                    if (typeof loadPaidUsers === 'function') {
+                        loadPaidUsers();
+                    }
+                    break;
+            }
+        }
+
+        // Placeholder functions for data loading
+        function loadDashboardStats() {
+            // Animate counters
+            if (typeof animateCounter === 'function') {
+                animateCounter('totalVideos', 25);
+                animateCounter('activeUsers', 150);
+                animateCounter('totalViews', 12580);
+            }
+        }
+
+        // File upload drag and drop functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileUploadArea = document.querySelector('.file-upload-area');
+            const fileInput = document.getElementById('videoFile');
+
+            if (fileUploadArea && fileInput) {
+                fileUploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    fileUploadArea.classList.add('drag-over');
+                });
+
+                fileUploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    fileUploadArea.classList.remove('drag-over');
+                });
+
+                fileUploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    fileUploadArea.classList.remove('drag-over');
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        fileInput.files = files;
+                        updateFileUploadText(files[0].name);
+                    }
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        updateFileUploadText(e.target.files[0].name);
+                    }
+                });
+            }
+        });
+
+        function updateFileUploadText(filename) {
+            const uploadText = document.querySelector('.file-upload-text');
+            if (uploadText) {
+                uploadText.textContent = filename;
+            }
+        }
+
+        // Fallback functions if main script fails to load
         if (typeof logout === 'undefined') {
             function logout() {
                 localStorage.removeItem('currentUser');
@@ -672,13 +667,43 @@
             }
         }
 
-        // Fallback showPanel function if main script fails to load
-        if (typeof showPanel === 'undefined') {
-            function showPanel(panelName) {
-                console.log('Main dashboard.js not loaded, redirecting to login');
-                window.location.href = 'login.html';
+        if (typeof animateCounter === 'undefined') {
+            function animateCounter(elementId, targetValue) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = targetValue.toLocaleString();
+                }
             }
         }
+
+        if (typeof toggleMobileNav === 'undefined') {
+            function toggleMobileNav() {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('show');
+            }
+        }
+
+        if (typeof filterVideos === 'undefined') {
+            function filterVideos(filter) {
+                console.log('Filtering videos by:', filter);
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for URL parameters to determine initial panel
+            const urlParams = new URLSearchParams(window.location.search);
+            const panel = urlParams.get('panel');
+
+            if (panel) {
+                showPanel(panel);
+            } else {
+                showPanel('overview');
+            }
+
+            // Load initial stats
+            loadDashboardStats();
+        });
     </script>
 </body>
 </html>

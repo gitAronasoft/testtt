@@ -229,6 +229,24 @@ function initializeMySQL() {
         echo "YouTube videos metadata table created successfully\n";
     }
 
+    // Create YouTube tokens table
+    $youtube_tokens_table = "
+    CREATE TABLE IF NOT EXISTS youtube_tokens (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT,
+        token_type VARCHAR(50) DEFAULT 'Bearer',
+        expires_at DATETIME NOT NULL,
+        scope TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )";
+
+    if ($conn->query($youtube_tokens_table) === TRUE) {
+        echo "YouTube tokens table created successfully\n";
+    }
+
     insertDefaultUsers($conn);
     $conn->close();
 }
