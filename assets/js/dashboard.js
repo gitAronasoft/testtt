@@ -262,7 +262,7 @@ function showPanel(panelName) {
             break;
         case "myVideos":
             if (currentUser.role === "editor" || currentUser.role === "admin") {
-                // loadMyVideosFromYouTube();
+                 loadMyVideosFromYouTube();
             }
             break;
         case "upload":
