@@ -171,7 +171,8 @@ function handleLogin($data) {
             echo json_encode([
                 'success' => true,
                 'message' => 'Login successful',
-                'user' => $_SESSION['user']
+                'user' => $_SESSION['user'],
+                'redirect_url' => $user['role'] === 'viewer' ? 'dashboard.html?panel=videos' : 'dashboard.html'
             ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid email or password']);

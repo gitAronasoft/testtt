@@ -44,11 +44,12 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
 function handleGetVideos() {
     $conn = getConnection();
-    
+
     // Get filter parameters
     $filter = $_GET['filter'] ?? 'all';
     $user_id = $_SESSION['user']['id'] ?? null;
-    
+    $user_role = $_SESSION['user']['role'] ?? null;
+
     $sql = "
         SELECT v.*, u.name as uploader_name,
                CASE WHEN p.user_id IS NOT NULL THEN 1 ELSE 0 END as purchased
@@ -56,10 +57,10 @@ function handleGetVideos() {
         JOIN users u ON v.uploader_id = u.id 
         LEFT JOIN purchases p ON v.id = p.video_id AND p.user_id = ?
     ";
-    
+
     $params = [$user_id];
     $types = "s";
-    
+
     // Apply filters
     switch ($filter) {
         case 'free':
@@ -72,19 +73,25 @@ function handleGetVideos() {
             $sql .= " WHERE p.user_id IS NOT NULL";
             break;
         case 'my_videos':
-            $sql .= " WHERE v.uploader_id = ?";
-            $params[] = $user_id;
-            $types .= "s";
+            if ($user_role === 'viewer') {
+                // Viewers can only see purchased videos in "my videos"
+                $sql .= " WHERE p.user_id IS NOT NULL";
+            } else {
+                // Editors/admins see their uploaded videos
+                $sql .= " WHERE v.uploader_id = ?";
+                $params[] = $user_id;
+                $types .= "s";
+            }
             break;
     }
-    
+
     $sql .= " ORDER BY v.created_at DESC";
-    
+
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $videos = [];
     while ($row = $result->fetch_assoc()) {
         $videos[] = [
@@ -111,17 +118,42 @@ function handleGetVideos() {
             'embed_html' => $row['youtube_id'] ? "<iframe width='560' height='315' src='https://www.youtube.com/embed/{$row['youtube_id']}' frameborder='0' allowfullscreen></iframe>" : null
         ];
     }
-    
+
     echo json_encode([
         'success' => true,
         'videos' => $videos
     ]);
-    
+
     $conn->close();
 }
 
 function handleUploadVideo() {
-    $input = json_decode(file_get_contents('php://input'), true);
+    // Handle both JSON and FormData requests
+    $input = null;
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    
+    if (strpos($contentType, 'application/json') !== false) {
+        $input = json_decode(file_get_contents('php://input'), true);
+    } else if (strpos($contentType, 'multipart/form-data') !== false) {
+        // Handle form data with file upload
+        $input = $_POST;
+        if (isset($_FILES['videoFile'])) {
+            // Handle file upload (for traditional uploads)
+            $uploadDir = 'uploads/';
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            
+            $fileName = time() . '_' . $_FILES['videoFile']['name'];
+            $targetPath = $uploadDir . $fileName;
+            
+            if (move_uploaded_file($_FILES['videoFile']['tmp_name'], $targetPath)) {
+                $input['file_path'] = $targetPath;
+            }
+        }
+    } else {
+        $input = json_decode(file_get_contents('php://input'), true);
+    }
 
     if (!$input) {
         http_response_code(400);
@@ -150,7 +182,7 @@ function handleUploadVideo() {
     $price = floatval($input['price'] ?? 0);
     $category = $input['category'] ?? 'other';
     $file_path = $input['file_path'] ?? '';
-    
+
     // YouTube-specific fields
     $youtube_id = $input['youtube_id'] ?? null;
     $youtube_thumbnail = $input['youtube_thumbnail'] ?? null;
@@ -173,11 +205,26 @@ function handleUploadVideo() {
     }
 
     $conn = getConnection();
-    
-    // Check if YouTube video already exists
-    if ($youtube_id) {
+
+    // Check if YouTube video already exists by youtube_id (if column exists)
+    $columns_result = $conn->query("SHOW COLUMNS FROM videos LIKE 'youtube_id'");
+    $youtube_id_exists = $columns_result->num_rows > 0;
+
+    if ($youtube_id_exists && !empty($youtube_id)) {
         $check_existing = $conn->prepare("SELECT id FROM videos WHERE youtube_id = ?");
         $check_existing->bind_param("s", $youtube_id);
+        $check_existing->execute();
+        $existing = $check_existing->get_result();
+
+        if ($existing->num_rows > 0) {
+            echo json_encode(['success' => false, 'message' => 'Video already exists in database']);
+            $conn->close();
+            return;
+        }
+    } else {
+        // Check by title if youtube_id column doesn't exist
+        $check_existing = $conn->prepare("SELECT id FROM videos WHERE title = ? AND uploader_id = ?");
+        $check_existing->bind_param("si", $title, $_SESSION['user']['id']);
         $check_existing->execute();
         $existing = $check_existing->get_result();
         
@@ -187,7 +234,7 @@ function handleUploadVideo() {
             return;
         }
     }
-    
+
     // Insert video with YouTube metadata
     $sql = "INSERT INTO videos (title, description, price, uploader_id, file_path, category, youtube_id, youtube_thumbnail, youtube_channel_id, youtube_channel_title, youtube_views, youtube_likes, youtube_comments, is_youtube_synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $insert_video = $conn->prepare($sql);
@@ -197,10 +244,10 @@ function handleUploadVideo() {
         $youtube_id, $youtube_thumbnail, $youtube_channel_id, $youtube_channel_title,
         $youtube_views, $youtube_likes, $youtube_comments, $is_youtube_synced
     );
-    
+
     if ($insert_video->execute()) {
         $video_id = $conn->insert_id;
-        
+
         echo json_encode([
             'success' => true,
             'message' => 'Video uploaded successfully',
@@ -228,34 +275,34 @@ function handleUploadVideo() {
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to upload video: ' . $conn->error]);
     }
-    
+
     $conn->close();
 }
 
 function handleUpdateVideo() {
     parse_str(file_get_contents("php://input"), $input);
     $video_id = $input['id'] ?? null;
-    
+
     if (!$video_id) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Video ID is required']);
         return;
     }
-    
+
     $conn = getConnection();
-    
+
     // Check if user owns the video or is admin
     $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
     $check_owner->bind_param("i", $video_id);
     $check_owner->execute();
     $result = $check_owner->get_result();
-    
+
     if ($result->num_rows === 0) {
         echo json_encode(['success' => false, 'message' => 'Video not found']);
         $conn->close();
         return;
     }
-    
+
     $video = $result->fetch_assoc();
     if ($video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
         http_response_code(403);
@@ -263,43 +310,81 @@ function handleUpdateVideo() {
         $conn->close();
         return;
     }
-    
-    // Increment view count
+
+    // Handle different update actions
     if (isset($input['action']) && $input['action'] === 'increment_views') {
         $update_views = $conn->prepare("UPDATE videos SET views = views + 1 WHERE id = ?");
         $update_views->bind_param("i", $video_id);
         $update_views->execute();
-        
+
         echo json_encode(['success' => true, 'message' => 'View count updated']);
+    } else if (isset($input['action']) && $input['action'] === 'update_price' && isset($input['youtube_id'])) {
+        // Update video price by YouTube ID
+        $youtube_id = $input['youtube_id'];
+        $price = floatval($input['price']);
+        
+        if ($price < 0) {
+            echo json_encode(['success' => false, 'message' => 'Price cannot be negative']);
+            $conn->close();
+            return;
+        }
+
+        $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE youtube_id = ? AND uploader_id = ?");
+        $update_price->bind_param("dsi", $price, $youtube_id, $_SESSION['user']['id']);
+        
+        if ($update_price->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Video price updated']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update price']);
+        }
+    } else if (isset($input['price'])) {
+        // Update video price by video ID
+        $price = floatval($input['price']);
+        if ($price < 0) {
+            echo json_encode(['success' => false, 'message' => 'Price cannot be negative']);
+            $conn->close();
+            return;
+        }
+
+        $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE id = ?");
+        $update_price->bind_param("di", $price, $video_id);
+        
+        if ($update_price->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Video price updated']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update price']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'No valid update action specified']);
     }
-    
+
     $conn->close();
 }
 
 function handleDeleteVideo() {
     parse_str(file_get_contents("php://input"), $input);
     $video_id = $input['id'] ?? null;
-    
+
     if (!$video_id) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Video ID is required']);
         return;
     }
-    
+
     $conn = getConnection();
-    
+
     // Check if user owns the video or is admin
     $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
     $check_owner->bind_param("i", $video_id);
     $check_owner->execute();
     $result = $check_owner->get_result();
-    
+
     if ($result->num_rows === 0) {
         echo json_encode(['success' => false, 'message' => 'Video not found']);
         $conn->close();
         return;
     }
-    
+
     $video = $result->fetch_assoc();
     if ($video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
         http_response_code(403);
@@ -307,17 +392,17 @@ function handleDeleteVideo() {
         $conn->close();
         return;
     }
-    
+
     // Delete video
     $delete_video = $conn->prepare("DELETE FROM videos WHERE id = ?");
     $delete_video->bind_param("i", $video_id);
-    
+
     if ($delete_video->execute()) {
         echo json_encode(['success' => true, 'message' => 'Video deleted successfully']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to delete video']);
     }
-    
+
     $conn->close();
 }
 ?>

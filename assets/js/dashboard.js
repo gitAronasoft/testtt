@@ -62,6 +62,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // Prevent any unwanted navigation
     preventUnwantedNavigation();
 
+    // Initialize YouTube API client first
+    if (window.youtubeAPI && !window.youtubeAPI.isInitialized) {
+        window.youtubeAPI.initialize().catch(error => {
+            console.warn('YouTube API initialization failed:', error);
+        });
+    }
+
     // Check if user is logged in
     checkAuth();
 });
@@ -97,7 +104,6 @@ async function checkAuth() {
             currentUser = JSON.parse(storedUser);
             setupUserRole();
             setupDashboard();
-            await loadVideosFromYouTube();
             loadOverviewStats();
             return;
         }
@@ -108,6 +114,7 @@ async function checkAuth() {
             headers: {
                 "Content-Type": "application/json",
             },
+            credentials: 'include',
             body: JSON.stringify({ action: "get_user" }),
         });
 
@@ -119,7 +126,6 @@ async function checkAuth() {
             localStorage.setItem("currentUser", JSON.stringify(data.user));
             setupUserRole();
             setupDashboard();
-            await loadVideosFromYouTube();
             loadOverviewStats();
         } else {
             // Redirect to login if no user data
@@ -133,7 +139,6 @@ async function checkAuth() {
             currentUser = JSON.parse(storedUser);
             setupUserRole();
             setupDashboard();
-            await loadVideosFromYouTube();
             loadOverviewStats();
         } else {
             window.location.href = "login.html";
@@ -247,13 +252,33 @@ function showPanel(panelName) {
         }
     });
 
-    // Load panel-specific data
+    // Load panel-specific data (only if not already loaded or panel changed)
+    const lastPanel = window.currentPanelName;
+    window.currentPanelName = panelName;
+    
+    // Skip loading if same panel and data already exists
+    if (lastPanel === panelName && panelName === 'videos' && allVideos.length > 0) {
+        return;
+    }
+    
     switch (panelName) {
         case "overview":
             loadOverviewStats();
             break;
         case "videos":
-            loadVideosFromYouTube();
+            // Initialize YouTube API first, then load videos
+            if (window.youtubeAPI) {
+                if (!window.youtubeAPI.isInitialized) {
+                    await window.youtubeAPI.initialize();
+                }
+                if (window.youtubeAPI.isSignedIn()) {
+                    loadVideosFromYouTube();
+                } else {
+                    renderVideos([]);
+                }
+            } else {
+                renderVideos([]);
+            }
             break;
         case "users":
             if (currentUser.role === "admin") {
@@ -261,8 +286,20 @@ function showPanel(panelName) {
             }
             break;
         case "myVideos":
-            if (currentUser.role === "editor" || currentUser.role === "admin") {
-                 loadMyVideosFromYouTube();
+            if (currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") {
+                // Initialize YouTube API first, then load videos
+                if (window.youtubeAPI) {
+                    if (!window.youtubeAPI.isInitialized) {
+                        await window.youtubeAPI.initialize();
+                    }
+                    if (window.youtubeAPI.isSignedIn()) {
+                        loadMyVideosFromYouTube();
+                    } else {
+                        renderMyVideosFromYouTube([]);
+                    }
+                } else {
+                    renderMyVideosFromYouTube([]);
+                }
             }
             break;
         case "upload":
@@ -275,12 +312,12 @@ function showPanel(panelName) {
             loadWatchlist();
             break;
         case "earnings":
-            if (currentUser.role === "editor" || currentUser.role === "admin") {
+            if (currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") {
                 loadEarnings();
             }
             break;
         case "paidUsers":
-            if (currentUser.role === "editor" || currentUser.role === "admin") {
+            if (currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") {
                 loadPaidUsers();
             }
             break;
@@ -290,7 +327,7 @@ function showPanel(panelName) {
             }
             break;
         case "youtube":
-            if (currentUser.role === "editor" || currentUser.role === "admin") {
+            if (currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") {
                 loadYouTubePanel();
             }
             break;
@@ -341,54 +378,65 @@ function hasPermissionForPanel(panelName) {
     return permissions[role] && permissions[role].includes(panelName);
 }
 
-// New function to load videos directly from YouTube API
+// Load videos directly from YouTube API
 async function loadVideosFromYouTube() {
+    // Prevent multiple simultaneous calls
+    if (window.loadingYouTubeVideos) {
+        return;
+    }
+    
+    window.loadingYouTubeVideos = true;
+    
     try {
         showLoading(true);
 
+        // Check if YouTube API client is available
+        if (!window.youtubeAPI) {
+            console.warn('YouTube API client not available');
+            renderVideos([]);
+            return;
+        }
+
+        // Initialize if not already done
+        if (!window.youtubeAPI.isInitialized) {
+            await window.youtubeAPI.initialize();
+        }
+
         // Check if YouTube is connected
         if (!window.youtubeAPI.isSignedIn()) {
-            // Fallback to dummy data if YouTube not connected
-            await loadDummyVideos();
+            console.warn("YouTube not connected");
+            renderVideos([]);
             return;
         }
 
-        // Get channel information
-        const channelInfo = await window.youtubeAPI.getMyChannelInfo();
-        if (!channelInfo) {
-            showNotification("Unable to fetch channel information, loading dummy data", "warning");
-            await loadDummyVideos();
-            return;
-        }
-
-        // Get videos from YouTube
+        // Get videos from YouTube (single API call)
         const result = await window.youtubeAPI.getMyVideos(50);
 
         if (result.videos && result.videos.length > 0) {
-            // Get detailed video statistics
+            // Get detailed video statistics in one call
             const videoIds = result.videos.map(v => v.youtube_id);
             const detailedVideos = await window.youtubeAPI.getVideoDetails(videoIds);
 
-            // Convert YouTube videos to our format
+            // Convert YouTube videos to our format with safe property access
             allVideos = detailedVideos.map(video => ({
                 id: video.youtube_id,
-                title: video.title,
-                description: video.description,
-                price: 0, // YouTube videos are free to view
-                uploader: video.channel_title,
-                uploader_id: video.channel_id,
-                views: video.view_count,
-                purchased: true, // Always accessible since they're from YouTube
+                title: video.title || 'Untitled',
+                description: video.description || '',
+                price: 0,
+                uploader: video.channel_title || 'Unknown',
+                uploader_id: video.channel_id || '',
+                views: formatNumber(video.views || video.view_count || 0),
+                purchased: true,
                 file_path: null,
                 category: 'youtube',
-                created_at: video.published_at,
+                created_at: video.published_at || new Date().toISOString(),
                 youtube_id: video.youtube_id,
                 youtube_thumbnail: video.thumbnail,
-                youtube_channel_id: video.channel_id,
-                youtube_channel_title: video.channel_title,
-                youtube_views: video.view_count,
-                youtube_likes: video.like_count,
-                youtube_comments: video.comment_count,
+                youtube_channel_id: video.channel_id || '',
+                youtube_channel_title: video.channel_title || 'Unknown',
+                youtube_views: video.views || video.view_count || 0,
+                youtube_likes: video.likes || video.like_count || 0,
+                youtube_comments: video.comments || video.comment_count || 0,
                 is_youtube_synced: true,
                 video_url: window.youtubeAPI.generateVideoURL(video.youtube_id),
                 embed_html: window.youtubeAPI.generateEmbedHTML(video.youtube_id)
@@ -396,63 +444,81 @@ async function loadVideosFromYouTube() {
 
             renderVideos(allVideos);
         } else {
-            console.log('load Dummy Data')
-            // No YouTube videos found, fallback to database
-            await loadDummyVideos();
+            renderVideos([]);
         }
     } catch (error) {
         console.error("Failed to load YouTube videos:", error);
-        showNotification("Failed to load YouTube videos, loading dummy data", "warning");
-        // Fallback to dummy videos on error       
-        await loadDummyVideos();
+        showNotification("Failed to load YouTube videos: " + error.message, "error");
+        renderVideos([]);
     } finally {
         showLoading(false);
+        window.loadingYouTubeVideos = false;
     }
 }
 
 // New function to load user's videos from YouTube
 async function loadMyVideosFromYouTube() {
+    // Prevent multiple simultaneous calls
+    if (window.loadingMyYouTubeVideos) {
+        return;
+    }
+    
+    window.loadingMyYouTubeVideos = true;
     showLoading(true);
 
     try {
         // Check if YouTube API client is available
         if (!window.youtubeAPI) {
             console.warn('YouTube API client not available');
-            await loadDummyVideos();
+            renderMyVideosFromYouTube([]);
             return;
         }
 
-        // Initialize YouTube API if not already done
+        // Initialize if not already done
         if (!window.youtubeAPI.isInitialized) {
             await window.youtubeAPI.initialize();
         }
 
         // Check if YouTube is connected
         if (!window.youtubeAPI.isSignedIn()) {
-            showNotification("Please connect to YouTube to view your videos", "warning");
-            await loadDummyVideos();
+            console.warn("YouTube not connected for My Videos");
+            renderMyVideosFromYouTube([]);
             return;
         }
 
-        // Get videos from YouTube
+        // Get videos from YouTube (single API call)
         const result = await window.youtubeAPI.getMyVideos(50);
 
         if (result.videos && result.videos.length > 0) {
-            // Get detailed video statistics
+            // Get detailed video statistics in one call
             const videoIds = result.videos.map(v => v.youtube_id);
             const detailedVideos = await window.youtubeAPI.getVideoDetails(videoIds);
 
-            renderMyVideosFromYouTube(detailedVideos);
+            // Ensure all required properties exist with default values
+            const safeVideos = detailedVideos.map(video => ({
+                ...video,
+                title: video.title || 'Untitled',
+                description: video.description || '',
+                thumbnail: video.thumbnail || '',
+                view_count: video.view_count || video.views || 0,
+                like_count: video.like_count || video.likes || 0,
+                comment_count: video.comment_count || video.comments || 0,
+                published_at: video.published_at || new Date().toISOString(),
+                youtube_id: video.youtube_id || video.id
+            }));
+
+            renderMyVideosFromYouTube(safeVideos);
         } else {
             renderMyVideosFromYouTube([]);
         }
     } catch (error) {
         console.error("Failed to load my videos from YouTube:", error);
-        showNotification("Failed to load YouTube videos", "error");
-        await loadDummyVideos();
+        showNotification("Failed to load YouTube videos: " + error.message, "error");
+        renderMyVideosFromYouTube([]);
+    } finally {
+        showLoading(false);
+        window.loadingMyYouTubeVideos = false;
     }
-
-    showLoading(false);
 }
 
 function renderVideos(videos) {
@@ -736,12 +802,19 @@ function escapeHtml(text) {
 }
 
 function formatNumber(num) {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
+    // Handle undefined, null, or non-numeric values
+    if (num === undefined || num === null || isNaN(num)) {
+        return '0';
     }
-    return num.toString();
+    
+    const numValue = parseInt(num) || 0;
+    
+    if (numValue >= 1000000) {
+        return (numValue / 1000000).toFixed(1) + 'M';
+    } else if (numValue >= 1000) {
+        return (numValue / 1000).toFixed(1) + 'K';
+    }
+    return numValue.toString();
 }
 
 function formatTimeAgo(dateString) {
@@ -778,13 +851,10 @@ const debouncedFilterVideos = debounce(async function(filter) {
 
             if (data.success) {
                 renderVideos(data.videos);
-                // Update filter button states
                 updateFilterButtonStates(filter);
             } else {
-                showNotification(
-                    "Failed to filter videos: " + data.message,
-                    "error",
-                );
+                showNotification("Failed to filter videos: " + data.message, "error");
+                renderVideos([]);
             }
         }
     } catch (error) {
@@ -1434,18 +1504,26 @@ async function handleVideoUpload(event) {
         return;
     }
 
-    // Validate file size (limit to 100MB for demo)
-    const maxSize = 100 * 1024 * 1024; // 100MB
+    // Validate file size (YouTube supports up to 256GB, but we'll set a reasonable limit)
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB for practical purposes
     if (file.size > maxSize) {
-        showNotification('❌ File size must be less than 100MB', 'error');
+        showNotification('❌ File size must be less than 2GB', 'error');
         return;
     }
 
     // Validate file type
-    const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov'];
+    const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/mkv', 'video/flv'];
     if (!allowedTypes.includes(file.type)) {
-        showNotification('❌ Please select a valid video file (MP4, WebM, OGG, AVI, MOV)', 'error');
+        showNotification('❌ Please select a valid video file', 'error');
         return;
+    }
+
+    // Check if YouTube is connected for creators
+    if (currentUser.role === 'creator' || currentUser.role === 'editor' || currentUser.role === 'admin') {
+        if (!window.youtubeAPI || !window.youtubeAPI.isInitialized || !window.youtubeAPI.isSignedIn()) {
+            showNotification('❌ Please connect to YouTube first to upload videos', 'error');
+            return;
+        }
     }
 
     // Create comprehensive loading indicator
@@ -1461,43 +1539,63 @@ async function handleVideoUpload(event) {
         updateUploadProgress(loadingOverlay, 0, 'Preparing upload...');
         await simulateDelay(300);
 
-        // File validation phase
-        updateUploadProgress(loadingOverlay, 10, 'Validating file...');
-        await simulateDelay(200);
+        // Step 1: Upload to YouTube first
+        updateUploadProgress(loadingOverlay, 5, 'Uploading to YouTube...');
 
-        // Simulate file upload with realistic progress
-        for (let progress = 20; progress <= 80; progress += 5) {
-            const fileProgress = Math.round(((progress - 20) / 60) * 100);
-            updateUploadProgress(loadingOverlay, progress, `Uploading file... ${fileProgress}%`);
-            await simulateDelay(150);
+        const metadata = {
+            title: title,
+            description: description,
+            tags: category ? [category] : [],
+            privacy: 'private', // Start as private
+            categoryId: '22' // People & Blogs
+        };
+
+        // Upload video to YouTube with progress tracking
+        const youtubeResult = await window.youtubeAPI.uploadVideo(file, metadata, (progress) => {
+            // Map YouTube upload progress to 5-80% of our total progress
+            const mappedProgress = 5 + Math.round((progress / 100) * 75);
+            updateUploadProgress(loadingOverlay, mappedProgress, `Uploading to YouTube... ${progress}%`);
+        });
+
+        if (!youtubeResult.success) {
+            throw new Error(`YouTube upload failed: ${youtubeResult.error}`);
         }
 
-        // Processing phase
-        updateUploadProgress(loadingOverlay, 85, 'Processing video metadata...');
-        await simulateDelay(500);
+        // Step 2: Get video details from YouTube
+        updateUploadProgress(loadingOverlay, 85, 'Getting video details...');
+        const youtubeVideo = youtubeResult.video;
+        
+        // Get detailed statistics
+        const videoDetails = await window.youtubeAPI.getVideoDetails([youtubeVideo.id]);
+        const detailedVideo = videoDetails[0] || {};
 
-        // Server communication
+        // Step 3: Store metadata in database
         updateUploadProgress(loadingOverlay, 90, 'Saving to database...');
 
-        // Create video data object
         const videoData = {
             title: title,
             description: description,
             price: price,
             category: category,
-            file_path: 'uploads/' + file.name,
-            file_size: file.size,
-            file_type: file.type
+            file_path: '', // No local file path since it's on YouTube
+            youtube_id: youtubeVideo.id,
+            youtube_thumbnail: youtubeVideo.snippet?.thumbnails?.medium?.url || youtubeVideo.snippet?.thumbnails?.default?.url,
+            youtube_channel_id: youtubeVideo.snippet?.channelId,
+            youtube_channel_title: youtubeVideo.snippet?.channelTitle,
+            youtube_views: detailedVideo.views || 0,
+            youtube_likes: detailedVideo.likes || 0,
+            youtube_comments: detailedVideo.comments || 0,
+            is_youtube_synced: true
         };
 
-        // Attempt upload with retry mechanism
-        const response = await uploadWithRetry('api/videos.php', {
+        const response = await fetch('api/videos.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify(videoData)
-        }, 3);
+        });
 
         const data = await response.json();
 
@@ -1505,7 +1603,7 @@ async function handleVideoUpload(event) {
             updateUploadProgress(loadingOverlay, 100, 'Upload complete!');
             await simulateDelay(500);
 
-            showNotification('🎉 Video uploaded successfully!', 'success');
+            showNotification('🎉 Video uploaded to YouTube and saved successfully!', 'success');
             form.reset();
             loadingOverlay.remove();
 
@@ -1519,8 +1617,9 @@ async function handleVideoUpload(event) {
                 showPanel('myVideos');
             }, 1000);
         } else {
-            throw new Error(data.message || 'Upload failed');
+            throw new Error(data.message || 'Database save failed');
         }
+
     } catch (error) {
         console.error('Upload failed:', error);
         updateUploadProgress(loadingOverlay, 0, 'Upload failed!');
@@ -1825,6 +1924,7 @@ async function logout() {
             headers: {
                 "Content-Type": "application/json",
             },
+            credentials: 'include',
             body: JSON.stringify({ action: "logout" }),
         });
 
@@ -1839,26 +1939,7 @@ async function logout() {
     }
 }
 
-// Function to load dummy videos from a JSON file
-async function loadDummyVideos() {
-    try {
-        const response = await fetch('assets/data/dummy-videos.json');
-        const data = await response.json();  
 
-        if (data) {
-            allVideos = data.videos;            
-            renderVideos(allVideos);
-            showNotification("Loaded videos from local dummy data", "info");
-        } else {
-            showNotification("Failed to load dummy videos: " + data.message, "error");
-        }
-    } catch (error) {
-        console.error("Failed to load dummy videos:", error);
-        showNotification("Failed to load dummy videos", "error");
-    } finally {
-        showLoading(false);
-    }
-}
 
 async function loadYouTubePanel() {
     try {
@@ -1940,88 +2021,539 @@ function updateYouTubeStatus(connected, channelInfo) {
     }
 }
 
-// YouTube Upload Form Handler
-document.addEventListener("DOMContentLoaded", function () {
-    const youtubeUploadForm = document.getElementById("youtubeUpload");
-    if (youtubeUploadForm) {
-        youtubeUploadForm.addEventListener("submit", async function (e) {
-            e.preventDefault();
+// Initialize YouTube integration on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkYouTubeIntegration();
+});
 
-            const title = document.getElementById("ytTitle").value;
-            const description = document.getElementById("ytDescription").value;
-            const tags = document.getElementById("ytTags").value.split(',').map(tag => tag.trim()).filter(tag => tag);
-            const privacy = document.getElementById("ytPrivacy").value;
-            const videoFile = document.getElementById("ytVideo").files[0];
+// Check YouTube integration status
+async function checkYouTubeIntegration() {
+    try {
+        const statusElement = document.getElementById('youtubeStatus');
+        const statusText = document.getElementById('youtubeStatusText');
+        const connectBtn = document.getElementById('connectYouTubeBtn');
+        const syncBtn = document.getElementById('syncYouTubeBtn');
+        const uploadCard = document.getElementById('youtubeUploadCard');
+        const recentVideosCard = document.getElementById('recentVideosCard');
 
-            if (!videoFile) {
-                showNotification("Please select a video file", "error");
-                return;
-            }
+        if (window.youtubeAPI && window.youtubeAPI.isSignedIn()) {
+            statusElement.className = 'alert alert-success';
+            statusText.innerHTML = '<i class="fas fa-check-circle"></i> YouTube integration active';
+            connectBtn.innerHTML = '<i class="fas fa-unlink"></i> Disconnect';
+            connectBtn.className = 'btn btn-outline-danger me-2';
+            connectBtn.onclick = disconnectYouTube;
+            syncBtn.disabled = false;
+            uploadCard.style.display = 'block';
+            recentVideosCard.style.display = 'block';
+            loadRecentYouTubeVideos();
+        } else {
+            statusElement.className = 'alert alert-warning';
+            statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> YouTube not connected';
+            connectBtn.innerHTML = '<i class="fas fa-link"></i> Connect YouTube';
+            connectBtn.className = 'btn btn-outline-success me-2';
+            connectBtn.onclick = connectYouTube;
+            syncBtn.disabled = true;
+            uploadCard.style.display = 'none';
+            recentVideosCard.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error checking YouTube integration:', error);
+        document.getElementById('youtubeStatusText').textContent = 'Error checking integration status';
+    }
+}
 
-            if (!title.trim()) {
-                showNotification("Please enter a video title", "error");
-                return;
-            }
+// Connect to YouTube
+async function connectYouTube() {
+    try {
+        showLoading(true);
+        const success = await window.youtubeAPI.signIn();
 
-            showLoading(true);
+        if (success) {
+            showNotification('Successfully connected to YouTube!', 'success');
+            checkYouTubeIntegration();
+        } else {
+            showNotification('Failed to connect to YouTube. Please try again.', 'error');
+        }
+    } catch (error) {
+        console.error('YouTube connection error:', error);
+        showNotification('YouTube connection failed: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
 
-            try {
-                // Check if YouTube API is initialized and user is signed in
-                if (!window.youtubeAPI.isSignedIn()) {
-                    const signedIn = await window.youtubeAPI.signIn();
-                    if (!signedIn) {
-                        showNotification("Please sign in to YouTube first", "error");
-                        showLoading(false);
-                        return;
-                    }
-                }
+// Disconnect from YouTube
+async function disconnectYouTube() {
+    try {
+        showLoading(true);
+        const success = await window.youtubeAPI.signOut();
 
-                // Prepare metadata
-                const metadata = {
-                    title: title,
-                    description: description,
-                    tags: tags,
-                    privacy: privacy,
-                    categoryId: '22' // People & Blogs
-                };
+        if (success) {
+            showNotification('Disconnected from YouTube', 'info');
+            checkYouTubeIntegration();
+        } else {
+            showNotification('Failed to disconnect from YouTube', 'error');
+        }
+    } catch (error) {
+        console.error('YouTube disconnect error:', error);
+        showNotification('Disconnect failed: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
 
-                // Show upload progress
-                const progressDiv = document.createElement('div');
-                progressDiv.innerHTML = `
-                    <div class="progress mb-3">
-                        <div class="progress-bar" role="progressbar" style="width: 0%" id="uploadProgress">0%</div>
+// Load recent YouTube videos
+async function loadRecentYouTubeVideos() {
+    try {
+        const recentVideosList = document.getElementById('recentVideosList');
+        recentVideosList.innerHTML = '<div class="col-12"><div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading videos...</div></div>';
+
+        const videos = await window.youtubeAPI.getChannelVideos(6);
+
+        if (videos.length === 0) {
+            recentVideosList.innerHTML = '<div class="col-12"><div class="text-center text-muted">No videos found on your YouTube channel</div></div>';
+            return;
+        }
+
+        const videoDetails = await window.youtubeAPI.getVideoDetails(videos.map(v => v.id.videoId));
+
+        recentVideosList.innerHTML = videoDetails.map(video => `
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}" style="height: 180px; object-fit: cover;">
+                    <div class="card-body d-flex flex-column">
+                        <h6 class="card-title">${video.title.length > 50 ? video.title.substring(0, 50) + '...' : video.title}</h6>
+                        <p class="card-text text-muted small flex-grow-1">${video.description.length > 80 ? video.description.substring(0, 80) + '...' : video.description}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">${video.views} views</small>
+                            <button class="btn btn-sm btn-outline-primary" onclick="syncVideoToDatabase('${video.youtube_id}')">
+                                <i class="fas fa-sync"></i> Sync
+                            </button>
+                        </div>
                     </div>
-                `;
-                youtubeUploadForm.appendChild(progressDiv);
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load recent videos:', error);
+        document.getElementById('recentVideosList').innerHTML = '<div class="col-12"><div class="text-center text-danger">Failed to load videos</div></div>';
+    }
+}
 
-                // Upload video with progress callback
-                const result = await window.youtubeAPI.uploadVideo(videoFile, metadata, (progress) => {
-                    const progressBar = document.getElementById('uploadProgress');
-                    if (progressBar) {
-                        progressBar.style.width = progress + '%';
-                        progressBar.textContent = progress + '%';
-                    }
-                });
+// Reset YouTube upload form
+function resetYouTubeForm() {
+    document.getElementById('youtubeUploadForm').reset();
+    hideUploadProgress();
+}
 
-                // Remove progress bar
-                progressDiv.remove();
+// Show upload progress
+function showUploadProgress() {
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
 
-                if (result.success) {
-                    showNotification("Video uploaded to YouTube successfully!", "success");
-                    youtubeUploadForm.reset();
-                    await loadYouTubeData();
+    progressDiv.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+}
 
-                    // Show success details
-                    showNotification(`Video "${result.video.snippet.title}" uploaded with ID: ${result.youtube_id}`, "info");
-                } else {
-                    showNotification("Upload failed: " + (result.message || "Unknown error"), "error");
-                }
-            } catch (error) {
-                console.error("Upload error:", error);
-                showNotification("Upload failed: " + error.message, "error");
-            } finally {
-                showLoading(false);
-            }
+// Hide upload progress
+function hideUploadProgress() {
+    document.getElementById('uploadProgress').style.display = 'none';
+}
+
+// Update upload progress
+function updateUploadProgress(progress) {
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    progressBar.style.width = progress + '%';
+    progressText.textContent = progress + '%';
+}
+
+// YouTube Upload Form Handler
+document.getElementById("youtubeUploadForm")?.addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const title = document.getElementById("ytTitle").value;
+    const description = document.getElementById("ytDescription").value;
+    const tags = document.getElementById("ytTags").value.split(',').map(tag => tag.trim()).filter(tag => tag);
+    const privacy = document.getElementById("ytPrivacy").value;
+    const price = parseFloat(document.getElementById("ytPrice").value) || 0;
+    const videoFile = document.getElementById("ytVideo").files[0];
+    const uploadBtn = document.getElementById("uploadBtn");
+
+    if (!videoFile) {
+        showNotification("Please select a video file", "error");
+        return;
+    }
+
+    if (!title.trim()) {
+        showNotification("Please enter a video title", "error");
+        return;
+    }
+
+    // Validate file size (YouTube limit is 128GB, but we'll set a reasonable limit)
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB for practical purposes
+    if (videoFile.size > maxSize) {
+        showNotification("Video file is too large. Please choose a file under 2GB.", "error");
+        return;
+    }
+
+    try {
+        // Check YouTube connection
+        if (!window.youtubeAPI.isSignedIn()) {
+            showNotification("Please connect to YouTube first", "error");
+            return;
+        }
+
+        // Disable form and show progress
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        showUploadProgress();
+
+        // Prepare metadata
+        const metadata = {
+            title: title,
+            description: description,
+            tags: tags,
+            privacy: privacy,
+            categoryId: '22' // People & Blog
+        };
+
+        // Upload video with progress callback
+        const result = await window.youtubeAPI.uploadVideo(videoFile, metadata, (progress) => {
+            updateUploadProgress(progress);
         });
+
+        if (result.success) {
+            // Get detailed video information from YouTube
+            const videoDetails = await window.youtubeAPI.getVideoDetails([result.video.id]);
+            const detailedVideo = videoDetails[0] || {};
+
+            // Store video metadata in database
+            const videoData = {
+                title: title,
+                description: description,
+                price: price,
+                category: 'youtube',
+                file_path: '', // No local file path since it's on YouTube
+                youtube_id: result.video.id,
+                youtube_thumbnail: result.video.snippet?.thumbnails?.medium?.url || result.video.snippet?.thumbnails?.default?.url,
+                youtube_channel_id: result.video.snippet?.channelId,
+                youtube_channel_title: result.video.snippet?.channelTitle,
+                youtube_views: detailedVideo.views || 0,
+                youtube_likes: detailedVideo.likes || 0,
+                youtube_comments: detailedVideo.comments || 0,
+                is_youtube_synced: true
+            };
+
+            const dbResponse = await fetch('api/videos.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(videoData)
+            });
+
+            const dbData = await dbResponse.json();
+
+            if (dbData.success) {
+                showNotification("🎉 Video uploaded to YouTube and saved to database successfully!", "success");
+                
+                // Reset form and reload videos
+                resetYouTubeForm();
+                loadRecentYouTubeVideos();
+                loadMyVideosFromYouTube();
+                
+                // If on videos panel, reload it
+                const activePanel = document.querySelector('.panel[style*="block"], .panel:not([style*="none"])');
+                if (activePanel && activePanel.id === 'videosPanel') {
+                    loadVideosFromYouTube();
+                }
+            } else {
+                showNotification("Video uploaded to YouTube but failed to save to database: " + dbData.message, "warning");
+            }
+        } else {
+            showNotification("Upload failed: " + result.error, "error");
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        showNotification("Upload failed: " + error.message, "error");
+    } finally {
+        // Re-enable form
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fab fa-youtube me-2"></i>Upload to YouTube';
+        hideUploadProgress();
     }
 });
+
+// Update video price in database after YouTube upload
+async function updateVideoPriceInDatabase(youtubeVideoId, price) {
+    try {
+        const response = await fetch('api/videos.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            credentials: 'include',
+            body: `youtube_id=${youtubeVideoId}&price=${price}&action=update_price`
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+            console.error('Failed to update video price:', result.message);
+        }
+    } catch (error) {
+        console.error('Error updating video price:', error);
+    }
+}
+
+// Enhanced video watching with access control
+async function watchVideo(videoId) {
+    try {
+        const response = await fetch('api/video_access.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ video_id: videoId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            document.getElementById("videoModalTitle").textContent = data.video.title;
+            document.getElementById("videoPlayer").src = data.video.file_path || "https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_1mb.mp4";
+            const modal = new bootstrap.Modal(document.getElementById("videoModal"));
+            modal.show();
+
+             // Increment view count
+            try {
+                await fetch("api/videos.php", {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: `id=${videoId}&action=increment_views`,
+                });
+            } catch (error) {
+                console.error("Failed to increment view count:", error);
+            }
+
+        } else {
+            if (data.message === 'Payment required') {
+                purchaseVideo(videoId, data.video.price); // Call purchase function if payment is required
+            } else {
+                showNotification(data.message, 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Error accessing video:', error);
+        showNotification('Failed to access video', 'error');
+    }
+}
+
+async function purchaseVideo(videoId, price) {
+    purchaseVideoId = videoId;
+    document.getElementById('purchasePrice').textContent = price.toFixed(2);
+
+    const modal = new bootstrap.Modal(document.getElementById('purchaseModal'));
+    modal.show();
+}
+
+async function confirmPurchase() {
+    if (!purchaseVideoId) return;
+
+    // Show loading state
+    const confirmBtn = document.querySelector('#purchaseModal .btn-primary');
+    const originalText = confirmBtn.innerHTML;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    confirmBtn.disabled = true;
+
+    try {
+        const response = await fetch('api/purchase.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                video_id: purchaseVideoId
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification('🎉 Video purchased successfully! You can now watch it.', 'success');
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
+            modal.hide();
+
+            // Update the video card immediately
+            updateVideoCardAfterPurchase(purchaseVideoId);
+
+            // Reload current panel to reflect changes
+            const activePanel = document.querySelector('.panel[style*="block"], .panel:not([style*="none"])');
+            if (activePanel && activePanel.id === 'videosPanel') {
+                loadVideosFromYouTube();
+            } else if (activePanel && activePanel.id === 'purchasesPanel') {
+                loadPurchases();
+            }
+
+            // Update overview stats if on admin dashboard
+            if (currentUser.role === 'admin') {
+                loadOverviewStats();
+            }
+        } else {
+            showNotification('❌ Purchase failed: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Purchase failed:', error);
+        showNotification('❌ Purchase failed. Please check your connection and try again.', 'error');
+    } finally {
+        // Restore button state
+        confirmBtn.innerHTML = originalText;
+        confirmBtn.disabled = false;
+    }
+}
+
+// Video upload functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', handleVideoUpload);
+    }
+});
+
+async function handleVideoUpload(e) {
+    e.preventDefault();
+
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    // Get form values
+    const title = form.videoTitle.value.trim();
+    const description = form.videoDescription.value.trim();
+    const price = parseFloat(form.videoPrice.value) || 0;
+    const category = form.videoCategory.value;
+    const file = form.videoFile.files[0];
+
+    // Validate
+    if (!title || !description || !category) {
+        showNotification('❌ Please fill in all required fields', 'error');
+        return;
+    }
+
+    if (!file) {
+        showNotification('❌ Please select a video file', 'error');
+        return;
+    }
+
+    // Validate file size (limit to 100MB for demo)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+        showNotification('❌ File size must be less than 100MB', 'error');
+        return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov'];
+    if (!allowedTypes.includes(file.type)) {
+        showNotification('❌ Please select a valid video file (MP4, WebM, OGG, AVI, MOV)', 'error');
+        return;
+    }
+
+    // Create comprehensive loading indicator
+    const loadingOverlay = createUploadLoadingIndicator();
+    form.appendChild(loadingOverlay);
+
+    // Disable form inputs during upload
+    const formInputs = form.querySelectorAll('input, textarea, select, button');
+    formInputs.forEach(input => input.disabled = true);
+
+    try {
+        // Show initial preparation phase
+        updateUploadProgress(loadingOverlay, 0, 'Preparing upload...');
+        await simulateDelay(300);
+
+        // File validation phase
+        updateUploadProgress(loadingOverlay, 10, 'Validating file...');
+        await simulateDelay(200);
+
+        // Simulate file upload with realistic progress
+        for (let progress = 20; progress <= 80; progress += 5) {
+            const fileProgress = Math.round(((progress - 20) / 60) * 100);
+            updateUploadProgress(loadingOverlay, progress, `Uploading file... ${fileProgress}%`);
+            await simulateDelay(150);
+        }
+
+        // Processing phase
+        updateUploadProgress(loadingOverlay, 85, 'Processing video metadata...');
+        await simulateDelay(500);
+
+        // Server communication
+        updateUploadProgress(loadingOverlay, 90, 'Saving to database...');
+
+        const formData = new FormData();
+        formData.append('videoFile', file);
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('price', price);
+        formData.append('category', category);
+
+        // Attempt upload with retry mechanism
+        const response = await uploadWithRetry('api/videos.php', {
+            method: 'POST',
+            body: formData
+        }, 3);
+
+        const data = await response.json();
+
+        if (data.success) {
+            updateUploadProgress(loadingOverlay, 100, 'Upload complete!');
+            await simulateDelay(500);
+
+            showNotification('🎉 Video uploaded successfully!', 'success');
+            form.reset();
+            loadingOverlay.remove();
+
+            // Add the new video to the UI immediately
+            if (data.video) {
+                addVideoToUI(data.video);
+            }
+
+            // Switch to My Videos panel
+            setTimeout(() => {
+                showPanel('myVideos');
+            }, 1000);
+        } else {
+            throw new Error(data.message || 'Upload failed');
+        }
+    } catch (error) {
+        console.error('Upload failed:', error);
+        updateUploadProgress(loadingOverlay, 0, 'Upload failed!');
+        showNotification('❌ Upload failed: ' + error.message, 'error');
+
+        // Remove loading overlay after showing error
+        setTimeout(() => {
+            if (loadingOverlay.parentNode) {
+                loadingOverlay.remove();
+            }
+        }, 2000);
+    } finally {
+        // Re-enable form inputs
+        formInputs.forEach(input => input.disabled = false);
+    }
+}
+
+// New function to initialize YouTube panel
+async function initializeYouTubePanel() {
+    // Perform any initialization tasks here, like loading data, connecting to the API, etc.
+    console.log('Initializing YouTube panel...');
+    loadYouTubePanel();
+}

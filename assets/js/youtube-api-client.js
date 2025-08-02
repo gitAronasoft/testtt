@@ -7,87 +7,132 @@ class YouTubeAPIClient {
         this.accessToken = null;
         this.refreshToken = null;
         this.tokenExpiry = null;
-        this.isInitialized = false;
         this.clientId = '824425517340-c4g9ilvg3i7cddl75hvq1a8gromuc95n.apps.googleusercontent.com';
         this.clientSecret = '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';
-        this.apiKey = 'AIzaSyBqDXoJu_8YyOh8i6r8VnHgOcBgfKGrxjo'; // Your YouTube API key
-        this.scope = 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.upload';
+        this.scope = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly';
+        this.isInitialized = false;
+
+        // Initialize tokens from server
+        this.initialize();
     }
 
     /**
      * Initialize the YouTube API client
      */
     async initialize() {
-        if (this.isInitialized) return true;
-
+        if (this.isInitialized) {
+            return true;
+        }
+        
         try {
-            const success = await this.loadStoredTokens();
+            await this.initializeTokens();
             this.isInitialized = true;
-            console.log('YouTube API client initialized');
-            return success;
+            return true;
         } catch (error) {
-            console.error('Failed to initialize YouTube API:', error);
+            console.error('Failed to initialize YouTube API client:', error);
+            this.isInitialized = false;
             return false;
         }
     }
 
     /**
-     * Load stored tokens from the server
+     * Initialize tokens from database
      */
-    async loadStoredTokens() {
+    async initializeTokens() {
+        // Prevent multiple simultaneous calls
+        if (this.initializingTokens) {
+            // Wait for existing initialization to complete
+            while (this.initializingTokens) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return;
+        }
+        
+        this.initializingTokens = true;
+        
         try {
             const response = await fetch('api/youtube_tokens.php?action=get_tokens', {
                 credentials: 'include'
             });
-
+            
             if (!response.ok) {
-                console.log('No stored tokens found');
-                return false;
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
+            
+            const data = await response.json();
 
-            const result = await response.json();
-
-            if (result.success && result.tokens) {
-                this.accessToken = result.tokens.access_token;
-                this.refreshToken = result.tokens.refresh_token;
-                this.tokenExpiry = new Date(result.tokens.expires_at);
-
-                // Check if token is expired and refresh if needed
-                if (this.isTokenExpired()) {
-                    return await this.refreshAccessToken();
-                }
-
-                return true;
-            } else if (result.expired && result.refresh_token) {
+            if (data.success) {
+                this.accessToken = data.tokens.access_token;
+                this.refreshToken = data.tokens.refresh_token;
+                this.tokenExpiry = new Date(data.tokens.expires_at);
+                console.log('YouTube tokens initialized successfully');
+            } else if (data.expired && data.refresh_token) {
+                // Token expired, try to refresh
                 console.log('Token expired, attempting refresh...');
-                this.refreshToken = result.refresh_token;
-                return await this.refreshAccessToken();
+                await this.refreshAccessToken(data.refresh_token);
+            } else {
+                console.log('No valid tokens found');
             }
-
-            return false;
         } catch (error) {
-            console.error('Error loading stored tokens:', error);
-            return false;
+            console.error('Failed to initialize tokens:', error);
+        } finally {
+            this.initializingTokens = false;
         }
     }
 
     /**
-     * Check if the current access token is expired
+     * Check if user is signed in
      */
-    isTokenExpired() {
-        if (!this.tokenExpiry) return true;
-        return new Date() >= this.tokenExpiry;
+    isSignedIn() {
+        return this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry;
     }
 
     /**
-     * Refresh the access token using the refresh token
+     * Sign in to YouTube
      */
-    async refreshAccessToken() {
-        if (!this.refreshToken) {
-            console.error('No refresh token available');
-            return false;
-        }
+    async signIn() {
+        return new Promise((resolve) => {
+            const redirectUri = encodeURIComponent(window.location.origin + '/oauth/youtube');
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${this.clientId}&` +
+                `redirect_uri=${redirectUri}&` +
+                `scope=${encodeURIComponent(this.scope)}&` +
+                `response_type=code&` +
+                `access_type=offline&` +
+                `prompt=consent`;
 
+            const popup = window.open(authUrl, 'youtube-auth', 'width=500,height=600');
+
+            const messageHandler = (event) => {
+                if (event.data.type === 'YOUTUBE_AUTH_SUCCESS') {
+                    window.removeEventListener('message', messageHandler);
+                    popup.close();
+                    this.initializeTokens().then(() => resolve(true));
+                } else if (event.data.type === 'YOUTUBE_AUTH_ERROR') {
+                    window.removeEventListener('message', messageHandler);
+                    popup.close();
+                    console.error('YouTube auth error:', event.data.error);
+                    resolve(false);
+                }
+            };
+
+            window.addEventListener('message', messageHandler);
+
+            // Check if popup was closed manually
+            const checkClosed = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkClosed);
+                    window.removeEventListener('message', messageHandler);
+                    resolve(false);
+                }
+            }, 1000);
+        });
+    }
+
+    /**
+     * Refresh access token using refresh token
+     */
+    async refreshAccessToken(refreshToken) {
         try {
             const response = await fetch('api/youtube_tokens.php', {
                 method: 'POST',
@@ -97,23 +142,20 @@ class YouTubeAPIClient {
                 credentials: 'include',
                 body: JSON.stringify({
                     action: 'refresh_token',
-                    refresh_token: this.refreshToken
+                    refresh_token: refreshToken
                 })
             });
 
-            const result = await response.json();
+            const data = await response.json();
 
-            if (result.success && result.tokens) {
-                this.accessToken = result.tokens.access_token;
-                this.refreshToken = result.tokens.refresh_token;
-                // Set expiry to 1 hour from now (YouTube access tokens expire in 1 hour)
-                this.tokenExpiry = new Date(Date.now() + 3600000);
-                console.log('Access token refreshed successfully');
+            if (data.success) {
+                this.accessToken = data.tokens.access_token;
+                this.refreshToken = data.tokens.refresh_token;
+                this.tokenExpiry = new Date(Date.now() + 3600 * 1000); // 1 hour from now
                 return true;
-            } else {
-                console.error('Token refresh failed:', result.message);
-                return false;
             }
+
+            return false;
         } catch (error) {
             console.error('Token refresh failed:', error);
             return false;
@@ -124,16 +166,24 @@ class YouTubeAPIClient {
      * Ensure we have a valid access token
      */
     async ensureValidToken() {
-        if (!this.accessToken || this.isTokenExpired()) {
-            if (!await this.refreshAccessToken()) {
-                throw new Error('Unable to obtain valid access token');
+        if (!this.accessToken) {
+            throw new Error('No access token available. Please sign in first.');
+        }
+
+        if (this.tokenExpiry && new Date() >= this.tokenExpiry) {
+            if (this.refreshToken) {
+                const refreshed = await this.refreshAccessToken(this.refreshToken);
+                if (!refreshed) {
+                    throw new Error('Token expired and refresh failed. Please sign in again.');
+                }
+            } else {
+                throw new Error('Token expired and no refresh token available. Please sign in again.');
             }
         }
-        return true;
     }
 
     /**
-     * Make an authenticated API request to YouTube
+     * Make authenticated request to YouTube API
      */
     async makeYouTubeAPIRequest(url, options = {}) {
         await this.ensureValidToken();
@@ -144,110 +194,14 @@ class YouTubeAPIClient {
             ...options.headers
         };
 
-        const response = await fetch(url, {
+        return fetch(url, {
             ...options,
             headers
         });
-
-        if (response.status === 401) {
-            // Token might be expired, try to refresh once more
-            console.log('Received 401, attempting token refresh...');
-            if (await this.refreshAccessToken()) {
-                headers.Authorization = `Bearer ${this.accessToken}`;
-                return fetch(url, { ...options, headers });
-            }
-            throw new Error('Authentication failed - unable to refresh token');
-        }
-
-        return response;
     }
 
     /**
-     * Sign in to YouTube (OAuth flow)
-     */
-    async signIn() {
-        return new Promise((resolve) => {
-            const width = 500;
-            const height = 600;
-            const left = (screen.width - width) / 2;
-            const top = (screen.height - height) / 2;
-
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-                `client_id=${this.clientId}&` +
-                `redirect_uri=${encodeURIComponent(window.location.origin + '/oauth/youtube')}&` +
-                `scope=${encodeURIComponent(this.scope)}&` +
-                `response_type=code&` +
-                `access_type=offline&` +
-                `prompt=consent`;
-
-            const popup = window.open(
-                authUrl,
-                'youtube_auth',
-                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
-            );
-
-            const checkClosed = setInterval(() => {
-                if (popup.closed) {
-                    clearInterval(checkClosed);
-                    this.loadStoredTokens().then(success => {
-                        resolve(success);
-                    });
-                }
-            }, 1000);
-
-            // Listen for messages from the OAuth callback
-            window.addEventListener('message', async (event) => {
-                if (event.origin !== window.location.origin) return;
-
-                if (event.data.type === 'YOUTUBE_AUTH_SUCCESS') {
-                    clearInterval(checkClosed);
-                    popup.close();
-                    const success = await this.loadStoredTokens();
-                    resolve(success);
-                } else if (event.data.type === 'YOUTUBE_AUTH_ERROR') {
-                    clearInterval(checkClosed);
-                    popup.close();
-                    resolve(false);
-                }
-            });
-        });
-    }
-
-    /**
-     * Check if user is signed in
-     */
-    isSignedIn() {
-        return this.accessToken !== null && !this.isTokenExpired();
-    }
-
-    /**
-     * Sign out from YouTube
-     */
-    async signOut() {
-        try {
-            await fetch('api/youtube_tokens.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    action: 'clear_tokens'
-                })
-            });
-
-            this.accessToken = null;
-            this.refreshToken = null;
-            this.tokenExpiry = null;
-            return true;
-        } catch (error) {
-            console.error('Sign out failed:', error);
-            return false;
-        }
-    }
-
-    /**
-     * Upload video to YouTube
+     * Upload video to YouTube with progress tracking
      */
     async uploadVideo(videoFile, metadata, progressCallback = null) {
         try {
@@ -263,7 +217,7 @@ class YouTubeAPIClient {
                     title: metadata.title || 'Untitled Video',
                     description: metadata.description || '',
                     tags: metadata.tags || [],
-                    categoryId: metadata.categoryId || '22' // People & Blogs
+                    categoryId: metadata.categoryId || '22'
                 },
                 status: {
                     privacyStatus: metadata.privacy || 'private',
@@ -325,20 +279,20 @@ class YouTubeAPIClient {
                     const result = await chunkResponse.json();
 
                     // Step 3: Sync with our database
-                    await this.syncVideoToDatabase(result);
+                    const syncSuccess = await this.syncVideoToDatabase(result);
+
+                    if (progressCallback) progressCallback(100);
 
                     return {
                         success: true,
                         video: result,
-                        youtube_id: result.id,
-                        message: 'Video uploaded successfully'
+                        synced: syncSuccess
                     };
                 } else {
-                    const error = await chunkResponse.text();
-                    throw new Error(`Upload failed: ${error}`);
+                    throw new Error(`Upload failed with status: ${chunkResponse.status}`);
                 }
 
-                // Report progress
+                // Update progress
                 if (progressCallback) {
                     const progress = Math.round((uploadedBytes / totalBytes) * 100);
                     progressCallback(progress);
@@ -347,7 +301,10 @@ class YouTubeAPIClient {
 
         } catch (error) {
             console.error('Video upload failed:', error);
-            throw error;
+            return {
+                success: false,
+                error: error.message
+            };
         }
     }
 
@@ -356,19 +313,24 @@ class YouTubeAPIClient {
      */
     async syncVideoToDatabase(youtubeVideo) {
         try {
+            // Get detailed statistics for the video
+            const videoDetails = await this.getVideoDetails([youtubeVideo.id]);
+            const detailedVideo = videoDetails[0] || {};
+
             const videoData = {
-                title: youtubeVideo.snippet.title,
-                description: youtubeVideo.snippet.description,
+                title: youtubeVideo.snippet?.title || 'Untitled',
+                description: youtubeVideo.snippet?.description || '',
                 youtube_id: youtubeVideo.id,
-                youtube_thumbnail: youtubeVideo.snippet.thumbnails?.medium?.url || youtubeVideo.snippet.thumbnails?.default?.url,
-                youtube_channel_id: youtubeVideo.snippet.channelId,
-                youtube_channel_title: youtubeVideo.snippet.channelTitle,
-                youtube_views: 0,
-                youtube_likes: 0,
-                youtube_comments: 0,
+                youtube_thumbnail: youtubeVideo.snippet?.thumbnails?.medium?.url || youtubeVideo.snippet?.thumbnails?.default?.url,
+                youtube_channel_id: youtubeVideo.snippet?.channelId,
+                youtube_channel_title: youtubeVideo.snippet?.channelTitle,
+                youtube_views: detailedVideo.views || 0,
+                youtube_likes: detailedVideo.likes || 0,
+                youtube_comments: detailedVideo.comments || 0,
                 is_youtube_synced: true,
-                price: 0, // Default price
-                category: 'youtube'
+                price: 0,
+                category: 'youtube',
+                file_path: ''
             };
 
             const response = await fetch('api/videos.php', {
@@ -394,7 +356,98 @@ class YouTubeAPIClient {
     }
 
     /**
-     * Get my YouTube channel information
+     * Get user's YouTube channel videos
+     */
+    async getChannelVideos(maxResults = 50) {
+        try {
+            const response = await this.makeYouTubeAPIRequest(
+                `https://www.googleapis.com/youtube/v3/search?part=snippet&forMine=true&type=video&maxResults=${maxResults}&order=date`
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch channel videos');
+            }
+
+            const data = await response.json();
+            return data.items || [];
+        } catch (error) {
+            console.error('Failed to get channel videos:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get detailed video information
+     */
+    async getVideoDetails(videoIds) {
+        try {
+            const ids = Array.isArray(videoIds) ? videoIds.join(',') : videoIds;
+            const response = await this.makeYouTubeAPIRequest(
+                `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${ids}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch video details');
+            }
+
+            const data = await response.json();
+            return data.items.map(video => ({
+                youtube_id: video.id,
+                title: video.snippet.title,
+                description: video.snippet.description,
+                thumbnail: video.snippet.thumbnails?.medium?.url || video.snippet.thumbnails?.default?.url,
+                channel_id: video.snippet.channelId,
+                channel_title: video.snippet.channelTitle,
+                views: parseInt(video.statistics?.viewCount || 0),
+                likes: parseInt(video.statistics?.likeCount || 0),
+                comments: parseInt(video.statistics?.commentCount || 0)
+            }));
+        } catch (error) {
+            console.error('Failed to get video details:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Generate YouTube embed HTML
+     */
+    generateEmbedHTML(videoId, width = 560, height = 315) {
+        return `<iframe width="${width}" height="${height}" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+    }
+
+    /**
+     * Get my videos from YouTube
+     */
+    async getMyVideos(maxResults = 50) {
+        try {
+            const response = await this.makeYouTubeAPIRequest(
+                `https://www.googleapis.com/youtube/v3/search?part=snippet&forMine=true&type=video&maxResults=${maxResults}&order=date`
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch videos');
+            }
+
+            const data = await response.json();
+            return {
+                videos: data.items?.map(item => ({
+                    youtube_id: item.id.videoId,
+                    title: item.snippet.title,
+                    description: item.snippet.description,
+                    thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+                    published_at: item.snippet.publishedAt,
+                    channel_id: item.snippet.channelId,
+                    channel_title: item.snippet.channelTitle
+                })) || []
+            };
+        } catch (error) {
+            console.error('Failed to get my videos:', error);
+            return { videos: [] };
+        }
+    }
+
+    /**
+     * Get channel information
      */
     async getMyChannelInfo() {
         try {
@@ -403,158 +456,27 @@ class YouTubeAPIClient {
             );
 
             if (!response.ok) {
-                throw new Error(`Failed to get channel info: ${response.statusText}`);
+                throw new Error('Failed to fetch channel info');
             }
 
             const data = await response.json();
-
-            if (data.items && data.items.length > 0) {
-                const channel = data.items[0];
+            const channel = data.items?.[0];
+            
+            if (channel) {
                 return {
-                    channel_id: channel.id,
+                    id: channel.id,
                     title: channel.snippet.title,
                     description: channel.snippet.description,
-                    thumbnail: channel.snippet.thumbnails?.high?.url || channel.snippet.thumbnails?.default?.url,
-                    subscriber_count: parseInt(channel.statistics.subscriberCount) || 0,
-                    video_count: parseInt(channel.statistics.videoCount) || 0,
-                    view_count: parseInt(channel.statistics.viewCount) || 0
+                    thumbnail: channel.snippet.thumbnails?.medium?.url,
+                    subscriber_count: parseInt(channel.statistics?.subscriberCount || 0),
+                    video_count: parseInt(channel.statistics?.videoCount || 0),
+                    view_count: parseInt(channel.statistics?.viewCount || 0)
                 };
             }
             return null;
         } catch (error) {
-            console.error('Error fetching channel info:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Get my YouTube videos
-     */
-    async getMyVideos(maxResults = 50, pageToken = '') {
-        try {
-            let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&forMine=true&type=video&maxResults=${maxResults}&order=date`;
-            if (pageToken) {
-                url += `&pageToken=${pageToken}`;
-            }
-
-            const response = await this.makeYouTubeAPIRequest(url);
-
-            if (!response.ok) {
-                throw new Error(`Failed to get videos: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            return this.processVideoResponse(data);
-        } catch (error) {
-            console.error('Error fetching my videos:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Get detailed video statistics
-     */
-    async getVideoDetails(videoIds) {
-        if (!Array.isArray(videoIds) || videoIds.length === 0) {
-            return [];
-        }
-
-        try {
-            const chunks = [];
-            for (let i = 0; i < videoIds.length; i += 50) {
-                chunks.push(videoIds.slice(i, i + 50));
-            }
-
-            const allVideos = [];
-            for (const chunk of chunks) {
-                const response = await this.makeYouTubeAPIRequest(
-                    `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${chunk.join(',')}`
-                );
-
-                if (!response.ok) {
-                    console.error(`Failed to get video details: ${response.statusText}`);
-                    continue;
-                }
-
-                const data = await response.json();
-                const videos = (data.items || []).map(item => ({
-                    youtube_id: item.id,
-                    title: item.snippet.title,
-                    description: item.snippet.description,
-                    thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
-                    channel_title: item.snippet.channelTitle,
-                    channel_id: item.snippet.channelId,
-                    published_at: item.snippet.publishedAt,
-                    view_count: parseInt(item.statistics.viewCount) || 0,
-                    like_count: parseInt(item.statistics.likeCount) || 0,
-                    comment_count: parseInt(item.statistics.commentCount) || 0,
-                    duration: item.contentDetails.duration
-                }));
-
-                allVideos.push(...videos);
-            }
-
-            return allVideos;
-        } catch (error) {
-            console.error('Error fetching video details:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Process video response from YouTube API
-     */
-    processVideoResponse(data) {
-        if (data.error) {
-            throw new Error(data.error.message || 'Failed to fetch videos');
-        }
-
-        const videos = (data.items || []).map(item => ({
-            youtube_id: item.id.videoId,
-            title: item.snippet.title,
-            description: item.snippet.description,
-            thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
-            channel_title: item.snippet.channelTitle,
-            channel_id: item.snippet.channelId,
-            published_at: item.snippet.publishedAt,
-            view_count: 0, // Will be populated by getVideoDetails if needed
-            like_count: 0,
-            comment_count: 0
-        }));
-
-        return {
-            videos: videos,
-            nextPageToken: data.nextPageToken || null
-        };
-    }
-
-    /**
-     * Utility: Format numbers (1000 -> 1K, 1000000 -> 1M)
-     */
-    formatNumber(num) {
-        if (num >= 1000000) {
-            return (num / 1000000).toFixed(1) + 'M';
-        } else if (num >= 1000) {
-            return (num / 1000).toFixed(1) + 'K';
-        }
-        return num.toString();
-    }
-
-    /**
-     * Utility: Format ISO 8601 duration to readable format
-     */
-    formatDuration(duration) {
-        const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-        if (!match) return '';
-
-        const hours = parseInt(match[1]) || 0;
-        const minutes = parseInt(match[2]) || 0;
-        const seconds = parseInt(match[3]) || 0;
-
-        if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } else {
-            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            console.error('Failed to get channel info:', error);
+            return null;
         }
     }
 
@@ -566,17 +488,52 @@ class YouTubeAPIClient {
     }
 
     /**
-     * Generate embed HTML
+     * Format numbers for display
      */
-    generateEmbedHTML(videoId, width = 560, height = 315) {
-        return `<iframe width="${width}" height="${height}" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+    formatNumber(num) {
+        // Handle undefined, null, or non-numeric values
+        if (num === undefined || num === null || isNaN(num)) {
+            return '0';
+        }
+        
+        const numValue = parseInt(num) || 0;
+        
+        if (numValue >= 1000000) {
+            return (numValue / 1000000).toFixed(1) + 'M';
+        } else if (numValue >= 1000) {
+            return (numValue / 1000).toFixed(1) + 'K';
+        }
+        return numValue.toString();
+    }
+
+    /**
+     * Sign out from YouTube
+     */
+    async signOut() {
+        try {
+            await fetch('api/youtube_tokens.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    action: 'clear_tokens'
+                })
+            });
+
+            this.accessToken = null;
+            this.refreshToken = null;
+            this.tokenExpiry = null;
+            return true;
+        } catch (error) {
+            console.error('Sign out failed:', error);
+            return false;
+        }
     }
 }
 
-// Create global instance
-window.youtubeAPI = new YouTubeAPIClient();
-
-// Auto-initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    window.youtubeAPI.initialize().catch(console.error);
-});
+// Initialize YouTube API client (singleton pattern)
+if (!window.youtubeAPI) {
+    window.youtubeAPI = new YouTubeAPIClient();
+}

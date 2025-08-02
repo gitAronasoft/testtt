@@ -287,7 +287,7 @@
                                     <div class="card-body">
                                         <form id="uploadForm">
                                             <div class="mb-3">
-                                                <label for="videoTitle" class="form-label">Video Title</label>
+                                                <label for="videoTitle" class="form-label">Title</label>
                                                 <input type="text" class="form-control" id="videoTitle" required>
                                             </div>
                                             <div class="mb-3">
@@ -300,20 +300,20 @@
                                             </div>
                                             <div class="mb-3">
                                                 <label for="videoCategory" class="form-label">Category</label>
-                                                <select class="form-select" id="videoCategory" required>
-                                                    <option value="">Select category</option>
-                                                    <option value="web-development">Web Development</option>
-                                                    <option value="mobile-development">Mobile Development</option>
-                                                    <option value="data-science">Data Science</option>
-                                                    <option value="design">Design</option>
+                                                <select class="form-select" id="videoCategory">
+                                                    <option value="education">Education</option>
+                                                    <option value="entertainment">Entertainment</option>
+                                                    <option value="technology">Technology</option>
+                                                    <option value="business">Business</option>
                                                     <option value="other">Other</option>
                                                 </select>
                                             </div>
                                             <div class="mb-3">
                                                 <label for="videoFile" class="form-label">Video File</label>
                                                 <input type="file" class="form-control" id="videoFile" accept="video/*" required>
+                                                <div class="form-text">Video will be uploaded to YouTube first, then metadata saved to database. Make sure you're connected to YouTube.</div>
                                             </div>
-                                            <button type="submit" class="btn btn-primary">
+                                            <button type="submit" class="btn btn-primary" id="uploadBtn">
                                                 <i class="fas fa-upload me-2"></i>Upload Video
                                             </button>
                                         </form>
@@ -465,6 +465,14 @@
                     <div id="youtubePanel" class="panel" style="display: none;">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h2><i class="fab fa-youtube text-danger me-2"></i>YouTube Integration</h2>
+                            <div class="btn-group">
+                                <button class="btn btn-outline-primary" onclick="refreshYouTubeConnection()">
+                                    <i class="fas fa-refresh me-1"></i>Refresh Connection
+                                </button>
+                                <button class="btn btn-outline-success" onclick="syncYouTubeTokens()">
+                                    <i class="fas fa-sync me-1"></i>Sync Tokens
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Connection Status -->
@@ -472,13 +480,28 @@
                             <div class="col-12">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h5>Connection Status</h5>
-                                        <div id="youtubeStatus" class="mb-3">
-                            <span class="text-muted">Checking YouTube connection...</span>
-                        </div>
-                        <div id="youtubeControls" class="mt-3">
-                            <!-- Controls will be populated by JavaScript -->
-                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="mb-0">Connection Status</h5>
+                                            <div id="connectionIndicator" class="badge bg-secondary">Checking...</div>
+                                        </div>
+                                        <div id="youtubeStatus" class="alert alert-warning">
+                                            <span id="youtubeStatusText" class="text-muted">Checking YouTube connection...</span>
+                                        </div>
+                                        <div id="youtubeControls" class="mt-3">
+                                            <button id="connectYouTubeBtn" class="btn btn-outline-success me-2" onclick="connectYouTube()">
+                                                <i class="fas fa-link"></i> Connect YouTube
+                                            </button>
+                                            <button id="syncYouTubeBtn" class="btn btn-outline-primary" onclick="syncYouTubeVideos()" disabled>
+                                                <i class="fas fa-sync"></i> Sync Videos
+                                            </button>
+                                        </div>
+                                        <div id="tokenInfo" class="mt-3" style="display: none;">
+                                            <small class="text-muted">
+                                                <strong>Token Status:</strong> <span id="tokenStatus">Unknown</span><br>
+                                                <strong>Expires:</strong> <span id="tokenExpiry">Unknown</span><br>
+                                                <strong>Last Sync:</strong> <span id="lastSync">Never</span>
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -487,7 +510,19 @@
                         <!-- Channel Info -->
                         <div id="youtubeChannelInfo" class="row mb-4" style="display: none;">
                             <div class="col-12">
-                                <!-- Channel info will be populated by JavaScript -->
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-2">
+                                                <img id="channelThumbnail" src="" alt="Channel" class="img-fluid rounded-circle" style="max-width: 80px;">
+                                            </div>
+                                            <div class="col-md-10">
+                                                <h5 id="channelTitle">Channel Name</h5>
+                                                <p id="channelDescription" class="text-muted mb-0">Channel Description</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -520,14 +555,14 @@
                         </div>
 
                         <!-- Upload Form -->
-                        <div id="youtubeUploadForm" class="row mb-4" style="display: none;">
+                        <div id="youtubeUploadCard" class="row mb-4" style="display: none;">
                             <div class="col-12">
                                 <div class="card">
                                     <div class="card-header">
                                         <h5><i class="fas fa-upload me-2"></i>Upload to YouTube</h5>
                                     </div>
                                     <div class="card-body">
-                                        <form id="youtubeUpload">
+                                        <form id="youtubeUploadForm">
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="mb-3">
@@ -553,15 +588,45 @@
                                                         </select>
                                                     </div>
                                                     <div class="mb-3">
+                                                        <label for="ytPrice" class="form-label">Price ($)</label>
+                                                        <input type="number" class="form-control" id="ytPrice" min="0" step="0.01" value="0">
+                                                    </div>
+                                                    <div class="mb-3">
                                                         <label for="ytVideo" class="form-label">Video File</label>
                                                         <input type="file" class="form-control" id="ytVideo" accept="video/*" required>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button type="submit" class="btn btn-danger">
-                                                <i class="fab fa-youtube me-2"></i>Upload to YouTube
-                                            </button>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <button type="submit" id="uploadBtn" class="btn btn-danger">
+                                                    <i class="fab fa-youtube me-2"></i>Upload to YouTube
+                                                </button>
+                                                <div id="uploadProgress" class="progress" style="width: 50%; display: none;">
+                                                    <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">
+                                                        <span id="progressText">0%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Videos -->
+                        <div id="recentVideosCard" class="row mb-4" style="display: none;">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5><i class="fab fa-youtube me-2"></i>Recent YouTube Videos</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="recentVideosList" class="row">
+                                            <div class="col-12 text-center text-muted py-4">
+                                                <i class="fab fa-youtube fa-3x mb-3"></i>
+                                                <p>Loading recent videos...</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -573,13 +638,21 @@
                                 <div class="card">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <h5><i class="fab fa-youtube me-2"></i>YouTube Videos</h5>
-                                        <button class="btn btn-outline-primary btn-sm" onclick="syncYouTubeVideos()">
-                                            <i class="fas fa-sync me-1"></i>Sync Videos
-                                        </button>
+                                        <div class="btn-group">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="loadYouTubeVideos()">
+                                                <i class="fas fa-reload me-1"></i>Reload
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" onclick="syncYouTubeVideos()">
+                                                <i class="fas fa-sync me-1"></i>Sync All
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="card-body">
                                         <div id="youtubeVideosList">
-                                            <!-- Videos will be populated by JavaScript -->
+                                            <div class="text-center text-muted py-4">
+                                                <i class="fab fa-youtube fa-3x mb-3"></i>
+                                                <p>No YouTube videos found. Connect your account to see videos.</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -643,6 +716,6 @@
     <script src="assets/js/youtube-api-client.js"></script>
     <script src="assets/js/dashboard.js"></script>
 
-    
+
 </body>
 </html>
