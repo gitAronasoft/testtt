@@ -37,8 +37,7 @@ async function checkExistingAuth() {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                credentials: 'include'
-            },
+                credentials: 'include',           
                 body: JSON.stringify({ action: 'get_user' })
             });
 

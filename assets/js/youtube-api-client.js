@@ -23,7 +23,7 @@ class YouTubeAPIClient {
         if (this.isInitialized) {
             return true;
         }
-        
+
         try {
             await this.initializeTokens();
             this.isInitialized = true;
@@ -47,18 +47,18 @@ class YouTubeAPIClient {
             }
             return;
         }
-        
+
         this.initializingTokens = true;
-        
+
         try {
             const response = await fetch('api/youtube_tokens.php?action=get_tokens', {
                 credentials: 'include'
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
 
             if (data.success) {
@@ -201,18 +201,21 @@ class YouTubeAPIClient {
     }
 
     /**
-     * Upload video to YouTube with progress tracking
+     * Upload video to YouTube with progress tracking using multipart upload
      */
     async uploadVideo(videoFile, metadata, progressCallback = null) {
         try {
+            console.log('video uploadingg')
             await this.ensureValidToken();
 
             if (!videoFile || !videoFile.type.startsWith('video/')) {
                 throw new Error('Invalid video file');
             }
 
-            // Step 1: Initialize resumable upload
-            const initPayload = {
+            if (progressCallback) progressCallback(10);
+console.log('10')
+            // Prepare metadata for upload
+            const uploadMetadata = {
                 snippet: {
                     title: metadata.title || 'Untitled Video',
                     description: metadata.description || '',
@@ -220,83 +223,80 @@ class YouTubeAPIClient {
                     categoryId: metadata.categoryId || '22'
                 },
                 status: {
-                    privacyStatus: metadata.privacy || 'private',
+                    privacyStatus: metadata.privacy || 'unlisted',
                     embeddable: true,
                     license: 'youtube'
                 }
             };
 
-            const initResponse = await this.makeYouTubeAPIRequest(
-                'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+            if (progressCallback) progressCallback(20);
+console.log('20')
+            // Create multipart request body
+            const boundary = "-------314159265358979323846";
+            const delimiter = `\r\n--${boundary}\r\n`;
+            const closeDelim = `\r\n--${boundary}--`;
+
+            if (progressCallback) progressCallback(30);
+
+            // Convert file to base64
+            const base64Data = await this.fileToBase64(videoFile, (progress) => {
+                // Map file conversion progress to 30-70% of total progress
+                const mappedProgress = 30 + Math.round((progress / 100) * 40);
+                if (progressCallback) progressCallback(mappedProgress);
+            });
+
+            if (progressCallback) progressCallback(75);
+console.log('75')
+            // Build multipart request body
+            const multipartRequestBody =
+                delimiter +
+                "Content-Type: application/json\r\n\r\n" +
+                JSON.stringify(uploadMetadata) +
+                delimiter +
+                "Content-Type: video/*\r\n" +
+                "Content-Transfer-Encoding: base64\r\n\r\n" +
+                base64Data +
+                closeDelim;
+
+            if (progressCallback) progressCallback(80);
+
+            // Upload to YouTube
+            const response = await fetch(
+                "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status",
                 {
-                    method: 'POST',
+                    method: "POST",
                     headers: {
-                        'X-Upload-Content-Length': videoFile.size.toString(),
-                        'X-Upload-Content-Type': videoFile.type
+                        Authorization: `Bearer ${this.accessToken}`,
+                        "Content-Type": `multipart/related; boundary="${boundary}"`,
                     },
-                    body: JSON.stringify(initPayload)
+                    body: multipartRequestBody,
                 }
             );
 
-            if (!initResponse.ok) {
-                const error = await initResponse.json();
-                throw new Error(`Upload initialization failed: ${error.error?.message || initResponse.statusText}`);
+            if (progressCallback) progressCallback(90);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Upload response error:', errorText);
+                throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
             }
 
-            const uploadUrl = initResponse.headers.get('Location');
-            if (!uploadUrl) {
-                throw new Error('No upload URL received from YouTube');
-            }
+            const result = await response.json();
+            console.log('Upload success:', result);
 
-            // Step 2: Upload the video file in chunks
-            const chunkSize = 256 * 1024; // 256KB chunks
-            let uploadedBytes = 0;
-            const totalBytes = videoFile.size;
+            if (result.id) {
+                // Step 3: Sync with our database
+                const syncSuccess = await this.syncVideoToDatabase(result);
 
-            while (uploadedBytes < totalBytes) {
-                const chunk = videoFile.slice(uploadedBytes, Math.min(uploadedBytes + chunkSize, totalBytes));
-                const chunkEnd = uploadedBytes + chunk.size - 1;
+                if (progressCallback) progressCallback(100);
 
-                const chunkResponse = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Length': chunk.size.toString(),
-                        'Content-Range': `bytes ${uploadedBytes}-${chunkEnd}/${totalBytes}`
-                    },
-                    body: chunk
-                });
-
-                if (chunkResponse.status === 308) {
-                    // Continue uploading
-                    const range = chunkResponse.headers.get('Range');
-                    if (range) {
-                        uploadedBytes = parseInt(range.split('-')[1]) + 1;
-                    } else {
-                        uploadedBytes += chunk.size;
-                    }
-                } else if (chunkResponse.status === 200 || chunkResponse.status === 201) {
-                    // Upload complete
-                    const result = await chunkResponse.json();
-
-                    // Step 3: Sync with our database
-                    const syncSuccess = await this.syncVideoToDatabase(result);
-
-                    if (progressCallback) progressCallback(100);
-
-                    return {
-                        success: true,
-                        video: result,
-                        synced: syncSuccess
-                    };
-                } else {
-                    throw new Error(`Upload failed with status: ${chunkResponse.status}`);
-                }
-
-                // Update progress
-                if (progressCallback) {
-                    const progress = Math.round((uploadedBytes / totalBytes) * 100);
-                    progressCallback(progress);
-                }
+                return {
+                    success: true,
+                    video: result,
+                    synced: syncSuccess
+                };
+            } else {
+                throw new Error('Upload failed - no video ID returned');
             }
 
         } catch (error) {
@@ -306,6 +306,39 @@ class YouTubeAPIClient {
                 error: error.message
             };
         }
+    }
+
+    /**
+     * Convert file to base64 with progress tracking
+     */
+    async fileToBase64(file, progressCallback = null) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onprogress = (event) => {
+                if (event.lengthComputable && progressCallback) {
+                    const progress = Math.round((event.loaded / event.total) * 100);
+                    progressCallback(progress);
+                }
+            };
+
+            reader.onload = function() {
+                try {
+                    const base64Data = btoa(
+                        new Uint8Array(reader.result).reduce(
+                            (data, byte) => data + String.fromCharCode(byte),
+                            ""
+                        )
+                    );
+                    resolve(base64Data);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsArrayBuffer(file);
+        });
     }
 
     /**
@@ -461,7 +494,7 @@ class YouTubeAPIClient {
 
             const data = await response.json();
             const channel = data.items?.[0];
-            
+
             if (channel) {
                 return {
                     id: channel.id,
@@ -495,9 +528,9 @@ class YouTubeAPIClient {
         if (num === undefined || num === null || isNaN(num)) {
             return '0';
         }
-        
+
         const numValue = parseInt(num) || 0;
-        
+
         if (numValue >= 1000000) {
             return (numValue / 1000000).toFixed(1) + 'M';
         } else if (numValue >= 1000) {
