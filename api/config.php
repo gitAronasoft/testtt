@@ -1,15 +1,5 @@
 <?php
-// Database configuration - supports both PostgreSQL (Replit) and MySQL
-if (isset($_ENV['DATABASE_URL'])) {
-    // PostgreSQL configuration for Replit
-    $database_url = parse_url($_ENV['DATABASE_URL']);
-    define('DB_TYPE', 'postgresql');
-    define('DB_HOST', $database_url['host']);
-    define('DB_USER', $database_url['user']);
-    define('DB_PASS', $database_url['pass']);
-    define('DB_NAME', ltrim($database_url['path'], '/'));
-    define('DB_PORT', $database_url['port']);
-} else {
+
     // MySQL configuration (local development)
     define('DB_TYPE', 'mysql');
     define('DB_HOST', 'srv637.hstgr.io');
@@ -17,7 +7,7 @@ if (isset($_ENV['DATABASE_URL'])) {
     define('DB_PASS', 'Arona1@1@1@1');
     define('DB_NAME', 'u742355347_youtube');
     define('DB_PORT', 3306);
-}
+
 
 // Create connection based on database type
 function getConnection() {
@@ -134,37 +124,42 @@ function initializeMySQL() {
     $videos_table = "
     CREATE TABLE IF NOT EXISTS videos (
         id INT AUTO_INCREMENT PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
-            description TEXT,
-            price DECIMAL(10,2) DEFAULT 0.00,
-            uploader_id VARCHAR(50) NOT NULL,
-            views INT DEFAULT 0,
-            file_path VARCHAR(500),
-            category VARCHAR(100),
-            youtube_id VARCHAR(50) UNIQUE,
-            youtube_thumbnail VARCHAR(500),
-            youtube_channel_id VARCHAR(50),
-            youtube_channel_title VARCHAR(255),
-            youtube_views INT DEFAULT 0,
-            youtube_likes INT DEFAULT 0,
-            youtube_comments INT DEFAULT 0,
-            is_youtube_synced BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (uploader_id) REFERENCES users(id) ON DELETE CASCADE
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        file_path VARCHAR(500),
+        price DECIMAL(10,2) DEFAULT 0.00,
+        uploader_id VARCHAR(50) NOT NULL,
+        views INT DEFAULT 0,
+        category VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        youtube_id VARCHAR(50) UNIQUE,
+        youtube_thumbnail VARCHAR(500),
+        youtube_channel_id VARCHAR(50),
+        youtube_channel_title VARCHAR(255),
+        youtube_views INT DEFAULT 0,
+        youtube_likes INT DEFAULT 0,
+        youtube_comments INT DEFAULT 0,
+        is_youtube_synced BOOLEAN DEFAULT FALSE
     )";
+
+    if ($conn->query($videos_table) === FALSE) {
+        throw new Exception('Failed to create videos table: ' . $conn->error);
+    }
 
     // Create purchases table
     $purchases_table = "
     CREATE TABLE IF NOT EXISTS purchases (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id VARCHAR(50) PRIMARY KEY,
         user_id VARCHAR(50) NOT NULL,
         video_id INT NOT NULL,
-        purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
-        UNIQUE KEY unique_purchase (user_id, video_id)
+        amount DECIMAL(10,2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
     )";
+
+    if ($conn->query($purchases_table) === FALSE) {
+        throw new Exception('Failed to create purchases table: ' . $conn->error);
+    }
 
     // Create youtube_tokens table
     $youtube_tokens_table = "

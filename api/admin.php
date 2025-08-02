@@ -1,3 +1,4 @@
+
 <?php
 require_once 'config.php';
 
@@ -5,7 +6,7 @@ session_start();
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true');
 
@@ -15,8 +16,146 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Check authentication and admin privileges
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+// Check authentication
+if (!isset($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Authentication required']);
+    exit();
+}
+
+$action = $_GET['action'] ?? '';
+
+switch ($action) {
+    case 'analytics':
+        handleAnalytics();
+        break;
+    case 'users':
+        handleUsers();
+        break;
+    default:
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid action']);
+}
+
+function handleAnalytics() {
+    $conn = getConnection();
+    
+    try {
+        // Get total videos
+        $videos_result = $conn->query("SELECT COUNT(*) as total FROM videos");
+        $total_videos = $videos_result->fetch_assoc()['total'];
+        
+        // Get total users
+        $users_result = $conn->query("SELECT COUNT(*) as total FROM users");
+        $total_users = $users_result->fetch_assoc()['total'];
+        
+        // Get total views
+        $views_result = $conn->query("SELECT SUM(views) as total FROM videos");
+        $total_views = $views_result->fetch_assoc()['total'] ?? 0;
+        
+        // Get total revenue
+        $revenue_result = $conn->query("SELECT SUM(price) as total FROM purchases p JOIN videos v ON p.video_id = v.id");
+        $total_revenue = $revenue_result->fetch_assoc()['total'] ?? 0;
+        
+        // Get recent activity
+        $recent_activity = [];
+        $activity_query = "
+            SELECT 'upload' as type, v.title, u.name as user, v.created_at as time 
+            FROM videos v 
+            JOIN users u ON v.uploader_id = u.id 
+            ORDER BY v.created_at DESC 
+            LIMIT 5
+        ";
+        $activity_result = $conn->query($activity_query);
+        while ($row = $activity_result->fetch_assoc()) {
+            $recent_activity[] = [
+                'type' => $row['type'],
+                'title' => 'New video uploaded: ' . $row['title'],
+                'user' => $row['user'],
+                'time' => $row['time']
+            ];
+        }
+        
+        // Get popular videos
+        $popular_videos = [];
+        $popular_query = "SELECT title, views FROM videos ORDER BY views DESC LIMIT 5";
+        $popular_result = $conn->query($popular_query);
+        while ($row = $popular_result->fetch_assoc()) {
+            $popular_videos[] = [
+                'title' => $row['title'],
+                'views' => (int)$row['views']
+            ];
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'analytics' => [
+                'total_videos' => (int)$total_videos,
+                'total_users' => (int)$total_users,
+                'total_views' => (int)$total_views,
+                'total_revenue' => (float)$total_revenue,
+                'recent_activity' => $recent_activity,
+                'popular_videos' => $popular_videos
+            ]
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Failed to load analytics: ' . $e->getMessage()]);
+    }
+    
+    $conn->close();
+}
+
+function handleUsers() {
+    if ($_SESSION['user']['role'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Admin access required']);
+        return;
+    }
+    
+    $conn = getConnection();
+    
+    try {
+        $query = "SELECT id, name, email, role, created_at as joined FROM users ORDER BY created_at DESC";
+        $result = $conn->query($query);
+        
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+        
+        echo json_encode(['success' => true, 'users' => $users]);
+        
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Failed to load users: ' . $e->getMessage()]);
+    }
+    
+    $conn->close();
+}
+
+session_start();
+
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Check authentication
+if (!isset($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Authentication required']);
+    exit();
+}
+
+// Check admin role
+if ($_SESSION['user']['role'] !== 'admin') {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Admin access required']);
     exit();
@@ -25,82 +164,110 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
-    case 'users':
-        handleGetUsers();
-        break;
     case 'analytics':
-        handleGetAnalytics();
+        handleAnalytics();
         break;
-    case 'delete_user':
-        handleDeleteUser();
+    case 'users':
+        handleUsers();
         break;
     default:
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
 }
 
-function handleGetUsers() {
+function handleAnalytics() {
     $conn = getConnection();
     
-    $sql = "SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC";
-    $result = $conn->query($sql);
+    // Get total videos
+    $total_videos_result = $conn->query("SELECT COUNT(*) as count FROM videos");
+    $total_videos = $total_videos_result->fetch_assoc()['count'];
     
-    $users = [];
-    while ($row = $result->fetch_assoc()) {
-        $users[] = [
-            'id' => $row['id'],
-            'name' => $row['name'],
-            'email' => $row['email'],
-            'role' => $row['role'],
-            'joined' => date('Y-m-d', strtotime($row['created_at']))
-        ];
-    }
+    // Get total users
+    $total_users_result = $conn->query("SELECT COUNT(*) as count FROM users");
+    $total_users = $total_users_result->fetch_assoc()['count'];
     
-    echo json_encode([
-        'success' => true,
-        'users' => $users
-    ]);
+    // Get total purchases
+    $total_purchases_result = $conn->query("SELECT COUNT(*) as count FROM purchases");
+    $total_purchases = $total_purchases_result->fetch_assoc()['count'];
     
-    $conn->close();
-}
-
-function handleGetAnalytics() {
-    $conn = getConnection();
+    // Get total views
+    $total_views_result = $conn->query("SELECT SUM(views) as total FROM videos");
+    $total_views_row = $total_views_result->fetch_assoc();
+    $total_views = $total_views_row['total'] ?? 0;
     
-    // Get total counts
-    $total_videos = $conn->query("SELECT COUNT(*) as count FROM videos")->fetch_assoc()['count'];
-    $total_users = $conn->query("SELECT COUNT(*) as count FROM users")->fetch_assoc()['count'];
-    $total_purchases = $conn->query("SELECT COUNT(*) as count FROM purchases")->fetch_assoc()['count'];
-    $total_views = $conn->query("SELECT SUM(views) as total FROM videos")->fetch_assoc()['total'] ?? 0;
-    
-    // Get total revenue
-    $revenue_result = $conn->query("
-        SELECT SUM(v.price) as total_revenue 
+    // Get total revenue (sum of all video prices that were purchased)
+    $total_revenue_result = $conn->query("
+        SELECT SUM(v.price) as revenue 
         FROM purchases p 
         JOIN videos v ON p.video_id = v.id
     ");
-    $total_revenue = $revenue_result->fetch_assoc()['total_revenue'] ?? 0;
+    $total_revenue_row = $total_revenue_result->fetch_assoc();
+    $total_revenue = $total_revenue_row['revenue'] ?? 0;
     
-    // Get recent activity
+    // Get recent activity (last 10 activities)
     $recent_activity = [];
-    $activity_result = $conn->query("
-        SELECT 'upload' as type, v.title, u.name, v.created_at
+    
+    // Recent video uploads
+    $recent_uploads = $conn->query("
+        SELECT v.title, u.name as user, v.created_at, 'upload' as type
         FROM videos v 
         JOIN users u ON v.uploader_id = u.id 
         ORDER BY v.created_at DESC 
         LIMIT 5
     ");
     
-    while ($row = $activity_result->fetch_assoc()) {
+    while ($row = $recent_uploads->fetch_assoc()) {
         $recent_activity[] = [
-            'type' => $row['type'],
-            'title' => $row['title'],
-            'user' => $row['name'],
-            'time' => $row['created_at']
+            'title' => 'New video uploaded: ' . $row['title'],
+            'user' => $row['user'],
+            'time' => $row['created_at'],
+            'type' => $row['type']
         ];
     }
     
-    // Get popular videos
+    // Recent purchases
+    $recent_purchases = $conn->query("
+        SELECT v.title, u.name as user, p.created_at, 'purchase' as type
+        FROM purchases p 
+        JOIN videos v ON p.video_id = v.id 
+        JOIN users u ON p.user_id = u.id 
+        ORDER BY p.created_at DESC 
+        LIMIT 5
+    ");
+    
+    while ($row = $recent_purchases->fetch_assoc()) {
+        $recent_activity[] = [
+            'title' => 'Video purchased: ' . $row['title'],
+            'user' => $row['user'],
+            'time' => $row['created_at'],
+            'type' => $row['type']
+        ];
+    }
+    
+    // Recent user registrations
+    $recent_users = $conn->query("
+        SELECT name, created_at, 'registration' as type
+        FROM users 
+        ORDER BY created_at DESC 
+        LIMIT 3
+    ");
+    
+    while ($row = $recent_users->fetch_assoc()) {
+        $recent_activity[] = [
+            'title' => 'New user registered',
+            'user' => $row['name'],
+            'time' => $row['created_at'],
+            'type' => $row['type']
+        ];
+    }
+    
+    // Sort recent activity by time and limit to 10
+    usort($recent_activity, function($a, $b) {
+        return strtotime($b['time']) - strtotime($a['time']);
+    });
+    $recent_activity = array_slice($recent_activity, 0, 10);
+    
+    // Get popular videos (most viewed)
     $popular_videos = [];
     $popular_result = $conn->query("
         SELECT title, views 
@@ -132,51 +299,30 @@ function handleGetAnalytics() {
     $conn->close();
 }
 
-function handleDeleteUser() {
-    if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
-        http_response_code(405);
-        echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-        return;
-    }
-    
-    parse_str(file_get_contents("php://input"), $input);
-    $user_id = $input['user_id'] ?? null;
-    
-    if (!$user_id) {
-        echo json_encode(['success' => false, 'message' => 'User ID is required']);
-        return;
-    }
-    
+function handleUsers() {
     $conn = getConnection();
     
-    // Don't allow deleting admin users
-    $check_user = $conn->prepare("SELECT role FROM users WHERE id = ?");
-    $check_user->bind_param("s", $user_id);
-    $check_user->execute();
-    $result = $check_user->get_result();
+    $users_result = $conn->query("
+        SELECT id, name, email, role, created_at as joined 
+        FROM users 
+        ORDER BY created_at DESC
+    ");
     
-    if ($result->num_rows === 0) {
-        echo json_encode(['success' => false, 'message' => 'User not found']);
-        $conn->close();
-        return;
+    $users = [];
+    while ($row = $users_result->fetch_assoc()) {
+        $users[] = [
+            'id' => $row['id'],
+            'name' => $row['name'],
+            'email' => $row['email'],
+            'role' => $row['role'],
+            'joined' => date('M d, Y', strtotime($row['joined']))
+        ];
     }
     
-    $user = $result->fetch_assoc();
-    if ($user['role'] === 'admin') {
-        echo json_encode(['success' => false, 'message' => 'Cannot delete admin users']);
-        $conn->close();
-        return;
-    }
-    
-    // Delete user (cascade will handle related records)
-    $delete_user = $conn->prepare("DELETE FROM users WHERE id = ?");
-    $delete_user->bind_param("s", $user_id);
-    
-    if ($delete_user->execute()) {
-        echo json_encode(['success' => true, 'message' => 'User deleted successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete user']);
-    }
+    echo json_encode([
+        'success' => true,
+        'users' => $users
+    ]);
     
     $conn->close();
 }

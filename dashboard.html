@@ -64,9 +64,6 @@
                                 <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('purchases'); return false;">
                                     <i class="fas fa-shopping-cart me-2"></i>My Purchases
                                 </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('watchlist'); return false;">
-                                    <i class="fas fa-bookmark me-2"></i>Watchlist
-                                </a>
                             </div>
 
                             <!-- Creator Sidebar -->
@@ -78,9 +75,6 @@
                                 </a>
                                 <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('upload'); return false;">
                                     <i class="fas fa-upload me-2"></i>Upload Video
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('youtube'); return false;">
-                                    <i class="fab fa-youtube me-2"></i>YouTube Integration
                                 </a>
                                 <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('earnings'); return false;">
                                     <i class="fas fa-dollar-sign me-2"></i>Earnings
@@ -128,8 +122,8 @@
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between">
                                             <div>
-                                                <h5 class="card-title">Total Videos</h5>
-                                                <h3 id="totalVideos">25</h3>
+                                                <h5 class="card-title" id="totalVideosLabel">Total Videos</h5>
+                                                <h3 id="totalVideos">0</h3>
                                             </div>
                                             <i class="fas fa-video fa-2x"></i>
                                         </div>
@@ -141,8 +135,8 @@
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between">
                                             <div>
-                                                <h5 class="card-title">Active Users</h5>
-                                                <h3 id="activeUsers">150</h3>
+                                                <h5 class="card-title" id="activeUsersLabel">Active Users</h5>
+                                                <h3 id="activeUsers">0</h3>
                                             </div>
                                             <i class="fas fa-users fa-2x"></i>
                                         </div>
@@ -154,8 +148,8 @@
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between">
                                             <div>
-                                                <h5 class="card-title">Total Revenue</h5>
-                                                <h3 id="totalRevenue">$2,450</h3>
+                                                <h5 class="card-title" id="totalRevenueLabel">Total Revenue</h5>
+                                                <h3 id="totalRevenue">0</h3>
                                             </div>
                                             <i class="fas fa-dollar-sign fa-2x"></i>
                                         </div>
@@ -167,8 +161,8 @@
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between">
                                             <div>
-                                                <h5 class="card-title">Total Views</h5>
-                                                <h3 id="totalViews">12,580</h3>
+                                                <h5 class="card-title" id="totalViewsLabel">Total Views</h5>
+                                                <h3 id="totalViews">0</h3>
                                             </div>
                                             <i class="fas fa-eye fa-2x"></i>
                                         </div>
@@ -184,21 +178,9 @@
                                         <h5>Recent Activity</h5>
                                     </div>
                                     <div class="card-body">
-                                        <div class="list-group list-group-flush">
-                                            <div class="list-group-item">
-                                                <i class="fas fa-video text-primary me-2"></i>
-                                                New video uploaded: "Advanced React Concepts"
-                                                <small class="text-muted d-block">2 hours ago</small>
-                                            </div>
-                                            <div class="list-group-item">
-                                                <i class="fas fa-shopping-cart text-success me-2"></i>
-                                                Video purchased by viewer@example.com
-                                                <small class="text-muted d-block">4 hours ago</small>
-                                            </div>
-                                            <div class="list-group-item">
-                                                <i class="fas fa-user text-info me-2"></i>
-                                                New user registered: John Smith
-                                                <small class="text-muted d-block">1 day ago</small>
+                                        <div class="list-group list-group-flush" id="recentActivityContainer">
+                                            <div class="list-group-item text-center text-muted">
+                                                <i class="fas fa-spinner fa-spin me-2"></i>Loading...
                                             </div>
                                         </div>
                                     </div>
@@ -210,18 +192,9 @@
                                         <h5>Popular Videos</h5>
                                     </div>
                                     <div class="card-body">
-                                        <div class="list-group list-group-flush">
-                                            <div class="list-group-item d-flex justify-content-between">
-                                                <span>Introduction to Web Development</span>
-                                                <span class="badge bg-primary">1,250 views</span>
-                                            </div>
-                                            <div class="list-group-item d-flex justify-content-between">
-                                                <span>Advanced React Concepts</span>
-                                                <span class="badge bg-primary">850 views</span>
-                                            </div>
-                                            <div class="list-group-item d-flex justify-content-between">
-                                                <span>PHP Backend Development</span>
-                                                <span class="badge bg-primary">675 views</span>
+                                        <div class="list-group list-group-flush" id="popularVideosContainer">
+                                            <div class="list-group-item text-center text-muted">
+                                                <i class="fas fa-spinner fa-spin me-2"></i>Loading...
                                             </div>
                                         </div>
                                     </div>
@@ -242,19 +215,7 @@
                             </div>
                         </div>
 
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-outline-primary active" onclick="filterVideos('all')">All Videos</button>
-                                    <button type="button" class="btn btn-outline-success" onclick="filterVideos('free')">Free</button>
-                                    <button type="button" class="btn btn-outline-warning" onclick="filterVideos('paid')">Paid</button>
-                                    <button type="button" class="btn btn-outline-info" onclick="filterVideos('purchased')">Purchased</button>
-                                    <button type="button" class="btn btn-outline-danger" onclick="filterVideos('youtube')">
-                                        <i class="fab fa-youtube me-1"></i>YouTube
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        
 
                         <div class="row" id="videosContainer">
                             <!-- Videos will be populated by JavaScript -->
@@ -317,6 +278,14 @@
                                                 <i class="fas fa-upload me-2"></i>Upload Video
                                             </button>
                                         </form>
+
+                                        <!-- Upload Progress -->
+                                        <div id="uploadProgress" style="display: none;" class="mt-3">
+                                            <div class="progress">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+                                            </div>
+                                            <small class="text-muted mt-2 d-block" id="uploadProgressText">Preparing upload...</small>
+                                        </div>
 
                                         <!-- Loader -->
                                         <div id="loader" style="display: none;" class="mt-3">
@@ -381,21 +350,7 @@
                         </div>
                     </div>
 
-                    <!-- Watchlist Panel -->
-                    <div id="watchlistPanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>My Watchlist</h2>
-                        </div>
-
-                        <div class="row" id="watchlistContainer">
-                            <div class="col-12">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Watchlist feature coming soon...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    
 
                     <!-- Earnings Panel -->
                     <div id="earningsPanel" class="panel" style="display: none;">
@@ -477,205 +432,7 @@
                         </div>
                     </div>
 
-                    <!-- YouTube Panel -->
-                    <div id="youtubePanel" class="panel" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2><i class="fab fa-youtube text-danger me-2"></i>YouTube Integration</h2>
-                            <div class="btn-group">
-                                <button class="btn btn-outline-primary" onclick="refreshYouTubeConnection()">
-                                    <i class="fas fa-refresh me-1"></i>Refresh Connection
-                                </button>
-                                <button class="btn btn-outline-success" onclick="syncYouTubeTokens()">
-                                    <i class="fas fa-sync me-1"></i>Sync Tokens
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Connection Status -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="mb-0">Connection Status</h5>
-                                            <div id="connectionIndicator" class="badge bg-secondary">Checking...</div>
-                                        </div>
-                                        <div id="youtubeStatus" class="alert alert-warning">
-                                            <span id="youtubeStatusText" class="text-muted">Checking YouTube connection...</span>
-                                        </div>
-                                        <div id="youtubeControls" class="mt-3">
-                                            <button id="connectYouTubeBtn" class="btn btn-outline-success me-2" onclick="connectYouTube()">
-                                                <i class="fas fa-link"></i> Connect YouTube
-                                            </button>
-                                            <button id="syncYouTubeBtn" class="btn btn-outline-primary" onclick="syncYouTubeVideos()" disabled>
-                                                <i class="fas fa-sync"></i> Sync Videos
-                                            </button>
-                                        </div>
-                                        <div id="tokenInfo" class="mt-3" style="display: none;">
-                                            <small class="text-muted">
-                                                <strong>Token Status:</strong> <span id="tokenStatus">Unknown</span><br>
-                                                <strong>Expires:</strong> <span id="tokenExpiry">Unknown</span><br>
-                                                <strong>Last Sync:</strong> <span id="lastSync">Never</span>
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Channel Info -->
-                        <div id="youtubeChannelInfo" class="row mb-4" style="display: none;">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-2">
-                                                <img id="channelThumbnail" src="" alt="Channel" class="img-fluid rounded-circle" style="max-width: 80px;">
-                                            </div>
-                                            <div class="col-md-10">
-                                                <h5 id="channelTitle">Channel Name</h5>
-                                                <p id="channelDescription" class="text-muted mb-0">Channel Description</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Statistics -->
-                        <div id="youtubeStats" class="row mb-4" style="display: none;">
-                            <div class="col-md-4">
-                                <div class="card bg-danger text-white">
-                                    <div class="card-body text-center">
-                                        <h5>Subscribers</h5>
-                                        <h3 id="ytSubscribers">0</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-primary text-white">
-                                    <div class="card-body text-center">
-                                        <h5>Total Views</h5>
-                                        <h3 id="ytTotalViews">0</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-success text-white">
-                                    <div class="card-body text-center">
-                                        <h5>Videos</h5>
-                                        <h3 id="ytVideoCount">0</h3>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Upload Form -->
-                        <div id="youtubeUploadCard" class="row mb-4" style="display: none;">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5><i class="fas fa-upload me-2"></i>Upload to YouTube</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <form id="youtubeUploadForm">
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="mb-3">
-                                                        <label for="ytTitle" class="form-label">Title</label>
-                                                        <input type="text" class="form-control" id="ytTitle" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="ytDescription" class="form-label">Description</label>
-                                                        <textarea class="form-control" id="ytDescription" rows="3"></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="mb-3">
-                                                        <label for="ytTags" class="form-label">Tags (comma separated)</label>
-                                                        <input type="text" class="form-control" id="ytTags">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="ytPrivacy" class="form-label">Privacy</label>
-                                                        <select class="form-select" id="ytPrivacy">
-                                                            <option value="private">Private</option>
-                                                            <option value="unlisted">Unlisted</option>
-                                                            <option value="public">Public</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="ytPrice" class="form-label">Price ($)</label>
-                                                        <input type="number" class="form-control" id="ytPrice" min="0" step="0.01" value="0">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="ytVideo" class="form-label">Video File</label>
-                                                        <input type="file" class="form-control" id="ytVideo" accept="video/*" required>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <button type="submit" id="uploadBtn" class="btn btn-danger">
-                                                    <i class="fab fa-youtube me-2"></i>Upload to YouTube
-                                                </button>
-                                                <div id="uploadProgress" class="progress" style="width: 50%; display: none;">
-                                                    <div class="progress-bar" role="progressbar" style="width: 0%">
-                                                        <span id="progressText">0%</span>
-                                                    </div>
-                                                </div>
-                                                 <small id="uploadProgressText" class="text-muted"></small>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recent Videos -->
-                        <div id="recentVideosCard" class="row mb-4" style="display: none;">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5><i class="fab fa-youtube me-2"></i>Recent YouTube Videos</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="recentVideosList" class="row">
-                                            <div class="col-12 text-center text-muted py-4">
-                                                <i class="fab fa-youtube fa-3x mb-3"></i>
-                                                <p>Loading recent videos...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Videos List -->
-                        <div id="youtubeVideos" class="row" style="display: none;">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5><i class="fab fa-youtube me-2"></i>YouTube Videos</h5>
-                                        <div class="btn-group">
-                                            <button class="btn btn-outline-primary btn-sm" onclick="loadYouTubeVideos()">
-                                                <i class="fas fa-reload me-1"></i>Reload
-                                            </button>
-                                            <button class="btn btn-outline-success btn-sm" onclick="syncYouTubeVideos()">
-                                                <i class="fas fa-sync me-1"></i>Sync All
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="youtubeVideosList">
-                                            <div class="text-center text-muted py-4">
-                                                <i class="fab fa-youtube fa-3x mb-3"></i>
-                                                <p>No YouTube videos found. Connect your account to see videos.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    
                 </div>
             </div>
         </div>

@@ -279,19 +279,8 @@ async function showPanel(panelName) {
             loadOverviewStats();
             break;
         case "videos":
-            // Initialize YouTube API first, then load videos
-            if (window.youtubeAPI) {
-                if (!window.youtubeAPI.isInitialized) {
-                    await window.youtubeAPI.initialize();
-                }
-                if (window.youtubeAPI.isSignedIn()) {
-                    loadVideosFromYouTube();
-                } else {
-                    renderVideos([]);
-                }
-            } else {
-                renderVideos([]);
-            }
+            // Load videos from database (no YouTube API needed for viewers)
+            loadVideosFromYouTube();
             break;
         case "users":
             if (currentUser.role === "admin") {
@@ -325,9 +314,6 @@ async function showPanel(panelName) {
         case "purchases":
             loadPurchases();
             break;
-        case "watchlist":
-            loadWatchlist();
-            break;
         case "earnings":
             if (
                 currentUser.role === "editor" ||
@@ -351,15 +337,6 @@ async function showPanel(panelName) {
                 loadAnalytics();
             }
             break;
-        case "youtube":
-            if (
-                currentUser.role === "editor" ||
-                currentUser.role === "admin" ||
-                currentUser.role === "creator"
-            ) {
-                loadYouTubePanel();
-            }
-            break;
     }
 }
 
@@ -370,7 +347,7 @@ function hasPermissionForPanel(panelName) {
 
     // Define role-based permissions
     const permissions = {
-        viewer: ["overview", "videos", "purchases", "watchlist"],
+        viewer: ["overview", "videos", "purchases"],
         editor: [
             "overview",
             "videos",
@@ -378,7 +355,6 @@ function hasPermissionForPanel(panelName) {
             "upload",
             "earnings",
             "paidUsers",
-            "youtube",
         ],
         creator: [
             "overview",
@@ -387,18 +363,15 @@ function hasPermissionForPanel(panelName) {
             "upload",
             "earnings",
             "paidUsers",
-            "youtube",
         ],
         admin: [
             "overview",
             "videos",
             "purchases",
-            "watchlist",
             "myVideos",
             "upload",
             "earnings",
             "paidUsers",
-            "youtube",
             "users",
             "analytics",
         ],
@@ -407,7 +380,7 @@ function hasPermissionForPanel(panelName) {
     return permissions[role] && permissions[role].includes(panelName);
 }
 
-// Load videos directly from YouTube API
+// Load videos from database instead of YouTube API
 async function loadVideosFromYouTube() {
     // Prevent multiple simultaneous calls
     if (window.loadingYouTubeVideos) {
@@ -419,73 +392,58 @@ async function loadVideosFromYouTube() {
     try {
         showLoading(true);
 
-        // Check if YouTube API client is available
-        if (!window.youtubeAPI) {
-            console.warn("YouTube API client not available");
-            renderVideos([]);
-            return;
-        }
+        // Fetch videos from database instead of YouTube API
+        const response = await fetch('api/videos.php', {
+            method: 'GET',
+            credentials: 'include'
+        });
 
-        // Initialize if not already done
-        if (!window.youtubeAPI.isInitialized) {
-            await window.youtubeAPI.initialize();
-        }
+        const data = await response.json();
 
-        // Check if YouTube is connected
-        if (!window.youtubeAPI.isSignedIn()) {
-            console.warn("YouTube not connected");
-            renderVideos([]);
-            return;
-        }
-
-        // Get videos from YouTube (single API call)
-        const result = await window.youtubeAPI.getMyVideos(50);
-
-        if (result.videos && result.videos.length > 0) {
-            // Get detailed video statistics in one call
-            const videoIds = result.videos.map((v) => v.youtube_id);
-            const detailedVideos =
-                await window.youtubeAPI.getVideoDetails(videoIds);
-
-            // Convert YouTube videos to our format with safe property access
-            allVideos = detailedVideos.map((video) => ({
-                id: video.youtube_id,
+        if (data.success) {
+            allVideos = data.videos.map((video) => ({
+                id: video.id,
                 title: video.title || "Untitled",
                 description: video.description || "",
-                price: 0,
-                uploader: video.channel_title || "Unknown",
-                uploader_id: video.channel_id || "",
-                views: formatNumber(video.views || video.view_count || 0),
-                purchased: true,
-                file_path: null,
-                category: "youtube",
-                created_at: video.published_at || new Date().toISOString(),
+                price: parseFloat(video.price) || 0,
+                uploader: video.uploader || "Unknown",
+                uploader_id: video.uploader_id || "",
+                purchased: video.purchased || false,
+                file_path: video.file_path,
+                category: video.category || "other",
+                created_at: video.created_at,
                 youtube_id: video.youtube_id,
-                youtube_thumbnail: video.thumbnail,
-                youtube_channel_id: video.channel_id || "",
-                youtube_channel_title: video.channel_title || "Unknown",
-                youtube_views: video.views || video.view_count || 0,
-                youtube_likes: video.likes || video.like_count || 0,
-                youtube_comments: video.comments || video.comment_count || 0,
-                is_youtube_synced: true,
-                video_url: window.youtubeAPI.generateVideoURL(video.youtube_id),
-                embed_html: window.youtubeAPI.generateEmbedHTML(
-                    video.youtube_id,
-                ),
+                youtube_thumbnail: video.youtube_thumbnail,
+                youtube_channel_id: video.youtube_channel_id || "",
+                youtube_channel_title: video.youtube_channel_title || "Unknown",
+                is_youtube_synced: video.is_youtube_synced || false,
+                video_url: video.youtube_id ? `https://www.youtube.com/watch?v=${video.youtube_id}` : null,
+                embed_html: video.youtube_id ? `<iframe width='560' height='315' src='https://www.youtube.com/embed/${video.youtube_id}' frameborder='0' allowfullscreen></iframe>` : null
             }));
 
             renderVideos(allVideos);
         } else {
+            console.error("Failed to load videos:", data.message);
             renderVideos([]);
         }
     } catch (error) {
-        console.error("Failed to load YouTube videos:", error);
-        showNotification(
-            "Failed to load YouTube videos: " + error.message,
-            "error",
-        );
-        renderVideos([]);
-    } finally {
+            console.error("Failed to load videos:", error);
+            showNotification("Unable to load videos. Please try again.", "error");
+
+            // Show placeholder content instead of empty state
+            const container = document.getElementById("videosContainer");
+            if (container) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Unable to load videos at the moment. Please check your connection and try again.
+                            <button class="btn btn-sm btn-outline-warning ms-2" onclick="loadVideosFromYouTube()">Retry</button>
+                        </div>
+                    </div>
+                `;
+            }
+        } finally {
         showLoading(false);
         window.loadingYouTubeVideos = false;
     }
@@ -607,15 +565,7 @@ function createVideoElement(video) {
     col.className = "col-md-6 col-lg-4 mb-4";
 
     const thumbnail = video.youtube_thumbnail || "/api/placeholder/300/200";
-    const isYouTubeVideo = video.youtube_id && video.is_youtube_synced;
-
-    const badgeHTML = isYouTubeVideo
-        ? '<span class="position-absolute top-0 start-0 badge bg-danger m-2"><i class="fab fa-youtube me-1"></i>YouTube</span>'
-        : video.price === 0
-          ? '<span class="position-absolute top-0 end-0 badge bg-success m-2">FREE</span>'
-          : video.purchased
-            ? '<span class="position-absolute top-0 end-0 badge bg-info m-2">PURCHASED</span>'
-            : `<span class="position-absolute top-0 end-0 badge bg-warning m-2">$${video.price}</span>`;
+    const price = parseFloat(video.price) || 0;
 
     col.innerHTML = `
         <div class="card video-card h-100">
@@ -624,16 +574,19 @@ function createVideoElement(video) {
                 <div class="position-absolute top-50 start-50 translate-middle">
                     <i class="fas fa-play-circle fa-3x text-white opacity-75"></i>
                 </div>
-                ${badgeHTML}
             </div>
             <div class="card-body">
                 <h5 class="video-title">${escapeHtml(video.title)}</h5>
                 <p class="video-description text-muted">${escapeHtml(video.description.substring(0, 100))}${video.description.length > 100 ? "..." : ""}</p>
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="mb-2">
                     <small class="text-muted">By ${escapeHtml(video.uploader)}</small>
-                    <small class="text-muted">${formatNumber(video.views)} views</small>
                 </div>
-                ${renderVideoActions(video)}
+                <div class="mb-3">
+                    <h6 class="text-primary">Price: $${price.toFixed(2)}</h6>
+                </div>
+                <button class="btn btn-primary w-100" onclick="checkPaymentAndWatch('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                    <i class="fas fa-play me-2"></i>Watch / Pay
+                </button>
             </div>
         </div>
     `;
@@ -750,6 +703,20 @@ function renderMyVideos(videos) {
 function renderVideoActions(video) {
     const isYouTubeVideo = video.youtube_id && video.is_youtube_synced;
 
+    // For viewers, always require payment check for YouTube videos
+    if (isYouTubeVideo && currentUser?.role === "viewer") {
+        return `
+            <div class="btn-group w-100" role="group">
+                <button class="btn btn-primary" onclick="checkPaymentAndWatch('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                    <i class="fas fa-play me-2"></i>Watch
+                </button>
+                <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
+                    <i class="fab fa-youtube"></i>
+                </a>
+            </div>`;
+    }
+
+    // For non-viewers (admins, creators), allow direct access to YouTube videos
     if (isYouTubeVideo) {
         return `
             <div class="btn-group w-100" role="group">
@@ -780,6 +747,53 @@ function renderVideoActions(video) {
                         onclick="purchaseVideo(${video.id}, ${video.price})">
                     <i class="fas fa-shopping-cart me-2"></i>Purchase for $${video.price.toFixed(2)}
                 </button>`;
+    }
+}
+
+// Function to check payment before watching YouTube videos
+async function checkPaymentAndWatch(youtubeId, title) {
+    try {
+        showLoading(true);
+
+        // Ensure user is authenticated before making request
+        if (!currentUser) {
+            showNotification("Please log in to watch videos", "error");
+            window.location.href = "login.html";
+            return;
+        }
+
+        // Check if user has paid for this YouTube video
+        const response = await fetch('api/video_access.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                youtube_id: youtubeId
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // User has access, play the video
+            watchYouTubeVideo(youtubeId, title);
+        } else if (data.message === "Payment required") {
+            // Show purchase modal for YouTube video
+            purchaseVideoId = data.video.id;
+            document.getElementById("purchasePrice").textContent = data.video.price.toFixed(2);
+            const modal = new bootstrap.Modal(document.getElementById("purchaseModal"));
+            modal.show();
+        } else {
+            showNotification(data.message || "Access denied", "error");
+        }
+    } catch (error) {
+        console.error("Error checking video access:", error);
+        showNotification("Failed to check video access", "error");
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -891,6 +905,7 @@ const debouncedFilterVideos = debounce(async function (filter) {
     try {
         if (filter === "youtube") {
             // Load YouTube videos directly
+
             await loadVideosFromYouTube();
         } else {
             // Load from database with filter
@@ -906,6 +921,7 @@ const debouncedFilterVideos = debounce(async function (filter) {
                     "error",
                 );
                 renderVideos([]);
+            
             }
         }
     } catch (error) {
@@ -937,7 +953,9 @@ function updateFilterButtonStates(activeFilter) {
 async function loadOverviewStats() {
     if (currentUser.role === "admin") {
         try {
-            const response = await fetch("api/admin.php?action=analytics");
+            const response = await fetch("api/admin.php?action=analytics", {
+            credentials: 'include'
+        });
             const data = await response.json();
 
             if (data.success) {
@@ -968,22 +986,83 @@ async function loadOverviewStats() {
             console.error("Failed to load analytics:", error);
             showNotification("Failed to load analytics data", "error");
         }
+    } else if (currentUser.role === "viewer") {
+        // For viewers, load their purchase statistics
+        try {
+            const response = await fetch("api/purchase.php");
+            const data = await response.json();
+
+            if (data.success) {
+                const purchases = data.purchases || [];
+                const totalPurchased = purchases.length;
+                const totalSpent = purchases.reduce((sum, purchase) => sum + parseFloat(purchase.price || 0), 0);
+
+                // Update metrics for viewers
+                animateCounter("totalVideos", allVideos.length);
+                animateCounter("activeUsers", totalPurchased);
+                animateCounter("totalViews", totalSpent.toFixed(2));
+
+                // Update labels for viewer context
+                const totalVideosLabel = document.getElementById("totalVideosLabel");
+                const activeUsersLabel = document.getElementById("activeUsersLabel");
+                const totalViewsLabel = document.getElementById("totalViewsLabel");
+                const revenueLabel = document.getElementById("totalRevenueLabel");
+
+                if (totalVideosLabel) totalVideosLabel.textContent = "Available Videos";
+                if (activeUsersLabel) activeUsersLabel.textContent = "Purchased Videos";
+                if (totalViewsLabel) totalViewsLabel.textContent = "Total Spent ($)";
+                if (revenueLabel) revenueLabel.textContent = "Free Videos";
+
+                // Count free videos
+                const freeVideos = allVideos.filter(video => parseFloat(video.price) === 0).length;
+                const revenueElement = document.getElementById("totalRevenue");
+                if (revenueElement) {
+                    revenueElement.textContent = freeVideos;
+                }
+
+                // Update recent activity with user's purchases
+                if (purchases.length > 0) {
+                    const recentPurchases = purchases.slice(0, 5).map(purchase => ({
+                        title: `Purchased: ${purchase.title}`,
+                        user: 'You',
+                        time: purchase.created_at || new Date().toISOString(),
+                        type: 'purchase'
+                    }));
+                    updateRecentActivity(recentPurchases);
+                }
+
+                // Update popular videos with user's purchased videos
+                const popularPurchases = purchases.slice(0, 3).map(purchase => ({
+                    title: purchase.title,
+                    views: `$${parseFloat(purchase.price || 0).toFixed(2)}`
+                }));
+                updatePopularVideos(popularPurchases);
+            }
+        } catch (error) {
+            console.error("Failed to load viewer stats:", error);
+            // Fallback to basic stats
+            loadBasicStats();
+        }
     } else {
-        // For non-admin users, show basic stats
-        animateCounter("totalVideos", allVideos.length);
-
-        const activeUsersElement = document.getElementById("activeUsers");
-        const totalRevenueElement = document.getElementById("totalRevenue");
-
-        if (activeUsersElement) activeUsersElement.textContent = "-";
-        if (totalRevenueElement) totalRevenueElement.textContent = "-";
-
-        const totalViews = allVideos.reduce(
-            (sum, video) => sum + video.views,
-            0,
-        );
-        animateCounter("totalViews", totalViews);
+        // For editors/creators, show basic stats
+        loadBasicStats();
     }
+}
+
+function loadBasicStats() {
+    animateCounter("totalVideos", allVideos.length);
+
+    const activeUsersElement = document.getElementById("activeUsers");
+    const totalRevenueElement = document.getElementById("totalRevenue");
+
+    if (activeUsersElement) activeUsersElement.textContent = "-";
+    if (totalRevenueElement) totalRevenueElement.textContent = "-";
+
+    const totalViews = allVideos.reduce(
+        (sum, video) => sum + (video.views || 0),
+        0,
+    );
+    animateCounter("totalViews", totalViews);
 }
 
 function animateCounter(elementId, targetValue) {
@@ -1024,8 +1103,13 @@ function animateCounter(elementId, targetValue) {
 }
 
 function updateRecentActivity(activities) {
-    const container = document.querySelector(".list-group.list-group-flush");
-    if (!container || !activities) return;
+    const container = document.getElementById("recentActivityContainer");
+    if (!container) return;
+
+    if (!activities || activities.length === 0) {
+        container.innerHTML = '<div class="list-group-item text-center text-muted">No recent activity</div>';
+        return;
+    }
 
     container.innerHTML = activities
         .map((activity) => {
@@ -1039,7 +1123,7 @@ function updateRecentActivity(activities) {
             return `
             <div class="list-group-item">
                 <i class="fas ${icon} me-2"></i>
-                ${activity.title} by ${activity.user}
+                ${activity.title}
                 <small class="text-muted d-block">${formatTimeAgo(activity.time)}</small>
             </div>
         `;
@@ -1048,17 +1132,20 @@ function updateRecentActivity(activities) {
 }
 
 function updatePopularVideos(videos) {
-    const container = document.querySelector(
-        ".card:last-child .list-group.list-group-flush",
-    );
-    if (!container || !videos) return;
+    const container = document.getElementById("popularVideosContainer");
+    if (!container) return;
+
+    if (!videos || videos.length === 0) {
+        container.innerHTML = '<div class="list-group-item text-center text-muted">No videos available</div>';
+        return;
+    }
 
     container.innerHTML = videos
         .map(
             (video) => `
         <div class="list-group-item d-flex justify-content-between">
             <span>${video.title}</span>
-            <span class="badge bg-primary">${video.views.toLocaleString()} views</span>
+            <span class="badge bg-primary">${parseInt(video.views).toLocaleString()} views</span>
         </div>
     `,
         )
@@ -1349,7 +1436,9 @@ async function syncYouTubeVideos() {
 
 async function loadUsers() {
     try {
-        const response = await fetch("api/admin.php?action=users");
+        const response = await fetch("api/admin.php?action=users", {
+            credentials: 'include'
+        });
         const data = await response.json();
 
         if (data.success) {
@@ -1450,12 +1539,6 @@ function renderPurchases(purchases) {
     `,
         )
         .join("");
-}
-
-function loadWatchlist() {
-    const container = document.getElementById("watchlistContainer");
-    container.innerHTML =
-        '<div class="col-12"><div class="alert alert-info">Watchlist feature coming soon...</div></div>';
 }
 
 async function loadEarnings() {
@@ -1608,7 +1691,6 @@ function loadAnalytics() {
 
 async function handleVideoUpload(event) {
     event.preventDefault();
-alert('sss')
     const form = event.target;
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
@@ -1642,6 +1724,7 @@ alert('sss')
         "video/mov",
         "video/mkv",
         "video/flv",
+        "video/mkv",
     ];
     if (!allowedTypes.includes(file.type)) {
         showNotification("❌ Please select a valid video file", "error");
@@ -1733,7 +1816,7 @@ alert('sss')
                 progressBar.style.display = 'none';
             }
 
-            loadVideos(); // Refresh the video list
+            loadVideosFromYouTube(); // Refresh the video list
         } else {
             throw new Error(uploadResult.error || "Upload failed");
         }
@@ -1783,7 +1866,7 @@ function createUploadLoadingIndicator() {
 
 function updateUploadProgress(loadingOverlay, percentage, statusText) {
     if (!loadingOverlay) return;
-    
+
     const progressBar = loadingOverlay.querySelector(".progress-bar");
     const statusElement = loadingOverlay.querySelector(".upload-status");
     const percentageElement = loadingOverlay.querySelector(".upload-percentage");
@@ -1868,8 +1951,7 @@ function throttle(func, limit) {
 }
 
 function addVideoToUI(video) {
-    // Add video to allVideos array
-    allVideos.unshift(video);
+    // Add video to allVideos array    allVideos.unshift(video);
 
     // If currently viewing myVideos, add it to the display
     const myVideosContainer = document.getElementById("myVideosContainer");
@@ -1919,661 +2001,12 @@ async function purchaseVideo(videoId, price) {
 async function confirmPurchase() {
     if (!purchaseVideoId) return;
 
-    // Show loading state
-    const confirmBtn = document.querySelector("#purchaseModal .btn-primary");
-    const originalText = confirmBtn.innerHTML;
-    confirmBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-    confirmBtn.disabled = true;
-
-    try {
-        const response = await fetch("api/purchase.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                video_id: purchaseVideoId,
-            }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            showNotification(
-                "🎉 Video purchased successfully! You can now watch it.",
-                "success",
-            );
-
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(
-                document.getElementById("purchaseModal"),
-            );
-            modal.hide();
-
-            // Update the video card immediately
-            updateVideoCardAfterPurchase(purchaseVideoId);
-
-            // Reload current panel to reflect changes
-            const activePanel = document.querySelector(
-                '.panel[style*="block"], .panel:not([style*="none"])',
-            );
-            if (activePanel && activePanel.id === "videosPanel") {
-                loadVideosFromYouTube();
-            } else if (activePanel && activePanel.id === "purchasesPanel") {
-                loadPurchases();
-            }
-
-            // Update overview stats if on admindashboard
-            if (currentUser.role === "admin") {
-                loadOverviewStats();
-            }
-        } else {
-            showNotification("❌ Purchase failed: " + data.message, "error");
-        }
-    } catch (error) {
-        console.error("Purchase failed:", error);
-        showNotification(
-            "❌ Purchase failed. Please check your connection and try again.",
-            "error",
-        );
-    } finally {
-        // Restore button state
-        confirmBtn.innerHTML = originalText;
-        confirmBtn.disabled = false;
-    }
-}
-
-function updateVideoCardAfterPurchase(videoId) {
-    // More efficient: use data attributes instead of parsing onclick
-    const purchaseButtons = document.querySelectorAll(
-        `[data-video-id="${videoId}"][data-action="purchase"]`,
-    );
-
-    purchaseButtons.forEach((button) => {
-        const card = button.closest(".video-card");
-        if (!card) return;
-
-        // Update button
-        button.className = "btn btn-success w-100";
-        button.innerHTML = '<i class="fas fa-play me-2"></i>Watch Now';
-        button.setAttribute("data-action", "watch");
-        button.onclick = () => watchVideo(videoId);
-
-        // Update badge efficiently
-        const thumbnail = card.querySelector(".video-thumbnail");
-        const existingBadge = thumbnail?.querySelector(".badge");
-
-        if (thumbnail && !existingBadge) {
-            const badge = document.createElement("span");
-            badge.className = "position-absolute top-0 end-0 badge bg-info m-2";
-            badge.textContent = "PURCHASED";
-            thumbnail.appendChild(badge);
-        } else if (existingBadge) {
-            existingBadge.className =
-                "position-absolute top-0 end-0 badge bg-info m-2";
-            existingBadge.textContent = "PURCHASED";
-        }
-    });
-
-    // Update the video in allVideos array to prevent re-render issues
-    const videoIndex = allVideos.findIndex((v) => v.id === videoId);
-    if (videoIndex !== -1) {
-        allVideos[videoIndex].purchased = true;
-    }
-}
-
-async function watchVideo(videoId) {
-    const video = allVideos.find((v) => v.id === videoId);
-    if (video) {
-        document.getElementById("videoModalTitle").textContent = video.title;
-        document.getElementById("videoPlayer").src =
-            video.file_path ||
-            "https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_1mb.mp4";
-        const modal = new bootstrap.Modal(
-            document.getElementById("videoModal"),
-        );
-        modal.show();
-
-        // Increment view count
-        try {
-            await fetch("api/videos.php", {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: `id=${videoId}&action=increment_views`,
-            });
-        } catch (error) {
-            console.error("Failed to increment view count:", error);
-        }
-    }
-}
-
-async function logout() {
-    try {
-        // Clear localStorage first
-        localStorage.removeItem("currentUser");
-
-        // Try to logout from server session as well
-        const response = await fetch("api/auth.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({ action: "logout" }),
-        });
-
-        const data = await response.json();
-
-        // Always redirect regardless of API response since we cleared localStorage
+    // Ensure user is authenticated
+    if (!currentUser) {
+        showNotification("Please log in to make purchases", "error");
         window.location.href = "login.html";
-    } catch (error) {
-        console.error("Logout failed:", error);
-        // Still redirect since we cleared localStorage
-        window.location.href = "login.html";
+        return;
     }
-}
-
-async function loadYouTubePanel() {
-    try {
-        // Check if YouTube API client is available
-        if (!window.youtubeAPI) {
-            console.warn("YouTube API client not available");
-            updateYouTubeStatus(false, null);
-            return;
-        }
-
-        if (!window.youtubeAPI.isInitialized) {
-            await window.youtubeAPI.initialize();
-        }
-
-        const isSignedIn = window.youtubeAPI.isSignedIn();
-
-        if (isSignedIn) {
-            const channelInfo = await window.youtubeAPI.getMyChannelInfo();
-            updateYouTubeStatus(true, channelInfo);
-            await loadYouTubeData();
-        } else {
-            updateYouTubeStatus(false, null);
-        }
-    } catch (error) {
-        console.error("Failed to load YouTube panel:", error);
-        updateYouTubeStatus(false, null);
-    }
-}
-
-function updateYouTubeStatus(connected, channelInfo) {
-    const statusDiv = document.getElementById("youtubeStatus");
-    const controlsDiv = document.getElementById("youtubeControls");
-    const channelInfoDiv = document.getElementById("youtubeChannelInfo");
-    const uploadForm = document.getElementById("youtubeUploadForm");
-    const videosDiv = document.getElementById("youtubeVideos");
-    const statsDiv = document.getElementById("youtubeStats");
-
-    if (!statusDiv || !controlsDiv) return;
-
-    if (connected && channelInfo) {
-        statusDiv.innerHTML = `
-            <div class="alert alert-success">
-                <i class="fab fa-youtube me-2"></i>
-                Connected to YouTube channel: <strong>${channelInfo.title}</strong>
-            </div>
-        `;
-
-        controlsDiv.innerHTML = `
-            <button class="btn btn-outline-danger btn-sm" onclick="disconnectYouTube()">
-                <i class="fas fa-unlink me-1"></i>Disconnect
-            </button>
-            <button class="btn btn-primary btn-sm ms-2" onclick="syncYouTubeVideos()">
-                <i class="fas fa-sync me-1"></i>Sync Videos
-            </button>
-        `;
-
-        if (channelInfoDiv) channelInfoDiv.style.display = "block";
-        if (uploadForm) uploadForm.style.display = "block";
-        if (videosDiv) videosDiv.style.display = "block";
-        if (statsDiv) statsDiv.style.display = "block";
-    } else {
-        statusDiv.innerHTML = `
-            <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                YouTube not connected. Please sign in to access your YouTube channel.
-            </div>
-        `;
-
-        controlsDiv.innerHTML = `
-            <button class="btn btn-danger" onclick="connectYouTube()">
-                <i class="fab fa-youtube me-1"></i>Connect YouTube
-            </button>
-        `;
-
-        if (channelInfoDiv) channelInfoDiv.style.display = "none";
-        if (uploadForm) uploadForm.style.display = "none";
-        if (videosDiv) videosDiv.style.display = "none";
-        if (statsDiv) statsDiv.style.display = "none";
-    }
-}
-
-// Initialize YouTube integration on page load
-document.addEventListener("DOMContentLoaded", function () {
-    checkYouTubeIntegration();
-});
-
-// Check YouTube integration status
-async function checkYouTubeIntegration() {
-    try {
-        const statusElement = document.getElementById("youtubeStatus");
-        const statusText = document.getElementById("youtubeStatusText");
-        const connectBtn = document.getElementById("connectYouTubeBtn");
-        const syncBtn = document.getElementById("syncYouTubeBtn");
-        const uploadCard = document.getElementById("youtubeUploadCard");
-        const recentVideosCard = document.getElementById("recentVideosCard");
-
-        if (window.youtubeAPI && window.youtubeAPI.isSignedIn()) {
-            statusElement.className = "alert alert-success";
-            statusText.innerHTML =
-                '<i class="fas fa-check-circle"></i> YouTube integration active';
-            connectBtn.innerHTML = '<i class="fas fa-unlink"></i> Disconnect';
-            connectBtn.className = "btn btn-outline-danger me-2";
-            connectBtn.onclick = disconnectYouTube;
-            syncBtn.disabled = false;
-            uploadCard.style.display = "block";
-            recentVideosCard.style.display = "block";
-            loadRecentYouTubeVideos();
-        } else {
-            statusElement.className = "alert alert-warning";
-            statusText.innerHTML =
-                '<i class="fas fa-exclamation-triangle"></i> YouTube not connected';
-            connectBtn.innerHTML =
-                '<i class="fas fa-link"></i> Connect YouTube';
-            connectBtn.className = "btn btn-outline-success me-2";
-            connectBtn.onclick = connectYouTube;
-            syncBtn.disabled = true;
-            uploadCard.style.display = "none";
-            recentVideosCard.style.display = "none";
-        }
-    } catch (error) {
-        console.error("Error checking YouTube integration:", error);
-        document.getElementById("youtubeStatusText").textContent =
-            "Error checking integration status";
-    }
-}
-
-// Connect to YouTube
-async function connectYouTube() {
-    try {
-        showLoading(true);
-        const success = await window.youtubeAPI.signIn();
-
-        if (success) {
-            showNotification("Successfully connected to YouTube!", "success");
-            checkYouTubeIntegration();
-        } else {
-            showNotification(
-                "Failed to connect to YouTube. Please try again.",
-                "error",
-            );
-        }
-    } catch (error) {
-        console.error("YouTube connection error:", error);
-        showNotification(
-            "YouTube connection failed: " + error.message,
-            "error",
-        );
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Disconnect from YouTube
-async function disconnectYouTube() {
-    try {
-        showLoading(true);
-        const success = await window.youtubeAPI.signOut();
-
-        if (success) {
-            showNotification("Disconnected from YouTube", "info");
-            checkYouTubeIntegration();
-        } else {
-            showNotification("Failed to disconnect from YouTube", "error");
-        }
-    } catch (error) {
-        console.error("YouTube disconnect error:", error);
-        showNotification("Disconnect failed: " + error.message, "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Load recent YouTube videos
-async function loadRecentYouTubeVideos() {
-    try {
-        const recentVideosList = document.getElementById("recentVideosList");
-        recentVideosList.innerHTML =
-            '<div class="col-12"><div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading videos...</div></div>';
-
-        const videos = await window.youtubeAPI.getChannelVideos(6);
-
-        if (videos.length === 0) {
-            recentVideosList.innerHTML =
-                '<div class="col-12"><div class="text-center text-muted">No videos found on your YouTube channel</div></div>';
-            return;
-        }
-
-        const videoDetails = await window.youtubeAPI.getVideoDetails(
-            videos.map((v) => v.id.videoId),
-        );
-
-        recentVideosList.innerHTML = videoDetails
-            .map(
-                (video) => `
-            <div class="col-md-4 mb-3">
-                <div class="card h-100">
-                    <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}" style="height: 180px; object-fit: cover;">
-                    <div class="card-body d-flex flex-column">
-                        <h6 class="card-title">${video.title.length > 50 ? video.title.substring(0, 50) + "..." : video.title}</h6>
-                        <p class="card-text text-muted small flex-grow-1">${video.description.length > 80 ? video.description.substring(0, 80) + "..." : video.description}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">${video.views} views</small>
-                            <button class="btn btn-sm btn-outline-primary" onclick="syncVideoToDatabase('${video.youtube_id}')">
-                                <i class="fas fa-sync"></i> Sync
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `,
-            )
-            .join("");
-    } catch (error) {
-        console.error("Failed to load recent videos:", error);
-        document.getElementById("recentVideosList").innerHTML =
-            '<div class="col-12"><div class="text-center text-danger">Failed to load videos</div></div>';
-    }
-}
-
-// Reset YouTube upload form
-function resetYouTubeForm() {
-    document.getElementById("youtubeUploadForm").reset();
-    hideUploadProgress();
-}
-
-// Show upload progress
-function showUploadProgress() {
-    const progressDiv = document.getElementById("uploadProgress");
-    const progressBar = document.getElementById("progressBar");
-    const progressText = document.getElementById("progressText");
-
-    progressDiv.style.display = "block";
-    progressBar.style.width = "0%";
-    progressText.textContent = "0%";
-}
-
-// Hide upload progress
-function hideUploadProgress() {
-    document.getElementById("uploadProgress").style.display = "none";
-}
-
-// Update upload progress
-function updateUploadProgress(progress) {
-    const progressBar = document.getElementById("progressBar");
-    const progressText = document.getElementById("progressText");
-
-    if (progressBar) {
-        progressBar.style.width = progress + "%";
-    }
-    if (progressText) {
-        progressText.textContent = progress + "%";
-    }
-}
-
-// YouTube Upload Form Handler
-document
-    .getElementById("youtubeUploadForm")
-    ?.addEventListener("submit", async function (e) {
-        e.preventDefault();
-
-        const title = document.getElementById("ytTitle").value;
-        const description = document.getElementById("ytDescription").value;
-        const tags = document
-            .getElementById("ytTags")
-            .value.split(",")
-            .map((tag) => tag.trim())
-            .filter((tag) => tag);
-        const privacy = document.getElementById("ytPrivacy").value;
-        const price = parseFloat(document.getElementById("ytPrice").value) || 0;
-        const videoFile = document.getElementById("ytVideo").files[0];
-        const uploadBtn = document.getElementById("uploadBtn");
-
-        if (!videoFile) {
-            showNotification("Please select a video file", "error");
-            return;
-        }
-
-        if (!title.trim()) {
-            showNotification("Please enter a video title", "error");
-            return;
-        }
-
-        // Validate file size (YouTube limit is 256GB, but we'll set a reasonable limit)
-        const maxSize = 2 * 1024 * 1024 * 1024; // 2GB for practical purposes
-        if (videoFile.size > maxSize) {
-            showNotification(
-                "Video file is too large. Please choose a file under 2GB.",
-                "error",
-            );
-            return;
-        }
-
-        // Validate file type
-        const allowedTypes = [
-            "video/mp4",
-            "video/webm",
-            "video/ogg",
-            "video/avi",
-            "video/mov",
-            "video/mkv",
-            "video/flv",
-        ];
-        if (!allowedTypes.includes(videoFile.type)) {
-            showNotification("Please select a valid video file", "error");
-            return;
-        }
-
-        try {
-            // Check YouTube connection
-            if (!window.youtubeAPI.isSignedIn()) {
-                showNotification("Please connect to YouTube first", "error");
-                return;
-            }
-
-            // Disable form and show progress
-            uploadBtn.disabled = true;
-            uploadBtn.innerHTML =
-                '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-            showUploadProgress();
-
-            // Prepare metadata for direct upload
-            const metadata = {
-                title: title,
-                description: description,
-                tags: tags,
-                privacy: privacy,
-                categoryId: "22", // People & Blog
-            };
-
-            // Upload video directly to YouTube using multipart upload
-            const result = await window.youtubeAPI.uploadVideo(
-                videoFile,
-                metadata,
-                (progress) => {
-                    updateUploadProgress(progress);
-                },
-            );
-
-            if (result.success) {
-                // Get detailed video information from YouTube
-                const videoDetails = await window.youtubeAPI.getVideoDetails([
-                    result.video.id,
-                ]);
-                const detailedVideo = videoDetails[0] || {};
-
-                // Store video metadata in database
-                const videoData = {
-                    title: title,
-                    description: description,
-                    price: price,
-                    category: "youtube",
-                    file_path: "", // No local file path since it's on YouTube
-                    youtube_id: result.video.id,
-                    youtube_thumbnail:
-                        result.video.snippet?.thumbnails?.medium?.url ||
-                        result.video.snippet?.thumbnails?.default?.url,
-                    youtube_channel_id: result.video.snippet?.channelId,
-                    youtube_channel_title: result.video.snippet?.channelTitle,
-                    youtube_views: detailedVideo.views || 0,
-                    youtube_likes: detailedVideo.likes || 0,
-                    youtube_comments: detailedVideo.comments || 0,
-                    is_youtube_synced: true,
-                };
-
-                const dbResponse = await fetch("api/videoss.php", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify(videoData),
-                });
-
-                const dbData = await dbResponse.json();
-
-                if (dbData.success) {
-                    showNotification(
-                        "🎉 Video uploaded to YouTube and saved to database successfully!",
-                        "success",
-                    );
-
-                    // Reset form and reload videos
-                    resetYouTubeForm();
-                    loadRecentYouTubeVideos();
-                    loadVideos();
-                } else {
-                    showNotification(
-                        "❌ Failed to save video to database: " +
-                            dbData.message,
-                        "error",
-                    );
-                }
-            } else {
-                showNotification(
-                    "❌ YouTube upload failed: " + result.error,
-                    "error",
-                );
-            }
-        } catch (error) {
-            console.error("Upload error:", error);
-            showNotification("❌ Upload failed: " + error.message, "error");
-            const loader = document.getElementById("loader");
-            if (loader) {
-                loader.style.display = "none";
-            }
-        } finally {
-            // Reset form state
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML =
-                '<i class="fab fa-youtube me-2"></i>Upload to YouTube';
-            hideUploadProgress();
-            const loader = document.getElementById("loader");
-            if (loader) {
-                loader.style.display = "none";
-            }
-        }
-    });
-
-// Update video price in database after YouTube upload
-async function updateVideoPriceInDatabase(youtubeVideoId, price) {
-    try {
-        const response = await fetch("api/videos.php", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            credentials: "include",
-            body: `youtube_id=${youtubeVideoId}&price=${price}&action=update_price`,
-        });
-
-        const result = await response.json();
-        if (!result.success) {
-            console.error("Failed to update video price:", result.message);
-        }
-    } catch (error) {
-        console.error("Error updating video price:", error);
-    }
-}
-
-// Enhanced video watching with access control
-async function watchVideo(videoId) {
-    try {
-        const response = await fetch("api/video_access.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({ video_id: videoId }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            document.getElementById("videoModalTitle").textContent =
-                data.video.title;
-            document.getElementById("videoPlayer").src =
-                data.video.file_path ||
-                "https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_1mb.mp4";
-            const modal = new bootstrap.Modal(
-                document.getElementById("videoModal"),
-            );
-            modal.show();
-
-            // Increment view count
-            try {
-                await fetch("api/videos.php", {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
-                    },
-                    body: `id=${videoId}&action=increment_views`,
-                });
-            } catch (error) {
-                console.error("Failed to increment view count:", error);
-            }
-        } else {
-            if (data.message === "Payment required") {
-                purchaseVideo(videoId, data.video.price); // Call purchase function if payment is required
-            } else {
-                showNotification(data.message, "error");
-            }
-        }
-    } catch (error) {
-        console.error("Error accessing video:", error);
-        showNotification("Failed to access video", "error");
-    }
-}
-
-async function purchaseVideo(videoId, price) {
-    purchaseVideoId = videoId;
-    document.getElementById("purchasePrice").textContent = price.toFixed(2);
-
-    const modal = new bootstrap.Modal(document.getElementById("purchaseModal"));
-    modal.show();
-}
-
-async function confirmPurchase() {
-    if (!purchaseVideoId) return;
 
     // Show loading state
     const confirmBtn = document.querySelector("#purchaseModal .btn-primary");
@@ -2587,7 +2020,9 @@ async function confirmPurchase() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                'X-Requested-With': 'XMLHttpRequest'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 video_id: purchaseVideoId,
             }),
@@ -2640,8 +2075,67 @@ async function confirmPurchase() {
     }
 }
 
+// Update video card after purchase
+function updateVideoCardAfterPurchase(videoId) {
+    // Find the video in allVideos and mark as purchased
+    const videoIndex = allVideos.findIndex(v => v.id == videoId || v.youtube_id == videoId);
+    if (videoIndex !== -1) {
+        allVideos[videoIndex].purchased = true;
+        
+        // Update the UI by re-rendering videos
+        renderVideos(allVideos);
+    }
+}
+
 // Video upload functionality
 
+
+// Logout function
+async function logout() {
+    try {
+        showLoading(true);
+
+        const response = await fetch('api/auth.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                action: 'logout'
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Clear localStorage
+            localStorage.removeItem('currentUser');
+
+            // Clear session storage
+            sessionStorage.clear();
+
+            // Clear user data
+            currentUser = null;
+
+            showNotification('Logged out successfully', 'success');
+
+            // Redirect to login page
+            window.location.href = 'login.html';
+        } else {
+            showNotification('Logout failed: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        // Force logout even if API fails
+        localStorage.removeItem('currentUser');
+        sessionStorage.clear();
+        currentUser = null;
+        window.location.href = 'login.html';
+    } finally {
+        showLoading(false);
+    }
+}
 
 // New function to initialize YouTube panel
 async function initializeYouTubePanel() {

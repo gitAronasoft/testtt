@@ -167,6 +167,9 @@ function handleLogin($data) {
 
             // Set a cookie for session persistence
             setcookie('user_id', $user['id'], time() + 86400, '/', '', false, true);
+            
+            // Regenerate session ID for security
+            session_regenerate_id(true);
 
             echo json_encode([
                 'success' => true,
@@ -185,7 +188,26 @@ function handleLogin($data) {
 }
 
 function handleLogout() {
+    // Clear the user_id cookie
+    if (isset($_COOKIE['user_id'])) {
+        setcookie('user_id', '', time() - 3600, '/', '', false, true);
+    }
+    
+    // Clear session data
+    $_SESSION = array();
+    
+    // If there's a session cookie, invalidate it
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    
+    // Destroy session
     session_destroy();
+    
     echo json_encode(['success' => true, 'message' => 'Logged out successfully']);
 }
 
