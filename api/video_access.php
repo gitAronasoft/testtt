@@ -29,10 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 $youtube_id = $input['youtube_id'] ?? null;
+$video_id = $input['video_id'] ?? null;
 
-if (!$youtube_id) {
+if (!$youtube_id && !$video_id) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'YouTube ID required']);
+    echo json_encode(['success' => false, 'message' => 'Video ID or YouTube ID required']);
     exit();
 }
 
@@ -40,8 +41,13 @@ $conn = getConnection();
 $user_id = $_SESSION['user']['id'];
 
 // Check if video exists and get its details
-$video_stmt = $conn->prepare("SELECT * FROM videos WHERE youtube_id = ?");
-$video_stmt->bind_param("s", $youtube_id);
+if ($video_id) {
+    $video_stmt = $conn->prepare("SELECT * FROM videos WHERE id = ?");
+    $video_stmt->bind_param("i", $video_id);
+} else {
+    $video_stmt = $conn->prepare("SELECT * FROM videos WHERE youtube_id = ?");
+    $video_stmt->bind_param("s", $youtube_id);
+}
 $video_stmt->execute();
 $video_result = $video_stmt->get_result();
 

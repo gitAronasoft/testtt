@@ -44,11 +44,61 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
 function handleGetVideos() {
     $conn = getConnection();
-
-    // Get filter parameters
-    $filter = $_GET['filter'] ?? 'all';
     $user_id = $_SESSION['user']['id'] ?? null;
     $user_role = $_SESSION['user']['role'] ?? null;
+
+    // Handle single video request
+    if (isset($_GET['id'])) {
+        $video_id = intval($_GET['id']);
+        $sql = "
+            SELECT v.*, u.name as uploader_name,
+                   CASE WHEN p.user_id IS NOT NULL THEN 1 ELSE 0 END as purchased
+            FROM videos v 
+            JOIN users u ON v.uploader_id = u.id 
+            LEFT JOIN purchases p ON v.id = p.video_id AND p.user_id = ?
+            WHERE v.id = ?
+        ";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("si", $user_id, $video_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'Video not found']);
+            $conn->close();
+            return;
+        }
+        
+        $row = $result->fetch_assoc();
+        $video = [
+            'id' => (int)$row['id'],
+            'title' => $row['title'],
+            'description' => $row['description'],
+            'price' => (float)$row['price'],
+            'uploader' => $row['uploader_name'],
+            'uploader_id' => $row['uploader_id'],
+            'views' => (int)$row['views'],
+            'purchased' => (bool)$row['purchased'],
+            'file_path' => $row['file_path'],
+            'category' => $row['category'],
+            'created_at' => $row['created_at'],
+            'youtube_id' => $row['youtube_id'],
+            'youtube_thumbnail' => $row['youtube_thumbnail'],
+            'youtube_channel_id' => $row['youtube_channel_id'],
+            'youtube_channel_title' => $row['youtube_channel_title'],
+            'youtube_views' => (int)($row['youtube_views'] ?? 0),
+            'youtube_likes' => (int)($row['youtube_likes'] ?? 0),
+            'youtube_comments' => (int)($row['youtube_comments'] ?? 0),
+            'is_youtube_synced' => (bool)$row['is_youtube_synced']
+        ];
+        
+        echo json_encode(['success' => true, 'video' => $video]);
+        $conn->close();
+        return;
+    }
+
+    // Get filter parameters for multiple videos
+    $filter = $_GET['filter'] ?? 'all';
 
     $sql = "
         SELECT v.*, u.name as uploader_name,

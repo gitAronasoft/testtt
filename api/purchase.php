@@ -39,7 +39,7 @@ switch ($method) {
 function handleGetPurchases($user_id) {
     $conn = getConnection();
 
-    $sql = "SELECT p.id, p.video_id, p.amount, p.created_at,
+    $sql = "SELECT p.id, p.video_id, COALESCE(p.amount, v.price) as amount, p.created_at,
                    v.title, v.description, v.price, v.category,
                    u.name as uploader
             FROM purchases p

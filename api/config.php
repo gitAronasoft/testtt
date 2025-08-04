@@ -73,7 +73,7 @@ function createRequiredTables($conn) {
             id VARCHAR(50) PRIMARY KEY,
             user_id VARCHAR(50) NOT NULL,
             video_id INT NOT NULL,
-            amount DECIMAL(10,2) NOT NULL,
+            amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE

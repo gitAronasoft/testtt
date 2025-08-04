@@ -74,6 +74,10 @@ async function handleLogin(event) {
     // Show loading state
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
     submitBtn.disabled = true;
+    
+    // Disable all form inputs during login
+    const formInputs = event.target.querySelectorAll('input, button');
+    formInputs.forEach(input => input.disabled = true);
 
     try {
         const response = await fetch('api/auth.php', {
@@ -130,6 +134,10 @@ async function handleLogin(event) {
         // Restore button state
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
+        
+        // Re-enable all form inputs
+        const formInputs = event.target.querySelectorAll('input, button');
+        formInputs.forEach(input => input.disabled = false);
     }
 }
 
@@ -160,7 +168,15 @@ async function quickLogin(email) {
         return;
     }
 
-    showLoading(true);
+    // Find and disable the clicked button
+    const clickedButton = event.target;
+    const originalText = clickedButton.innerHTML;
+    clickedButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+    clickedButton.disabled = true;
+    
+    // Disable all quick login buttons
+    const quickLoginButtons = document.querySelectorAll('.btn-outline-danger, .btn-outline-warning, .btn-outline-success');
+    quickLoginButtons.forEach(btn => btn.disabled = true);
 
     try {
         const response = await fetch("api/auth.php", {
@@ -187,9 +203,16 @@ async function quickLogin(email) {
     } catch (error) {
         console.error("Quick login failed:", error);
         showNotification("Quick login failed", "error");
+    } finally {
+        // Restore button states
+        const quickLoginButtons = document.querySelectorAll('.btn-outline-danger, .btn-outline-warning, .btn-outline-success');
+        quickLoginButtons.forEach(btn => {
+            btn.disabled = false;
+            if (btn === clickedButton) {
+                btn.innerHTML = originalText;
+            }
+        });
     }
-
-    showLoading(false);
 }
 
 function showLoading(show) {
