@@ -1,4 +1,4 @@
-        // Global variables
+// Global variables
         let currentUser = null;
         let allVideos = [];
         let allUsers = [];
@@ -778,12 +778,25 @@
             const col = document.createElement("div");
             col.className = "col-sm-6 col-md-4 col-lg-3 col-xl-3 mb-4";
 
-            // Dynamic thumbnail handling
+            // Enhanced dynamic thumbnail handling with fallbacks
             let thumbnail = "/api/placeholder/300/200";
-            if (video.youtube_thumbnail) {
+            let thumbnailSrcset = "";
+            
+            if (video.youtube_thumbnail && video.youtube_thumbnail !== "/api/placeholder/300/200") {
                 thumbnail = video.youtube_thumbnail;
             } else if (video.youtube_id) {
+                // Use multiple YouTube thumbnail qualities for responsive images
                 thumbnail = `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg`;
+                thumbnailSrcset = `
+                    https://img.youtube.com/vi/${video.youtube_id}/default.jpg 120w,
+                    https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg 320w,
+                    https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg 480w,
+                    https://img.youtube.com/vi/${video.youtube_id}/sddefault.jpg 640w,
+                    https://img.youtube.com/vi/${video.youtube_id}/maxresdefault.jpg 1280w
+                `;
+            } else if (video.file_path && video.file_path.includes('uploads/')) {
+                // For local uploads, try to create a thumbnail URL
+                thumbnail = `/api/thumbnail.php?video=${encodeURIComponent(video.file_path)}`;
             }
 
             const price = parseFloat(video.price) || 0;
@@ -793,76 +806,100 @@
             const userRole = currentUser?.role;
 
             col.innerHTML = `
-                <div class="card video-card h-100 shadow-sm border-0 position-relative">
-                    <div class="video-thumbnail position-relative overflow-hidden" style="height: 200px;">
-                        <img src="${thumbnail}" alt="${escapeHtml(video.title)}" 
+                <div class="card video-card h-100 shadow-sm border-0 position-relative" onclick="handleVideoClick(${video.id}, '${escapeHtml(video.title)}', '${video.youtube_id || ''}', ${isYouTube})"
+                    <div class="video-thumbnail position-relative overflow-hidden" style="height: 220px; cursor: pointer;">
+                        <img src="${thumbnail}" 
+                             ${thumbnailSrcset ? `srcset="${thumbnailSrcset}"` : ''}
+                             sizes="(max-width: 576px) 100vw, (max-width: 768px) 50vw, (max-width: 992px) 33vw, 25vw"
+                             alt="${escapeHtml(video.title)}" 
                              class="card-img-top w-100 h-100" 
-                             style="object-fit: cover; transition: transform 0.3s ease;"
-                             onmouseover="this.style.transform='scale(1.05)'"
-                             onmouseout="this.style.transform='scale(1)'"
-                             onerror="this.src='/api/placeholder/300/200'">
+                             style="object-fit: cover; transition: all 0.3s ease;"
+                             onload="this.style.opacity='1'"
+                             onerror="handleThumbnailError(this, '${video.youtube_id || ''}')"
+                             loading="lazy">
+                        
+                        <!-- Loading placeholder -->
+                        <div class="thumbnail-loading position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light" style="opacity: 0; transition: opacity 0.3s ease;">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
                         
                         <!-- Price Badge -->
                         <div class="position-absolute top-0 start-0 m-2">
                             ${isFree ? 
-                                '<span class="badge bg-success px-2 py-1"><i class="fas fa-gift me-1"></i>FREE</span>' : 
-                                `<span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-dollar-sign me-1"></i>$${price.toFixed(2)}</span>`
+                                '<span class="badge bg-success px-3 py-2 rounded-pill"><i class="fas fa-gift me-1"></i>FREE</span>' : 
+                                `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fas fa-dollar-sign me-1"></i>$${price.toFixed(2)}</span>`
                             }
                         </div>
 
                         <!-- Status Badges -->
-                        <div class="position-absolute top-0 end-0 m-2">
-                            ${isPurchased ? '<span class="badge bg-success mb-1 d-block"><i class="fas fa-check me-1"></i>OWNED</span>' : ''}
-                            ${isYouTube ? '<span class="badge bg-danger"><i class="fab fa-youtube me-1"></i>YT</span>' : 
-                                (userRole !== 'creator' ? '<span class="badge bg-secondary"><i class="fas fa-server me-1"></i>Local</span>' : '')}
+                        <div class="position-absolute top-0 end-0 m-2 d-flex flex-column gap-1">
+                            ${isPurchased ? '<span class="badge bg-success px-2 py-1 rounded-pill"><i class="fas fa-check me-1"></i>OWNED</span>' : ''}
+                            ${isYouTube ? '<span class="badge bg-danger px-2 py-1 rounded-pill"><i class="fab fa-youtube me-1"></i>YT</span>' : 
+                                '<span class="badge bg-secondary px-2 py-1 rounded-pill"><i class="fas fa-server me-1"></i>Local</span>'}
                         </div>
 
-                        <!-- Play Button Overlay -->
-                        <div class="position-absolute top-50 start-50 translate-middle">
-                            <div class="play-button-overlay">
-                                <i class="fas fa-play-circle fa-3x text-white" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></i>
+                        <!-- Enhanced Play Button Overlay -->
+                        <div class="position-absolute top-50 start-50 translate-middle play-button-overlay" style="transition: all 0.3s ease;">
+                            <div class="bg-dark bg-opacity-75 rounded-circle p-3" style="backdrop-filter: blur(10px);">
+                                <i class="fas fa-play text-white" style="font-size: 2rem; margin-left: 3px;"></i>
                             </div>
                         </div>
 
-                        <!-- Hover Effect -->
-                        <div class="position-absolute bottom-0 start-0 end-0 bg-gradient-to-top p-2" style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
-                            <small class="text-white">
-                                <i class="fas fa-eye me-1"></i>${formatNumber(video.views || 0)} views
-                                ${video.category ? `<span class="ms-2"><i class="fas fa-tag me-1"></i>${video.category}</span>` : ''}
-                            </small>
+                        <!-- Enhanced Info Overlay -->
+                        <div class="position-absolute bottom-0 start-0 end-0 p-3" style="background: linear-gradient(transparent, rgba(0,0,0,0.8));">
+                            <div class="d-flex justify-content-between align-items-end text-white">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-eye me-1"></i>
+                                        <small>${formatNumber(video.views || 0)} views</small>
+                                        ${video.category ? `<span class="ms-3"><i class="fas fa-tag me-1"></i><small>${video.category}</small></span>` : ''}
+                                    </div>
+                                    <small class="text-light opacity-75">
+                                        <i class="fas fa-clock me-1"></i>${formatTimeAgo(video.created_at)}
+                                    </small>
+                                </div>
+                                <div class="video-duration-badge">
+                                    ${isYouTube ? '<small class="badge bg-dark bg-opacity-50 px-2 py-1">HD</small>' : ''}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="card-body p-3 d-flex flex-column">
-                        <h6 class="card-title mb-2" title="${escapeHtml(video.title)}" style="line-height: 1.3; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <h6 class="card-title mb-3" title="${escapeHtml(video.title)}" style="line-height: 1.4; height: 2.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-weight: 600;">
                             ${escapeHtml(video.title)}
                         </h6>
                         
-                        <p class="card-text text-muted small mb-2 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; height: 2.8em;">
+                        <p class="card-text text-muted small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; height: 3em;">
                             ${escapeHtml(video.description || 'No description available')}
                         </p>
                         
                         <div class="video-meta mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <small class="text-muted text-truncate" style="max-width: 60%;">
-                                    <i class="fas fa-user me-1"></i>${escapeHtml(video.uploader)}
-                                </small>
-                                <small class="text-muted">
-                                    <i class="fas fa-clock me-1"></i>${formatTimeAgo(video.created_at)}
-                                </small>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center text-muted" style="max-width: 70%;">
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; min-width: 24px;">
+                                        <small class="text-white fw-bold" style="font-size: 10px;">${escapeHtml(video.uploader.charAt(0).toUpperCase())}</small>
+                                    </div>
+                                    <small class="text-truncate fw-medium">${escapeHtml(video.uploader)}</small>
+                                </div>
+                                ${isPurchased ? '<small class="text-success fw-bold"><i class="fas fa-crown me-1"></i>Owned</small>' : ''}
                             </div>
                             
-                            ${!isFree ? `
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-primary fw-bold">
-                                        <i class="fas fa-dollar-sign me-1"></i>$${price.toFixed(2)}
-                                    </span>
-                                    ${isPurchased ? '<span class="text-success small"><i class="fas fa-check-circle me-1"></i>Purchased</span>' : ''}
+                            ${!isFree && !isPurchased ? `
+                                <div class="price-info p-2 bg-light rounded">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="h6 text-primary mb-0">
+                                            <i class="fas fa-dollar-sign me-1"></i>$${price.toFixed(2)}
+                                        </span>
+                                        <small class="text-muted">Purchase required</small>
+                                    </div>
                                 </div>
                             ` : ''}
                         </div>
                         
-                        <div class="mt-auto">
+                        <div class="mt-auto" onclick="event.stopPropagation();">
                             ${renderEnhancedVideoActions(video)}
                         </div>
                     </div>
@@ -1151,36 +1188,36 @@
             const isFree = price === 0;
             const isPurchased = video.purchased;
 
-            // Admin actions - No share button
+            // Admin actions
             if (userRole === 'admin') {
                 if (isYouTubeVideo) {
                     return `
                         <div class="d-grid gap-1">
-                            <button class="btn btn-primary btn-sm" onclick="watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                            <button class="btn btn-primary btn-sm" onclick="playVideoPlayer(${video.id}, '${video.youtube_id}', '${escapeHtml(video.title)}', true)">
                                 <i class="fas fa-play me-1"></i>Watch Video
                             </button>
-                            <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger btn-sm">
+                            <a href="https://www.youtube.com/watch?v=${video.youtube_id}" target="_blank" class="btn btn-outline-danger btn-sm">
                                 <i class="fab fa-youtube me-1"></i>YouTube
                             </a>
                         </div>`;
                 } else {
                     return `
-                        <button class="btn btn-primary btn-sm w-100" onclick="watchVideo(${video.id})">
+                        <button class="btn btn-primary btn-sm w-100" onclick="playVideoPlayer(${video.id}, '', '${escapeHtml(video.title)}', false)">
                             <i class="fas fa-play me-1"></i>Watch Video
                         </button>`;
                 }
             }
 
-            // Creator/Editor actions - No local badge handling
+            // Creator/Editor actions
             if (userRole === 'creator' || userRole === 'editor') {
                 if (isYouTubeVideo) {
                     return `
                         <div class="d-grid gap-1">
-                            <button class="btn btn-primary btn-sm" onclick="watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                            <button class="btn btn-primary btn-sm" onclick="playVideoPlayer(${video.id}, '${video.youtube_id}', '${escapeHtml(video.title)}', true)">
                                 <i class="fas fa-play me-1"></i>Watch Video
                             </button>
                             <div class="btn-group btn-group-sm" role="group">
-                                <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
+                                <a href="https://www.youtube.com/watch?v=${video.youtube_id}" target="_blank" class="btn btn-outline-danger">
                                     <i class="fab fa-youtube me-1"></i>YouTube
                                 </a>
                                 <button class="btn btn-outline-secondary" onclick="shareVideo('${video.youtube_id}')">
@@ -1191,7 +1228,7 @@
                 } else {
                     return `
                         <div class="d-grid gap-1">
-                            <button class="btn btn-primary btn-sm" onclick="watchVideo(${video.id})">
+                            <button class="btn btn-primary btn-sm" onclick="playVideoPlayer(${video.id}, '', '${escapeHtml(video.title)}', false)">
                                 <i class="fas fa-play me-1"></i>Watch Video
                             </button>
                             <button class="btn btn-outline-secondary btn-sm" onclick="shareVideo(${video.id})">
@@ -1201,16 +1238,12 @@
                 }
             }
 
-            // Viewer actions - No share button, no preview button
+            // Viewer actions
             if (userRole === "viewer") {
                 if (isFree || isPurchased) {
                     // Can watch for free or already purchased
-                    const watchAction = isYouTubeVideo ? 
-                        `watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')` : 
-                        `watchVideo(${video.id})`;
-                    
                     return `
-                        <button class="btn btn-success btn-sm w-100" onclick="${watchAction}">
+                        <button class="btn btn-success btn-sm w-100" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTubeVideo})">
                             <i class="fas fa-play me-1"></i>${isFree ? 'Watch Free' : 'Watch Now'}
                         </button>`;
                 } else {
@@ -1223,7 +1256,7 @@
             }
 
             // Default fallback
-            return `<button class="btn btn-primary btn-sm w-100" onclick="watchVideo(${video.id})">
+            return `<button class="btn btn-primary btn-sm w-100" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTubeVideo})">
                         <i class="fas fa-play me-1"></i>Watch Video
                     </button>`;
         }
@@ -1253,12 +1286,16 @@
                     })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
                     // User has access, play the video
                     watchYouTubeVideo(youtubeId, title);
-                } else if (data.message === "Payment required") {
+                } else if (data.message === "Payment required" && data.video) {
                     // Show purchase modal for YouTube video
                     purchaseVideoId = data.video.id;
                     document.getElementById("purchasePrice").textContent = data.video.price.toFixed(2);
@@ -1269,7 +1306,7 @@
                 }
             } catch (error) {
                 console.error("Error checking video access:", error);
-                showNotification("Failed to check video access", "error");
+                showNotification("Failed to check video access. Please try again.", "error");
             } finally {
                 showLoading(false);
             }
@@ -1284,29 +1321,43 @@
                 let embedHtml;
                 if (youtubeId && youtubeId.startsWith('demo_')) {
                     embedHtml = `
-                        <div class="text-center p-4 bg-light rounded">
-                            <i class="fas fa-play-circle fa-5x text-primary mb-3"></i>
-                            <h5>Demo Video</h5>
-                            <p class="text-muted">This is a demonstration video. In production, this would be a real YouTube video.</p>
-                            <p class="small text-info">YouTube ID: ${youtubeId}</p>
+                        <div class="ratio ratio-16x9">
+                            <div class="d-flex align-items-center justify-content-center bg-dark text-white" style="border-radius: 12px;">
+                                <div class="text-center">
+                                    <i class="fas fa-play-circle fa-5x text-primary mb-3"></i>
+                                    <h5>Demo Video</h5>
+                                    <p class="text-muted">This is a demonstration video. In production, this would be a real YouTube video.</p>
+                                    <p class="small text-info">YouTube ID: ${youtubeId}</p>
+                                </div>
+                            </div>
                         </div>
                     `;
-                } else if (youtubeId) {
+                } else if (youtubeId && youtubeId.trim() !== '') {
+                    // Create proper YouTube embed URL with all necessary parameters
+                    const embedUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&controls=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+                    
                     embedHtml = `
                         <div class="ratio ratio-16x9">
-                            <iframe src="https://www.youtube.com/embed/${youtubeId}?autoplay=1" 
+                            <iframe src="${embedUrl}" 
                                     frameborder="0" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowfullscreen>
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                    allowfullscreen
+                                    title="${escapeHtml(title)}"
+                                    style="border-radius: 12px; width: 100%; height: 100%;">
                             </iframe>
                         </div>
                     `;
                 } else {
                     embedHtml = `
-                        <div class="text-center p-4 bg-light rounded">
-                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-                            <h5>Video Not Available</h5>
-                            <p class="text-muted">Unable to load video content.</p>
+                        <div class="ratio ratio-16x9">
+                            <div class="d-flex align-items-center justify-content-center bg-dark text-white" style="border-radius: 12px;">
+                                <div class="text-center">
+                                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                    <h5>Video Not Available</h5>
+                                    <p class="text-muted">Unable to load video content.</p>
+                                    <small class="text-info">YouTube ID: ${youtubeId || 'None'}</small>
+                                </div>
+                            </div>
                         </div>
                     `;
                 }
@@ -2952,12 +3003,283 @@
             }
         }
 
+        // Handle video click with proper access checking
+        function handleVideoClick(videoId, title, youtubeId, isYouTube) {
+            // Ensure user is authenticated
+            if (!currentUser) {
+                showNotification("Please log in to watch videos", "error");
+                window.location.href = "login.html";
+                return;
+            }
+
+            // Use unified video player for all users
+            playVideoPlayer(videoId, youtubeId || '', title, isYouTube);
+        }
+
+        // Unified video player function
+        async function playVideoPlayer(videoId, youtubeId, title, isYouTube) {
+            try {
+                showLoading(true);
+
+                // Ensure user is authenticated
+                if (!currentUser) {
+                    showNotification("Please log in to watch videos", "error");
+                    window.location.href = "login.html";
+                    return;
+                }
+
+                // For viewers, always check payment first
+                if (currentUser.role === 'viewer') {
+                    const requestBody = {};
+                    if (videoId) requestBody.video_id = videoId;
+                    if (youtubeId) requestBody.youtube_id = youtubeId;
+
+                    const accessResponse = await fetch('api/video_access.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (!accessResponse.ok) {
+                        throw new Error(`HTTP ${accessResponse.status}: ${accessResponse.statusText}`);
+                    }
+
+                    const accessData = await accessResponse.json();
+
+                    if (!accessData.success) {
+                        if (accessData.message === "Payment required" && accessData.video) {
+                            purchaseVideoId = accessData.video.id;
+                            document.getElementById("purchasePrice").textContent = parseFloat(accessData.video.price).toFixed(2);
+                            const modal = new bootstrap.Modal(document.getElementById("purchaseModal"));
+                            modal.show();
+                            return;
+                        } else {
+                            showNotification(accessData.message || "Access denied", "error");
+                            return;
+                        }
+                    }
+                }
+
+                // Set modal title
+                document.getElementById("videoModalTitle").textContent = title;
+
+                // Create the video player
+                const videoPlayerContainer = document.getElementById("videoPlayer");
+                if (!videoPlayerContainer) {
+                    showNotification('Video player container not found', 'error');
+                    return;
+                }
+
+                // Clear previous content
+                videoPlayerContainer.innerHTML = '';
+
+                // Determine how to play the video
+                if (isYouTube && youtubeId && youtubeId.trim() !== '' && !youtubeId.startsWith('demo_')) {
+                    // Real YouTube video with embedded player
+                    const embedUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&controls=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+                    
+                    videoPlayerContainer.innerHTML = `
+                        <div class="ratio ratio-16x9">
+                            <iframe src="${embedUrl}" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                    allowfullscreen
+                                    title="${escapeHtml(title)}"
+                                    style="border-radius: 12px; width: 100%; height: 100%;">
+                            </iframe>
+                        </div>
+                    `;
+                } else if (youtubeId && youtubeId.startsWith('demo_')) {
+                    // Demo video placeholder
+                    videoPlayerContainer.innerHTML = `
+                        <div class="ratio ratio-16x9">
+                            <div class="d-flex align-items-center justify-content-center bg-dark text-white h-100" style="border-radius: 12px;">
+                                <div class="text-center">
+                                    <i class="fas fa-play-circle fa-5x text-primary mb-3"></i>
+                                    <h5>Demo Video</h5>
+                                    <p class="text-muted">This is a demonstration video. In production, this would be a real YouTube video.</p>
+                                    <p class="small text-info">YouTube ID: ${youtubeId}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (videoId) {
+                    // Local video - get video details first
+                    try {
+                        const response = await fetch(`api/videos.php?id=${videoId}`, {
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+
+                        if (data.success && data.video) {
+                            const video = data.video;
+                            
+                            // Check if it's actually a YouTube video stored in database
+                            if (video.youtube_id && video.is_youtube_synced) {
+                                const embedUrl = `https://www.youtube.com/embed/${video.youtube_id}?autoplay=1&rel=0&modestbranding=1&controls=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+                                
+                                videoPlayerContainer.innerHTML = `
+                                    <div class="ratio ratio-16x9">
+                                        <iframe src="${embedUrl}" 
+                                                frameborder="0" 
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                                allowfullscreen
+                                                title="${escapeHtml(title)}"
+                                                style="border-radius: 12px; width: 100%; height: 100%;">
+                                        </iframe>
+                                    </div>
+                                `;
+                            } else if (video.file_path) {
+                                // Local file video
+                                videoPlayerContainer.innerHTML = `
+                                    <div class="ratio ratio-16x9">
+                                        <video controls autoplay class="w-100 h-100" style="border-radius: 12px; background: #000;">
+                                            <source src="${video.file_path}" type="video/mp4">
+                                            <source src="${video.file_path}" type="video/webm">
+                                            <source src="${video.file_path}" type="video/ogg">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
+                                `;
+                            } else {
+                                // No valid video source
+                                videoPlayerContainer.innerHTML = `
+                                    <div class="ratio ratio-16x9">
+                                        <div class="d-flex align-items-center justify-content-center h-100 text-white bg-dark" style="border-radius: 12px;">
+                                            <div class="text-center">
+                                                <i class="fas fa-exclamation-triangle fa-4x mb-3 text-warning"></i>
+                                                <h5>${escapeHtml(title)}</h5>
+                                                <p class="text-muted">Video source not available</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            throw new Error('Video not found');
+                        }
+                    } catch (error) {
+                        console.error('Failed to load video details:', error);
+                        videoPlayerContainer.innerHTML = `
+                            <div class="ratio ratio-16x9">
+                                <div class="d-flex align-items-center justify-content-center h-100 text-white bg-dark" style="border-radius: 12px;">
+                                    <div class="text-center">
+                                        <i class="fas fa-exclamation-triangle fa-4x mb-3 text-warning"></i>
+                                        <h5>Error Loading Video</h5>
+                                        <p class="text-muted">Unable to load video details</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // No valid video ID or YouTube ID
+                    videoPlayerContainer.innerHTML = `
+                        <div class="ratio ratio-16x9">
+                            <div class="d-flex align-items-center justify-content-center h-100 text-white bg-dark" style="border-radius: 12px;">
+                                <div class="text-center">
+                                    <i class="fas fa-exclamation-triangle fa-4x mb-3 text-warning"></i>
+                                    <h5>Video Not Available</h5>
+                                    <p class="text-muted">No valid video source found</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Increment view count if we have a video ID
+                if (videoId) {
+                    fetch('api/videos.php', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        credentials: 'include',
+                        body: `id=${videoId}&action=increment_views`
+                    }).catch(error => console.log('Failed to increment views:', error));
+                }
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById("videoModal"));
+                modal.show();
+
+            } catch (error) {
+                console.error('Failed to play video:', error);
+                showNotification('Failed to play video: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Handle thumbnail loading errors with multiple fallbacks
+        function handleThumbnailError(img, youtubeId) {
+            const currentSrc = img.src;
+            
+            // Try different YouTube thumbnail qualities if it's a YouTube video
+            if (youtubeId && currentSrc.includes('youtube.com')) {
+                if (currentSrc.includes('maxresdefault')) {
+                    img.src = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+                } else if (currentSrc.includes('hqdefault')) {
+                    img.src = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
+                } else if (currentSrc.includes('mqdefault')) {
+                    img.src = `https://img.youtube.com/vi/${youtubeId}/default.jpg`;
+                } else {
+                    // Final fallback to placeholder
+                    img.src = createPlaceholderThumbnail();
+                }
+            } else {
+                // For non-YouTube videos, go straight to placeholder
+                img.src = createPlaceholderThumbnail();
+            }
+        }
+
+        // Create a dynamic placeholder thumbnail
+        function createPlaceholderThumbnail() {
+            // Create a canvas-based placeholder instead of relying on external service
+            const canvas = document.createElement('canvas');
+            canvas.width = 320;
+            canvas.height = 180;
+            const ctx = canvas.getContext('2d');
+            
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 320, 180);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 320, 180);
+            
+            // Add play icon
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = '48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('▶', 160, 105);
+            
+            // Add text
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.font = '14px Arial';
+            ctx.fillText('Video Thumbnail', 160, 140);
+            
+            return canvas.toDataURL();
+        }
+
         // Watch video function for database videos
         async function watchVideo(videoId) {
             try {
                 showLoading(true);
 
-                // Check video access first
+                // Ensure user is authenticated
+                if (!currentUser) {
+                    showNotification("Please log in to watch videos", "error");
+                    window.location.href = "login.html";
+                    return;
+                }
+
+                // First check access permission via API
                 const accessResponse = await fetch('api/video_access.php', {
                     method: 'POST',
                     headers: {
@@ -2970,69 +3292,104 @@
                     })
                 });
 
+                if (!accessResponse.ok) {
+                    throw new Error(`HTTP ${accessResponse.status}: ${accessResponse.statusText}`);
+                }
+
                 const accessData = await accessResponse.json();
 
                 if (!accessData.success) {
-                    if (accessData.message === "Payment required") {
-                        // Show purchase modal
+                    if (accessData.message === "Payment required" && accessData.video) {
+                        // Show purchase modal for paid videos
                         purchaseVideoId = accessData.video.id;
-                        document.getElementById("purchasePrice").textContent = accessData.video.price.toFixed(2);
+                        document.getElementById("purchasePrice").textContent = parseFloat(accessData.video.price).toFixed(2);
                         const modal = new bootstrap.Modal(document.getElementById("purchaseModal"));
                         modal.show();
+                        return;
                     } else {
-                        showNotification(accessData.message || 'Access denied', 'error');
+                        showNotification(accessData.message || "Access denied", "error");
+                        return;
                     }
-                    return;
                 }
 
-                // If access granted, get video details
+                // If access is granted, get video details
                 const response = await fetch(`api/videos.php?id=${videoId}`, {
                     credentials: 'include'
                 });
 
                 const data = await response.json();
 
-                if (data.success && data.video) {
-                    const video = data.video;
+                if (!data.success || !data.video) {
+                    showNotification('Video not found', 'error');
+                    return;
+                }
 
-                    // Increment view count
-                    fetch('api/videos.php', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        credentials: 'include',
-                        body: `id=${videoId}&action=increment_views`
-                    }).catch(error => console.log('Failed to increment views:', error));
+                const video = data.video;
 
+                // Increment view count
+                fetch('api/videos.php', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    credentials: 'include',
+                    body: `id=${videoId}&action=increment_views`
+                }).catch(error => console.log('Failed to increment views:', error));
+
+                // Set modal title
+                document.getElementById("videoModalTitle").textContent = video.title;
+
+                // Play the video using embedded player
+                const videoPlayerContainer = document.getElementById("videoPlayer");
+                if (videoPlayerContainer) {
                     if (video.youtube_id && video.is_youtube_synced) {
-                        watchYouTubeVideo(video.youtube_id, video.title);
-                    } else {
-                        // For local videos, show demo content with proper modal structure
-                        document.getElementById("videoModalTitle").textContent = video.title;
+                        // For YouTube videos, create embedded player with proper URL
+                        const embedUrl = `https://www.youtube.com/embed/${video.youtube_id}?autoplay=1&rel=0&modestbranding=1&controls=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
                         
-                        const videoPlayerContainer = document.getElementById("videoPlayer");
-                        if (videoPlayerContainer) {
-                            videoPlayerContainer.innerHTML = `
-                                <div class="text-center p-4 bg-light rounded">
-                                    <i class="fas fa-play-circle fa-5x text-primary mb-3"></i>
-                                    <h5>${escapeHtml(video.title)}</h5>
-                                    <p class="text-muted mb-3">${escapeHtml(video.description || 'Demo video content would play here.')}</p>
-                                    <div class="d-flex justify-content-center gap-3">
-                                        <span class="badge bg-primary">Category: ${video.category}</span>
-                                        <span class="badge bg-info">Views: ${video.views}</span>
-                                        ${video.price > 0 ? `<span class="badge bg-warning">Price: $${video.price}</span>` : '<span class="badge bg-success">Free</span>'}
+                        videoPlayerContainer.innerHTML = `
+                            <div class="ratio ratio-16x9">
+                                <iframe src="${embedUrl}" 
+                                        frameborder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                        allowfullscreen
+                                        title="${escapeHtml(video.title)}"
+                                        style="border-radius: 12px; width: 100%; height: 100%;">
+                                </iframe>
+                            </div>
+                        `;
+                    } else if (video.file_path) {
+                        // For local videos, show video player with local file support
+                        videoPlayerContainer.innerHTML = `
+                            <div class="ratio ratio-16x9">
+                                <video controls autoplay class="w-100 h-100" style="border-radius: 12px; background: #000;">
+                                    <source src="${video.file_path}" type="video/mp4">
+                                    <source src="${video.file_path}" type="video/webm">
+                                    <source src="${video.file_path}" type="video/ogg">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        `;
+                    } else {
+                        // Fallback for videos without valid sources
+                        videoPlayerContainer.innerHTML = `
+                            <div class="ratio ratio-16x9">
+                                <div class="d-flex align-items-center justify-content-center h-100 text-white bg-dark" style="border-radius: 12px;">
+                                    <div class="text-center">
+                                        <i class="fas fa-exclamation-triangle fa-4x mb-3 text-warning"></i>
+                                        <h5>${escapeHtml(video.title)}</h5>
+                                        <p class="text-muted">Video source not available</p>
+                                        <small class="text-info">Please contact the video uploader</small>
                                     </div>
                                 </div>
-                            `;
-                        }
-
-                        const modal = new bootstrap.Modal(document.getElementById("videoModal"));
-                        modal.show();
+                            </div>
+                        `;
                     }
-                } else {
-                    showNotification('Video not found or access denied', 'error');
                 }
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById("videoModal"));
+                modal.show();
+
             } catch (error) {
                 console.error('Failed to load video:', error);
                 showNotification('Failed to load video: ' + error.message, 'error');

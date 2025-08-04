@@ -59,7 +59,7 @@ function handleGetVideos() {
             WHERE v.id = ?
         ";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("si", $user_id, $video_id);
+        $stmt->bind_param("ii", $user_id, $video_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -109,7 +109,7 @@ function handleGetVideos() {
     ";
 
     $params = [$user_id];
-    $types = "s";
+    $types = "i";
 
     // Apply filters
     switch ($filter) {
@@ -130,7 +130,7 @@ function handleGetVideos() {
                 // Editors/admins see their uploaded videos
                 $sql .= " WHERE v.uploader_id = ?";
                 $params[] = $user_id;
-                $types .= "s";
+                $types .= "i";
             }
             break;
     }
@@ -354,7 +354,11 @@ function handleUpdateVideo() {
     }
 
     $video = $result->fetch_assoc();
-    if ($video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
+    
+    // Allow view increment for all authenticated users, other actions require ownership/admin
+    $is_view_increment = isset($input['action']) && $input['action'] === 'increment_views';
+    
+    if (!$is_view_increment && $video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Not authorized to edit this video']);
         $conn->close();
@@ -363,6 +367,7 @@ function handleUpdateVideo() {
 
     // Handle different update actions
     if (isset($input['action']) && $input['action'] === 'increment_views') {
+        // Allow any authenticated user to increment view count
         $update_views = $conn->prepare("UPDATE videos SET views = views + 1 WHERE id = ?");
         $update_views->bind_param("i", $video_id);
         $update_views->execute();

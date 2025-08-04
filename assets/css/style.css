@@ -459,101 +459,152 @@ p {
     z-index: 2;
 }
 
-/* Video Cards - Premium Design */
+/* Video Cards - Clean Design */
 .video-card {
     overflow: hidden;
-    transition: all var(--transition-slow);
-    border-radius: var(--radius-3xl);
-    background: var(--gradient-card);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     position: relative;
-}
-
-.video-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-    transform: translateX(-100%);
-    transition: transform 0.8s ease;
-    pointer-events: none;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .video-card:hover {
-    box-shadow: var(--shadow-2xl);
-    transform: translateY(-12px) scale(1.03);
-    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-4px);
 }
 
-.video-card:hover::after {
-    transform: translateX(100%);
+/* Clean thumbnail styling */
+.video-thumbnail {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px 16px 0 0;
+}
+
+.video-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.thumbnail-loading {
+    display: none;
+}
+
+/* Simple play button overlay */
+.play-button-overlay {
+    opacity: 0.95;
+}
+
+.play-button-overlay .bg-dark {
+    background: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Enhanced badges */
+.video-card .badge {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Price info styling */
+.price-info {
+    border: 2px solid rgba(var(--primary-600), 0.1);
+    transition: all 0.3s ease;
+}
+
+.video-card:hover .price-info {
+    border-color: rgba(var(--primary-600), 0.3);
+    background: rgba(var(--primary-600), 0.05) !important;
+}
+
+/* Video duration badge */
+.video-duration-badge {
+    backdrop-filter: blur(10px);
+}
+
+/* Responsive video grid */
+@media (max-width: 1200px) {
+    .video-card {
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .video-card {
+        margin-bottom: 1rem;
+    }
+    
+    .video-thumbnail {
+        height: 180px !important;
+    }
+    
+    .card-body {
+        padding: 1rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .video-thumbnail {
+        height: 160px !important;
+    }
+}
+
+/* Video player demo styles */
+.video-player-demo .play-animation {
+    animation: pulse 2s infinite;
+}
+
+.video-player-demo .progress-bar {
+    animation: progress-fill 3s ease-in-out infinite;
+}
+
+@keyframes progress-fill {
+    0%, 100% { width: 0%; }
+    50% { width: 100%; }
 }
 
 .video-thumbnail {
-    background: linear-gradient(145deg, var(--gray-100), var(--primary-100));
-    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    background: #f3f4f6;
+    border-radius: 16px 16px 0 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--gray-500);
-    transition: all var(--transition-slow);
+    color: #6b7280;
     position: relative;
     overflow: hidden;
-    height: 220px;
-}
-
-.video-thumbnail::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--gradient-primary);
-    opacity: 0;
-    transition: all var(--transition-slow);
-}
-
-.video-card:hover .video-thumbnail::before {
-    opacity: 0.9;
-}
-
-.video-card:hover .video-thumbnail {
-    color: white;
+    height: 200px;
 }
 
 .video-thumbnail i {
-    font-size: 3.5rem;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+    font-size: 3rem;
     position: relative;
     z-index: 1;
-    transition: all var(--transition-base);
-}
-
-.video-card:hover .video-thumbnail i {
-    transform: scale(1.2) rotate(5deg);
 }
 
 .video-title {
-    font-family: var(--font-family-display);
-    font-weight: var(--font-bold);
-    font-size: 1.375rem;
-    color: var(--gray-900);
-    margin-bottom: var(--space-3);
-    line-height: 1.3;
-    letter-spacing: -0.025em;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .video-description {
-    color: var(--gray-600);
-    font-size: 0.95rem;
-    line-height: 1.7;
-    margin-bottom: var(--space-5);
+    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -843,6 +894,50 @@ p {
 
 .modal-body {
     padding: var(--space-7);
+}
+
+/* Video Modal Specific Styles */
+.modal-lg .modal-body {
+    padding: 0;
+}
+
+.modal-lg .modal-header {
+    padding: var(--space-4) var(--space-6);
+}
+
+#videoPlayer {
+    min-height: 315px;
+    background: #000;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+}
+
+#videoPlayer iframe {
+    border-radius: var(--radius-xl);
+}
+
+.video-player-demo {
+    padding: var(--space-6);
+}
+
+.video-player-demo .ratio {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+/* Loading states for video modal */
+.modal.fade.show .modal-dialog {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
 }
 
 /* Enhanced Toast */
