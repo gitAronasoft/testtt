@@ -1,12 +1,11 @@
 <?php
-require_once 'config.php';
-
 session_start();
+require_once 'config.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Allow-Credentials: true');
 
 // Handle preflight requests
@@ -15,34 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Check authentication - handle both session and cookie-based auth
-$user = null;
-
-// Check session first
-if (isset($_SESSION['user'])) {
-    $user = $_SESSION['user'];
-} else {
-    // Fallback: check if user_id cookie exists and validate it
-    if (isset($_COOKIE['user_id'])) {
-        $conn = getConnection();
-        $user_id = $_COOKIE['user_id'];
-        
-        $get_user = $conn->prepare("SELECT id, name, email, role FROM users WHERE id = ?");
-        $get_user->bind_param("s", $user_id);
-        $get_user->execute();
-        $result = $get_user->get_result();
-        
-        if ($result->num_rows > 0) {
-            $user_data = $result->fetch_assoc();
-            $user = $user_data;
-            // Restore session
-            $_SESSION['user'] = $user;
-        }
-        $conn->close();
-    }
-}
-
-if (!$user) {
+// Check authentication
+if (!isset($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Authentication required']);
     exit();
@@ -54,89 +27,160 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// Get input data
 $input = json_decode(file_get_contents('php://input'), true);
-$video_id = $input['video_id'] ?? null;
 $youtube_id = $input['youtube_id'] ?? null;
 
-// Support both video_id and youtube_id for backward compatibility
-if (!$video_id && !$youtube_id) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Video ID is required'
-    ]);
+if (!$youtube_id) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'YouTube ID required']);
     exit();
 }
 
 $conn = getConnection();
-$user_id = $user['id'];
-$user_role = $user['role'];
+$user_id = $_SESSION['user']['id'];
 
-// Get video details - support both regular video ID and YouTube ID
-if ($youtube_id) {
-    $get_video = $conn->prepare("SELECT * FROM videos WHERE youtube_id = ?");
-    $get_video->bind_param("s", $youtube_id);
-} else {
-    $get_video = $conn->prepare("SELECT * FROM videos WHERE id = ?");
-    $get_video->bind_param("i", $video_id);
-}
-
-$get_video->execute();
-$video_result = $get_video->get_result();
+// Check if video exists and get its details
+$video_stmt = $conn->prepare("SELECT * FROM videos WHERE youtube_id = ?");
+$video_stmt->bind_param("s", $youtube_id);
+$video_stmt->execute();
+$video_result = $video_stmt->get_result();
 
 if ($video_result->num_rows === 0) {
     echo json_encode(['success' => false, 'message' => 'Video not found']);
-    $conn->close();
     exit();
 }
 
 $video = $video_result->fetch_assoc();
 
-// Check access permissions
-$has_access = false;
+// Check if video is free
+if ($video['price'] == 0) {
+    echo json_encode(['success' => true, 'message' => 'Free video access granted']);
+    exit();
+}
 
-// Admin users have access to all videos
-if ($user_role === 'admin') {
-    $has_access = true;
+// Check if user is the uploader
+if ($video['uploader_id'] == $user_id) {
+    echo json_encode(['success' => true, 'message' => 'Owner access granted']);
+    exit();
 }
-// Free videos are accessible to all authenticated users
-else if ($video['price'] == 0) {
-    $has_access = true;
+
+// Check if user is admin
+if ($_SESSION['user']['role'] === 'admin') {
+    echo json_encode(['success' => true, 'message' => 'Admin access granted']);
+    exit();
 }
+
 // Check if user has purchased the video
-else {
-    $check_purchase = $conn->prepare("SELECT id FROM purchases WHERE user_id = ? AND video_id = ?");
-    $check_purchase->bind_param("ii", $user_id, $video['id']);
-    $check_purchase->execute();
-    $purchase_result = $check_purchase->get_result();
+$purchase_stmt = $conn->prepare("SELECT * FROM purchases WHERE user_id = ? AND video_id = ?");
+$purchase_stmt->bind_param("ii", $user_id, $video['id']);
+$purchase_stmt->execute();
+$purchase_result = $purchase_stmt->get_result();
 
-    if ($purchase_result->num_rows > 0) {
-        $has_access = true;
-    }
+if ($purchase_result->num_rows > 0) {
+    echo json_encode(['success' => true, 'message' => 'Purchased video access granted']);
+    exit();
 }
 
-if ($has_access) {
-    echo json_encode([
-        'success' => true,
-        'video' => [
-            'id' => $video['id'],
-            'title' => $video['title'],
-            'file_path' => $video['file_path'],
-            'youtube_id' => $video['youtube_id']
-        ]
-    ]);
-} else {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Payment required',
-        'video' => [
-            'id' => $video['id'],
-            'title' => $video['title'],
-            'price' => (float)$video['price'],
-            'youtube_id' => $video['youtube_id']
-        ]
-    ]);
-}
+// Payment required
+echo json_encode([
+    'success' => false, 
+    'message' => 'Payment required',
+    'video' => [
+        'id' => $video['id'],
+        'title' => $video['title'],
+        'price' => (float)$video['price']
+    ]
+]);
 
 $conn->close();
+?>
+<?php
+session_start();
+require_once 'config.php';
+
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Allow-Credentials: true');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Check authentication
+if (!isset($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Authentication required']);
+    exit();
+}
+
+$user_id = $_SESSION['user']['id'];
+$input = json_decode(file_get_contents('php://input'), true);
+
+if (!isset($input['youtube_id'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'YouTube ID required']);
+    exit();
+}
+
+$youtube_id = $input['youtube_id'];
+$conn = getConnection();
+
+try {
+    // Get video information
+    $video_sql = "SELECT id, title, price, uploader_id FROM videos WHERE youtube_id = ?";
+    $video_stmt = $conn->prepare($video_sql);
+    $video_stmt->bind_param("s", $youtube_id);
+    $video_stmt->execute();
+    $video_result = $video_stmt->get_result();
+
+    if ($video_result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Video not found']);
+        exit();
+    }
+
+    $video = $video_result->fetch_assoc();
+
+    // Check if user is the uploader
+    if ($video['uploader_id'] === $user_id) {
+        echo json_encode(['success' => true, 'message' => 'Access granted - owner']);
+        exit();
+    }
+
+    // Check if video is free
+    if (floatval($video['price']) === 0.0) {
+        echo json_encode(['success' => true, 'message' => 'Access granted - free video']);
+        exit();
+    }
+
+    // Check if user has purchased the video
+    $purchase_sql = "SELECT id FROM purchases WHERE user_id = ? AND video_id = ?";
+    $purchase_stmt = $conn->prepare($purchase_sql);
+    $purchase_stmt->bind_param("ss", $user_id, $video['id']);
+    $purchase_stmt->execute();
+    $purchase_result = $purchase_stmt->get_result();
+
+    if ($purchase_result->num_rows > 0) {
+        echo json_encode(['success' => true, 'message' => 'Access granted - purchased']);
+    } else {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Payment required',
+            'video' => [
+                'id' => $video['id'],
+                'title' => $video['title'],
+                'price' => floatval($video['price'])
+            ]
+        ]);
+    }
+
+} catch (Exception $e) {
+    error_log("Video access error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Database error']);
+} finally {
+    $conn->close();
+}
 ?>

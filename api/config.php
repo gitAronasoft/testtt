@@ -30,8 +30,69 @@ function getConnection() {
             die("MySQL Connection failed: " . $conn->connect_error);
         }
 
+        // Ensure required tables exist
+        createRequiredTables($conn);
+
         $conn->set_charset("utf8");
         return $conn;
+    }
+}
+
+function createRequiredTables($conn) {
+    $tables = [
+        "CREATE TABLE IF NOT EXISTS users (
+            id VARCHAR(50) PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            role ENUM('admin', 'editor', 'viewer') DEFAULT 'viewer',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )",
+
+        "CREATE TABLE IF NOT EXISTS videos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            description TEXT,
+            file_path VARCHAR(500),
+            price DECIMAL(10,2) DEFAULT 0.00,
+            uploader_id VARCHAR(50) NOT NULL,
+            views INT DEFAULT 0,
+            category VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            youtube_id VARCHAR(50) UNIQUE,
+            youtube_thumbnail VARCHAR(500),
+            youtube_channel_id VARCHAR(50),
+            youtube_channel_title VARCHAR(255),
+            youtube_views INT DEFAULT 0,
+            youtube_likes INT DEFAULT 0,
+            youtube_comments INT DEFAULT 0,
+            is_youtube_synced BOOLEAN DEFAULT FALSE
+        )",
+
+        "CREATE TABLE IF NOT EXISTS purchases (
+            id VARCHAR(50) PRIMARY KEY,
+            user_id VARCHAR(50) NOT NULL,
+            video_id INT NOT NULL,
+            amount DECIMAL(10,2) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+        )",
+
+        "CREATE TABLE IF NOT EXISTS youtube_tokens (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(50) NOT NULL,
+            access_token TEXT NOT NULL,
+            refresh_token TEXT,
+            expires_at DATETIME NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_user_token (user_id)
+        )"
+    ];
+
+    foreach ($tables as $sql) {
+        $conn->query($sql);
     }
 }
 
@@ -154,6 +215,7 @@ function initializeMySQL() {
         video_id INT NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
     )";
 

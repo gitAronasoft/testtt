@@ -1,4 +1,3 @@
-
 /**
  * YouTube Data API v3 Client for VideoHub
  * Handles authentication, token management, video upload, and metadata sync
@@ -206,7 +205,7 @@ class YouTubeAPIClient {
      */
     async uploadVideo(videoFile, metadata, progressCallback = null) {
         try {
-            console.log('Starting video upload to YouTube...');
+            console.log('video uploadingg')
             await this.ensureValidToken();
 
             if (!videoFile || !videoFile.type.startsWith('video/')) {
@@ -214,7 +213,7 @@ class YouTubeAPIClient {
             }
 
             if (progressCallback) progressCallback(10);
-
+console.log('10')
             // Prepare metadata for upload
             const uploadMetadata = {
                 snippet: {
@@ -231,7 +230,7 @@ class YouTubeAPIClient {
             };
 
             if (progressCallback) progressCallback(20);
-
+console.log('20')
             // Create multipart request body
             const boundary = "-------314159265358979323846";
             const delimiter = `\r\n--${boundary}\r\n`;
@@ -247,7 +246,7 @@ class YouTubeAPIClient {
             });
 
             if (progressCallback) progressCallback(75);
-
+console.log('75')
             // Build multipart request body
             const multipartRequestBody =
                 delimiter +

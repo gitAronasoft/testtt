@@ -100,52 +100,34 @@ function preventUnwantedNavigation() {
 
 async function checkAuth() {
     try {
-        // First check localStorage for user data
-        const storedUser = localStorage.getItem("currentUser");
-
-        if (storedUser) {
-            currentUser = JSON.parse(storedUser);
-            setupUserRole();
-            setupDashboard();
-            loadOverviewStats();
-            return;
-        }
-
-        // If no localStorage data, try API as fallback
+        // Always try API first for authentication
         const response = await fetch("api/auth.php", {
-            method: "POST",
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
             },
-            credentials: "include",
-            body: JSON.stringify({ action: "get_user" }),
+            credentials: "include"
         });
 
         const data = await response.json();
 
         if (data.success) {
             currentUser = data.user;
-            // Also store in localStorage for consistency
+            // Store in localStorage for quick access
             localStorage.setItem("currentUser", JSON.stringify(data.user));
             setupUserRole();
             setupDashboard();
             loadOverviewStats();
         } else {
-            // Redirect to login if no user data
+            // Clear any stale localStorage data
+            localStorage.removeItem("currentUser");
             window.location.href = "login.html";
         }
     } catch (error) {
         console.error("Auth check failed:", error);
-        // Check localStorage one more time before redirecting
-        const storedUser = localStorage.getItem("currentUser");
-        if (storedUser) {
-            currentUser = JSON.parse(storedUser);
-            setupUserRole();
-            setupDashboard();
-            loadOverviewStats();
-        } else {
-            window.location.href = "login.html";
-        }
+        // Clear localStorage and redirect to login
+        localStorage.removeItem("currentUser");
+        window.location.href = "login.html";
     }
 }
 
@@ -293,23 +275,13 @@ async function showPanel(panelName) {
                 currentUser.role === "admin" ||
                 currentUser.role === "creator"
             ) {
-                // Initialize YouTube API first, then load videos
-                if (window.youtubeAPI) {
-                    if (!window.youtubeAPI.isInitialized) {
-                        await window.youtubeAPI.initialize();
-                    }
-                    if (window.youtubeAPI.isSignedIn()) {
-                        loadMyVideosFromYouTube();
-                    } else {
-                        renderMyVideosFromYouTube([]);
-                    }
-                } else {
-                    renderMyVideosFromYouTube([]);
-                }
+                // Load videos from database only
+                loadMyVideosFromDatabase();
             }
             break;
         case "upload":
-            // Panel is shown, no additional loading needed
+            // Check YouTube connection status
+            updateYouTubeConnectionStatus();
             break;
         case "purchases":
             loadPurchases();
@@ -449,73 +421,58 @@ async function loadVideosFromYouTube() {
     }
 }
 
-// New function to load user's videos from YouTube
-async function loadMyVideosFromYouTube() {
-    // Prevent multiple simultaneous calls
-    if (window.loadingMyYouTubeVideos) {
+// Load user's videos from database only
+async function loadMyVideosFromDatabase() {
+    if (window.loadingMyVideos) {
         return;
     }
 
-    window.loadingMyYouTubeVideos = true;
+    window.loadingMyVideos = true;
     showLoading(true);
 
     try {
-        // Check if YouTube API client is available
-        if (!window.youtubeAPI) {
-            console.warn("YouTube API client not available");
-            renderMyVideosFromYouTube([]);
-            return;
-        }
+        const response = await fetch('api/videos.php?filter=my_videos', {
+            method: 'GET',
+            credentials: 'include'
+        });
 
-        // Initialize if not already done
-        if (!window.youtubeAPI.isInitialized) {
-            await window.youtubeAPI.initialize();
-        }
+        const data = await response.json();
 
-        // Check if YouTube is connected
-        if (!window.youtubeAPI.isSignedIn()) {
-            console.warn("YouTube not connected for My Videos");
-            renderMyVideosFromYouTube([]);
-            return;
-        }
-
-        // Get videos from YouTube (single API call)
-        const result = await window.youtubeAPI.getMyVideos(50);
-
-        if (result.videos && result.videos.length > 0) {
-            // Get detailed video statistics in one call
-            const videoIds = result.videos.map((v) => v.youtube_id);
-            const detailedVideos =
-                await window.youtubeAPI.getVideoDetails(videoIds);
-
-            // Ensure all required properties exist with default values
-            const safeVideos = detailedVideos.map((video) => ({
-                ...video,
+        if (data.success) {
+            const myVideos = data.videos.map((video) => ({
+                id: video.id,
                 title: video.title || "Untitled",
                 description: video.description || "",
-                thumbnail: video.thumbnail || "",
-                view_count: video.view_count || video.views || 0,
-                like_count: video.like_count || video.likes || 0,
-                comment_count: video.comment_count || video.comments || 0,
-                published_at: video.published_at || new Date().toISOString(),
-                youtube_id: video.youtube_id || video.id,
+                price: parseFloat(video.price) || 0,
+                uploader: video.uploader || currentUser.name,
+                uploader_id: video.uploader_id || currentUser.id,
+                views: video.views || 0,
+                file_path: video.file_path,
+                category: video.category || "other",
+                created_at: video.created_at,
+                youtube_id: video.youtube_id,
+                youtube_thumbnail: video.youtube_thumbnail || '/api/placeholder/300/200',
+                is_youtube_synced: video.is_youtube_synced || false
             }));
 
-            renderMyVideosFromYouTube(safeVideos);
+            renderMyVideosFromDatabase(myVideos);
         } else {
-            renderMyVideosFromYouTube([]);
+            console.error("Failed to load my videos:", data.message);
+            renderMyVideosFromDatabase([]);
         }
     } catch (error) {
-        console.error("Failed to load my videos from YouTube:", error);
-        showNotification(
-            "Failed to load YouTube videos: " + error.message,
-            "error",
-        );
-        renderMyVideosFromYouTube([]);
+        console.error("Failed to load my videos:", error);
+        showNotification("Unable to load your videos. Please try again.", "error");
+        renderMyVideosFromDatabase([]);
     } finally {
         showLoading(false);
-        window.loadingMyYouTubeVideos = false;
+        window.loadingMyVideos = false;
     }
+}
+
+// Keep the YouTube function for backwards compatibility but make it call database version
+async function loadMyVideosFromYouTube() {
+    await loadMyVideosFromDatabase();
 }
 
 function renderVideos(videos) {
@@ -584,9 +541,7 @@ function createVideoElement(video) {
                 <div class="mb-3">
                     <h6 class="text-primary">Price: $${price.toFixed(2)}</h6>
                 </div>
-                <button class="btn btn-primary w-100" onclick="checkPaymentAndWatch('${video.youtube_id}', '${escapeHtml(video.title)}')">
-                    <i class="fas fa-play me-2"></i>Watch / Pay
-                </button>
+                ${renderVideoActions(video)}
             </div>
         </div>
     `;
@@ -594,15 +549,18 @@ function createVideoElement(video) {
     return col;
 }
 
-function renderMyVideosFromYouTube(videos) {
+function renderMyVideosFromDatabase(videos) {
     const container = document.getElementById("myVideosContainer");
 
     if (videos.length === 0) {
         container.innerHTML = `
             <div class="col-12">
                 <div class="alert alert-info">
-                    <h5><i class="fab fa-youtube me-2"></i>No YouTube videos found</h5>
-                    <p>Upload videos to your YouTube channel to see them here, or use the upload form to add videos directly to this platform.</p>
+                    <h5><i class="fas fa-video me-2"></i>No videos uploaded yet</h5>
+                    <p>Start by uploading your first video using the upload form.</p>
+                    <button class="btn btn-primary" onclick="showPanel('upload')">
+                        <i class="fas fa-upload me-2"></i>Upload Video
+                    </button>
                 </div>
             </div>`;
         return;
@@ -614,9 +572,13 @@ function renderMyVideosFromYouTube(videos) {
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card video-card h-100">
                 <div class="video-thumbnail position-relative bg-light" style="height: 200px;">
-                    <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" class="img-fluid w-100 h-100" style="object-fit: cover;">
+                    <img src="${video.youtube_thumbnail}" alt="${escapeHtml(video.title)}" 
+                         class="img-fluid w-100 h-100" style="object-fit: cover;"
+                         onerror="this.src='/api/placeholder/300/200';">
                     <div class="position-absolute top-0 start-0 m-2">
-                        <span class="badge bg-danger"><i class="fab fa-youtube me-1"></i>YouTube</span>
+                        <span class="badge ${video.price > 0 ? 'bg-warning' : 'bg-success'}">
+                            ${video.price > 0 ? '$' + video.price.toFixed(2) : 'FREE'}
+                        </span>
                     </div>
                     <div class="position-absolute top-50 start-50 translate-middle">
                         <i class="fas fa-play-circle fa-3x text-white opacity-75"></i>
@@ -624,24 +586,26 @@ function renderMyVideosFromYouTube(videos) {
                 </div>
                 <div class="card-body">
                     <h5 class="video-title">${escapeHtml(video.title)}</h5>
-                    <p class="video-description text-muted">${escapeHtml(video.description.substring(0, 100))}${video.description.length > 100 ? "..." : ""}</p>
+                    <p class="video-description text-muted">${escapeHtml((video.description || '').substring(0, 100))}${(video.description || '').length > 100 ? "..." : ""}</p>
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <small class="text-muted">${formatNumber(video.view_count)} views</small>
-                        <small class="text-muted">${formatNumber(video.like_count)} likes</small>
+                        <small class="text-muted">${video.views || 0} views</small>
+                        <small class="text-muted">${video.category || 'Other'}</small>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <small class="text-muted">Published: ${formatTimeAgo(video.published_at)}</small>
-                        <small class="text-muted">${formatNumber(video.comment_count)} comments</small>
+                        <small class="text-muted">Uploaded: ${formatTimeAgo(video.created_at)}</small>
+                        <span class="badge ${video.is_youtube_synced ? 'bg-success' : 'bg-secondary'}">
+                            ${video.is_youtube_synced ? 'Synced' : 'Local'}
+                        </span>
                     </div>
                     <div class="btn-group w-100" role="group">
-                        <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
-                            <i class="fab fa-youtube"></i>
-                        </a>
-                        <button class="btn btn-outline-success" onclick="watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
-                            <i class="fas fa-play"></i>
+                        <button class="btn btn-primary" onclick="editVideoPrice(${video.id}, ${video.price})">
+                            <i class="fas fa-edit"></i> Price
                         </button>
-                        <button class="btn btn-outline-info" onclick="syncVideoToDatabase('${video.youtube_id}')">
-                            <i class="fas fa-sync"></i>
+                        <button class="btn btn-success" onclick="previewVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                            <i class="fas fa-play"></i> Preview
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteMyVideo(${video.id})">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
@@ -650,6 +614,11 @@ function renderMyVideosFromYouTube(videos) {
     `,
         )
         .join("");
+}
+
+// Keep YouTube rendering for backwards compatibility
+function renderMyVideosFromYouTube(videos) {
+    renderMyVideosFromDatabase(videos);
 }
 
 function renderMyVideos(videos) {
@@ -702,52 +671,62 @@ function renderMyVideos(videos) {
 
 function renderVideoActions(video) {
     const isYouTubeVideo = video.youtube_id && video.is_youtube_synced;
+    const userRole = currentUser?.role;
 
-    // For viewers, always require payment check for YouTube videos
-    if (isYouTubeVideo && currentUser?.role === "viewer") {
-        return `
-            <div class="btn-group w-100" role="group">
-                <button class="btn btn-primary" onclick="checkPaymentAndWatch('${video.youtube_id}', '${escapeHtml(video.title)}')">
-                    <i class="fas fa-play me-2"></i>Watch
-                </button>
-                <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
-                    <i class="fab fa-youtube"></i>
-                </a>
-            </div>`;
+    // For creators and admins, always allow direct access without payment
+    if (userRole === 'creator' || userRole === 'admin' || userRole === 'editor') {
+        if (isYouTubeVideo) {
+            return `
+                <div class="btn-group w-100" role="group">
+                    <button class="btn btn-success" onclick="watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                        <i class="fas fa-play me-2"></i>Watch
+                    </button>
+                    <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                </div>`;
+        } else {
+            return `<button class="btn btn-success w-100" onclick="watchVideo(${video.id})">
+                        <i class="fas fa-play me-2"></i>Watch Now
+                    </button>`;
+        }
     }
 
-    // For non-viewers (admins, creators), allow direct access to YouTube videos
-    if (isYouTubeVideo) {
-        return `
-            <div class="btn-group w-100" role="group">
-                <button class="btn btn-success" onclick="watchYouTubeVideo('${video.youtube_id}', '${escapeHtml(video.title)}')">
-                    <i class="fas fa-play me-2"></i>Watch
-                </button>
-                <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
-                    <i class="fab fa-youtube"></i>
-                </a>
-            </div>`;
+    // For viewers only - show payment logic
+    if (userRole === "viewer") {
+        if (isYouTubeVideo) {
+            return `
+                <div class="btn-group w-100" role="group">
+                    <button class="btn btn-primary" onclick="checkPaymentAndWatch('${video.youtube_id}', '${escapeHtml(video.title)}')">
+                        <i class="fas fa-play me-2"></i>Watch
+                    </button>
+                    <a href="${window.youtubeAPI.generateVideoURL(video.youtube_id)}" target="_blank" class="btn btn-outline-danger">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                </div>`;
+        }
+
+        const canWatch = video.price === 0 || video.purchased;
+
+        if (canWatch) {
+            return `<button class="btn btn-success w-100" onclick="watchVideo(${video.id})">
+                        <i class="fas fa-play me-2"></i>Watch Now
+                    </button>`;
+        } else {
+            return `${currentUser.role === 'viewer' ? `
+                    <button class="btn btn-success w-100" onclick="purchaseVideo(${video.id}, ${video.price})">
+                        <i class="fas fa-dollar-sign me-2"></i>Purchase ($${video.price})
+                    </button>` : `
+                    <button class="btn btn-info w-100" onclick="watchVideo(${video.id})">
+                        <i class="fas fa-play me-2"></i>View Video
+                    </button>`}`;
+        }
     }
 
-    const canWatch =
-        video.price === 0 || video.purchased || currentUser?.role === "admin";
-
-    if (canWatch) {
-        return `<button class="btn btn-success w-100" 
-                        data-video-id="${video.id}" 
-                        data-action="watch"
-                        onclick="watchVideo(${video.id})">
-                    <i class="fas fa-play me-2"></i>Watch Now
-                </button>`;
-    } else {
-        return `<button class="btn btn-primary w-100" 
-                        data-video-id="${video.id}" 
-                        data-action="purchase"
-                        data-price="${video.price}"
-                        onclick="purchaseVideo(${video.id}, ${video.price})">
-                    <i class="fas fa-shopping-cart me-2"></i>Purchase for $${video.price.toFixed(2)}
-                </button>`;
-    }
+    // Default fallback
+    return `<button class="btn btn-success w-100" onclick="watchVideo(${video.id})">
+                <i class="fas fa-play me-2"></i>Watch Now
+            </button>`;
 }
 
 // Function to check payment before watching YouTube videos
@@ -801,10 +780,21 @@ async function checkPaymentAndWatch(youtubeId, title) {
 function watchYouTubeVideo(youtubeId, title) {
     document.getElementById("videoModalTitle").textContent = title;
 
-    // Create YouTube embed iframe
-    const embedHtml = window.youtubeAPI.generateEmbedHTML(youtubeId, 560, 315);
-    document.getElementById("videoPlayer").outerHTML =
-        `<div id="videoPlayer">${embedHtml}</div>`;
+    // Handle demo videos or real YouTube IDs
+    let embedHtml;
+    if (youtubeId && youtubeId.startsWith('demo_')) {
+        embedHtml = `
+            <div class="text-center p-4 bg-light">
+                <i class="fas fa-play-circle fa-5x text-primary mb-3"></i>
+                <h5>Demo Video</h5>
+                <p class="text-muted">This is a demonstration video. In production, this would be a real YouTube video.</p>
+            </div>
+        `;
+    } else {
+        embedHtml = `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${youtubeId}" frameborder="0" allowfullscreen></iframe>`;
+    }
+
+    document.getElementById("videoPlayer").outerHTML = `<div id="videoPlayer">${embedHtml}</div>`;
 
     const modal = new bootstrap.Modal(document.getElementById("videoModal"));
     modal.show();
@@ -921,12 +911,13 @@ const debouncedFilterVideos = debounce(async function (filter) {
                     "error",
                 );
                 renderVideos([]);
-            
+
             }
         }
     } catch (error) {
         console.error("Failed to filter videos:", error);
         showNotification("Failed to filter videos", "error");
+
     } finally {
         showLoading(false);
         this.isFiltering = false;
@@ -1703,8 +1694,13 @@ async function handleVideoUpload(event) {
     const file = form.videoFile.files[0];
 
     // Validate
-    if (!title || !description || !file) {
-        showNotification("❌ Please fill in all required fields", "error");
+    if (!title || !description) {
+        showNotification("❌ Please fill in title and description", "error");
+        return;
+    }
+
+    if (!file) {
+        showNotification("❌ Please select a video file", "error");
         return;
     }
 
@@ -1724,7 +1720,6 @@ async function handleVideoUpload(event) {
         "video/mov",
         "video/mkv",
         "video/flv",
-        "video/mkv",
     ];
     if (!allowedTypes.includes(file.type)) {
         showNotification("❌ Please select a valid video file", "error");
@@ -1744,46 +1739,40 @@ async function handleVideoUpload(event) {
         return;
     }
 
-    // Show loader
+    // Show progress
+    const progressContainer = document.getElementById('uploadProgress');
+    const progressBar = progressContainer?.querySelector('.progress-bar');
+    const progressText = document.getElementById('uploadProgressText');
     const loader = document.getElementById("loader");
-    if (loader) {
-        loader.style.display = "block";
-    }
+
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (loader) loader.style.display = 'block';
 
     // Disable form inputs during upload
     const formInputs = form.querySelectorAll("input, textarea, select, button");
     formInputs.forEach((input) => (input.disabled = true));
 
-    submitBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin me-2"></i>Uploading to YouTube...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading to YouTube...';
 
     try {
         // Use the YouTube API client's upload method with progress tracking
         const metadata = {
             title: title,
             description: description,
-            tags: [],
-            privacy: 'unlisted'
+            tags: [category],
+            privacy: 'unlisted',
+            categoryId: '22' // People & Blogs
         };
 
         // Create progress update function
         function updateProgress(progress) {
-            const progressBar = document.getElementById('uploadProgress');
-            const progressText = document.getElementById('uploadProgressText');
-
             if (progressBar) {
-                progressBar.style.display = 'block';
-                const progressBarFill = progressBar.querySelector('.progress-bar');
-                if (progressBarFill) {
-                    progressBarFill.style.width = progress + '%';
-                    progressBarFill.textContent = progress + '%';
-                }
+                progressBar.style.width = progress + '%';
+                progressBar.textContent = progress + '%';
             }
-
             if (progressText) {
-                progressText.textContent = `Uploading: ${progress}%`;
+                progressText.textContent = `Uploading to YouTube: ${progress}%`;
             }
-
             submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Uploading: ${progress}%`;
         }
 
@@ -1795,13 +1784,26 @@ async function handleVideoUpload(event) {
         );
 
         if (uploadResult.success) {
-            // Get the price from the form
-            const price = parseFloat(document.getElementById("ytPrice")?.value || 0);
-
-            // The video has already been synced to database by the YouTube API client
-            // Just update the price if needed
+            // Update price in database if needed
             if (price > 0) {
-                await updateVideoPriceInDatabase(uploadResult.video.id, price);
+                await fetch('api/videos.php', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    credentials: 'include',
+                    body: `action=update_price&youtube_id=${uploadResult.video.id}&price=${price}`
+                });
+            }
+
+            // Complete progress
+            if (progressBar) {
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+                progressBar.className = progressBar.className.replace('bg-primary', 'bg-success');
+            }
+            if (progressText) {
+                progressText.textContent = 'Upload completed successfully!';
             }
 
             showNotification(
@@ -1810,19 +1812,28 @@ async function handleVideoUpload(event) {
             );
             form.reset();
 
-            // Hide progress bar
-            const progressBar = document.getElementById('uploadProgress');
-            if (progressBar) {
-                progressBar.style.display = 'none';
-            }
+            // Hide progress after delay
+            setTimeout(() => {
+                if (progressContainer) progressContainer.style.display = 'none';
+                if (loader) loader.style.display = 'none';
+            }, 2000);
 
-            loadVideosFromYouTube(); // Refresh the video list
+            // Refresh video lists
+            if (window.currentPanelName === 'myVideos') {
+                loadMyVideosFromDatabase();
+            } else {
+                loadVideosFromYouTube();
+            }
         } else {
             throw new Error(uploadResult.error || "Upload failed");
         }
     } catch (error) {
         console.error("Upload failed:", error);
         showNotification("❌ Upload failed: " + error.message, "error");
+
+        // Hide progress
+        if (progressContainer) progressContainer.style.display = 'none';
+        if (loader) loader.style.display = 'none';
     } finally {
         // Re-enable form inputs
         formInputs.forEach((input) => (input.disabled = false));
@@ -2081,7 +2092,7 @@ function updateVideoCardAfterPurchase(videoId) {
     const videoIndex = allVideos.findIndex(v => v.id == videoId || v.youtube_id == videoId);
     if (videoIndex !== -1) {
         allVideos[videoIndex].purchased = true;
-        
+
         // Update the UI by re-rendering videos
         renderVideos(allVideos);
     }
@@ -2134,6 +2145,199 @@ async function logout() {
         window.location.href = 'login.html';
     } finally {
         showLoading(false);
+    }
+}
+
+// Update YouTube connection status
+async function updateYouTubeConnectionStatus() {
+    // Check YouTube connection status
+    const connectionStatus = document.getElementById('youtubeConnectionStatus');
+    if (connectionStatus) {
+        // Wait a bit for API to initialize
+        setTimeout(async () => {
+            try {
+                await window.youtubeAPI.initialize();
+                if (window.youtubeAPI && window.youtubeAPI.isSignedIn()) {
+                    connectionStatus.innerHTML = '<i class="fab fa-youtube text-success me-1"></i>Connected to YouTube';
+                    connectionStatus.className = 'badge bg-success';
+
+                    // Add sign out button
+                    connectionStatus.onclick = async () => {
+                        if (confirm('Sign out from YouTube?')) {
+                            await window.youtubeAPI.signOut();
+                            showPanel('upload'); // Refresh the panel
+                        }
+                    };
+                    connectionStatus.style.cursor = 'pointer';
+                } else {
+                    connectionStatus.innerHTML = '<i class="fab fa-youtube text-warning me-1"></i>Click to connect to YouTube';
+                    connectionStatus.className = 'badge bg-warning';
+                    connectionStatus.onclick = async () => {
+                        const success = await window.youtubeAPI.signIn();
+                        if (success) {
+                            showPanel('upload'); // Refresh the panel
+                            showNotification('✅ Successfully connected to YouTube!', 'success');
+                        } else {
+                            showNotification('❌ Failed to connect to YouTube', 'error');
+                        }
+                    };
+                    connectionStatus.style.cursor = 'pointer';
+                }
+            } catch (error) {
+                console.error('Error checking YouTube status:', error);
+                connectionStatus.innerHTML = '<i class="fab fa-youtube text-danger me-1"></i>Connection error';
+                connectionStatus.className = 'badge bg-danger';
+            }
+        }, 1000);
+    }
+}
+
+// Edit video price
+async function editVideoPrice(videoId, currentPrice) {
+    const newPrice = prompt('Enter new price:', currentPrice);
+    if (newPrice === null) return;
+
+    const price = parseFloat(newPrice) || 0;
+    if (price < 0) {
+        showNotification('Price cannot be negative', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('api/videos.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                id: videoId,
+                price: price
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            showNotification('Price updated successfully', 'success');
+            loadMyVideosFromDatabase();
+        } else {
+            showNotification('Failed to update price: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to update price:', error);
+        showNotification('Failed to update price', 'error');
+    }
+}
+
+// Preview video
+function previewVideo(youtubeId, title) {
+    if (youtubeId && youtubeId.startsWith('local_')) {
+        // For demo videos, show placeholder
+        document.getElementById("videoModalTitle").textContent = title;
+        document.getElementById("videoPlayer").outerHTML = 
+            `<div id="videoPlayer" class="text-center p-4">
+                <i class="fas fa-play-circle fa-5x text-primary mb-3"></i>
+                <h5>Demo Video Preview</h5>
+                <p class="text-muted">This is a demo video upload. In production, this would show the actual video.</p>
+            </div>`;
+
+        const modal = new bootstrap.Modal(document.getElementById("videoModal"));
+        modal.show();
+    } else {
+        watchYouTubeVideo(youtubeId, title);
+    }
+}
+
+// Delete video
+async function deleteMyVideo(videoId) {
+    if (!confirm('Are you sure you want to delete this video?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('api/videos.php', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                id: videoId
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            showNotification('Video deleted successfully', 'success');
+            loadMyVideosFromDatabase();
+        } else {
+            showNotification('Failed to delete video: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to delete video:', error);
+        showNotification('Failed to delete video', 'error');
+    }
+}
+
+// Watch video function for database videos
+async function watchVideo(videoId) {
+    try {
+        const response = await fetch(`api/videos.php?id=${videoId}`, {
+            credentials: 'include'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.video) {
+            const video = data.video;
+            
+            if (video.youtube_id) {
+                watchYouTubeVideo(video.youtube_id, video.title);
+            } else {
+                // For local videos, show demo content
+                document.getElementById("videoModalTitle").textContent = video.title;
+                document.getElementById("videoPlayer").outerHTML = `
+                    <div id="videoPlayer" class="text-center p-4 bg-light">
+                        <i class="fas fa-play-circle fa-5x text-primary mb-3"></i>
+                        <h5>${video.title}</h5>
+                        <p class="text-muted">Demo video content would play here.</p>
+                    </div>
+                `;
+                
+                const modal = new bootstrap.Modal(document.getElementById("videoModal"));
+                modal.show();
+            }
+        } else {
+            showNotification('Video not found or access denied', 'error');
+        }
+    } catch (error) {
+        console.error('Failed to load video:', error);
+        showNotification('Failed to load video', 'error');
+    }
+}
+
+// Connect to YouTube function
+async function connectToYouTube() {
+    const statusElement = document.getElementById('youtubeConnectionStatus');
+    if (statusElement) {
+        statusElement.className = 'badge bg-info';
+        statusElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Connecting...';
+        statusElement.onclick = null;
+    }
+
+    try {
+        const success = await window.youtubeAPI.signIn();
+        if (success) {
+            showNotification('Successfully connected to YouTube!', 'success');
+            updateYouTubeConnectionStatus();
+        } else {
+            showNotification('Failed to connect to YouTube', 'error');
+            updateYouTubeConnectionStatus();
+        }
+    } catch (error) {
+        console.error('YouTube connection failed:', error);
+        showNotification('YouTube connection failed: ' + error.message, 'error');
+        updateYouTubeConnectionStatus();
     }
 }
 

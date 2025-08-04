@@ -1,0 +1,140 @@
+async function handleVideoUpload(event) {
+    event.preventDefault();
+alert('sss')
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    // Get form values
+    const title = form.videoTitle.value.trim();
+    const description = form.videoDescription.value.trim();
+    const price = parseFloat(form.videoPrice.value) || 0;
+    const category = form.videoCategory.value;
+    const file = form.videoFile.files[0];
+
+    // Validate
+    if (!title || !description || !file) {
+        showNotification("❌ Please fill in all required fields", "error");
+        return;
+    }
+
+    // Validate file size (YouTube supports up to 256GB, but we'll set a reasonable limit)
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB for practical purposes
+    if (file.size > maxSize) {
+        showNotification("❌ File size must be less than 2GB", "error");
+        return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+        "video/mp4",
+        "video/webm",
+        "video/ogg",
+        "video/avi",
+        "video/mov",
+        "video/mkv",
+        "video/flv",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+        showNotification("❌ Please select a valid video file", "error");
+        return;
+    }
+
+    // Check if YouTube is connected for creators
+    if (
+        !window.youtubeAPI ||
+        !window.youtubeAPI.isInitialized ||
+        !window.youtubeAPI.isSignedIn()
+    ) {
+        showNotification(
+            "❌ Please connect to YouTube first to upload videos",
+            "error",
+        );
+        return;
+    }
+
+    // Show loader
+    const loader = document.getElementById("loader");
+    if (loader) {
+        loader.style.display = "block";
+    }
+
+    // Disable form inputs during upload
+    const formInputs = form.querySelectorAll("input, textarea, select, button");
+    formInputs.forEach((input) => (input.disabled = true));
+
+    submitBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin me-2"></i>Uploading to YouTube...';
+
+    try {
+        // Use the YouTube API client's upload method with progress tracking
+        const metadata = {
+            title: title,
+            description: description,
+            tags: [],
+            privacy: 'unlisted'
+        };
+
+        // Create progress update function
+        function updateProgress(progress) {
+            const progressBar = document.getElementById('uploadProgress');
+            const progressText = document.getElementById('uploadProgressText');
+
+            if (progressBar) {
+                progressBar.style.display = 'block';
+                const progressBarFill = progressBar.querySelector('.progress-bar');
+                if (progressBarFill) {
+                    progressBarFill.style.width = progress + '%';
+                    progressBarFill.textContent = progress + '%';
+                }
+            }
+
+            if (progressText) {
+                progressText.textContent = `Uploading: ${progress}%`;
+            }
+
+            submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Uploading: ${progress}%`;
+        }
+
+        // Upload video using the YouTube API client
+        const uploadResult = await window.youtubeAPI.uploadVideo(
+            file,
+            metadata,
+            updateProgress
+        );
+
+        if (uploadResult.success) {
+            // Get the price from the form
+            const price = parseFloat(document.getElementById("ytPrice")?.value || 0);
+
+            // The video has already been synced to database by the YouTube API client
+            // Just update the price if needed
+            if (price > 0) {
+                await updateVideoPriceInDatabase(uploadResult.video.id, price);
+            }
+
+            showNotification(
+                "✅ Video uploaded to YouTube and synced to database successfully!",
+                "success",
+            );
+            form.reset();
+
+            // Hide progress bar
+            const progressBar = document.getElementById('uploadProgress');
+            if (progressBar) {
+                progressBar.style.display = 'none';
+            }
+
+            loadVideos(); // Refresh the video list
+        } else {
+            throw new Error(uploadResult.error || "Upload failed");
+        }
+    } catch (error) {
+        console.error("Upload failed:", error);
+        showNotification("❌ Upload failed: " + error.message, "error");
+    } finally {
+        // Re-enable form inputs
+        formInputs.forEach((input) => (input.disabled = false));
+        submitBtn.innerHTML = originalText;
+    }
+}
