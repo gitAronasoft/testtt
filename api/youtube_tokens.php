@@ -155,11 +155,30 @@ function handleClearTokens() {
 
 function handleRefreshToken($input) {
     if (!isset($input['refresh_token'])) {
-        echo json_encode(['success' => false, 'message' => 'Refresh token required']);
+        // Try to get refresh token from database if not provided
+        $conn = getConnection();
+        $sql = "SELECT refresh_token FROM youtube_tokens WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            $token = $result->fetch_assoc();
+            $refresh_token = $token['refresh_token'];
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No refresh token available']);
+            return;
+        }
+        $conn->close();
+    } else {
+        $refresh_token = $input['refresh_token'];
+    }
+
+    if (empty($refresh_token)) {
+        echo json_encode(['success' => false, 'message' => 'Refresh token is empty']);
         return;
     }
 
-    $refresh_token = $input['refresh_token'];
     $client_id = '824425517340-c4g9ilvg3i7cddl75hvq1a8gromuc95n.apps.googleusercontent.com';
     $client_secret = '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';
 
@@ -181,28 +200,61 @@ function handleRefreshToken($input) {
 
     $response = curl_exec($curl);
     $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($curl);
     curl_close($curl);
+
+    if ($curl_error) {
+        echo json_encode(['success' => false, 'message' => 'Network error: ' . $curl_error]);
+        return;
+    }
 
     if ($http_code === 200) {
         $token_data = json_decode($response, true);
 
         if (isset($token_data['access_token'])) {
-            // Store the new token
-            $token_data['refresh_token'] = $refresh_token; // Keep the same refresh token
-            handleStoreTokens(['tokens' => $token_data]);
-
-            echo json_encode([
-                'success' => true,
-                'tokens' => [
-                    'access_token' => $token_data['access_token'],
-                    'refresh_token' => $refresh_token
-                ]
-            ]);
+            // Store the new token in database
+            $conn = getConnection();
+            
+            // Deactivate existing tokens
+            $deactivate_sql = "UPDATE youtube_tokens SET is_active = 0";
+            $conn->query($deactivate_sql);
+            
+            // Insert new token
+            $expires_at = date('Y-m-d H:i:s', time() + ($token_data['expires_in'] ?? 3600));
+            $insert_sql = "INSERT INTO youtube_tokens (access_token, refresh_token, expires_at, is_active) VALUES (?, ?, ?, 1)";
+            $stmt = $conn->prepare($insert_sql);
+            $stmt->bind_param("sss", 
+                $token_data['access_token'],
+                $refresh_token, // Keep the same refresh token
+                $expires_at
+            );
+            
+            if ($stmt->execute()) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Token refreshed successfully',
+                    'tokens' => [
+                        'access_token' => $token_data['access_token'],
+                        'refresh_token' => $refresh_token,
+                        'expires_at' => $expires_at
+                    ]
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to store refreshed token']);
+            }
+            $conn->close();
         } else {
-            echo json_encode(['success' => false, 'message' => 'Invalid token response']);
+            echo json_encode(['success' => false, 'message' => 'Invalid token response from Google']);
         }
     } else {
-        echo json_encode(['success' => false, 'message' => 'Token refresh failed']);
+        $error_response = json_decode($response, true);
+        $error_message = isset($error_response['error_description']) ? $error_response['error_description'] : 'Token refresh failed';
+        echo json_encode([
+            'success' => false, 
+            'message' => $error_message,
+            'http_code' => $http_code,
+            'response' => $response
+        ]);
     }
 }
 ?>

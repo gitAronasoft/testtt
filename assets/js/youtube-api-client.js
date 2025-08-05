@@ -541,6 +541,16 @@ class YouTubeAPIClient {
     }
 
     /**
+     * Refresh token - wrapper for refreshAccessToken for compatibility
+     */
+    async refreshToken() {
+        if (!this.refreshToken) {
+            throw new Error('No refresh token available');
+        }
+        return await this.refreshAccessToken(this.refreshToken);
+    }
+
+    /**
      * Sign out from YouTube
      */
     async signOut() {

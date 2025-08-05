@@ -214,31 +214,24 @@
             const creatorSidebar = document.getElementById("creatorSidebar");
             const viewerSidebar = document.getElementById("viewerSidebar");
 
+            // Hide all sidebars first
+            if (adminSidebar) adminSidebar.style.display = "none";
+            if (creatorSidebar) creatorSidebar.style.display = "none";
+            if (viewerSidebar) viewerSidebar.style.display = "none";
+
             // Show role-specific sidebar sections based on user role
             if (currentUser.role === "admin") {
-                // Admin sees only admin tools (Overview, All Videos, User Management)
-                if (creatorSidebar) creatorSidebar.style.display = "none";
+                // Admin sees overview + admin tools only
                 if (adminSidebar) adminSidebar.style.display = "block";
-                if (viewerSidebar) viewerSidebar.style.display = "none";
             } else if (
                 currentUser.role === "editor" ||
                 currentUser.role === "creator"
             ) {
-                // Editor/Creator sees only creator tools, NO viewer tools
+                // Editor/Creator sees overview + creator tools only
                 if (creatorSidebar) creatorSidebar.style.display = "block";
-                if (adminSidebar) adminSidebar.style.display = "none";
-                if (viewerSidebar) viewerSidebar.style.display = "none";
             } else if (currentUser.role === "viewer") {
-                // Viewer can only see viewer section
+                // Viewer sees overview + viewer tools only
                 if (viewerSidebar) viewerSidebar.style.display = "block";
-                if (creatorSidebar) creatorSidebar.style.display = "none";
-                if (adminSidebar) adminSidebar.style.display = "none";
-
-                // Hide "All Videos" nav link for viewers
-                const allVideosLink = document.querySelector('a[onclick*="showPanel(\'videos\')"]');
-                if (allVideosLink && allVideosLink.textContent.includes('All Videos')) {
-                    allVideosLink.style.display = "none";
-                }
             }
 
             // Set body class for CSS role-based styling
@@ -253,12 +246,26 @@
             // If no URL parameter, set default panel based on user role
             if (!defaultPanel) {
                 if (currentUser.role === "viewer") {
-                    defaultPanel = "overview";
+                    defaultPanel = "videos";
                 } else if (
                     currentUser.role === "editor" ||
                     currentUser.role === "creator"
                 ) {
+                    defaultPanel = "myVideos";
+                } else if (currentUser.role === "admin") {
                     defaultPanel = "overview";
+                } else {
+                    defaultPanel = "overview";
+                }
+            }
+
+            // Validate panel access before showing
+            if (!hasPermissionForPanel(defaultPanel)) {
+                // Fallback to the first available panel for the user role
+                if (currentUser.role === "viewer") {
+                    defaultPanel = "videos";
+                } else if (currentUser.role === "editor" || currentUser.role === "creator") {
+                    defaultPanel = "myVideos";
                 } else if (currentUser.role === "admin") {
                     defaultPanel = "overview";
                 } else {
@@ -282,6 +289,20 @@
             // Check if user has permission to access this panel
             if (!hasPermissionForPanel(panelName)) {
                 showNotification("You do not have permission to access this section", "error");
+
+                // Redirect to appropriate default panel for user role
+                let fallbackPanel = "overview";
+                if (currentUser.role === "viewer") {
+                    fallbackPanel = "videos";
+                } else if (currentUser.role === "editor" || currentUser.role === "creator") {
+                    fallbackPanel = "myVideos";
+                } else if (currentUser.role === "admin") {
+                    fallbackPanel = "overview";
+                }
+
+                if (fallbackPanel !== panelName) {
+                    setTimeout(() => showPanel(fallbackPanel), 1000);
+                }
                 return;
             }
 
@@ -302,17 +323,19 @@
                 const selectedPanel = document.getElementById(panelName + "Panel");
                 if (selectedPanel) {
                     selectedPanel.style.display = "block";
+                } else {
+                    console.error(`Panel not found: ${panelName}Panel`);
+                    return;
                 }
 
                 // Update active nav item efficiently
                 const navLinks = document.querySelectorAll(".nav-link");
                 for (let i = 0; i < navLinks.length; i++) {
                     const link = navLinks[i];
+                    link.classList.remove("active");
                     const onclickAttr = link.getAttribute("onclick");
                     if (onclickAttr && onclickAttr.includes(`showPanel('${panelName}')`)) {
                         link.classList.add("active");
-                    } else {
-                        link.classList.remove("active");
                     }
                 }
             });
@@ -357,8 +380,8 @@
                     }
                     break;
                 case "upload":
-                    // Lightweight operation - no caching needed
-                    requestAnimationFrame(() => updateYouTubeConnectionStatus());
+                    document.getElementById('uploadPanel').style.display = 'block';
+                    updateUploadPanelStatus();
                     break;
                 case "purchases":
                     if (!lastLoadedData.purchases) {
@@ -375,6 +398,9 @@
                         loadAnalytics();
                     }
                     break;
+                default:
+                    console.warn(`Unknown panel: ${panelName}`);
+                    break;
             }
         }
 
@@ -383,9 +409,9 @@
 
             const role = currentUser.role;
 
-            // Define role-based permissions
+            // Define role-based permissions - corrected
             const permissions = {
-                viewer: ["overview", "videos"],
+                viewer: ["overview", "videos", "purchases"],
                 editor: [
                     "overview",
                     "myVideos",
@@ -406,6 +432,7 @@
                     "earnings",
                     "users",
                     "analytics",
+                    "purchases"
                 ],
             };
 
@@ -863,7 +890,7 @@
 
         function createVideoElement(video) {
             const col = document.createElement("div");
-            col.className = "col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3 mb-4";
+            col.className = "col-12 col-sm-4 col-md-4 col-lg-4 col-xl-4 mb-4";
 
             // Enhanced dynamic thumbnail handling with fallbacks
             let thumbnail = "/api/placeholder/300/200";
@@ -1223,7 +1250,7 @@
                 if (isFree || isPurchased) {
                     // Can watch for free or already purchased
                     return `
-                        <button class="btn btn-success w-100" style="font-size: clamp(0.7rem, 1.8vw, 0.85rem); padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTubeVideo})">
+                        <button class="btn btn-success w-100" style="font-size: clamp(0.7rem, 1.8vw, 0.85rem); padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTube})">
                             <i class="fas fa-play me-1"></i>${isFree ? 'Watch Free' : 'Watch Now'}
                         </button>`;
                 } else {
@@ -1236,7 +1263,7 @@
             }
 
             // Default fallback
-            return `<button class="btn btn-primary w-100" style="font-size: clamp(0.7rem, 1.8vw, 0.85rem); padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTubeVideo})">
+            return `<button class="btn btn-primary w-100" style="font-size: clamp(0.7rem, 1.8vw, 0.85rem); padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTube})">
                         <i class="fas fa-play me-1"></i>Watch
                     </button>`;
         }
@@ -3229,7 +3256,7 @@
 
                 // Show modal with cleanup on close
                 const modal = new bootstrap.Modal(document.getElementById("videoModal"));
-                
+
                 // Add event listener to stop video when modal is closed
                 const modalElement = document.getElementById("videoModal");
                 const handleModalHide = () => {
@@ -3237,7 +3264,7 @@
                     modalElement.removeEventListener('hidden.bs.modal', handleModalHide);
                 };
                 modalElement.addEventListener('hidden.bs.modal', handleModalHide);
-                
+
                 modal.show();
 
             } catch (error) {
@@ -3265,64 +3292,6 @@
             } finally {
                 showLoading(false);
             }
-        }
-
-        // Handle thumbnail loading errors with multiple fallbacks
-        function handleThumbnailError(img, youtubeId) {
-            const currentSrc = img.src;
-
-            // Try different YouTube thumbnail qualities if it's a YouTube video
-            if (youtubeId && currentSrc.includes('youtube.com')) {
-                if (currentSrc.includes('maxresdefault')) {
-                    img.src = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
-                } else if (currentSrc.includes('hqdefault')) {
-                    img.src = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
-                } else if (currentSrc.includes('mqdefault')) {
-                    img.src = `https://img.youtube.com/vi/${youtubeId}/default.jpg`;
-                } else {
-                    // Final fallback to placeholder
-                    img.src = createPlaceholderThumbnail();
-                }
-            } else {
-                // For non-YouTube videos, go straight to placeholder
-                img.src = createPlaceholderThumbnail();
-            }
-        }
-
-        // Create a dynamic placeholder thumbnail
-        function createPlaceholderThumbnail() {
-            // Create a canvas-based placeholder instead of relying on external service
-            const canvas = document.createElement('canvas');
-            canvas.width = 320;
-            canvas.height = 180;
-            const ctx = canvas.getContext('2d');
-
-            // Create gradient background
-            const gradient = ctx.createLinearGradient(0, 0, 320, 180);
-            gradient.addColorStop(0, '#667eea');
-            gradient.addColorStop(1, '#764ba2');
-
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 320, 180);
-
-            // Add play icon
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.font = '48px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('▶', 160, 105);
-
-            // Add text
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.font = '14px Arial';
-            ctx.fillText('Video Thumbnail', 160, 140);
-
-            return canvas.toDataURL();
-        }
-
-        // Watch video function for database videos
-        async function watchVideo(videoId) {
-            // Use the unified video player function
-            playVideoPlayer(videoId, '', 'Loading...', false);
         }
 
         // Helper functions for video error handling
@@ -3433,7 +3402,7 @@
 
             const nameElement = document.getElementById('userProfileName');
             const roleElement = document.getElementById('userProfileRole');
-            
+
             if (nameElement) nameElement.textContent = currentUser.name;
             if (roleElement) {
                 roleElement.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
@@ -3462,11 +3431,11 @@
                         credentials: 'include'
                     });
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         if (videosEl) videosEl.textContent = data.analytics.total_videos || '0';
                         if (viewsEl) viewsEl.textContent = formatNumber(data.analytics.total_views || 0);
-                        
+
                         // Update stat labels for admin
                         const videoLabel = document.querySelector('#userStatVideos + .user-stat-label');
                         const viewLabel = document.querySelector('#userStatViews + .user-stat-label');
@@ -3478,14 +3447,14 @@
                         credentials: 'include'
                     });
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         const myVideos = data.videos || [];
                         const totalViews = myVideos.reduce((sum, video) => sum + (video.views || 0), 0);
-                        
+
                         if (videosEl) videosEl.textContent = myVideos.length.toString();
                         if (viewsEl) viewsEl.textContent = formatNumber(totalViews);
-                        
+
                         // Update stat labels for creator
                         const videoLabel = document.querySelector('#userStatVideos + .user-stat-label');
                         const viewLabel = document.querySelector('#userStatViews + .user-stat-label');
@@ -3497,14 +3466,14 @@
                         credentials: 'include'
                     });
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         const purchases = data.purchases || [];
                         const totalSpent = purchases.reduce((sum, purchase) => sum + parseFloat(purchase.price || 0), 0);
-                        
+
                         if (videosEl) videosEl.textContent = purchases.length.toString();
                         if (viewsEl) viewsEl.textContent = `$${totalSpent.toFixed(2)}`;
-                        
+
                         // Update stat labels for viewer
                         const videoLabel = document.querySelector('#userStatVideos + .user-stat-label');
                         const viewLabel = document.querySelector('#userStatViews + .user-stat-label');
@@ -3519,13 +3488,13 @@
             }
         }
 
-        
+
 
         // Mobile sidebar controls
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.querySelector('.sidebar-backdrop');
-            
+
             if (sidebar && backdrop) {
                 sidebar.classList.toggle('show');
                 backdrop.classList.toggle('show');
@@ -3536,7 +3505,7 @@
         function closeSidebar() {
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.querySelector('.sidebar-backdrop');
-            
+
             if (sidebar && backdrop) {
                 sidebar.classList.remove('show');
                 backdrop.classList.remove('show');
@@ -3553,11 +3522,11 @@
 
         function updateEditProfileForm() {
             if (!currentUser) return;
-            
+
             const nameField = document.getElementById('editProfileName');
             const emailField = document.getElementById('editProfileEmail');
             const avatar = document.getElementById('editProfileAvatar');
-            
+
             if (nameField) nameField.value = currentUser.name;
             if (emailField) emailField.value = currentUser.email;
             if (avatar) avatar.textContent = currentUser.name.charAt(0).toUpperCase();
@@ -3567,7 +3536,7 @@
             const nameField = document.getElementById('editProfileName');
             const bioField = document.getElementById('editProfileBio');
             const websiteField = document.getElementById('editProfileWebsite');
-            
+
             if (!nameField) return;
 
             const formData = {
@@ -3605,10 +3574,10 @@
                     } else {
                         currentUser.name = formData.name;
                     }
-                    
+
                     updateUserProfile();
                     showNotification('Profile updated successfully!', 'success');
-                    
+
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
                     modal.hide();
                 } else {
@@ -3622,8 +3591,18 @@
 
         function showUserSettings() {
             const modal = new bootstrap.Modal(document.getElementById('userSettingsModal'));
+
+            // Show YouTube settings tab only for admins
+            const youtubeTab = document.getElementById('youtubeSettingsTab');
+            if (youtubeTab && currentUser && currentUser.role === 'admin') {
+                youtubeTab.style.display = 'block';
+                // Update YouTube status when settings are opened
+                setTimeout(updateAdminYouTubeStatus, 100);
+            } else if (youtubeTab) {
+                youtubeTab.style.display = 'none';
+            }
+
             modal.show();
-            loadUserSettings();
         }
 
         function loadUserSettings() {
@@ -3661,7 +3640,7 @@
                 // In a real application, this would save settings to the server
                 localStorage.setItem('userSettings', JSON.stringify(settings));
                 showNotification('Settings saved successfully!', 'success');
-                
+
                 const modal = bootstrap.Modal.getInstance(document.getElementById('userSettingsModal'));
                 modal.hide();
             } catch (error) {
@@ -3676,112 +3655,6 @@
             setTimeout(() => {
                 showNotification('Data export will be emailed to you within 24 hours', 'success');
             }, 2000);
-        }
-
-        // Auto-close sidebar on panel change for mobile
-        function showPanel(panelName) {
-            // Close mobile sidebar when navigating
-            if (window.innerWidth <= 992) {
-                closeSidebar();
-            }
-            
-            // Check if user has permission to access this panel
-            if (!hasPermissionForPanel(panelName)) {
-                showNotification("You do not have permission to access this section", "error");
-                return;
-            }
-
-            // Early return if already on this panel
-            if (window.currentPanelName === panelName) {
-                return;
-            }
-
-            // Use requestAnimationFrame for smooth UI updates
-            requestAnimationFrame(() => {
-                // Hide all panels efficiently
-                const panels = document.querySelectorAll(".panel");
-                for (let i = 0; i < panels.length; i++) {
-                    panels[i].style.display = "none";
-                }
-
-                // Show selected panel
-                const selectedPanel = document.getElementById(panelName + "Panel");
-                if (selectedPanel) {
-                    selectedPanel.style.display = "block";
-                }
-
-                // Update active nav item efficiently
-                const navLinks = document.querySelectorAll(".nav-link");
-                for (let i = 0; i < navLinks.length; i++) {
-                    const link = navLinks[i];
-                    const onclickAttr = link.getAttribute("onclick");
-                    if (onclickAttr && onclickAttr.includes(`showPanel('${panelName}')`)) {
-                        link.classList.add("active");
-                    } else {
-                        link.classList.remove("active");
-                    }
-                }
-            });
-
-            const lastPanel = window.currentPanelName;
-            window.currentPanelName = panelName;
-
-            // Check cache first
-            const cacheKey = `panel_${panelName}`;
-            const cachedData = getCachedData(cacheKey);
-
-            if (cachedData && lastLoadedData[panelName]) {
-                return; // Use cached data
-            }
-
-            // Prevent multiple calls
-            const loadKey = `load_${panelName}`;
-            if (apiCallsInProgress.has(loadKey)) {
-                return;
-            }
-
-            // Load data only when needed with optimized loading
-            switch (panelName) {
-                case "overview":
-                    if (!lastLoadedData.overview) {
-                        loadOverviewStats();
-                    }
-                    break;
-                case "videos":
-                    if (!lastLoadedData.videos) {
-                        loadVideosFromYouTube();
-                    }
-                    break;
-                case "users":
-                    if (currentUser.role === "admin" && !lastLoadedData.users) {
-                        loadUsers();
-                    }
-                    break;
-                case "myVideos":
-                    if ((currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") && !lastLoadedData.myVideos) {
-                        loadMyVideosFromDatabase();
-                    }
-                    break;
-                case "upload":
-                    // Lightweight operation - no caching needed
-                    requestAnimationFrame(() => updateYouTubeConnectionStatus());
-                    break;
-                case "purchases":
-                    if (!lastLoadedData.purchases) {
-                        loadPurchases();
-                    }
-                    break;
-                case "earnings":
-                    if ((currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") && !lastLoadedData.earnings) {
-                        loadEarnings();
-                    }
-                    break;
-                case "analytics":
-                    if (currentUser.role === "admin" && !lastLoadedData.analytics) {
-                        loadAnalytics();
-                    }
-                    break;
-            }
         }
 
         // Initialize responsive behavior
@@ -3801,4 +3674,191 @@
                     }
                 });
             });
+        });
+
+        // Helper function to update YouTube status for admin settings
+        async function updateAdminYouTubeStatus() {
+            const youtubeStatusElement = document.getElementById('adminYouTubeStatus');
+            const connectionStatusElement = document.getElementById('adminYoutubeConnectionStatus');
+
+            if (!youtubeStatusElement) return;
+
+            try {
+                await window.youtubeAPI.initialize();
+                if (window.youtubeAPI.isSignedIn()) {
+                    const channelInfo = await window.youtubeAPI.getMyChannelInfo();
+
+                    youtubeStatusElement.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <img src="${channelInfo.thumbnail}" alt="Channel Thumbnail" class="rounded-circle me-3" style="width: 50px; height: 50px; border: 2px solid #28a745;">
+                            <div>
+                                <div class="fw-bold text-success">${channelInfo.title}</div>
+                                <small class="text-muted">
+                                    <i class="fas fa-users me-1"></i>${channelInfo.subscriber_count ? window.youtubeAPI.formatNumber(channelInfo.subscriber_count) : 'N/A'} subscribers
+                                    <span class="mx-2">•</span>
+                                    <i class="fas fa-video me-1"></i>${channelInfo.video_count ? window.youtubeAPI.formatNumber(channelInfo.video_count) : 'N/A'} videos
+                                </small>
+                                <div class="mt-1">
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Connected
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (connectionStatusElement) {
+                        connectionStatusElement.innerHTML = '<i class="fas fa-check-circle me-1"></i>Connected';
+                        connectionStatusElement.className = 'badge bg-success fs-6 px-3 py-2';
+                    }
+                } else {
+                    youtubeStatusElement.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <div class="bg-light rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border: 2px solid #dc3545;">
+                                <i class="fab fa-youtube text-danger fa-lg"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-danger">Not Connected</div>
+                                <small class="text-muted">YouTube API access required for uploads</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times me-1"></i>Disconnected
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (connectionStatusElement) {
+                        connectionStatusElement.innerHTML = '<i class="fas fa-times-circle me-1"></i>Disconnected';
+                        connectionStatusElement.className = 'badge bg-danger fs-6 px-3 py-2';
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to update admin YouTube status:", error);
+                youtubeStatusElement.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border: 2px solid #ffc107;">
+                            <i class="fas fa-exclamation-triangle text-warning fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-warning">Connection Error</div>
+                            <small class="text-muted">Unable to verify YouTube connection</small>
+                            <div class="mt-1">
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Error
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (connectionStatusElement) {
+                    connectionStatusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Error';
+                    connectionStatusElement.className = 'badge bg-warning fs-6 px-3 py-2';
+                }
+            }
+        }
+
+        // Enhanced YouTube connection functions for admin
+        async function refreshYouTubeConnection() {
+            const refreshBtn = document.getElementById('refreshYoutubeTokenBtn');
+            if (refreshBtn) {
+                const originalText = refreshBtn.innerHTML;
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing...';
+                refreshBtn.disabled = true;
+
+                try {
+                    // Call the refresh token API directly
+                    const response = await fetch('api/youtube_tokens.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            action: 'refresh_token'
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update the YouTube API client with new tokens
+                        if (window.youtubeAPI) {
+                            window.youtubeAPI.accessToken = data.tokens.access_token;
+                            window.youtubeAPI.refreshToken = data.tokens.refresh_token;
+                            window.youtubeAPI.tokenExpiry = new Date(data.tokens.expires_at);
+                        }
+
+                        showNotification('YouTube token refreshed successfully!', 'success');
+                        setTimeout(() => updateAdminYouTubeStatus(), 1000);
+                    } else {
+                        showNotification('Failed to refresh YouTube token: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Token refresh failed:', error);
+                    showNotification('Token refresh failed: ' + error.message, 'error');
+                } finally {
+                    setTimeout(() => {
+                        refreshBtn.innerHTML = originalText;
+                        refreshBtn.disabled = false;
+                    }, 2000);
+                }
+            }
+        }
+
+        async function testYouTubeConnection() {
+            try {
+                showLoading(true);
+
+                if (!window.youtubeAPI.isSignedIn()) {
+                    showNotification('Not connected to YouTube', 'warning');
+                    return;
+                }
+
+                // Test the connection by attempting to get channel info
+                const channelInfo = await window.youtubeAPI.getMyChannelInfo();
+
+                if (channelInfo) {
+                    showNotification('YouTube connection test successful!', 'success');
+                } else {
+                    showNotification('YouTube connection test failed', 'error');
+                }
+            } catch (error) {
+                console.error('YouTube connection test failed:', error);
+                showNotification('Connection test failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Helper function to update status in the upload panel
+        function updateUploadPanelStatus() {
+            // Check and update YouTube connection status
+            updateYouTubeConnectionStatus();
+
+            // Other upload panel specific updates can go here
+            console.log('Upload panel status updated.');
+        }
+// Add better error handling for network issues
+        function handleNetworkError(error, action = 'perform this action') {
+            console.error('Network error:', error);
+
+            if (!navigator.onLine) {
+                showNotification('You appear to be offline. Please check your internet connection.', 'error');
+            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                showNotification('Unable to connect to server. Please try again.', 'error');
+            } else {
+                showNotification(`Failed to ${action}. Please try again.`, 'error');
+            }
+        }
+
+        // Add connection status monitoring
+        window.addEventListener('online', () => {
+            showNotification('Connection restored', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            showNotification('You are now offline', 'warning');
         });

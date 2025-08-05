@@ -59,7 +59,7 @@
                             <div class="user-profile-role" id="userProfileRole">Admin</div>
                         </div>
                     </div>
-                    
+
                     <div class="user-profile-stats" id="userProfileStats">
                         <div class="user-stat">
                             <span class="user-stat-value" id="userStatVideos">0</span>
@@ -70,7 +70,7 @@
                             <span class="user-stat-label">Views</span>
                         </div>
                     </div>
-                    
+
                     <div class="user-profile-actions">
                         <button class="btn btn-outline-primary btn-sm" onclick="showEditProfileModal()">
                             <i class="fas fa-edit me-1"></i>Edit
@@ -81,7 +81,7 @@
                     </div>
                 </div>
 
-                
+
 
                         <nav class="nav flex-column">
                     <a class="nav-link active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
@@ -91,7 +91,10 @@
                     <!-- Viewer Sidebar -->
                     <div id="viewerSidebar" style="display: none;">
                         <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
-                            <i class="fas fa-video me-2"></i>Videos
+                            <i class="fas fa-video me-2"></i>Browse Videos
+                        </a>
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('purchases'); return false;">
+                            <i class="fas fa-shopping-cart me-2"></i>My Purchases
                         </a>
                     </div>
 
@@ -115,6 +118,9 @@
                         </a>
                         <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('users'); return false;">
                             <i class="fas fa-users me-2"></i>User Management
+                        </a>
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('analytics'); return false;">
+                            <i class="fas fa-chart-line me-2"></i>Analytics
                         </a>
                     </div>
                 </nav>
@@ -197,9 +203,14 @@
                                         <h5>Recent Activity</h5>
                                     </div>
                                     <div class="card-body">
-                                        <div class="list-group list-group-flush" id="recentActivityContainer">
+                                        <div id="recentActivityContainer">
                                             <div class="list-group-item text-center text-muted">
-                                                <i class="fas fa-spinner fa-spin me-2"></i>Loading...
+                                                <div class="d-flex align-items-center justify-content-center">
+                                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                                        <span class="visually-hidden">Loading...</span>
+                                                    </div>
+                                                    <span>Loading recent activity...</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -211,7 +222,7 @@
                                         <h5>Popular Videos</h5>
                                     </div>
                                     <div class="card-body">
-                                        <div class="list-group list-group-flush" id="popularVideosContainer">
+                                        <div id="popularVideosContainer">
                                             <div class="list-group-item text-center text-muted">
                                                 <i class="fas fa-spinner fa-spin me-2"></i>Loading...
                                             </div>
@@ -348,9 +359,6 @@
                     <div id="uploadPanel" class="panel" style="display: none;">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h2>Upload Video</h2>
-                            <div id="youtubeConnectionStatus" class="badge bg-secondary">
-                                <i class="fab fa-youtube me-1"></i>Checking connection...
-                            </div>
                         </div>
 
                         <div class="row justify-content-center">
@@ -386,7 +394,7 @@
                                                 <div class="form-text">
                                     <i class="fab fa-youtube text-danger me-1"></i>
                                     Video will be uploaded to YouTube and synced to the platform database. 
-                                    <strong>YouTube connection required.</strong>
+                                    <strong>YouTube connection is managed in Settings → YouTube tab.</strong>
                                 </div>
                                             </div>
                                             <button type="submit" class="btn btn-primary">
@@ -540,7 +548,7 @@
                         </div>
                     </div>
 
-                    
+
 
                     <!-- Analytics Panel -->
                     <div id="analyticsPanel" class="panel" style="display: none;">
@@ -614,23 +622,23 @@
                                 <i class="fas fa-camera me-1"></i>Change Picture
                             </button>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="editProfileName" class="form-label">Full Name</label>
                             <input type="text" class="form-control" id="editProfileName" required>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="editProfileEmail" class="form-label">Email</label>
                             <input type="email" class="form-control" id="editProfileEmail" readonly>
                             <div class="form-text">Email cannot be changed</div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="editProfileBio" class="form-label">Bio</label>
                             <textarea class="form-control" id="editProfileBio" rows="3" placeholder="Tell us about yourself..."></textarea>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="editProfileWebsite" class="form-label">Website</label>
                             <input type="url" class="form-control" id="editProfileWebsite" placeholder="https://example.com">
@@ -672,6 +680,9 @@
                                 </button>
                                 <button class="nav-link" data-bs-toggle="pill" data-bs-target="#privacy-settings" type="button">
                                     <i class="fas fa-lock me-2"></i>Privacy
+                                </button>
+                                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#youtube-settings" type="button" id="youtubeSettingsTab" style="display: none;">
+                                    <i class="fab fa-youtube me-2"></i>YouTube
                                 </button>
                             </div>
                         </div>
@@ -756,6 +767,113 @@
                                     <button class="btn btn-outline-danger" onclick="downloadUserData()">
                                         <i class="fas fa-download me-1"></i>Download My Data
                                     </button>
+                                </div>
+                                <div class="tab-pane fade" id="youtube-settings">
+                                    <h6 class="mb-4">
+                                        <i class="fab fa-youtube text-danger me-2"></i>YouTube Integration Settings
+                                    </h6>
+
+                                    <!-- Connection Status Card -->
+                                    <div class="card mb-4 border-0 shadow-sm">
+                                        <div class="card-header bg-gradient-danger text-white">
+                                            <h6 class="mb-0">
+                                                <i class="fab fa-youtube me-2"></i>Connection Status
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <div id="adminYouTubeStatus">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                                                <span class="visually-hidden">Loading...</span>
+                                                            </div>
+                                                            <span class="text-muted">Checking YouTube connection...</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4 text-end">
+                                                    <div id="adminYoutubeConnectionStatus" class="badge bg-secondary fs-6 px-3 py-2">
+                                                        <i class="fab fa-youtube me-1"></i>Checking...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- YouTube Actions Card -->
+                                    <div class="card mb-4 border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-cogs me-2"></i>YouTube Actions
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-success w-100" onclick="connectYouTube()">
+                                                        <i class="fab fa-youtube me-2"></i>Connect to YouTube
+                                                    </button>
+                                                    <small class="text-muted d-block mt-1">Establish new connection</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-primary w-100" id="refreshYoutubeTokenBtn" onclick="refreshYouTubeConnection()">
+                                                        <i class="fas fa-sync me-2"></i>Refresh Token
+                                                    </button>
+                                                    <small class="text-muted d-block mt-1">Update access token</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-info w-100" onclick="testYouTubeConnection()">
+                                                        <i class="fas fa-vial me-2"></i>Test Connection
+                                                    </button>
+                                                    <small class="text-muted d-block mt-1">Verify API access</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-danger w-100" onclick="disconnectYouTube()">
+                                                        <i class="fas fa-unlink me-2"></i>Disconnect
+                                                    </button>
+                                                    <small class="text-muted d-block mt-1">Remove connection</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- API Information Card -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-info-circle me-2"></i>API Information
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="alert alert-info mb-3">
+                                                <i class="fas fa-lightbulb me-2"></i>
+                                                <strong>Important:</strong> YouTube connection is required for video uploads and sync functionality. 
+                                                The system uses OAuth 2.0 for secure authentication.
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6 class="text-muted mb-2">Features Enabled:</h6>
+                                                    <ul class="list-unstyled">
+                                                        <li><i class="fas fa-check text-success me-2"></i>Video Upload</li>
+                                                        <li><i class="fas fa-check text-success me-2"></i>Channel Management</li>
+                                                        <li><i class="fas fa-check text-success me-2"></i>Video Metadata Sync</li>
+                                                        <li><i class="fas fa-check text-success me-2"></i>Analytics Access</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6 class="text-muted mb-2">Security Notes:</h6>
+                                                    <ul class="list-unstyled">
+                                                        <li><i class="fas fa-shield-alt text-primary me-2"></i>Secure OAuth 2.0</li>
+                                                        <li><i class="fas fa-clock text-warning me-2"></i>Auto token refresh</li>
+                                                        <li><i class="fas fa-user-lock text-info me-2"></i>Admin-only access</li>
+                                                        <li><i class="fas fa-key text-secondary me-2"></i>Encrypted storage</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

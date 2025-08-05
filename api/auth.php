@@ -1,6 +1,11 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -152,7 +157,7 @@ function handleSignup($input) {
     $conn = getConnection();
 
     // Check if email already exists
-    $check_stmt = $conn->prepare("SELECT id, email_verified FROM users WHERE email = ?");
+    $check_stmt = $conn->prepare("SELECT id, email_verified, verification_token FROM users WHERE email = ?");
     $check_stmt->bind_param("s", $email);
     $check_stmt->execute();
     $check_result = $check_stmt->get_result();
@@ -309,21 +314,27 @@ function handleForgotPassword($input) {
         $update_stmt->bind_param("sss", $reset_token, $expires_at, $email);
 
         if ($update_stmt->execute()) {
+            error_log("Attempting to send password reset email to: " . $email);
             if (sendPasswordResetEmail($email, $reset_token)) {
+                error_log("Password reset email sent successfully to: " . $email);
                 echo json_encode([
                     'success' => true,
                     'message' => 'Password reset link sent to your email'
                 ]);
             } else {
+                error_log("Failed to send password reset email to: " . $email);
                 http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Failed to send reset email']);
+                echo json_encode(['success' => false, 'message' => 'Failed to send reset email. Please try again or contact support.']);
             }
         } else {
+            error_log("Failed to generate reset token for email: " . $email);
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Failed to generate reset token']);
         }
     } else {
-        // Don't reveal if email exists for security
+        // Still try to send if no verified user found, for security
+        // But log the attempt
+        error_log("Password reset requested for non-existent or unverified email: " . $email);
         echo json_encode([
             'success' => true,
             'message' => 'If the email exists, a reset link has been sent'
@@ -381,58 +392,153 @@ function handleResetPassword($input) {
 }
 
 function sendVerificationEmail($email, $token) {
-    $base_url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
-    $verify_url = $base_url . "/verify-email.html?token=" . $token;
-    
-    $subject = "Verify your email - Video Platform";
-    $message = "
-    <html>
-    <body>
-        <h2>Welcome to Video Platform!</h2>
-        <p>Please click the link below to verify your email and set your password:</p>
-        <p><a href='$verify_url' style='background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Verify Email & Set Password</a></p>
-        <p>Or copy and paste this link: $verify_url</p>
-        <p>This link will expire in 24 hours.</p>
-    </body>
-    </html>
-    ";
-    
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= "From: noreply@videoplatform.com" . "\r\n";
-    
-    // For demo purposes, we'll log the email instead of actually sending it
-    error_log("VERIFICATION EMAIL - To: $email, Subject: $subject, Link: $verify_url");
-    
-    return true; // Always return true for demo
+    return sendEmail(
+        $email,
+        'Verify your email - Video Platform',
+        getVerificationEmailTemplate($email, $token)
+    );
 }
 
 function sendPasswordResetEmail($email, $token) {
+    return sendEmail(
+        $email,
+        'Reset your password - Video Platform',
+        getPasswordResetEmailTemplate($email, $token)
+    );
+}
+
+function sendEmail($to, $subject, $body) {
+    $mail = new PHPMailer(true);
+
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = getenv('SMTP_USERNAME') ?: 'phpdevgmicro@gmail.com';
+        $mail->Password   = getenv('SMTP_PASSWORD') ?: 'N2DFZECX67YGBHRO';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = getenv('SMTP_PORT') ?: 587;
+        
+        // Additional settings for better compatibility
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            )
+        );
+        
+        // Enable verbose debug output (disable in production)
+        $mail->SMTPDebug = 0; // Set to 2 for debugging
+        
+        // Recipients
+        $mail->setFrom(getenv('SMTP_FROM_EMAIL') ?: 'phpdevgmicro@gmail.com', getenv('SMTP_FROM_NAME') ?: 'Video Platform');
+        $mail->addAddress($to);
+        $mail->addReplyTo(getenv('SMTP_FROM_EMAIL') ?: 'phpdevgmicro@gmail.com', getenv('SMTP_FROM_NAME') ?: 'Video Platform');
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $body;
+        $mail->AltBody = strip_tags($body); // Plain text version
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Email sending failed: {$mail->ErrorInfo}");
+        error_log("SMTP Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+function getVerificationEmailTemplate($email, $token) {
     $base_url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
-    $reset_url = $base_url . "/reset-password.html?token=" . $token;
-    
-    $subject = "Reset your password - Video Platform";
-    $message = "
+    $verify_url = $base_url . "/verify-email.html?token=" . $token;
+
+    return "
+    <!DOCTYPE html>
     <html>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>Verify Your Email</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+            .content { padding: 30px; }
+            .btn { display: inline-block; background: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+            .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 12px; }
+        </style>
+    </head>
     <body>
-        <h2>Password Reset Request</h2>
-        <p>Click the link below to reset your password:</p>
-        <p><a href='$reset_url' style='background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Reset Password</a></p>
-        <p>Or copy and paste this link: $reset_url</p>
-        <p>This link will expire in 1 hour.</p>
-        <p>If you didn't request this, please ignore this email.</p>
+        <div class='container'>
+            <div class='header'>
+                <h1>Welcome to Video Platform!</h1>
+            </div>
+            <div class='content'>
+                <p>Thank you for signing up! To complete your registration, please verify your email address and set your password.</p>
+                <p style='text-align: center;'>
+                    <a href='$verify_url' class='btn'>Verify Email & Set Password</a>
+                </p>
+                <p>Or copy and paste this link into your browser:</p>
+                <p style='background: #f8f9fa; padding: 15px; border-radius: 5px; word-break: break-all; font-family: monospace; font-size: 12px;'>$verify_url</p>
+                <p><strong>Important:</strong> This link will expire in 24 hours for security reasons.</p>
+            </div>
+            <div class='footer'>
+                <p>If you didn't create an account, please ignore this email.</p>
+                <p>&copy; 2024 Video Platform. All rights reserved.</p>
+            </div>
+        </div>
     </body>
     </html>
     ";
-    
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= "From: noreply@videoplatform.com" . "\r\n";
-    
-    // For demo purposes, we'll log the email instead of actually sending it
-    error_log("PASSWORD RESET EMAIL - To: $email, Subject: $subject, Link: $reset_url");
-    
-    return true; // Always return true for demo
+}
+
+function getPasswordResetEmailTemplate($email, $token) {
+    $base_url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
+    $reset_url = $base_url . "/reset-password.html?token=" . $token;
+
+    return "
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>Reset Your Password</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #dc3545 0%, #fd79a8 100%); color: white; padding: 30px; text-align: center; }
+            .content { padding: 30px; }
+            .btn { display: inline-block; background: #dc3545; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+            .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+            <div class='header'>
+                <h1>Password Reset Request</h1>
+            </div>
+            <div class='content'>
+                <p>We received a request to reset your password for your Video Platform account.</p>
+                <p style='text-align: center;'>
+                    <a href='$reset_url' class='btn'>Reset Password</a>
+                </p>
+                <p>Or copy and paste this link into your browser:</p>
+                <p style='background: #f8f9fa; padding: 15px; border-radius: 5px; word-break: break-all; font-family: monospace; font-size: 12px;'>$reset_url</p>
+                <p><strong>Important:</strong> This link will expire in 1 hour for security reasons.</p>
+                <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
+            </div>
+            <div class='footer'>
+                <p>For security, this request was sent from IP: " . $_SERVER['REMOTE_ADDR'] . "</p>
+                <p>&copy; 2024 Video Platform. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
 }
 
 function handleUpdateProfile($input) {
