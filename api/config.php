@@ -44,8 +44,15 @@ function createRequiredTables($conn) {
             id VARCHAR(50) PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             email VARCHAR(100) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
+            password VARCHAR(255),
             role ENUM('admin', 'editor', 'viewer') DEFAULT 'viewer',
+            bio TEXT,
+            website VARCHAR(255),
+            profile_picture VARCHAR(255),
+            email_verified BOOLEAN DEFAULT FALSE,
+            verification_token VARCHAR(64),
+            reset_token VARCHAR(64),
+            reset_expires DATETIME,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )",
 
@@ -176,8 +183,12 @@ function initializeMySQL() {
         id VARCHAR(50) PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
+        password VARCHAR(255),
         role ENUM('admin', 'editor', 'viewer') NOT NULL DEFAULT 'viewer',
+        email_verified BOOLEAN DEFAULT FALSE,
+        verification_token VARCHAR(64),
+        reset_token VARCHAR(64),
+        reset_expires DATETIME,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )";
 

@@ -28,10 +28,7 @@
                                 <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" required>
                             </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" required minlength="6">
-                            </div>
+                            
                             <div class="mb-3">
                                 <label for="role" class="form-label">Account Type</label>
                                 <select class="form-select" id="role" required>
@@ -77,38 +74,48 @@
 
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
             const role = document.getElementById('role').value;
 
             // Client-side validation
-            if (!validateForm(name, email, password, role)) {
+            if (!validateForm(name, email, role)) {
                 resetSubmitButton(submitBtn, originalText);
                 return;
             }
 
-            // Simulate network delay
-            setTimeout(() => {
-                // Create new user
-                const newUser = {
-                    id: 'user_' + Date.now(),
+            // Send signup request to server
+            fetch('api/auth.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    action: 'signup',
                     name: name,
                     email: email,
-                    role: role,
-                    created_at: new Date().toISOString()
-                };
-
-                // Store user in localStorage
-                localStorage.setItem('currentUser', JSON.stringify(newUser));
-
-                showNotification('Account created successfully! Redirecting to dashboard...', 'success');
-
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1500);
-            }, 1000);
+                    role: role
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resetSubmitButton(submitBtn, originalText);
+                
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    // Clear form
+                    document.getElementById('signupForm').reset();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                resetSubmitButton(submitBtn, originalText);
+                console.error('Signup error:', error);
+                showNotification('An error occurred. Please try again.', 'error');
+            });
         });
 
-        function validateForm(name, email, password, role) {
+        function validateForm(name, email, role) {
             // Clear previous error states
             clearErrors();
 
@@ -124,15 +131,6 @@
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!email || !emailRegex.test(email)) {
                 showFieldError('email', 'Please enter a valid email address');
-                isValid = false;
-            }
-
-            // Validate password
-            if (!password || password.length < 6) {
-                showFieldError('password', 'Password must be at least 6 characters long');
-                isValid = false;
-            } else if (!/(?=.*[a-z])(?=.*[A-Z])|(?=.*\d)/.test(password)) {
-                showFieldError('password', 'Password should contain uppercase, lowercase, or numbers');
                 isValid = false;
             }
 
@@ -196,52 +194,7 @@
             }
         });
 
-        document.getElementById('password').addEventListener('input', function() {
-            const password = this.value;
-            const strengthIndicator = document.getElementById('passwordStrength') || createPasswordStrengthIndicator();
-            updatePasswordStrength(password, strengthIndicator);
-        });
-
-        function createPasswordStrengthIndicator() {
-            const indicator = document.createElement('div');
-            indicator.id = 'passwordStrength';
-            indicator.className = 'form-text';
-            document.getElementById('password').parentNode.appendChild(indicator);
-            return indicator;
-        }
-
-        function updatePasswordStrength(password, indicator) {
-            if (!password) {
-                indicator.textContent = '';
-                return;
-            }
-
-            let strength = 0;
-            let feedback = [];
-
-            if (password.length >= 6) strength++;
-            else feedback.push('at least 6 characters');
-
-            if (/[a-z]/.test(password)) strength++;
-            else feedback.push('lowercase letter');
-
-            if (/[A-Z]/.test(password)) strength++;
-            else feedback.push('uppercase letter');
-
-            if (/\d/.test(password)) strength++;
-            else feedback.push('number');
-
-            if (/[^a-zA-Z0-9]/.test(password)) strength++;
-
-            const strengthText = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'][strength];
-            const strengthColor = ['text-danger', 'text-warning', 'text-info', 'text-success', 'text-success'][strength];
-
-            if (feedback.length > 0 && password.length < 8) {
-                indicator.innerHTML = `<span class="${strengthColor}">Strength: ${strengthText}</span> - Add: ${feedback.slice(0, 2).join(', ')}`;
-            } else {
-                indicator.innerHTML = `<span class="${strengthColor}">Password strength: ${strengthText}</span>`;
-            }
-        }
+        
 
         // Check if already logged in
         document.addEventListener('DOMContentLoaded', function() {

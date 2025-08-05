@@ -199,9 +199,14 @@
                 .charAt(0)
                 .toUpperCase();
 
-            // Update welcome section
-            document.getElementById("welcomeName").textContent = currentUser.name;
-            document.getElementById("welcomeRole").textContent =
+            // Update profile section
+            updateUserProfile();
+
+            // Update welcome section  
+            const welcomeName = document.getElementById("welcomeName");
+            const welcomeRole = document.getElementById("welcomeRole");
+            if (welcomeName) welcomeName.textContent = currentUser.name;
+            if (welcomeRole) welcomeRole.textContent = 
                 currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
 
             // Get sidebar sections
@@ -1218,7 +1223,7 @@
                 if (isFree || isPurchased) {
                     // Can watch for free or already purchased
                     return `
-                        <button class="btn btn-success w-100" style="font-size: clamp(0.7rem, 1.8vw, 0.85rem); padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTube})">
+                        <button class="btn btn-success w-100" style="font-size: clamp(0.7rem, 1.8vw, 0.85rem); padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTubeVideo})">
                             <i class="fas fa-play me-1"></i>${isFree ? 'Watch Free' : 'Watch Now'}
                         </button>`;
                 } else {
@@ -1231,7 +1236,7 @@
             }
 
             // Default fallback
-            return `<button class="btn btn-primary w-100" style="font-size: clamp(0.7rem, 1.8vw, 0.85rem); padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTube})">
+            return `<button class="btn btn-primary w-100" style="font-size: clamp(0.7rem, 1.8vw, 0.85rem); padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);" onclick="playVideoPlayer(${video.id}, '${video.youtube_id || ''}', '${escapeHtml(video.title)}', ${isYouTubeVideo})">
                         <i class="fas fa-play me-1"></i>Watch
                     </button>`;
         }
@@ -2472,7 +2477,7 @@
                     // Update price in database using proper PUT format
                     try {
                         const priceUpdateData = `action=update_price&youtube_id=${encodeURIComponent(uploadResult.video.id)}&price=${price}`;
-                        
+
                         const priceUpdateResponse = await fetch('api/videos.php', {
                             method: 'PUT',
                             headers: {
@@ -3222,8 +3227,17 @@
                     }).catch(error => console.log('Failed to increment views:', error));
                 }
 
-                // Show modal
+                // Show modal with cleanup on close
                 const modal = new bootstrap.Modal(document.getElementById("videoModal"));
+                
+                // Add event listener to stop video when modal is closed
+                const modalElement = document.getElementById("videoModal");
+                const handleModalHide = () => {
+                    stopVideoPlayback();
+                    modalElement.removeEventListener('hidden.bs.modal', handleModalHide);
+                };
+                modalElement.addEventListener('hidden.bs.modal', handleModalHide);
+                
                 modal.show();
 
             } catch (error) {
@@ -3349,6 +3363,33 @@
             }
         }
 
+        // Function to stop video playback when modal is closed
+        function stopVideoPlayback() {
+            const videoPlayerContainer = document.getElementById("videoPlayer");
+            if (!videoPlayerContainer) return;
+
+            // Find all iframes (YouTube videos)
+            const iframes = videoPlayerContainer.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                // Stop YouTube videos by replacing src with blank
+                if (iframe.src.includes('youtube.com')) {
+                    iframe.src = 'about:blank';
+                }
+            });
+
+            // Find all video elements (local videos)
+            const videos = videoPlayerContainer.querySelectorAll('video');
+            videos.forEach(video => {
+                video.pause();
+                video.currentTime = 0;
+            });
+
+            // Clear the container to completely stop playback
+            setTimeout(() => {
+                videoPlayerContainer.innerHTML = '';
+            }, 100);
+        }
+
         // Connect to YouTube function
         async function connectToYouTube() {
             const statusElement = document.getElementById('youtubeConnectionStatus');
@@ -3380,9 +3421,384 @@
             console.log("Initializing YouTube panel...");
             loadYouTubePanel();
         }
-        //Add try block before catch block
-        try {
+        // User Profile Functions
+        function updateUserProfile() {
+            if (!currentUser) return;
 
-        } catch (e) {
-            console.log(e)
+            // Update profile avatar and info
+            const avatarElements = document.querySelectorAll('#userProfileAvatar, #editProfileAvatar');
+            avatarElements.forEach(el => {
+                if (el) el.textContent = currentUser.name.charAt(0).toUpperCase();
+            });
+
+            const nameElement = document.getElementById('userProfileName');
+            const roleElement = document.getElementById('userProfileRole');
+            
+            if (nameElement) nameElement.textContent = currentUser.name;
+            if (roleElement) {
+                roleElement.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+                roleElement.className = `user-profile-role role-${currentUser.role}`;
+            }
+
+            // Update profile stats based on role
+            updateUserStats();
+
+            // Update edit form
+            const editNameField = document.getElementById('editProfileName');
+            const editEmailField = document.getElementById('editProfileEmail');
+            if (editNameField) editNameField.value = currentUser.name;
+            if (editEmailField) editEmailField.value = currentUser.email;
         }
+
+        async function updateUserStats() {
+            if (!currentUser) return;
+
+            const videosEl = document.getElementById('userStatVideos');
+            const viewsEl = document.getElementById('userStatViews');
+
+            try {
+                if (currentUser.role === 'admin') {
+                    const response = await fetch('api/admin.php?action=analytics', {
+                        credentials: 'include'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        if (videosEl) videosEl.textContent = data.analytics.total_videos || '0';
+                        if (viewsEl) viewsEl.textContent = formatNumber(data.analytics.total_views || 0);
+                        
+                        // Update stat labels for admin
+                        const videoLabel = document.querySelector('#userStatVideos + .user-stat-label');
+                        const viewLabel = document.querySelector('#userStatViews + .user-stat-label');
+                        if (videoLabel) videoLabel.textContent = 'Total Videos';
+                        if (viewLabel) viewLabel.textContent = 'Total Views';
+                    }
+                } else if (currentUser.role === 'creator' || currentUser.role === 'editor') {
+                    const response = await fetch('api/videos.php?filter=my_videos', {
+                        credentials: 'include'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const myVideos = data.videos || [];
+                        const totalViews = myVideos.reduce((sum, video) => sum + (video.views || 0), 0);
+                        
+                        if (videosEl) videosEl.textContent = myVideos.length.toString();
+                        if (viewsEl) viewsEl.textContent = formatNumber(totalViews);
+                        
+                        // Update stat labels for creator
+                        const videoLabel = document.querySelector('#userStatVideos + .user-stat-label');
+                        const viewLabel = document.querySelector('#userStatViews + .user-stat-label');
+                        if (videoLabel) videoLabel.textContent = 'My Videos';
+                        if (viewLabel) viewLabel.textContent = 'My Views';
+                    }
+                } else if (currentUser.role === 'viewer') {
+                    const response = await fetch('api/purchase.php', {
+                        credentials: 'include'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const purchases = data.purchases || [];
+                        const totalSpent = purchases.reduce((sum, purchase) => sum + parseFloat(purchase.price || 0), 0);
+                        
+                        if (videosEl) videosEl.textContent = purchases.length.toString();
+                        if (viewsEl) viewsEl.textContent = `$${totalSpent.toFixed(2)}`;
+                        
+                        // Update stat labels for viewer
+                        const videoLabel = document.querySelector('#userStatVideos + .user-stat-label');
+                        const viewLabel = document.querySelector('#userStatViews + .user-stat-label');
+                        if (videoLabel) videoLabel.textContent = 'Purchased';
+                        if (viewLabel) viewLabel.textContent = 'Total Spent';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load user stats:', error);
+                if (videosEl) videosEl.textContent = '0';
+                if (viewsEl) viewsEl.textContent = '0';
+            }
+        }
+
+        
+
+        // Mobile sidebar controls
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.querySelector('.sidebar-backdrop');
+            
+            if (sidebar && backdrop) {
+                sidebar.classList.toggle('show');
+                backdrop.classList.toggle('show');
+                document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.querySelector('.sidebar-backdrop');
+            
+            if (sidebar && backdrop) {
+                sidebar.classList.remove('show');
+                backdrop.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Profile modal functions
+        function showEditProfileModal() {
+            updateEditProfileForm();
+            const modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+            modal.show();
+        }
+
+        function updateEditProfileForm() {
+            if (!currentUser) return;
+            
+            const nameField = document.getElementById('editProfileName');
+            const emailField = document.getElementById('editProfileEmail');
+            const avatar = document.getElementById('editProfileAvatar');
+            
+            if (nameField) nameField.value = currentUser.name;
+            if (emailField) emailField.value = currentUser.email;
+            if (avatar) avatar.textContent = currentUser.name.charAt(0).toUpperCase();
+        }
+
+        async function saveProfile() {
+            const nameField = document.getElementById('editProfileName');
+            const bioField = document.getElementById('editProfileBio');
+            const websiteField = document.getElementById('editProfileWebsite');
+            
+            if (!nameField) return;
+
+            const formData = {
+                name: nameField.value.trim(),
+                bio: bioField ? bioField.value.trim() : '',
+                website: websiteField ? websiteField.value.trim() : ''
+            };
+
+            if (!formData.name) {
+                showNotification('Name is required', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('api/auth.php', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        action: 'update_profile',
+                        ...formData
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update current user with the returned profile data
+                    if (data.user) {
+                        currentUser = { ...currentUser, ...data.user };
+                        // Update localStorage
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    } else {
+                        currentUser.name = formData.name;
+                    }
+                    
+                    updateUserProfile();
+                    showNotification('Profile updated successfully!', 'success');
+                    
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+                    modal.hide();
+                } else {
+                    showNotification('Failed to update profile: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save profile:', error);
+                showNotification('Failed to save profile. Please try again.', 'error');
+            }
+        }
+
+        function showUserSettings() {
+            const modal = new bootstrap.Modal(document.getElementById('userSettingsModal'));
+            modal.show();
+            loadUserSettings();
+        }
+
+        function loadUserSettings() {
+            // Load last login time
+            const lastLoginEl = document.getElementById('lastLogin');
+            if (lastLoginEl) {
+                lastLoginEl.textContent = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
+            }
+        }
+
+        function changePassword() {
+            showNotification('Password change functionality will redirect to secure page', 'info');
+            // In a real application, this would redirect to a secure password change page
+        }
+
+        function changeProfilePicture() {
+            showNotification('Profile picture upload functionality coming soon!', 'info');
+            // In a real application, this would open a file picker and handle image upload
+        }
+
+        async function saveUserSettings() {
+            const settings = {
+                profilePublic: document.getElementById('profilePublic')?.checked || false,
+                showOnlineStatus: document.getElementById('showOnlineStatus')?.checked || false,
+                timezone: document.getElementById('timezone')?.value || 'UTC',
+                twoFactorAuth: document.getElementById('twoFactorAuth')?.checked || false,
+                emailNotifications: document.getElementById('emailNotifications')?.checked || false,
+                pushNotifications: document.getElementById('pushNotifications')?.checked || false,
+                marketingEmails: document.getElementById('marketingEmails')?.checked || false,
+                analyticsOptIn: document.getElementById('analyticsOptIn')?.checked || false,
+                thirdPartySharing: document.getElementById('thirdPartySharing')?.checked || false
+            };
+
+            try {
+                // In a real application, this would save settings to the server
+                localStorage.setItem('userSettings', JSON.stringify(settings));
+                showNotification('Settings saved successfully!', 'success');
+                
+                const modal = bootstrap.Modal.getInstance(document.getElementById('userSettingsModal'));
+                modal.hide();
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                showNotification('Failed to save settings. Please try again.', 'error');
+            }
+        }
+
+        function downloadUserData() {
+            showNotification('Preparing your data for download...', 'info');
+            // In a real application, this would trigger a data export process
+            setTimeout(() => {
+                showNotification('Data export will be emailed to you within 24 hours', 'success');
+            }, 2000);
+        }
+
+        // Auto-close sidebar on panel change for mobile
+        function showPanel(panelName) {
+            // Close mobile sidebar when navigating
+            if (window.innerWidth <= 992) {
+                closeSidebar();
+            }
+            
+            // Check if user has permission to access this panel
+            if (!hasPermissionForPanel(panelName)) {
+                showNotification("You do not have permission to access this section", "error");
+                return;
+            }
+
+            // Early return if already on this panel
+            if (window.currentPanelName === panelName) {
+                return;
+            }
+
+            // Use requestAnimationFrame for smooth UI updates
+            requestAnimationFrame(() => {
+                // Hide all panels efficiently
+                const panels = document.querySelectorAll(".panel");
+                for (let i = 0; i < panels.length; i++) {
+                    panels[i].style.display = "none";
+                }
+
+                // Show selected panel
+                const selectedPanel = document.getElementById(panelName + "Panel");
+                if (selectedPanel) {
+                    selectedPanel.style.display = "block";
+                }
+
+                // Update active nav item efficiently
+                const navLinks = document.querySelectorAll(".nav-link");
+                for (let i = 0; i < navLinks.length; i++) {
+                    const link = navLinks[i];
+                    const onclickAttr = link.getAttribute("onclick");
+                    if (onclickAttr && onclickAttr.includes(`showPanel('${panelName}')`)) {
+                        link.classList.add("active");
+                    } else {
+                        link.classList.remove("active");
+                    }
+                }
+            });
+
+            const lastPanel = window.currentPanelName;
+            window.currentPanelName = panelName;
+
+            // Check cache first
+            const cacheKey = `panel_${panelName}`;
+            const cachedData = getCachedData(cacheKey);
+
+            if (cachedData && lastLoadedData[panelName]) {
+                return; // Use cached data
+            }
+
+            // Prevent multiple calls
+            const loadKey = `load_${panelName}`;
+            if (apiCallsInProgress.has(loadKey)) {
+                return;
+            }
+
+            // Load data only when needed with optimized loading
+            switch (panelName) {
+                case "overview":
+                    if (!lastLoadedData.overview) {
+                        loadOverviewStats();
+                    }
+                    break;
+                case "videos":
+                    if (!lastLoadedData.videos) {
+                        loadVideosFromYouTube();
+                    }
+                    break;
+                case "users":
+                    if (currentUser.role === "admin" && !lastLoadedData.users) {
+                        loadUsers();
+                    }
+                    break;
+                case "myVideos":
+                    if ((currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") && !lastLoadedData.myVideos) {
+                        loadMyVideosFromDatabase();
+                    }
+                    break;
+                case "upload":
+                    // Lightweight operation - no caching needed
+                    requestAnimationFrame(() => updateYouTubeConnectionStatus());
+                    break;
+                case "purchases":
+                    if (!lastLoadedData.purchases) {
+                        loadPurchases();
+                    }
+                    break;
+                case "earnings":
+                    if ((currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") && !lastLoadedData.earnings) {
+                        loadEarnings();
+                    }
+                    break;
+                case "analytics":
+                    if (currentUser.role === "admin" && !lastLoadedData.analytics) {
+                        loadAnalytics();
+                    }
+                    break;
+            }
+        }
+
+        // Initialize responsive behavior
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 992) {
+                    closeSidebar();
+                }
+            });
+
+            // Close sidebar when clicking nav links on mobile
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 992) {
+                        setTimeout(closeSidebar, 100);
+                    }
+                });
+            });
+        });

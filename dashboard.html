@@ -39,60 +39,89 @@
         </div>
     </div>
 
+    <!-- Mobile Sidebar Toggle -->
+    <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Backdrop -->
+    <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+
     <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0">
-                <div class="bg-white shadow-sm h-100" style="min-height: calc(100vh - 56px);">
-                    <div class="p-3">
-                        <div class="welcome-section mb-4">
-                            <h5>Welcome back,</h5>
-                            <p class="text-muted mb-0" id="welcomeName">Admin User</p>
-                            <small class="text-muted" id="welcomeRole">Admin</small>
+        <div class="dashboard-grid">
+            <!-- Enhanced Sidebar -->
+            <div class="sidebar-container" id="sidebar">
+                <div class="user-profile-section">
+                    <div class="user-profile-header">
+                        <div class="user-profile-avatar" id="userProfileAvatar">A</div>
+                        <div class="user-profile-info">
+                            <h6 id="userProfileName">Admin User</h6>
+                            <div class="user-profile-role" id="userProfileRole">Admin</div>
                         </div>
-
-                        <nav class="nav flex-column">
-                            <a class="nav-link active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
-                                <i class="fas fa-chart-bar me-2"></i>Overview
-                            </a>
-
-                            <!-- Viewer Sidebar -->
-                            <div id="viewerSidebar" style="display: none;">
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
-                                    <i class="fas fa-video me-2"></i>Videos
-                                </a>
-                            </div>
-
-                            <!-- Creator Sidebar -->
-                            <div id="creatorSidebar" style="display: none;">
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('myVideos'); return false;">
-                                    <i class="fas fa-film me-2"></i>My Videos
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('upload'); return false;">
-                                    <i class="fas fa-upload me-2"></i>Upload Video
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('earnings'); return false;">
-                                    <i class="fas fa-dollar-sign me-2"></i>Earnings
-                                </a>
-                            </div>
-
-                            <!-- Admin Sidebar -->
-                            <div id="adminSidebar" style="display: none;">
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
-                                    <i class="fas fa-video me-2"></i>All Videos
-                                </a>
-                                <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('users'); return false;">
-                                    <i class="fas fa-users me-2"></i>User Management
-                                </a>
-                            </div>
-                        </nav>
+                    </div>
+                    
+                    <div class="user-profile-stats" id="userProfileStats">
+                        <div class="user-stat">
+                            <span class="user-stat-value" id="userStatVideos">0</span>
+                            <span class="user-stat-label">Videos</span>
+                        </div>
+                        <div class="user-stat">
+                            <span class="user-stat-value" id="userStatViews">0</span>
+                            <span class="user-stat-label">Views</span>
+                        </div>
+                    </div>
+                    
+                    <div class="user-profile-actions">
+                        <button class="btn btn-outline-primary btn-sm" onclick="showEditProfileModal()">
+                            <i class="fas fa-edit me-1"></i>Edit
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="showUserSettings()">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </button>
                     </div>
                 </div>
+
+                
+
+                        <nav class="nav flex-column">
+                    <a class="nav-link active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
+                        <i class="fas fa-chart-bar me-2"></i>Overview
+                    </a>
+
+                    <!-- Viewer Sidebar -->
+                    <div id="viewerSidebar" style="display: none;">
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
+                            <i class="fas fa-video me-2"></i>Videos
+                        </a>
+                    </div>
+
+                    <!-- Creator Sidebar -->
+                    <div id="creatorSidebar" style="display: none;">
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('myVideos'); return false;">
+                            <i class="fas fa-film me-2"></i>My Videos
+                        </a>
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('upload'); return false;">
+                            <i class="fas fa-upload me-2"></i>Upload Video
+                        </a>
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('earnings'); return false;">
+                            <i class="fas fa-dollar-sign me-2"></i>Earnings
+                        </a>
+                    </div>
+
+                    <!-- Admin Sidebar -->
+                    <div id="adminSidebar" style="display: none;">
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
+                            <i class="fas fa-video me-2"></i>All Videos
+                        </a>
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('users'); return false;">
+                            <i class="fas fa-users me-2"></i>User Management
+                        </a>
+                    </div>
+                </nav>
             </div>
 
             <!-- Main Content -->
-            <div class="col-md-9 col-lg-10">
-                <div class="p-4">
+            <div class="main-content">
                     <!-- Loading Spinner -->
                     <div id="loadingSpinner" class="text-center py-5" style="display: none;">
                         <div class="spinner-border text-primary" role="status">
@@ -562,6 +591,181 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" onclick="confirmPurchase()">Confirm Purchase</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-edit me-2"></i>Edit Profile
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProfileForm">
+                        <div class="text-center mb-4">
+                            <div class="user-profile-avatar mx-auto mb-3" id="editProfileAvatar">A</div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeProfilePicture()">
+                                <i class="fas fa-camera me-1"></i>Change Picture
+                            </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editProfileName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="editProfileName" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editProfileEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editProfileEmail" readonly>
+                            <div class="form-text">Email cannot be changed</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editProfileBio" class="form-label">Bio</label>
+                            <textarea class="form-control" id="editProfileBio" rows="3" placeholder="Tell us about yourself..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editProfileWebsite" class="form-label">Website</label>
+                            <input type="url" class="form-control" id="editProfileWebsite" placeholder="https://example.com">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProfile()">
+                        <i class="fas fa-save me-1"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Settings Modal -->
+    <div class="modal fade" id="userSettingsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-cog me-2"></i>User Settings
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="nav flex-column nav-pills" role="tablist">
+                                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#account-settings" type="button">
+                                    <i class="fas fa-user me-2"></i>Account
+                                </button>
+                                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#security-settings" type="button">
+                                    <i class="fas fa-shield-alt me-2"></i>Security
+                                </button>
+                                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#notification-settings" type="button">
+                                    <i class="fas fa-bell me-2"></i>Notifications
+                                </button>
+                                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#privacy-settings" type="button">
+                                    <i class="fas fa-lock me-2"></i>Privacy
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="account-settings">
+                                    <h6 class="mb-3">Account Settings</h6>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="profilePublic" checked>
+                                        <label class="form-check-label" for="profilePublic">
+                                            Make profile public
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="showOnlineStatus" checked>
+                                        <label class="form-check-label" for="showOnlineStatus">
+                                            Show online status
+                                        </label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="timezone" class="form-label">Timezone</label>
+                                        <select class="form-select" id="timezone">
+                                            <option value="UTC">UTC</option>
+                                            <option value="America/New_York">Eastern Time</option>
+                                            <option value="America/Chicago">Central Time</option>
+                                            <option value="America/Denver">Mountain Time</option>
+                                            <option value="America/Los_Angeles">Pacific Time</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="security-settings">
+                                    <h6 class="mb-3">Security Settings</h6>
+                                    <button class="btn btn-outline-primary mb-3" onclick="changePassword()">
+                                        <i class="fas fa-key me-1"></i>Change Password
+                                    </button>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="twoFactorAuth">
+                                        <label class="form-check-label" for="twoFactorAuth">
+                                            Enable Two-Factor Authentication
+                                        </label>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Last login: <span id="lastLogin">Loading...</span>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="notification-settings">
+                                    <h6 class="mb-3">Notification Preferences</h6>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                        <label class="form-check-label" for="emailNotifications">
+                                            Email notifications
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="pushNotifications" checked>
+                                        <label class="form-check-label" for="pushNotifications">
+                                            Push notifications
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="marketingEmails">
+                                        <label class="form-check-label" for="marketingEmails">
+                                            Marketing emails
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="privacy-settings">
+                                    <h6 class="mb-3">Privacy Settings</h6>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="analyticsOptIn" checked>
+                                        <label class="form-check-label" for="analyticsOptIn">
+                                            Allow analytics data collection
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="thirdPartySharing">
+                                        <label class="form-check-label" for="thirdPartySharing">
+                                            Allow third-party data sharing
+                                        </label>
+                                    </div>
+                                    <button class="btn btn-outline-danger" onclick="downloadUserData()">
+                                        <i class="fas fa-download me-1"></i>Download My Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUserSettings()">
+                        <i class="fas fa-save me-1"></i>Save Settings
+                    </button>
                 </div>
             </div>
         </div>
