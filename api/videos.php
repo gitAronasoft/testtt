@@ -50,25 +50,33 @@ function handleGetVideos() {
     // Handle single video request
     if (isset($_GET['id'])) {
         $video_id = intval($_GET['id']);
+
+        // Optimized query with specific columns
         $sql = "
-            SELECT v.*, u.name as uploader_name,
+            SELECT v.id, v.title, v.description, v.price, v.views, v.file_path, 
+                   v.category, v.created_at, v.youtube_id, v.youtube_thumbnail,
+                   v.youtube_channel_id, v.youtube_channel_title, v.youtube_views,
+                   v.youtube_likes, v.youtube_comments, v.is_youtube_synced,
+                   u.name as uploader_name, v.uploader_id,
                    CASE WHEN p.user_id IS NOT NULL THEN 1 ELSE 0 END as purchased
             FROM videos v 
             JOIN users u ON v.uploader_id = u.id 
             LEFT JOIN purchases p ON v.id = p.video_id AND p.user_id = ?
             WHERE v.id = ?
+            LIMIT 1
         ";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ii", $user_id, $video_id);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows === 0) {
+            http_response_code(404);
             echo json_encode(['success' => false, 'message' => 'Video not found']);
             $conn->close();
             return;
         }
-        
+
         $row = $result->fetch_assoc();
         $video = [
             'id' => (int)$row['id'],
@@ -91,7 +99,7 @@ function handleGetVideos() {
             'youtube_comments' => (int)($row['youtube_comments'] ?? 0),
             'is_youtube_synced' => (bool)$row['is_youtube_synced']
         ];
-        
+
         echo json_encode(['success' => true, 'video' => $video]);
         $conn->close();
         return;
@@ -99,11 +107,18 @@ function handleGetVideos() {
 
     // Get filter parameters for multiple videos
     $filter = $_GET['filter'] ?? 'all';
+    $limit = min((int)($_GET['limit'] ?? 50), 100); // Max 100 videos per request
+    $offset = max(0, (int)($_GET['offset'] ?? 0));
 
+    // Optimized query with specific columns
     $sql = "
-        SELECT v.*, u.name as uploader_name,
+        SELECT v.id, v.title, v.description, v.price, v.views, v.file_path,
+               v.category, v.created_at, v.youtube_id, v.youtube_thumbnail,
+               v.youtube_channel_id, v.youtube_channel_title, v.youtube_views,
+               v.youtube_likes, v.youtube_comments, v.is_youtube_synced,
+               u.name as uploader_name, v.uploader_id,
                CASE WHEN p.user_id IS NOT NULL THEN 1 ELSE 0 END as purchased
-        FROM videos v 
+        FROM videos v
         JOIN users u ON v.uploader_id = u.id 
         LEFT JOIN purchases p ON v.id = p.video_id AND p.user_id = ?
     ";
@@ -111,7 +126,7 @@ function handleGetVideos() {
     $params = [$user_id];
     $types = "i";
 
-    // Apply filters
+    // Apply filters with optimized conditions
     switch ($filter) {
         case 'free':
             $sql .= " WHERE v.price = 0";
@@ -124,10 +139,8 @@ function handleGetVideos() {
             break;
         case 'my_videos':
             if ($user_role === 'viewer') {
-                // Viewers can only see purchased videos in "my videos"
                 $sql .= " WHERE p.user_id IS NOT NULL";
             } else {
-                // Editors/admins see their uploaded videos
                 $sql .= " WHERE v.uploader_id = ?";
                 $params[] = $user_id;
                 $types .= "i";
@@ -135,7 +148,10 @@ function handleGetVideos() {
             break;
     }
 
-    $sql .= " ORDER BY v.created_at DESC";
+    $sql .= " ORDER BY v.created_at DESC LIMIT ? OFFSET ?";
+    $params[] = $limit;
+    $params[] = $offset;
+    $types .= "ii";
 
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
@@ -181,7 +197,7 @@ function handleUploadVideo() {
     // Handle both JSON and FormData requests
     $input = null;
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-    
+
     if (strpos($contentType, 'application/json') !== false) {
         $input = json_decode(file_get_contents('php://input'), true);
     } else if (strpos($contentType, 'multipart/form-data') !== false) {
@@ -193,10 +209,10 @@ function handleUploadVideo() {
             if (!file_exists($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
-            
+
             $fileName = time() . '_' . $_FILES['videoFile']['name'];
             $targetPath = $uploadDir . $fileName;
-            
+
             if (move_uploaded_file($_FILES['videoFile']['tmp_name'], $targetPath)) {
                 $input['file_path'] = $targetPath;
             }
@@ -277,7 +293,7 @@ function handleUploadVideo() {
         $check_existing->bind_param("si", $title, $_SESSION['user']['id']);
         $check_existing->execute();
         $existing = $check_existing->get_result();
-        
+
         if ($existing->num_rows > 0) {
             echo json_encode(['success' => false, 'message' => 'Video already exists in database']);
             $conn->close();
@@ -330,34 +346,55 @@ function handleUploadVideo() {
 }
 
 function handleUpdateVideo() {
-    parse_str(file_get_contents("php://input"), $input);
-    $video_id = $input['id'] ?? null;
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 
-    if (!$video_id) {
+    if (strpos($contentType, 'application/json') !== false) {
+        $input = json_decode(file_get_contents('php://input'), true);
+    } else {
+        parse_str(file_get_contents("php://input"), $input);
+    }
+
+    $video_id = $input['id'] ?? null;
+    $youtube_id = $input['youtube_id'] ?? null; // Added for YouTube ID based updates
+
+    // For price updates by YouTube ID, we don't need a regular video ID
+    if (!$video_id && !$youtube_id) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Video ID is required']);
+        echo json_encode(['success' => false, 'message' => 'Video ID or YouTube ID is required']);
         return;
     }
 
     $conn = getConnection();
 
-    // Check if user owns the video or is admin
-    $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
-    $check_owner->bind_param("i", $video_id);
-    $check_owner->execute();
-    $result = $check_owner->get_result();
+    // For YouTube ID updates, handle differently
+    if (isset($input['action']) && $input['action'] === 'update_price' && $youtube_id && !$video_id) {
+        // Direct price update by YouTube ID - skip ownership check here, handle in the action
+        $video = ['uploader_id' => $_SESSION['user']['id']]; // Assume ownership for YouTube uploads
+    } else {
+        // Check if user owns the video or is admin for regular video ID updates
+        if (!$video_id) {
+            echo json_encode(['success' => false, 'message' => 'Video ID is required for this operation']);
+            $conn->close();
+            return;
+        }
 
-    if ($result->num_rows === 0) {
-        echo json_encode(['success' => false, 'message' => 'Video not found']);
-        $conn->close();
-        return;
+        $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
+        $check_owner->bind_param("i", $video_id);
+        $check_owner->execute();
+        $result = $check_owner->get_result();
+
+        if ($result->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'Video not found']);
+            $conn->close();
+            return;
+        }
+
+        $video = $result->fetch_assoc();
     }
 
-    $video = $result->fetch_assoc();
-    
     // Allow view increment for all authenticated users, other actions require ownership/admin
     $is_view_increment = isset($input['action']) && $input['action'] === 'increment_views';
-    
+
     if (!$is_view_increment && $video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Not authorized to edit this video']);
@@ -377,7 +414,7 @@ function handleUpdateVideo() {
         // Update video price by YouTube ID
         $youtube_id = $input['youtube_id'];
         $price = floatval($input['price']);
-        
+
         if ($price < 0) {
             echo json_encode(['success' => false, 'message' => 'Price cannot be negative']);
             $conn->close();
@@ -386,26 +423,33 @@ function handleUpdateVideo() {
 
         $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE youtube_id = ? AND uploader_id = ?");
         $update_price->bind_param("dsi", $price, $youtube_id, $_SESSION['user']['id']);
-        
+
         if ($update_price->execute()) {
             echo json_encode(['success' => true, 'message' => 'Video price updated']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to update price']);
         }
-    } else if (isset($input['price'])) {
-        // Update video price by video ID
-        $price = floatval($input['price']);
+    } else if (isset($input['price']) || isset($input['action']) && $input['action'] === 'update_price') {
+        // Update video price by video ID or YouTube ID
+        $price = floatval($input['price'] ?? 0);
         if ($price < 0) {
             echo json_encode(['success' => false, 'message' => 'Price cannot be negative']);
             $conn->close();
             return;
         }
 
-        $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE id = ?");
-        $update_price->bind_param("di", $price, $video_id);
-        
+        // Check if updating by YouTube ID
+        if (isset($input['youtube_id'])) {
+            $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE youtube_id = ? AND uploader_id = ?");
+            $update_price->bind_param("dsi", $price, $input['youtube_id'], $_SESSION['user']['id']);
+        } else {
+            // Update by video ID
+            $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE id = ? AND uploader_id = ?");
+            $update_price->bind_param("dii", $price, $video_id, $_SESSION['user']['id']);
+        }
+
         if ($update_price->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Video price updated']);
+            echo json_encode(['success' => true, 'message' => 'Video price updated successfully']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to update price']);
         }

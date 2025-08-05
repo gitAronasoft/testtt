@@ -287,7 +287,7 @@ class YouTubeAPIClient {
 
             if (result.id) {
                 // Step 3: Sync with our database
-                const syncSuccess = await this.syncVideoToDatabase(result);
+                const syncSuccess = await this.syncVideoToDatabase(result, metadata.price);
 
                 if (progressCallback) progressCallback(100);
 
@@ -345,7 +345,7 @@ class YouTubeAPIClient {
     /**
      * Sync uploaded video metadata with our database
      */
-    async syncVideoToDatabase(youtubeVideo) {
+    async syncVideoToDatabase(youtubeVideo, price = 0) {
         try {
             // Get detailed statistics for the video
             const videoDetails = await this.getVideoDetails([youtubeVideo.id]);
@@ -362,7 +362,7 @@ class YouTubeAPIClient {
                 youtube_likes: detailedVideo.likes || 0,
                 youtube_comments: detailedVideo.comments || 0,
                 is_youtube_synced: true,
-                price: 0,
+                price: parseFloat(price) || 0,
                 category: 'youtube',
                 file_path: ''
             };

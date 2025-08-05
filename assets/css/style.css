@@ -459,7 +459,7 @@ p {
     z-index: 2;
 }
 
-/* Video Cards - Clean Design */
+/* Enhanced Video Cards - Clean and Modern */
 .video-card {
     overflow: hidden;
     border-radius: 16px;
@@ -468,12 +468,20 @@ p {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     position: relative;
     cursor: pointer;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .video-card:hover {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    transform: translateY(-6px);
+    border-color: #d1d5db;
+}
+
+.video-card:hover .video-thumbnail img {
+    transform: scale(1.05);
 }
 
 /* Clean thumbnail styling */
@@ -481,6 +489,8 @@ p {
     position: relative;
     overflow: hidden;
     border-radius: 16px 16px 0 0;
+    flex-shrink: 0;
+    background: #f8f9fa;
 }
 
 .video-thumbnail img {
@@ -488,69 +498,170 @@ p {
     height: 100%;
     object-fit: cover;
     display: block;
+    transition: transform 0.3s ease;
 }
 
-.thumbnail-loading {
-    display: none;
-}
-
-/* Simple play button overlay */
+/* Clean play button overlay */
 .play-button-overlay {
-    opacity: 0.95;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.video-card:hover .play-button-overlay {
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .play-button-overlay .bg-dark {
-    background: rgba(0, 0, 0, 0.7) !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 /* Enhanced badges */
 .video-card .badge {
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     font-weight: 600;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
+    font-size: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Price info styling */
-.price-info {
-    border: 2px solid rgba(var(--primary-600), 0.1);
-    transition: all 0.3s ease;
+/* Card content spacing */
+.video-card .card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
 }
 
-.video-card:hover .price-info {
-    border-color: rgba(var(--primary-600), 0.3);
-    background: rgba(var(--primary-600), 0.05) !important;
+.video-card .card-title {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
 }
 
-/* Video duration badge */
-.video-duration-badge {
-    backdrop-filter: blur(10px);
+.video-card .card-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    flex-grow: 1;
 }
 
-/* Responsive video grid */
-@media (max-width: 1200px) {
+.video-meta {
+    border-top: 1px solid #f3f4f6;
+    padding-top: 0.75rem;
+    margin-top: auto;
+}
+
+/* Improved responsive grid layout */
+@media (min-width: 1400px) {
+    /* Extra large screens - 4 columns */
+    .video-card {
+        margin-bottom: 2rem;
+    }
+}
+
+@media (min-width: 1200px) and (max-width: 1399px) {
+    /* Large screens - 4 columns */
+    .video-card {
+        margin-bottom: 1.75rem;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+    /* Medium-large screens - 3 columns */
     .video-card {
         margin-bottom: 1.5rem;
     }
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) and (max-width: 991px) {
+    /* Medium screens - 3 columns */
     .video-card {
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
     }
-    
-    .video-thumbnail {
-        height: 180px !important;
-    }
-    
+
     .card-body {
         padding: 1rem !important;
     }
 }
 
+@media (min-width: 576px) and (max-width: 767px) {
+    /* Small screens - 2 columns */
+    .video-card {
+        margin-bottom: 1rem;
+    }
+
+    .card-body {
+        padding: 0.875rem !important;
+    }
+}
+
+@media (max-width: 575px) {
+    /* Extra small screens - 1 column */
+    .video-card {
+        margin-bottom: 1rem;
+    }
+
+    .card-body {
+        padding: 0.75rem !important;
+    }
+
+    /* Single column on mobile for better readability */
+    .col-12:not(.col-sm-6):not(.col-md-4):not(.col-lg-3) {
+        max-width: 100%;
+    }
+}
+
+/* Responsive text scaling */
+@media (max-width: 480px) {
+    .video-card .card-title {
+        font-size: 0.8rem !important;
+        line-height: 1.2 !important;
+        height: 2.2em !important;
+    }
+
+    .video-card .card-text {
+        font-size: 0.7rem !important;
+        height: 2.2em !important;
+    }
+
+    .video-meta small {
+        font-size: 0.65rem !important;
+    }
+}
+
+/* Container responsiveness */
+@media (max-width: 1200px) {
+    .container-fluid .row {
+        margin: 0 -8px;
+    }
+
+    .container-fluid .row > [class*="col-"] {
+        padding: 0 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container-fluid .row {
+        margin: 0 -6px;
+    }
+
+    .container-fluid .row > [class*="col-"] {
+        padding: 0 6px;
+    }
+}
+
 @media (max-width: 576px) {
-    .video-thumbnail {
-        height: 160px !important;
+    .container-fluid .row {
+        margin: 0 -4px;
+    }
+
+    .container-fluid .row > [class*="col-"] {
+        padding: 0 4px;
     }
 }
 
