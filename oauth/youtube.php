@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require_once '../api/config.php';
@@ -16,7 +15,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 
 $client_id = '824425517340-c4g9ilvg3i7cddl75hvq1a8gromuc95n.apps.googleusercontent.com';
 $client_secret = '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';
-$redirect_uri = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . '/oauth/youtube';
+$redirect_uri = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . '/video-platform/oauth/youtube.php';
 
 if (isset($_GET['code'])) {
     // Exchange code for tokens

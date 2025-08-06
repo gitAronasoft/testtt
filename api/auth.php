@@ -189,7 +189,7 @@ function handleSignup($input) {
     $stmt->bind_param("sssss", $user_id, $name, $email, $role, $verification_token);
 
     if ($stmt->execute()) {
-        // Send verification email
+        // Send verification email        
         if (sendVerificationEmail($email, $verification_token)) {
             echo json_encode([
                 'success' => true,

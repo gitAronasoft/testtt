@@ -93,7 +93,7 @@ class YouTubeAPIClient {
      */
     async signIn() {
         return new Promise((resolve) => {
-            const redirectUri = encodeURIComponent(window.location.origin + '/oauth/youtube');
+            const redirectUri = encodeURIComponent(window.location.origin + '/video-platform/oauth/youtube.php');
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
                 `client_id=${this.clientId}&` +
                 `redirect_uri=${redirectUri}&` +
