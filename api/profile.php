@@ -45,7 +45,7 @@ function handleGetProfile() {
     
     try {
         $stmt = $conn->prepare("SELECT id, name, email, role, bio, website, profile_picture, created_at FROM users WHERE id = ?");
-        $stmt->bind_param("s", $user_id);
+        $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -104,7 +104,7 @@ function handleUpdateProfile($input) {
         
         // Update user profile
         $stmt = $conn->prepare("UPDATE users SET name = ?, bio = ?, website = ? WHERE id = ?");
-        $stmt->bind_param("ssss", $name, $bio, $website, $user_id);
+        $stmt->bind_param("sssi", $name, $bio, $website, $user_id);
         
         if ($stmt->execute()) {
             // Update session data
@@ -112,7 +112,7 @@ function handleUpdateProfile($input) {
             
             // Get updated profile
             $stmt = $conn->prepare("SELECT id, name, email, role, bio, website, profile_picture, created_at FROM users WHERE id = ?");
-            $stmt->bind_param("s", $user_id);
+            $stmt->bind_param("i", $user_id);
             $stmt->execute();
             $result = $stmt->get_result();
             $profile = $result->fetch_assoc();
@@ -153,7 +153,7 @@ function getUserStats($user_id, $role) {
             case 'editor':
                 // Creator's videos and views
                 $stmt = $conn->prepare("SELECT COUNT(*) as my_videos, COALESCE(SUM(views), 0) as my_views FROM videos WHERE uploader_id = ?");
-                $stmt->bind_param("s", $user_id);
+                $stmt->bind_param("i", $user_id);
                 $stmt->execute();
                 $result = $stmt->get_result()->fetch_assoc();
                 $stats['videos'] = $result['my_videos'];
@@ -161,7 +161,7 @@ function getUserStats($user_id, $role) {
                 
                 // Creator's earnings
                 $stmt = $conn->prepare("SELECT COALESCE(SUM(amount), 0) as total_earnings FROM purchases p JOIN videos v ON p.video_id = v.id WHERE v.uploader_id = ?");
-                $stmt->bind_param("s", $user_id);
+                $stmt->bind_param("i", $user_id);
                 $stmt->execute();
                 $result = $stmt->get_result()->fetch_assoc();
                 $stats['earnings'] = $result['total_earnings'];
@@ -170,7 +170,7 @@ function getUserStats($user_id, $role) {
             case 'viewer':
                 // Viewer's purchases
                 $stmt = $conn->prepare("SELECT COUNT(*) as purchase_count, COALESCE(SUM(amount), 0) as total_spent FROM purchases WHERE user_id = ?");
-                $stmt->bind_param("s", $user_id);
+                $stmt->bind_param("i", $user_id);
                 $stmt->execute();
                 $result = $stmt->get_result()->fetch_assoc();
                 $stats['purchases'] = $result['purchase_count'];

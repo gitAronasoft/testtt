@@ -111,7 +111,7 @@
             // Prevent any unwanted navigation
             preventUnwantedNavigation();
 
-            // Initialize YouTube API client first
+            // Initialize YouTube API client first (but don't fail if it doesn't work)
             if (window.youtubeAPI && !window.youtubeAPI.isInitialized) {
                 window.youtubeAPI.initialize().catch((error) => {
                     console.warn("YouTube API initialization failed:", error);
@@ -144,16 +144,29 @@
             });
         }
 
+        let authCheckInProgress = false; // Flag to prevent multiple auth checks
+
         async function checkAuth() {
             // Prevent multiple simultaneous auth checks
-            if (apiCallsInProgress.has('auth')) {
+            if (authCheckInProgress) {
                 return;
             }
-
-            apiCallsInProgress.add('auth');
+            authCheckInProgress = true;
 
             try {
-                // Always try API first for authentication
+                // Check localStorage first for immediate UI setup
+                const storedUser = localStorage.getItem("currentUser");
+                if (storedUser) {
+                    try {
+                        currentUser = JSON.parse(storedUser);
+                        setupUserRole();
+                        setupDashboard();
+                    } catch (e) {
+                        localStorage.removeItem("currentUser");
+                    }
+                }
+
+                // Verify with server
                 const response = await fetch("api/auth.php", {
                     method: "GET",
                     headers: {
@@ -166,38 +179,46 @@
 
                 if (data.success) {
                     currentUser = data.user;
-                    // Store in localStorage for quick access
                     localStorage.setItem("currentUser", JSON.stringify(data.user));
-                    setupUserRole();
-                    setupDashboard();
-                    // Only load overview stats once
+
+                    // Only update UI if different from stored user
+                    if (!storedUser || JSON.stringify(JSON.parse(storedUser)) !== JSON.stringify(data.user)) {
+                        setupUserRole();
+                        setupDashboard();
+                    }
+
+                    // Load overview stats only once
                     if (!lastLoadedData.overviewLoaded) {
                         loadOverviewStats();
                         lastLoadedData.overviewLoaded = true;
                     }
                 } else {
-                    // Clear any stale localStorage data
                     localStorage.removeItem("currentUser");
                     window.location.href = "login.html";
                 }
             } catch (error) {
                 console.error("Auth check failed:", error);
-                // Clear localStorage and redirect to login
-                localStorage.removeItem("currentUser");
-                window.location.href = "login.html";
+                if (!currentUser) {
+                    setTimeout(() => {
+                        window.location.href = "login.html";
+                    }, 1000);
+                }
             } finally {
-                apiCallsInProgress.delete('auth');
+                authCheckInProgress = false;
             }
         }
 
         function setupUserRole() {
+            if (!currentUser) return;
+
             // Update user info in navigation
-            document.getElementById("userName").textContent = currentUser.name;
-            document.getElementById("userRole").textContent =
-                currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
-            document.getElementById("userAvatar").textContent = currentUser.name
-                .charAt(0)
-                .toUpperCase();
+            const userNameEl = document.getElementById("userName");
+            const userRoleEl = document.getElementById("userRole");
+            const userAvatarEl = document.getElementById("userAvatar");
+
+            if (userNameEl) userNameEl.textContent = currentUser.name;
+            if (userRoleEl) userRoleEl.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+            if (userAvatarEl) userAvatarEl.textContent = currentUser.name.charAt(0).toUpperCase();
 
             // Update profile section
             updateUserProfile();
@@ -206,32 +227,36 @@
             const welcomeName = document.getElementById("welcomeName");
             const welcomeRole = document.getElementById("welcomeRole");
             if (welcomeName) welcomeName.textContent = currentUser.name;
-            if (welcomeRole) welcomeRole.textContent = 
-                currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+            if (welcomeRole) welcomeRole.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
 
             // Get sidebar sections
             const adminSidebar = document.getElementById("adminSidebar");
             const creatorSidebar = document.getElementById("creatorSidebar");
             const viewerSidebar = document.getElementById("viewerSidebar");
 
-            // Hide all sidebars first
-            if (adminSidebar) adminSidebar.style.display = "none";
-            if (creatorSidebar) creatorSidebar.style.display = "none";
-            if (viewerSidebar) viewerSidebar.style.display = "none";
+            // Hide all sidebars first with immediate effect
+            const allSidebars = [adminSidebar, creatorSidebar, viewerSidebar];
+            allSidebars.forEach(sidebar => {
+                if (sidebar) {
+                    sidebar.style.display = "none";
+                    sidebar.style.visibility = "hidden";
+                }
+            });
 
             // Show role-specific sidebar sections based on user role
+            let targetSidebar = null;
             if (currentUser.role === "admin") {
-                // Admin sees overview + admin tools only
-                if (adminSidebar) adminSidebar.style.display = "block";
-            } else if (
-                currentUser.role === "editor" ||
-                currentUser.role === "creator"
-            ) {
-                // Editor/Creator sees overview + creator tools only
-                if (creatorSidebar) creatorSidebar.style.display = "block";
+                targetSidebar = adminSidebar;
+            } else if (currentUser.role === "editor" || currentUser.role === "creator") {
+                targetSidebar = creatorSidebar;
             } else if (currentUser.role === "viewer") {
-                // Viewer sees overview + viewer tools only
-                if (viewerSidebar) viewerSidebar.style.display = "block";
+                targetSidebar = viewerSidebar;
+            }
+
+            // Show the correct sidebar
+            if (targetSidebar) {
+                targetSidebar.style.display = "block";
+                targetSidebar.style.visibility = "visible";
             }
 
             // Set body class for CSS role-based styling
@@ -2432,12 +2457,16 @@
                 return;
             }
 
-            // Check if YouTube is connected for creators
-            if (
-                !window.youtubeAPI ||
-                !window.youtubeAPI.isInitialized ||
-                !window.youtubeAPI.isSignedIn()
-            ) {
+            // Check if YouTube is available and connected for creators
+            if (!window.youtubeAPI || !window.youtubeAPI.isInitialized) {
+                showNotification(
+                    "❌ YouTube API not available. Please ask an admin to set up YouTube integration.",
+                    "error",
+                );
+                return;
+            }
+
+            if (!window.youtubeAPI.isSignedIn()) {
                 showNotification(
                     "❌ Please connect to YouTube first to upload videos",
                     "error",
@@ -2787,7 +2816,7 @@
                     const modal = bootstrap.Modal.getInstance(document.getElementById("purchaseModal"));
                     modal.hide();
 
-                    // Update video card immediately
+                    // Update video card after purchase
                     updateVideoCardAfterPurchase(purchaseVideoId);
 
                     // Efficiently reload only current panel
@@ -3097,7 +3126,7 @@
                     });
 
                     if (!accessResponse.ok) {
-                        throw new Error(`HTTP ${accessResponse.status}: ${accessResponse.statusText}`);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
 
                     const accessData = await accessResponse.json();
@@ -3838,7 +3867,23 @@
             // Check and update YouTube connection status
             updateYouTubeConnectionStatus();
 
-            // Other upload panel specific updates can go here
+            // Show appropriate message for creators about YouTube setup
+            if (currentUser && (currentUser.role === 'creator' || currentUser.role === 'editor')) {
+                const statusContainer = document.querySelector('#uploadPanel .alert');
+                if (!statusContainer) {
+                    const uploadPanel = document.getElementById('uploadPanel');
+                    if (uploadPanel && (!window.youtubeAPI || !window.youtubeAPI.isSignedIn())) {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-info';
+                        alertDiv.innerHTML = `
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> YouTube integration needs to be set up by an administrator before you can upload videos.
+                        `;
+                        uploadPanel.insertBefore(alertDiv, uploadPanel.firstChild);
+                    }
+                }
+            }
+
             console.log('Upload panel status updated.');
         }
 // Add better error handling for network issues

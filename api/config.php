@@ -41,7 +41,7 @@ function getConnection() {
 function createRequiredTables($conn) {
     $tables = [
         "CREATE TABLE IF NOT EXISTS users (
-            id VARCHAR(50) PRIMARY KEY,
+            id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             email VARCHAR(100) UNIQUE NOT NULL,
             password VARCHAR(255),
@@ -53,7 +53,8 @@ function createRequiredTables($conn) {
             verification_token VARCHAR(64),
             reset_token VARCHAR(64),
             reset_expires DATETIME,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )",
 
         "CREATE TABLE IF NOT EXISTS videos (
@@ -62,7 +63,7 @@ function createRequiredTables($conn) {
             description TEXT,
             file_path VARCHAR(500),
             price DECIMAL(10,2) DEFAULT 0.00,
-            uploader_id VARCHAR(50) NOT NULL,
+            uploader_id INT NOT NULL,
             views INT DEFAULT 0,
             category VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -73,12 +74,13 @@ function createRequiredTables($conn) {
             youtube_views INT DEFAULT 0,
             youtube_likes INT DEFAULT 0,
             youtube_comments INT DEFAULT 0,
-            is_youtube_synced BOOLEAN DEFAULT FALSE
+            is_youtube_synced BOOLEAN DEFAULT FALSE,
+            FOREIGN KEY (uploader_id) REFERENCES users(id) ON DELETE CASCADE
         )",
 
         "CREATE TABLE IF NOT EXISTS purchases (
-            id VARCHAR(50) PRIMARY KEY,
-            user_id VARCHAR(50) NOT NULL,
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
             video_id INT NOT NULL,
             amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -88,7 +90,7 @@ function createRequiredTables($conn) {
 
         "CREATE TABLE IF NOT EXISTS youtube_tokens (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id VARCHAR(50) NOT NULL,
+            user_id INT NOT NULL,
             access_token TEXT NOT NULL,
             refresh_token TEXT,
             expires_at DATETIME NOT NULL,
@@ -118,7 +120,7 @@ function initializePostgreSQL() {
     // Create users table
     $users_table = "
     CREATE TABLE IF NOT EXISTS users (
-        id VARCHAR(50) PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
@@ -133,7 +135,7 @@ function initializePostgreSQL() {
         title VARCHAR(255) NOT NULL,
         description TEXT,
         price DECIMAL(10,2) DEFAULT 0.00,
-        uploader_id VARCHAR(50) NOT NULL,
+        uploader_id INT NOT NULL,
         views INTEGER DEFAULT 0,
         file_path VARCHAR(500),
         category VARCHAR(100),
@@ -147,8 +149,8 @@ function initializePostgreSQL() {
     // Create purchases table
     $purchases_table = "
     CREATE TABLE IF NOT EXISTS purchases (
-        id SERIAL PRIMARY KEY,
-        user_id VARCHAR(50) NOT NULL,
+        id SERIAL PRIMARY PRIMARY KEY,
+        user_id INT NOT NULL,
         video_id INTEGER NOT NULL,
         purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -180,7 +182,7 @@ function initializeMySQL() {
     // Create users table
     $users_table = "
     CREATE TABLE IF NOT EXISTS users (
-        id VARCHAR(50) PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
         password VARCHAR(255),
@@ -200,7 +202,7 @@ function initializeMySQL() {
         description TEXT,
         file_path VARCHAR(500),
         price DECIMAL(10,2) DEFAULT 0.00,
-        uploader_id VARCHAR(50) NOT NULL,
+        uploader_id INT NOT NULL,
         views INT DEFAULT 0,
         category VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -211,7 +213,8 @@ function initializeMySQL() {
         youtube_views INT DEFAULT 0,
         youtube_likes INT DEFAULT 0,
         youtube_comments INT DEFAULT 0,
-        is_youtube_synced BOOLEAN DEFAULT FALSE
+        is_youtube_synced BOOLEAN DEFAULT FALSE,
+        FOREIGN KEY (uploader_id) REFERENCES users(id) ON DELETE CASCADE
     )";
 
     if ($conn->query($videos_table) === FALSE) {
@@ -221,8 +224,8 @@ function initializeMySQL() {
     // Create purchases table
     $purchases_table = "
     CREATE TABLE IF NOT EXISTS purchases (
-        id VARCHAR(50) PRIMARY KEY,
-        user_id VARCHAR(50) NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
         video_id INT NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -238,7 +241,7 @@ function initializeMySQL() {
     $youtube_tokens_table = "
     CREATE TABLE IF NOT EXISTS youtube_tokens (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id VARCHAR(50) NOT NULL,
+        user_id INT NOT NULL,
         access_token TEXT NOT NULL,
         refresh_token TEXT,
         expires_at DATETIME NOT NULL,

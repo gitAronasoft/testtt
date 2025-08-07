@@ -46,6 +46,13 @@ function handleGetVideos() {
     $conn = getConnection();
     $user_id = $_SESSION['user']['id'] ?? null;
     $user_role = $_SESSION['user']['role'] ?? null;
+    
+    // Ensure user is authenticated
+    if (!$user_id) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Authentication required']);
+        return;
+    }
 
     // Handle single video request
     if (isset($_GET['id'])) {
@@ -135,12 +142,18 @@ function handleGetVideos() {
             $sql .= " WHERE v.price > 0";
             break;
         case 'purchased':
-            $sql .= " WHERE p.user_id IS NOT NULL";
+            $sql .= " WHERE p.user_id = ?";
+            $params[] = $user_id;
+            $types .= "i";
             break;
         case 'my_videos':
             if ($user_role === 'viewer') {
-                $sql .= " WHERE p.user_id IS NOT NULL";
+                // For viewers, show only purchased videos
+                $sql .= " WHERE p.user_id = ?";
+                $params[] = $user_id;
+                $types .= "i";
             } else {
+                // For creators/editors, show only their uploaded videos
                 $sql .= " WHERE v.uploader_id = ?";
                 $params[] = $user_id;
                 $types .= "i";

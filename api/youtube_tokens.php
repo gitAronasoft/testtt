@@ -25,7 +25,7 @@ if (in_array($action, ['store_tokens', 'clear_tokens']) && (!isset($_SESSION['us
 
 // All authenticated users can read tokens
 if (!isset($_SESSION['user'])) {
-    http_response_code(403);
+    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Authentication required']);
     exit();
 }
@@ -84,7 +84,11 @@ function handleGetTokens() {
             ]);
         }
     } else {
-        echo json_encode(['success' => false, 'message' => 'No tokens found']);
+        echo json_encode([
+            'success' => false, 
+            'message' => 'No YouTube tokens found. Please ask an admin to connect YouTube.',
+            'requires_admin_setup' => true
+        ]);
     }
 
     $conn->close();
@@ -110,6 +114,17 @@ function handleStoreTokens($input) {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP       
     )";
+    
+    // Check if table exists and if it has user_id column (old structure)
+    $check_table = $conn->query("SHOW TABLES LIKE 'youtube_tokens'");
+    if ($check_table->num_rows > 0) {
+        $check_columns = $conn->query("SHOW COLUMNS FROM youtube_tokens LIKE 'user_id'");
+        if ($check_columns->num_rows > 0) {
+            // Drop the old table with user_id structure
+            $conn->query("DROP TABLE youtube_tokens");
+        }
+    }
+    
     $conn->query($create_table);
 
     // Deactivate existing global tokens
