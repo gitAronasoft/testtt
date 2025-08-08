@@ -59,11 +59,11 @@ function getCurrentUser() {
             dashboardState.currentUser = JSON.parse(userData);
         } else {
             // Redirect to login if no user found
-            window.location.href = 'login.html';
+            window.location.href = '../login.html';
         }
     } catch (error) {
         console.error('Error getting user data:', error);
-        window.location.href = 'login.html';
+        window.location.href = '../login.html';
     }
 }
 
@@ -98,23 +98,35 @@ function setupNavigation() {
  * Switch dashboard sections
  */
 function switchSection(sectionName) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.content-section');
-    sections.forEach(section => {
-        section.classList.add('d-none');
-    });
+    // Check if we're on the main dashboard page or individual page
+    const isMainDashboard = window.location.pathname.includes('creator-dashboard.html') || 
+                           window.location.pathname.includes('viewer-dashboard.html');
     
-    // Show target section
-    const targetSection = document.getElementById(`${sectionName}-section`);
-    if (targetSection) {
-        targetSection.classList.remove('d-none');
-        dashboardState.currentSection = sectionName;
+    if (isMainDashboard) {
+        // Hide all sections on main dashboard
+        const sections = document.querySelectorAll('.content-section');
+        sections.forEach(section => {
+            section.classList.add('d-none');
+        });
         
-        // Update URL hash
-        window.location.hash = sectionName;
-        
-        // Load section-specific data
-        loadSectionData(sectionName);
+        // Show target section
+        const targetSection = document.getElementById(`${sectionName}-section`);
+        if (targetSection) {
+            targetSection.classList.remove('d-none');
+            dashboardState.currentSection = sectionName;
+            
+            // Update URL hash
+            window.location.hash = sectionName;
+            
+            // Load section-specific data
+            loadSectionData(sectionName);
+        } else {
+            // Redirect to individual page
+            redirectToIndividualPage(sectionName);
+        }
+    } else {
+        // We're on an individual page, redirect to the appropriate page
+        redirectToIndividualPage(sectionName);
     }
 }
 
@@ -139,6 +151,69 @@ function updateActiveNavigation(activeLink) {
 }
 
 /**
+ * Redirect to individual page based on section
+ */
+function redirectToIndividualPage(sectionName) {
+    const userRole = dashboardState.currentUser?.role || 'viewer';
+    let targetPage = '';
+    
+    if (userRole === 'creator') {
+        switch (sectionName) {
+            case 'dashboard':
+            case 'overview':
+                targetPage = 'creator-overview.html';
+                break;
+            case 'videos':
+                targetPage = 'creator-videos.html';
+                break;
+            case 'upload':
+                targetPage = 'creator-upload.html';
+                break;
+            case 'analytics':
+                targetPage = 'creator-analytics.html';
+                break;
+            case 'earnings':
+                targetPage = 'creator-earnings.html';
+                break;
+            case 'settings':
+                targetPage = 'creator-settings.html';
+                break;
+        }
+    } else {
+        switch (sectionName) {
+            case 'discover':
+                targetPage = 'viewer-discover.html';
+                break;
+            case 'library':
+                targetPage = 'viewer-library.html';
+                break;
+            case 'history':
+                targetPage = 'viewer-history.html';
+                break;
+            case 'trending':
+                targetPage = 'viewer-trending.html';
+                break;
+            case 'categories':
+                targetPage = 'viewer-categories.html';
+                break;
+            case 'subscriptions':
+                targetPage = 'viewer-subscriptions.html';
+                break;
+            case 'wallet':
+                targetPage = 'viewer-wallet.html';
+                break;
+            case 'settings':
+                targetPage = 'viewer-settings.html';
+                break;
+        }
+    }
+    
+    if (targetPage) {
+        window.location.href = targetPage;
+    }
+}
+
+/**
  * Handle hash change navigation
  */
 function handleHashChange() {
@@ -159,7 +234,7 @@ function handleHashChange() {
  */
 function setupEventListeners() {
     // Handle logout
-    const logoutLinks = document.querySelectorAll('a[href="index.html"]');
+    const logoutLinks = document.querySelectorAll('.logout-link');
     logoutLinks.forEach(link => {
         link.addEventListener('click', handleLogout);
     });
@@ -625,7 +700,7 @@ function handleSearch(e) {
  */
 function setupWalletFunctionality() {
     // Handle add funds buttons
-    const addFundsButtons = document.querySelectorAll('.btn[data-amount], button:contains("Add")');
+    const addFundsButtons = document.querySelectorAll('.btn[data-amount]');
     addFundsButtons.forEach(button => {
         if (button.textContent.includes('Add $')) {
             button.addEventListener('click', function() {
@@ -657,7 +732,7 @@ function handleWalletTopup(e) {
  * Update wallet balance
  */
 function updateWalletBalance(addedAmount) {
-    const balanceElements = document.querySelectorAll('.h2:contains("$"), .h5:contains("$")');
+    const balanceElements = document.querySelectorAll('h2, h5, .wallet-balance');
     balanceElements.forEach(element => {
         if (element.textContent.includes('$')) {
             const currentBalance = parseFloat(element.textContent.replace('$', '')) || 0;
@@ -685,17 +760,73 @@ function handleFilterChange(e) {
 function handleLogout(e) {
     e.preventDefault();
     
-    // Clear session data
-    localStorage.removeItem('videoShareUser');
-    localStorage.removeItem('videoShareToken');
-    localStorage.removeItem('videoShareSession');
+    // Clear session data using CONFIG
+    localStorage.removeItem(CONFIG.STORAGE.USER);
+    localStorage.removeItem(CONFIG.STORAGE.TOKEN);
+    localStorage.removeItem(CONFIG.STORAGE.SESSION);
     
     // Show message and redirect
     showAlert('Logged out successfully!', 'success');
     
     setTimeout(() => {
-        window.location.href = 'index.html';
+        window.location.href = getRelativePathToRoot() + CONFIG.ROUTES.HOME;
     }, 1000);
+}
+
+/**
+ * Handle rating interactions
+ */
+function handleRating(e) {
+    e.preventDefault();
+    
+    const starElement = e.currentTarget;
+    const rating = parseInt(starElement.dataset.rating) || 1;
+    const videoId = starElement.closest('.video-card')?.dataset.videoId || 'demo';
+    
+    // Update star display
+    const allStars = starElement.parentElement.querySelectorAll('.fa-star');
+    allStars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('text-warning');
+            star.classList.remove('text-muted');
+        } else {
+            star.classList.add('text-muted');
+            star.classList.remove('text-warning');
+        }
+    });
+    
+    // Save rating (simulate API call)
+    console.log(`Video ${videoId} rated ${rating} stars`);
+    showAlert(`Rated ${rating} stars!`, 'success', 2000);
+}
+
+/**
+ * Handle bookmark functionality
+ */
+function handleBookmark(e) {
+    e.preventDefault();
+    
+    const button = e.currentTarget;
+    const videoId = button.closest('.video-card')?.dataset.videoId || 'demo';
+    const icon = button.querySelector('i');
+    
+    if (icon.classList.contains('far')) {
+        // Add to bookmarks
+        icon.classList.remove('far');
+        icon.classList.add('fas');
+        button.classList.add('btn-warning');
+        button.classList.remove('btn-outline-secondary');
+        showAlert('Added to library!', 'success', 2000);
+    } else {
+        // Remove from bookmarks
+        icon.classList.add('far');
+        icon.classList.remove('fas');
+        button.classList.remove('btn-warning');
+        button.classList.add('btn-outline-secondary');
+        showAlert('Removed from library!', 'info', 2000);
+    }
+    
+    console.log(`Video ${videoId} bookmark toggled`);
 }
 
 /**

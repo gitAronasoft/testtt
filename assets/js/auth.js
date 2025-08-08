@@ -10,21 +10,7 @@ let authState = {
     currentForm: null
 };
 
-// Demo accounts for testing
-const demoAccounts = {
-    'creator@demo.com': {
-        password: 'password123',
-        role: 'creator',
-        name: 'Demo Creator',
-        id: 'creator_001'
-    },
-    'viewer@demo.com': {
-        password: 'password123',
-        role: 'viewer',
-        name: 'Demo Viewer',
-        id: 'viewer_001'
-    }
-};
+// Note: Demo accounts are now defined in config.js
 
 // Initialize authentication functionality
 document.addEventListener('DOMContentLoaded', function() {
@@ -178,10 +164,8 @@ async function handleSignup(e) {
         
         // Redirect to appropriate dashboard
         setTimeout(() => {
-            const dashboardUrl = formData.userRole === 'creator' ? 
-                'creator-dashboard.html' : 'viewer-dashboard.html';
-            window.location.href = dashboardUrl;
-        }, 2000);
+            window.location.href = getDashboardUrl(formData.userRole);
+        }, CONFIG.UI.LOADING_TIMEOUT);
         
     } catch (error) {
         showAlert(error.message, 'danger');
@@ -223,12 +207,10 @@ async function handleLogin(e) {
         // Show success message
         showAlert('Login successful! Redirecting...', 'success');
         
-        // Redirect to appropriate dashboard
+        // Redirect to appropriate dashboard  
         setTimeout(() => {
-            const dashboardUrl = user.role === 'creator' ? 
-                'creator-dashboard.html' : 'viewer-dashboard.html';
-            window.location.href = dashboardUrl;
-        }, 1500);
+            window.location.href = getDashboardUrl(user.role);
+        }, CONFIG.UI.REDIRECT_DELAY);
         
     } catch (error) {
         showLoginError(error.message);
@@ -476,7 +458,7 @@ async function simulateSignup(userData) {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
             // Check if email already exists
-            if (demoAccounts[userData.email]) {
+            if (CONFIG.DEMO_ACCOUNTS[userData.email]) {
                 reject(new Error('An account with this email already exists.'));
                 return;
             }
@@ -501,7 +483,7 @@ async function simulateSignup(userData) {
 async function simulateLogin(email, password) {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
-            const account = demoAccounts[email];
+            const account = CONFIG.DEMO_ACCOUNTS[email];
             
             if (!account) {
                 reject(new Error('No account found with this email address.'));
@@ -606,9 +588,9 @@ function saveSession(user) {
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
     };
     
-    localStorage.setItem('videoShareUser', JSON.stringify(user));
-    localStorage.setItem('videoShareToken', sessionData.token);
-    localStorage.setItem('videoShareSession', JSON.stringify(sessionData));
+    localStorage.setItem(CONFIG.STORAGE.USER, JSON.stringify(user));
+    localStorage.setItem(CONFIG.STORAGE.TOKEN, sessionData.token);
+    localStorage.setItem(CONFIG.STORAGE.SESSION, JSON.stringify(sessionData));
     
     // Save email if remember me is checked
     if (authState.rememberMe) {
@@ -620,7 +602,7 @@ function saveSession(user) {
  * Check existing session
  */
 function checkExistingSession() {
-    const sessionData = localStorage.getItem('videoShareSession');
+    const sessionData = localStorage.getItem(CONFIG.STORAGE.SESSION);
     
     if (sessionData) {
         try {
@@ -630,10 +612,9 @@ function checkExistingSession() {
             
             if (now < expiresAt) {
                 // Session is still valid, redirect to dashboard
-                const user = JSON.parse(localStorage.getItem('videoShareUser'));
+                const user = JSON.parse(localStorage.getItem(CONFIG.STORAGE.USER));
                 if (user) {
-                    const dashboardUrl = user.role === 'creator' ? 
-                        'creator-dashboard.html' : 'viewer-dashboard.html';
+                    const dashboardUrl = getDashboardUrl(user.role);
                     
                     // Only redirect if not already on a dashboard page
                     if (!window.location.pathname.includes('dashboard')) {
@@ -672,9 +653,9 @@ function loadSavedCredentials() {
  * Clear session data
  */
 function clearSession() {
-    localStorage.removeItem('videoShareUser');
-    localStorage.removeItem('videoShareToken');
-    localStorage.removeItem('videoShareSession');
+    localStorage.removeItem(CONFIG.STORAGE.USER);
+    localStorage.removeItem(CONFIG.STORAGE.TOKEN);
+    localStorage.removeItem(CONFIG.STORAGE.SESSION);
 }
 
 /**

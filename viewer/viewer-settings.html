@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - VideoShare</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+</head>
+<body class="dashboard-page">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="../index.html">
+                <i class="fas fa-play-circle me-2"></i>VideoShare
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="viewer-discover.html">
+                            <i class="fas fa-compass me-2"></i>Discover
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="viewer-library.html">
+                            <i class="fas fa-bookmark me-2"></i>My Library
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="viewer-history.html">
+                            <i class="fas fa-history me-2"></i>Watch History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="viewer-wallet.html">
+                            <i class="fas fa-wallet me-2"></i>Wallet
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>Viewer Name
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item active" href="viewer-settings.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="viewer-subscriptions.html"><i class="fas fa-users me-2"></i>Subscriptions</a></li>
+                            <li><a class="dropdown-item" href="viewer-settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item logout-link" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-12">
+                <div class="p-4">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <h1 class="h3 fw-bold mb-4">
+                                <i class="fas fa-cog me-2"></i>Profile & Settings
+                            </h1>
+                            
+                            <div class="row">
+                                <!-- Profile Information -->
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-transparent">
+                                            <h6 class="mb-0 fw-bold">
+                                                <i class="fas fa-user me-2"></i>Profile Information
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <form>
+                                                <div class="text-center mb-3">
+                                                    <div class="position-relative d-inline-block">
+                                                        <img src="https://via.placeholder.com/120/6c757d/ffffff?text=DV" 
+                                                             class="rounded-circle" width="120" height="120" alt="Profile">
+                                                        <button type="button" class="btn btn-primary btn-sm position-absolute bottom-0 end-0 rounded-circle">
+                                                            <i class="fas fa-camera"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="fullName" class="form-label">Full Name</label>
+                                                    <input type="text" class="form-control" id="fullName" value="Demo Viewer">
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="email" class="form-label">Email</label>
+                                                    <input type="email" class="form-control" id="email" value="viewer@demo.com" readonly>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="bio" class="form-label">Bio</label>
+                                                    <textarea class="form-control" id="bio" rows="3" 
+                                                              placeholder="Tell us about yourself...">Video enthusiast who loves discovering new content and supporting creators.</textarea>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="location" class="form-label">Location</label>
+                                                    <input type="text" class="form-control" id="location" value="New York, USA">
+                                                </div>
+                                                
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-save me-2"></i>Save Changes
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Account Settings -->
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-transparent">
+                                            <h6 class="mb-0 fw-bold">
+                                                <i class="fas fa-cog me-2"></i>Account Settings
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <!-- Privacy Settings -->
+                                            <h6 class="fw-bold mb-3">Privacy Settings</h6>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="publicProfile" checked>
+                                                <label class="form-check-label" for="publicProfile">
+                                                    Public Profile
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="showWatchHistory">
+                                                <label class="form-check-label" for="showWatchHistory">
+                                                    Show Watch History
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="allowMessages" checked>
+                                                <label class="form-check-label" for="allowMessages">
+                                                    Allow Messages from Creators
+                                                </label>
+                                            </div>
+                                            
+                                            <!-- Notification Settings -->
+                                            <h6 class="fw-bold mb-3">Notifications</h6>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                                <label class="form-check-label" for="emailNotifications">
+                                                    Email Notifications
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="newVideoNotifications" checked>
+                                                <label class="form-check-label" for="newVideoNotifications">
+                                                    New Video Notifications
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="promotionalEmails">
+                                                <label class="form-check-label" for="promotionalEmails">
+                                                    Promotional Emails
+                                                </label>
+                                            </div>
+                                            
+                                            <!-- Playback Settings -->
+                                            <h6 class="fw-bold mb-3">Playback</h6>
+                                            <div class="mb-3">
+                                                <label for="defaultQuality" class="form-label">Default Video Quality</label>
+                                                <select class="form-select" id="defaultQuality">
+                                                    <option value="auto" selected>Auto</option>
+                                                    <option value="1080p">1080p</option>
+                                                    <option value="720p">720p</option>
+                                                    <option value="480p">480p</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="autoplay" checked>
+                                                <label class="form-check-label" for="autoplay">
+                                                    Autoplay Next Video
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Account Actions -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-transparent">
+                                            <h6 class="mb-0 fw-bold text-danger">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>Account Actions
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <button class="btn btn-warning w-100">
+                                                    <i class="fas fa-key me-2"></i>Change Password
+                                                </button>
+                                            </div>
+                                            <div class="mb-3">
+                                                <button class="btn btn-info w-100">
+                                                    <i class="fas fa-download me-2"></i>Download My Data
+                                                </button>
+                                            </div>
+                                            <button class="btn btn-danger w-100">
+                                                <i class="fas fa-user-times me-2"></i>Delete Account
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/dashboard.js"></script>
+</body>
+</html>
