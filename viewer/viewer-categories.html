@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories - VideoShare</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="../index.html">
+                <i class="fas fa-play-circle me-2"></i>VideoShare
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="viewer-discover.html">
+                            <i class="fas fa-compass me-2"></i>Discover
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="viewer-library.html">
+                            <i class="fas fa-bookmark me-2"></i>My Library
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="viewer-history.html">
+                            <i class="fas fa-history me-2"></i>Watch History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="viewer-wallet.html">
+                            <i class="fas fa-wallet me-2"></i>Wallet
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Search Bar -->
+                <form class="d-flex me-3">
+                    <div class="input-group">
+                        <input class="form-control" type="search" placeholder="Search videos..." aria-label="Search">
+                        <button class="btn btn-outline-light" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-bell position-relative">
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning">
+                                    3
+                                </span>
+                            </i>
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>Viewer Name
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="viewer-settings.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="viewer-subscriptions.html"><i class="fas fa-users me-2"></i>Subscriptions</a></li>
+                            <li><a class="dropdown-item" href="viewer-settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="index.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-2 bg-light sidebar d-none d-lg-block">
+                <div class="p-3">
+                    <h6 class="text-muted text-uppercase fw-bold mb-3">Browse</h6>
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="viewer-discover.html">
+                            <i class="fas fa-home me-2"></i>Home
+                        </a>
+                        <a class="nav-link" href="viewer-trending.html">
+                            <i class="fas fa-fire me-2"></i>Trending
+                        </a>
+                        <a class="nav-link active" href="viewer-categories.html">
+                            <i class="fas fa-th-large me-2"></i>Categories
+                        </a>
+                        <a class="nav-link" href="viewer-library.html">
+                            <i class="fas fa-bookmark me-2"></i>My Library
+                        </a>
+                        <a class="nav-link" href="viewer-history.html">
+                            <i class="fas fa-history me-2"></i>History
+                        </a>
+                        <a class="nav-link" href="viewer-subscriptions.html">
+                            <i class="fas fa-users me-2"></i>Subscriptions
+                        </a>
+                        <a class="nav-link" href="viewer-wallet.html">
+                            <i class="fas fa-wallet me-2"></i>Wallet
+                        </a>
+                    </nav>
+
+                    <hr>
+                    <h6 class="text-muted text-uppercase fw-bold mb-3">Categories</h6>
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="#education"><i class="fas fa-graduation-cap me-2"></i>Education</a>
+                        <a class="nav-link" href="#entertainment"><i class="fas fa-gamepad me-2"></i>Entertainment</a>
+                        <a class="nav-link" href="#music"><i class="fas fa-music me-2"></i>Music</a>
+                        <a class="nav-link" href="#sports"><i class="fas fa-running me-2"></i>Sports</a>
+                        <a class="nav-link" href="#technology"><i class="fas fa-laptop-code me-2"></i>Technology</a>
+                        <a class="nav-link" href="#lifestyle"><i class="fas fa-heart me-2"></i>Lifestyle</a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-10 main-content">
+                <div class="p-4">
+                    <h1 class="h3 fw-bold mb-4">Browse by Categories</h1>
+
+                    <!-- Categories Overview -->
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-4">
+                            <div class="card category-card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-graduation-cap fa-4x text-primary mb-3"></i>
+                                    <h5 class="card-title">Education</h5>
+                                    <p class="card-text text-muted">Learn new skills with professional tutorials and courses</p>
+                                    <h6 class="text-primary">245 videos</h6>
+                                    <a href="#education" class="btn btn-primary">
+                                        <i class="fas fa-arrow-right me-2"></i>Browse
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card category-card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-gamepad fa-4x text-success mb-3"></i>
+                                    <h5 class="card-title">Entertainment</h5>
+                                    <p class="card-text text-muted">Comedy, gaming, and fun content to brighten your day</p>
+                                    <h6 class="text-success">189 videos</h6>
+                                    <a href="#entertainment" class="btn btn-success">
+                                        <i class="fas fa-arrow-right me-2"></i>Browse
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card category-card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-music fa-4x text-warning mb-3"></i>
+                                    <h5 class="card-title">Music</h5>
+                                    <p class="card-text text-muted">Music videos, concerts, and audio production content</p>
+                                    <h6 class="text-warning">156 videos</h6>
+                                    <a href="#music" class="btn btn-warning">
+                                        <i class="fas fa-arrow-right me-2"></i>Browse
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card category-card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-running fa-4x text-info mb-3"></i>
+                                    <h5 class="card-title">Sports</h5>
+                                    <p class="card-text text-muted">Fitness tutorials, sports highlights, and training guides</p>
+                                    <h6 class="text-info">98 videos</h6>
+                                    <a href="#sports" class="btn btn-info">
+                                        <i class="fas fa-arrow-right me-2"></i>Browse
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card category-card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-laptop-code fa-4x text-dark mb-3"></i>
+                                    <h5 class="card-title">Technology</h5>
+                                    <p class="card-text text-muted">Programming tutorials, tech reviews, and software guides</p>
+                                    <h6 class="text-dark">210 videos</h6>
+                                    <a href="#technology" class="btn btn-dark">
+                                        <i class="fas fa-arrow-right me-2"></i>Browse
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card category-card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-heart fa-4x text-danger mb-3"></i>
+                                    <h5 class="card-title">Lifestyle</h5>
+                                    <p class="card-text text-muted">Health, wellness, cooking, and daily life content</p>
+                                    <h6 class="text-danger">134 videos</h6>
+                                    <a href="#lifestyle" class="btn btn-danger">
+                                        <i class="fas fa-arrow-right me-2"></i>Browse
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Popular Videos by Category -->
+                    <div id="education" class="mb-5">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold">
+                                <i class="fas fa-graduation-cap text-primary me-2"></i>Popular in Education
+                            </h4>
+                            <a href="#" class="text-primary text-decoration-none">View All</a>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <div class="card video-card h-100 border-0 shadow-sm">
+                                    <div class="video-thumbnail position-relative">
+                                        <img src="https://pixabay.com/get/ga37461bea308519f37eeab3f391f095df798873bace534a04c897f079bf2284b53cd73cfc3c93f8431db7bfa6a52a0a9db49ce5f7830df13e70321107b7dfbf3_1280.jpg" 
+                                             class="card-img-top" alt="Video thumbnail">
+                                        <div class="video-duration">15:32</div>
+                                        <div class="video-price">$1.99</div>
+                                        <div class="play-overlay">
+                                            <i class="fas fa-play-circle"></i>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title">Advanced Programming</h6>
+                                        <p class="text-muted small mb-2">by Code Master</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">2.1K views</small>
+                                            <button class="btn btn-primary btn-sm">
+                                                <i class="fas fa-play me-1"></i>Watch
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Add more education videos here -->
+                        </div>
+                    </div>
+
+                    <div id="entertainment" class="mb-5">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold">
+                                <i class="fas fa-gamepad text-success me-2"></i>Popular in Entertainment
+                            </h4>
+                            <a href="#" class="text-success text-decoration-none">View All</a>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <div class="card video-card h-100 border-0 shadow-sm">
+                                    <div class="video-thumbnail position-relative">
+                                        <img src="https://pixabay.com/get/ga6f9d885c926f5b7538a9a0b391fd7689ee7b712eaecc168ba915044e284fce35bdac6ac12c050f0b20d604684e43455b2e15acb762b7c95ca270cd2dfbae7e8_1280.jpg" 
+                                             class="card-img-top" alt="Video thumbnail">
+                                        <div class="video-duration">08:45</div>
+                                        <div class="video-price">$0.99</div>
+                                        <div class="play-overlay">
+                                            <i class="fas fa-play-circle"></i>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title">Comedy Special</h6>
+                                        <p class="text-muted small mb-2">by Funny Guy</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">1.5K views</small>
+                                            <button class="btn btn-success btn-sm">
+                                                <i class="fas fa-play me-1"></i>Watch
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Add more entertainment videos here -->
+                        </div>
+                    </div>
+
+                    <!-- More category sections can be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="../assets/js/dashboard.js"></script>
+</body>
+</html>

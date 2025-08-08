@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - VideoShare</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="../index.html">
+                <i class="fas fa-play-circle me-2"></i>VideoShare
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="creator-overview.html">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="creator-videos.html">
+                            <i class="fas fa-video me-2"></i>My Videos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="creator-analytics.html">
+                            <i class="fas fa-chart-line me-2"></i>Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="creator-earnings.html">
+                            <i class="fas fa-dollar-sign me-2"></i>Earnings
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>Creator Name
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item active" href="creator-settings.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="creator-settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="../index.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-2 bg-light sidebar d-none d-lg-block">
+                <div class="p-3">
+                    <h6 class="text-muted text-uppercase fw-bold mb-3">Creator Tools</h6>
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="creator-overview.html">
+                            <i class="fas fa-home me-2"></i>Overview
+                        </a>
+                        <a class="nav-link" href="creator-videos.html">
+                            <i class="fas fa-video me-2"></i>Video Library
+                        </a>
+                        <a class="nav-link" href="creator-upload.html">
+                            <i class="fas fa-upload me-2"></i>Upload Video
+                        </a>
+                        <a class="nav-link" href="creator-analytics.html">
+                            <i class="fas fa-chart-bar me-2"></i>Analytics
+                        </a>
+                        <a class="nav-link" href="creator-earnings.html">
+                            <i class="fas fa-money-bill-wave me-2"></i>Earnings
+                        </a>
+                        <a class="nav-link active" href="creator-settings.html">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-10 main-content">
+                <div class="p-4">
+                    <h1 class="h3 fw-bold mb-4">Settings</h1>
+
+                    <div class="row g-4">
+                        <!-- Profile Settings -->
+                        <div class="col-md-8">
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-transparent">
+                                    <h6 class="mb-0 fw-bold">Profile Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="firstName" class="form-label">First Name</label>
+                                                <input type="text" class="form-control" id="firstName" value="Creator">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="lastName" class="form-label">Last Name</label>
+                                                <input type="text" class="form-control" id="lastName" value="Name">
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="email" class="form-label">Email Address</label>
+                                                <input type="email" class="form-control" id="email" value="creator@demo.com">
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="bio" class="form-label">Bio</label>
+                                                <textarea class="form-control" id="bio" rows="3" placeholder="Tell viewers about yourself..."></textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="website" class="form-label">Website</label>
+                                                <input type="url" class="form-control" id="website" placeholder="https://yourwebsite.com">
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Password Settings -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-transparent">
+                                    <h6 class="mb-0 fw-bold">Change Password</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form>
+                                        <div class="mb-3">
+                                            <label for="currentPassword" class="form-label">Current Password</label>
+                                            <input type="password" class="form-control" id="currentPassword">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="newPassword" class="form-label">New Password</label>
+                                            <input type="password" class="form-control" id="newPassword">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                            <input type="password" class="form-control" id="confirmPassword">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Update Password</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Payment Settings -->
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h6 class="mb-0 fw-bold">Payment Method</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form>
+                                        <div class="mb-3">
+                                            <label class="form-label">Payment Method</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="paymentMethod" id="paypal" checked>
+                                                <label class="form-check-label" for="paypal">
+                                                    <i class="fab fa-paypal me-2"></i>PayPal
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="paymentMethod" id="stripe">
+                                                <label class="form-check-label" for="stripe">
+                                                    <i class="fas fa-credit-card me-2"></i>Bank Transfer
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="paypalEmail" class="form-label">PayPal Email</label>
+                                            <input type="email" class="form-control" id="paypalEmail" value="creator@demo.com">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Update Payment Method</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar Settings -->
+                        <div class="col-md-4">
+                            <!-- Profile Picture -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-transparent">
+                                    <h6 class="mb-0 fw-bold">Profile Picture</h6>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <img src="https://via.placeholder.com/150" alt="Profile" class="rounded-circle" width="150" height="150">
+                                    </div>
+                                    <input type="file" class="form-control mb-3" accept="image/*">
+                                    <button class="btn btn-outline-primary btn-sm">Upload New Picture</button>
+                                </div>
+                            </div>
+
+                            <!-- Notification Settings -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-transparent">
+                                    <h6 class="mb-0 fw-bold">Notifications</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailNotifs" checked>
+                                        <label class="form-check-label" for="emailNotifs">
+                                            Email Notifications
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="newSubscriber">
+                                        <label class="form-check-label" for="newSubscriber">
+                                            New Subscriber
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="videoComments" checked>
+                                        <label class="form-check-label" for="videoComments">
+                                            Video Comments
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="earnings" checked>
+                                        <label class="form-check-label" for="earnings">
+                                            Earnings Updates
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Privacy Settings -->
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h6 class="mb-0 fw-bold">Privacy</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="publicProfile" checked>
+                                        <label class="form-check-label" for="publicProfile">
+                                            Public Profile
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="showEarnings">
+                                        <label class="form-check-label" for="showEarnings">
+                                            Show Earnings
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="allowMessages" checked>
+                                        <label class="form-check-label" for="allowMessages">
+                                            Allow Messages
+                                        </label>
+                                    </div>
+                                    <hr>
+                                    <button class="btn btn-danger btn-sm w-100">
+                                        <i class="fas fa-user-times me-2"></i>Delete Account
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="../assets/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Dashboard - VideoShare</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="../index.html">
+                <i class="fas fa-play-circle me-2"></i>VideoShare
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#dashboard">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#videos">
+                            <i class="fas fa-video me-2"></i>My Videos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#analytics">
+                            <i class="fas fa-chart-line me-2"></i>Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#earnings">
+                            <i class="fas fa-dollar-sign me-2"></i>Earnings
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>Creator Name
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#profile"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="#settings"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="../index.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-2 bg-light sidebar d-none d-lg-block">
+                <div class="p-3">
+                    <h6 class="text-muted text-uppercase fw-bold mb-3">Creator Tools</h6>
+                    <nav class="nav flex-column">
+                        <a class="nav-link active" href="#dashboard" data-section="dashboard">
+                            <i class="fas fa-home me-2"></i>Overview
+                        </a>
+                        <a class="nav-link" href="#videos" data-section="videos">
+                            <i class="fas fa-video me-2"></i>Video Library
+                        </a>
+                        <a class="nav-link" href="#upload" data-section="upload">
+                            <i class="fas fa-upload me-2"></i>Upload Video
+                        </a>
+                        <a class="nav-link" href="#analytics" data-section="analytics">
+                            <i class="fas fa-chart-bar me-2"></i>Analytics
+                        </a>
+                        <a class="nav-link" href="#earnings" data-section="earnings">
+                            <i class="fas fa-money-bill-wave me-2"></i>Earnings
+                        </a>
+                        <a class="nav-link" href="#settings" data-section="settings">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-10 main-content">
+                <!-- Dashboard Overview Section -->
+                <div id="dashboard-section" class="content-section">
+                    <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h1 class="h3 fw-bold">Creator Dashboard</h1>
+                            <button class="btn btn-primary" data-section="upload">
+                                <i class="fas fa-plus me-2"></i>Upload New Video
+                            </button>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="fas fa-video text-primary fa-2x"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="fw-bold h4 mb-0">24</div>
+                                                <div class="text-muted small">Total Videos</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="fas fa-eye text-success fa-2x"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="fw-bold h4 mb-0">12.5K</div>
+                                                <div class="text-muted small">Total Views</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="fas fa-dollar-sign text-warning fa-2x"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="fw-bold h4 mb-0">$2,847</div>
+                                                <div class="text-muted small">Total Earnings</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="fas fa-users text-info fa-2x"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="fw-bold h4 mb-0">892</div>
+                                                <div class="text-muted small">Subscribers</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-8">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-transparent">
+                                        <h6 class="mb-0 fw-bold">Views Analytics</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="viewsChart" height="100"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-transparent">
+                                        <h6 class="mb-0 fw-bold">Top Categories</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="categoriesChart" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent">
+                                <h6 class="mb-0 fw-bold">Recent Activity</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="timeline">
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker bg-success"></div>
+                                        <div class="timeline-content">
+                                            <h6 class="mb-1">New video uploaded</h6>
+                                            <p class="text-muted mb-1">Your video "Tutorial: Advanced Techniques" has been successfully uploaded</p>
+                                            <small class="text-muted">2 hours ago</small>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker bg-info"></div>
+                                        <div class="timeline-content">
+                                            <h6 class="mb-1">Payment received</h6>
+                                            <p class="text-muted mb-1">You earned $125.50 from video views</p>
+                                            <small class="text-muted">1 day ago</small>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker bg-warning"></div>
+                                        <div class="timeline-content">
+                                            <h6 class="mb-1">Video milestone reached</h6>
+                                            <p class="text-muted mb-1">Your video "Getting Started Guide" reached 1,000 views</p>
+                                            <small class="text-muted">3 days ago</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Library Section -->
+                <div id="videos-section" class="content-section d-none">
+                    <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h1 class="h3 fw-bold">Video Library</h1>
+                            <div class="d-flex gap-2">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-filter me-2"></i>Filter
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">All Videos</a></li>
+                                        <li><a class="dropdown-item" href="#">Published</a></li>
+                                        <li><a class="dropdown-item" href="#">Draft</a></li>
+                                        <li><a class="dropdown-item" href="#">Private</a></li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-primary" data-section="upload">
+                                    <i class="fas fa-plus me-2"></i>Upload Video
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Video Grid -->
+                        <div class="row g-3">
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card video-card border-0 shadow-sm">
+                                    <div class="video-thumbnail">
+                                        <img src="https://pixabay.com/get/ga6f9d885c926f5b7538a9a0b391fd7689ee7b712eaecc168ba915044e284fce35bdac6ac12c050f0b20d604684e43455b2e15acb762b7c95ca270cd2dfbae7e8_1280.jpg" class="card-img-top" alt="Video thumbnail">
+                                        <div class="video-duration">12:34</div>
+                                        <div class="video-status published">Published</div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title">Advanced Tutorial Series</h6>
+                                        <p class="card-text text-muted small">Learn advanced techniques in this comprehensive tutorial series...</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                <i class="fas fa-eye me-1"></i>2.3K views
+                                            </small>
+                                            <small class="text-success">
+                                                <i class="fas fa-dollar-sign me-1"></i>$145.20
+                                            </small>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div class="btn-group w-100" role="group">
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-chart-bar"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card video-card border-0 shadow-sm">
+                                    <div class="video-thumbnail">
+                                        <img src="https://pixabay.com/get/gfc8ea08a622b6a0c762cf3a9a7362ada81616d7727a1226dcb7322d97e12894098301acc6d3a6ddcd43651da52c428d43184eadc1eccdac725caf54ef9e15533_1280.jpg" class="card-img-top" alt="Video thumbnail">
+                                        <div class="video-duration">8:15</div>
+                                        <div class="video-status draft">Draft</div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title">Beginner's Guide to Success</h6>
+                                        <p class="card-text text-muted small">A comprehensive guide for beginners starting their journey...</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                <i class="fas fa-eye me-1"></i>Draft
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="fas fa-dollar-sign me-1"></i>-
+                                            </small>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div class="btn-group w-100" role="group">
+                                                <button class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-upload"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Empty State -->
+                            <div class="col-12">
+                                <div class="text-center py-5" id="emptyVideoState" style="display: none;">
+                                    <i class="fas fa-video text-muted" style="font-size: 4rem;"></i>
+                                    <h4 class="mt-3 text-muted">No Videos Yet</h4>
+                                    <p class="text-muted">Start creating content by uploading your first video</p>
+                                    <button class="btn btn-primary" data-section="upload">
+                                        <i class="fas fa-plus me-2"></i>Upload Your First Video
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Video Section -->
+                <div id="upload-section" class="content-section d-none">
+                    <div class="p-4">
+                        <h1 class="h3 fw-bold mb-4">Upload New Video</h1>
+                        
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body p-4">
+                                <form id="uploadForm" enctype="multipart/form-data">
+                                    <!-- File Upload -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold">Video File</label>
+                                        <div class="upload-area border-2 border-dashed p-4 text-center" id="uploadArea">
+                                            <i class="fas fa-cloud-upload-alt text-muted fa-3x mb-3"></i>
+                                            <p class="mb-2">Drag and drop your video file here, or click to browse</p>
+                                            <p class="text-muted small mb-3">Supported formats: MP4, AVI, MOV (Max: 2GB)</p>
+                                            <input type="file" id="videoFile" accept="video/*" class="d-none">
+                                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('videoFile').click()">
+                                                Choose File
+                                            </button>
+                                        </div>
+                                        <div id="uploadProgress" class="mt-3 d-none">
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <!-- Video Details -->
+                                        <div class="col-md-8">
+                                            <div class="mb-3">
+                                                <label for="videoTitle" class="form-label fw-bold">Title</label>
+                                                <input type="text" class="form-control" id="videoTitle" placeholder="Enter video title" required>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="videoDescription" class="form-label fw-bold">Description</label>
+                                                <textarea class="form-control" id="videoDescription" rows="4" placeholder="Describe your video content"></textarea>
+                                            </div>
+
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="videoCategory" class="form-label fw-bold">Category</label>
+                                                    <select class="form-select" id="videoCategory" required>
+                                                        <option value="">Choose category...</option>
+                                                        <option value="education">Education</option>
+                                                        <option value="entertainment">Entertainment</option>
+                                                        <option value="music">Music</option>
+                                                        <option value="sports">Sports</option>
+                                                        <option value="technology">Technology</option>
+                                                        <option value="lifestyle">Lifestyle</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="videoTags" class="form-label fw-bold">Tags</label>
+                                                    <input type="text" class="form-control" id="videoTags" placeholder="e.g., tutorial, beginner, advanced">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Settings -->
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="videoPrice" class="form-label fw-bold">Price per View</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">$</span>
+                                                    <input type="number" class="form-control" id="videoPrice" step="0.01" min="0.01" placeholder="0.99">
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Visibility</label>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="visibility" id="public" value="public" checked>
+                                                    <label class="form-check-label" for="public">
+                                                        <i class="fas fa-globe me-2"></i>Public
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="visibility" id="private" value="private">
+                                                    <label class="form-check-label" for="private">
+                                                        <i class="fas fa-lock me-2"></i>Private
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="visibility" id="unlisted" value="unlisted">
+                                                    <label class="form-check-label" for="unlisted">
+                                                        <i class="fas fa-link me-2"></i>Unlisted
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="enableComments" checked>
+                                                    <label class="form-check-label" for="enableComments">
+                                                        Enable comments
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="enableRatings" checked>
+                                                    <label class="form-check-label" for="enableRatings">
+                                                        Enable ratings
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button type="button" class="btn btn-outline-secondary">Save as Draft</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-upload me-2"></i>Upload Video
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other sections would be implemented similarly -->
+                <!-- Analytics Section (placeholder) -->
+                <div id="analytics-section" class="content-section d-none">
+                    <div class="p-4">
+                        <h1 class="h3 fw-bold mb-4">Analytics Dashboard</h1>
+                        <div class="alert alert-info">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Analytics section will be implemented here with detailed charts and metrics.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Earnings Section (placeholder) -->
+                <div id="earnings-section" class="content-section d-none">
+                    <div class="p-4">
+                        <h1 class="h3 fw-bold mb-4">Earnings Overview</h1>
+                        <div class="alert alert-success">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Earnings section will show detailed payment history and analytics.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section (placeholder) -->
+                <div id="settings-section" class="content-section d-none">
+                    <div class="p-4">
+                        <h1 class="h3 fw-bold mb-4">Account Settings</h1>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-cog me-2"></i>
+                            Settings section will include profile management and preferences.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="../assets/js/dashboard.js"></script>
+</body>
+</html>
