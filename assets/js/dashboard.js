@@ -34,6 +34,18 @@ function initializeDashboard() {
     const isCreatorDashboard = window.location.pathname.includes('creator-dashboard');
     dashboardState.isCreator = isCreatorDashboard;
     
+    // Set default section for viewer dashboard
+    if (!isCreatorDashboard) {
+        dashboardState.currentSection = 'browse';
+        // Show browse section by default
+        setTimeout(() => {
+            const browseSection = document.getElementById('browse-section');
+            if (browseSection) {
+                browseSection.classList.remove('d-none');
+            }
+        }, 100);
+    }
+    
     // Initialize charts if on creator dashboard
     if (isCreatorDashboard && typeof Chart !== 'undefined') {
         initializeCharts();
@@ -161,8 +173,8 @@ function redirectToIndividualPage(sectionName) {
         switch (sectionName) {
             case 'dashboard':
             case 'overview':
-                targetPage = 'creator-overview.html';
-                break;
+                // Stay on main dashboard for overview
+                return;
             case 'videos':
                 targetPage = 'creator-videos.html';
                 break;
@@ -181,23 +193,12 @@ function redirectToIndividualPage(sectionName) {
         }
     } else {
         switch (sectionName) {
+            case 'browse':
             case 'discover':
-                targetPage = 'viewer-discover.html';
-                break;
+                // Browse section stays on main dashboard
+                return;
             case 'library':
                 targetPage = 'viewer-library.html';
-                break;
-            case 'history':
-                targetPage = 'viewer-history.html';
-                break;
-            case 'trending':
-                targetPage = 'viewer-trending.html';
-                break;
-            case 'categories':
-                targetPage = 'viewer-categories.html';
-                break;
-            case 'subscriptions':
-                targetPage = 'viewer-subscriptions.html';
                 break;
             case 'wallet':
                 targetPage = 'viewer-wallet.html';
@@ -848,6 +849,10 @@ function loadDashboardData() {
  */
 function loadSectionData(sectionName) {
     switch (sectionName) {
+        case 'browse':
+        case 'discover':
+            loadBrowseVideos();
+            break;
         case 'videos':
             loadVideos();
             break;
@@ -862,6 +867,9 @@ function loadSectionData(sectionName) {
             break;
         case 'library':
             loadLibrary();
+            break;
+        case 'settings':
+            loadSettings();
             break;
         case 'history':
             loadHistory();
@@ -915,6 +923,22 @@ function loadWalletData() {
 function loadLibrary() {
     console.log('Loading library...');
     // This would typically fetch purchased videos
+}
+
+/**
+ * Load browse videos (main viewer section)
+ */
+function loadBrowseVideos() {
+    console.log('Loading browse videos...');
+    // This would typically fetch available videos from creators
+}
+
+/**
+ * Load settings
+ */
+function loadSettings() {
+    console.log('Loading settings...');
+    // This would typically load user settings and preferences
 }
 
 /**

@@ -31,7 +31,7 @@ const CONFIG = {
     // Dashboard sections
     SECTIONS: {
         CREATOR: ['dashboard', 'videos', 'upload', 'analytics', 'earnings', 'settings'],
-        VIEWER: ['discover', 'library', 'history', 'trending', 'categories', 'subscriptions', 'wallet']
+        VIEWER: ['browse', 'library', 'wallet', 'settings']
     },
 
     // Demo accounts for testing
