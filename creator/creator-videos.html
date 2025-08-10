@@ -82,9 +82,7 @@
                         <a class="nav-link" href="creator-upload.html">
                             <i class="fas fa-upload me-2"></i>Upload Video
                         </a>
-                        <a class="nav-link" href="creator-analytics.html">
-                            <i class="fas fa-chart-bar me-2"></i>Analytics
-                        </a>
+
                         <a class="nav-link" href="creator-earnings.html">
                             <i class="fas fa-money-bill-wave me-2"></i>Earnings
                         </a>
@@ -119,73 +117,105 @@
                     </div>
 
                     <!-- Video Grid -->
-                    <div class="row g-3">
-                        <div class="col-md-6 col-lg-4">
-                            <div class="card video-card border-0 shadow-sm">
-                                <div class="video-thumbnail">
-                                    <img src="https://pixabay.com/get/ga6f9d885c926f5b7538a9a0b391fd7689ee7b712eaecc168ba915044e284fce35bdac6ac12c050f0b20d604684e43455b2e15acb762b7c95ca270cd2dfbae7e8_1280.jpg" class="card-img-top" alt="Video thumbnail">
-                                    <div class="video-duration">12:34</div>
-                                    <div class="video-status published">Published</div>
+                    <div class="video-grid">
+                        <div class="card video-card border-0 shadow-sm">
+                            <div class="video-thumbnail">
+                                <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400" class="card-img-top" alt="Video thumbnail">
+                                <div class="video-duration">12:34</div>
+                                <div class="video-status published">Published</div>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">Master Class: Advanced Techniques</h6>
+                                <p class="card-text">Learn advanced techniques in this comprehensive tutorial series covering workflows.</p>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-eye me-1"></i>2.3K views
+                                    </small>
+                                    <small class="text-success fw-bold">
+                                        <i class="fas fa-dollar-sign me-1"></i>$145.20
+                                    </small>
                                 </div>
-                                <div class="card-body">
-                                    <h6 class="card-title">Advanced Tutorial Series</h6>
-                                    <p class="card-text text-muted small">Learn advanced techniques in this comprehensive tutorial series...</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            <i class="fas fa-eye me-1"></i>2.3K views
-                                        </small>
-                                        <small class="text-success">
-                                            <i class="fas fa-dollar-sign me-1"></i>$145.20
-                                        </small>
-                                    </div>
-                                    <div class="mt-2">
-                                        <div class="btn-group w-100" role="group">
-                                            <button class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary">
-                                                <i class="fas fa-chart-bar"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" title="Analytics">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" title="Settings">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="col-md-6 col-lg-4">
-                            <div class="card video-card border-0 shadow-sm">
-                                <div class="video-thumbnail">
-                                    <img src="https://pixabay.com/get/gfc8ea08a622b6a0c762cf3a9a7362ada81616d7727a1226dcb7322d97e12894098301acc6d3a6ddcd43651da52c428d43184eadc1eccdac725caf54ef9e15533_1280.jpg" class="card-img-top" alt="Video thumbnail">
-                                    <div class="video-duration">8:15</div>
-                                    <div class="video-status draft">Draft</div>
+                        <div class="card video-card border-0 shadow-sm">
+                            <div class="video-thumbnail">
+                                <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400" class="card-img-top" alt="Video thumbnail">
+                                <div class="video-duration">8:15</div>
+                                <div class="video-status draft">Draft</div>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">Photography Essentials</h6>
+                                <p class="card-text">A comprehensive guide for beginners starting their photography journey with essential techniques.</p>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <small class="text-warning">
+                                        <i class="fas fa-edit me-1"></i>Draft
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-dollar-sign me-1"></i>Not published
+                                    </small>
                                 </div>
-                                <div class="card-body">
-                                    <h6 class="card-title">Beginner's Guide to Success</h6>
-                                    <p class="card-text text-muted small">A comprehensive guide for beginners starting their journey...</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            <i class="fas fa-eye me-1"></i>Draft
-                                        </small>
-                                        <small class="text-muted">
-                                            <i class="fas fa-dollar-sign me-1"></i>-
-                                        </small>
-                                    </div>
-                                    <div class="mt-2">
-                                        <div class="btn-group w-100" role="group">
-                                            <button class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success">
-                                                <i class="fas fa-upload"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" title="Publish">
+                                        <i class="fas fa-upload"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" title="Preview">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card video-card border-0 shadow-sm">
+                            <div class="video-thumbnail">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400" class="card-img-top" alt="Video thumbnail">
+                                <div class="video-duration">25:18</div>
+                                <div class="video-status published">Published</div>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">Complete Workshop Series</h6>
+                                <p class="card-text">Comprehensive workshop covering everything you need to know about modern techniques and tools.</p>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-eye me-1"></i>1.8K views
+                                    </small>
+                                    <small class="text-success fw-bold">
+                                        <i class="fas fa-dollar-sign me-1"></i>$89.30
+                                    </small>
+                                </div>
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" title="Analytics">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" title="Settings">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>

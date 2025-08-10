@@ -84,9 +84,7 @@
                         <a class="nav-link" href="creator-upload.html">
                             <i class="fas fa-upload me-2"></i>Upload Video
                         </a>
-                        <a class="nav-link" href="creator-analytics.html">
-                            <i class="fas fa-chart-bar me-2"></i>Analytics
-                        </a>
+
                         <a class="nav-link" href="creator-earnings.html">
                             <i class="fas fa-money-bill-wave me-2"></i>Earnings
                         </a>
@@ -178,8 +176,13 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-8">
                             <div class="card border-0 shadow-sm">
-                                <div class="card-header bg-transparent">
-                                    <h6 class="mb-0 fw-bold">Views Analytics</h6>
+                                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold">Views Over Time</h6>
+                                    <select class="form-select" style="width: auto;">
+                                        <option>Last 30 days</option>
+                                        <option>Last 7 days</option>
+                                        <option>Last 90 days</option>
+                                    </select>
                                 </div>
                                 <div class="card-body">
                                     <canvas id="viewsChart" height="100"></canvas>
@@ -190,10 +193,90 @@
                         <div class="col-md-4">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-header bg-transparent">
-                                    <h6 class="mb-0 fw-bold">Top Categories</h6>
+                                    <h6 class="mb-0 fw-bold">Performance Metrics</h6>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="categoriesChart" height="200"></canvas>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small text-muted">Watch Time</span>
+                                            <span class="fw-bold">2.3h avg</span>
+                                        </div>
+                                        <div class="progress" style="height: 4px;">
+                                            <div class="progress-bar bg-info" style="width: 75%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small text-muted">Engagement Rate</span>
+                                            <span class="fw-bold">94%</span>
+                                        </div>
+                                        <div class="progress" style="height: 4px;">
+                                            <div class="progress-bar bg-success" style="width: 94%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-0">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small text-muted">Completion Rate</span>
+                                            <span class="fw-bold">78%</span>
+                                        </div>
+                                        <div class="progress" style="height: 4px;">
+                                            <div class="progress-bar bg-warning" style="width: 78%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Performing Videos -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h6 class="mb-0 fw-bold">Top Performing Videos</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            <div class="d-flex align-items-center p-2 border rounded">
+                                                <img src="https://pixabay.com/get/ga6f9d885c926f5b7538a9a0b391fd7689ee7b712eaecc168ba915044e284fce35bdac6ac12c050f0b20d604684e43455b2e15acb762b7c95ca270cd2dfbae7e8_1280.jpg" 
+                                                     alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1 small">Advanced Tutorial Series</h6>
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">2.3K views</small>
+                                                        <small class="text-success fw-bold">$145.20</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="d-flex align-items-center p-2 border rounded">
+                                                <img src="https://pixabay.com/get/gfc8ea08a622b6a0c762cf3a9a7362ada81616d7727a1226dcb7322d97e12894098301acc6d3a6ddcd43651da52c428d43184eadc1eccdac725caf54ef9e15533_1280.jpg" 
+                                                     alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1 small">Beginner's Guide</h6>
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">1.8K views</small>
+                                                        <small class="text-success fw-bold">$89.50</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="d-flex align-items-center p-2 border rounded">
+                                                <img src="https://pixabay.com/get/gda64e03e0b0d4d11b5d8cc0e60be62e3a56a23ff44ae9734b8bb3a28fdd1d6b9e1b5e2b8a2c8b0d01a62e3e7a6b2a4af1b8e5e1b0dcfcfc5b5b6b3b3b3b3b3b3b_1280.jpg" 
+                                                     alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1 small">Tips & Tricks</h6>
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">1.2K views</small>
+                                                        <small class="text-success fw-bold">$67.30</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
