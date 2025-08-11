@@ -1,13 +1,41 @@
-modules = ["web", "nodejs-20", "php-8.2", "python-3.11", "postgresql-16"]
-[agent]
-expertMode = true
+run = "php -S 0.0.0.0:8000 -t ."
+modules = ["web", "nodejs-20", "php-8.2", "nix", "python-3.11"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["mysql80", "nginx", "php82"]
+
+[deployment]
+run = ["sh", "-c", "php -S 0.0.0.0:8000 -t ."]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
+localPort = 8000
+externalPort = 80
 
 [workflows]
 runButton = "Project"
+
+[[workflows.workflow]]
+name = "Run PHP Server"
+author = 25726037
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "php -S 0.0.0.0:8000 -t ."
+
+[[workflows.workflow]]
+name = "Run Web Server"
+author = 45765530
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "php -S 0.0.0.0:5000 -t ."
 
 [[workflows.workflow]]
 name = "Project"
@@ -37,16 +65,8 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd api && php -S 0.0.0.0:8000"
+args = "php -S 0.0.0.0:8000 -t ."
 waitForPort = 8000
 
 [workflows.workflow.metadata]
 outputType = "console"
-
-[[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 8000
-externalPort = 8000
