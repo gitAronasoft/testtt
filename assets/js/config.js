@@ -18,6 +18,12 @@ const CONFIG = {
         ENVIRONMENT: 'development'
     },
 
+    // API Configuration
+    API: {
+        BASE_URL: '/api',
+        TIMEOUT: 30000
+    },
+
     // Routes for navigation
     ROUTES: {
         HOME: 'index.html',
@@ -38,19 +44,19 @@ const CONFIG = {
     // Demo accounts for testing
     DEMO_ACCOUNTS: {
         'creator@demo.com': {
-            password: 'password123',
+            password: 'secret',
             role: 'creator',
             name: 'Demo Creator',
             id: 'creator_001'
         },
         'viewer@demo.com': {
-            password: 'password123',
+            password: 'secret',
             role: 'viewer',
             name: 'Demo Viewer',
             id: 'viewer_001'
         },
         'admin@demo.com': {
-            password: 'admin123',
+            password: 'secret',
             role: 'admin',
             name: 'Platform Admin',
             id: 'admin_001'
@@ -180,77 +186,4 @@ function getRelativePathToRoot() {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
 }
-/**
- * Configuration file for VideoShare platform
- */
-const CONFIG = {
-    // API Configuration
-    API: {
-        BASE_URL: '/api',
-        TIMEOUT: 30000
-    },
-    
-    // Routes
-    ROUTES: {
-        LOGIN: 'login.html',
-        SIGNUP: 'signup.html',
-        CREATOR_DASHBOARD: 'creator/creator-overview.html',
-        VIEWER_DASHBOARD: 'viewer/viewer-dashboard.html'
-    },
-    
-    // Storage keys
-    STORAGE: {
-        USER: 'videoShareUser',
-        TOKEN: 'videoShareToken',
-        SESSION: 'videoShareSession'
-    },
-    
-    // UI Configuration
-    UI: {
-        LOADING_TIMEOUT: 2000,
-        REDIRECT_DELAY: 1500,
-        ALERT_TIMEOUT: 5000
-    },
-    
-    // Demo accounts for testing
-    DEMO_ACCOUNTS: {
-        'creator@demo.com': {
-            id: 'user_1',
-            name: 'John Creator',
-            role: 'creator',
-            password: 'password123'
-        },
-        'viewer@demo.com': {
-            id: 'user_2',
-            name: 'Jane Viewer',
-            role: 'viewer',
-            password: 'password123'
-        }
-    }
-};
 
-// Utility functions
-function getDashboardUrl(role) {
-    return role === 'creator' ? CONFIG.ROUTES.CREATOR_DASHBOARD : CONFIG.ROUTES.VIEWER_DASHBOARD;
-}
-
-function isAuthenticated() {
-    return !!localStorage.getItem(CONFIG.STORAGE.TOKEN);
-}
-
-function getCurrentUser() {
-    const userData = localStorage.getItem(CONFIG.STORAGE.USER);
-    return userData ? JSON.parse(userData) : null;
-}
-
-function logout() {
-    localStorage.removeItem(CONFIG.STORAGE.USER);
-    localStorage.removeItem(CONFIG.STORAGE.TOKEN);
-    localStorage.removeItem(CONFIG.STORAGE.SESSION);
-    window.location.href = CONFIG.ROUTES.LOGIN;
-}
-
-// Export for modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CONFIG;
-}

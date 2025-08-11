@@ -9,11 +9,16 @@ class Database {
     private $db_name;
     private $username;
     private $password;
+    private $port;
     private $connection;
     
     public function __construct() {
-        // Database configuration - using SQLite for development
-        $this->db_name = $_ENV['DB_NAME'] ?? __DIR__ . '/../../database/videoshare.db';
+        // Database configuration - using MySQL for production
+        $this->host = 'srv637.hstgr.io';
+        $this->db_name = 'u742355347_youtube';
+        $this->username = 'u742355347_youtube';
+        $this->password = 'Arona1@1@1@1';
+        $this->port = 3306;
     }
     
     /**
@@ -24,17 +29,15 @@ class Database {
         $this->connection = null;
         
         try {
-            $dsn = "sqlite:" . $this->db_name;
+            $dsn = "mysql:host={$this->host};port={$this->port};dbname={$this->db_name};charset=utf8mb4";
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false
+                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
             ];
             
-            $this->connection = new PDO($dsn, null, null, $options);
-            
-            // Enable foreign key constraints
-            $this->connection->exec("PRAGMA foreign_keys = ON");
+            $this->connection = new PDO($dsn, $this->username, $this->password, $options);
             
         } catch(PDOException $e) {
             error_log("Database connection error: " . $e->getMessage());

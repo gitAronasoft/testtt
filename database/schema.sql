@@ -1,9 +1,6 @@
 -- VideoShare Platform Database Schema
--- Clean, optimized schema for easy maintenance and updates
-
--- Create database
-CREATE DATABASE IF NOT EXISTS videoshare_db;
-USE videoshare_db;
+-- Clean, optimized schema for MySQL production database
+-- Database: u742355347_youtube
 
 -- Users table - stores all user information
 CREATE TABLE users (

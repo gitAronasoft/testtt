@@ -27,6 +27,8 @@ switch ($method) {
             handleGetUserPurchases($pdo, $userId);
         } elseif ($userId && $action === 'wallet') {
             handleGetUserWallet($pdo, $userId);
+        } elseif ($userId && $action === 'earnings') {
+            handleGetUserEarnings($pdo, $userId);
         } elseif ($userId) {
             handleGetUser($pdo, $userId);
         } else {
@@ -360,6 +362,95 @@ function handleGetUserPurchases($pdo, $userId) {
     } catch (PDOException $e) {
         logError('Get user purchases error: ' . $e->getMessage());
         sendError('Failed to retrieve purchases', 500);
+    }
+}
+
+/**
+ * Get user's earnings data (creator only)
+ */
+function handleGetUserEarnings($pdo, $userId) {
+    $currentUser = getCurrentUser($pdo);
+    
+    if (!$currentUser) {
+        sendError('Authentication required', 401);
+    }
+    
+    // Debug info - remove in production
+    error_log("Current user: " . json_encode($currentUser));
+    error_log("User ID from URL: " . $userId);
+    
+    // Only creators can view earnings, and only their own
+    if ($currentUser['role'] !== 'creator' || intval($currentUser['id']) !== intval($userId)) {
+        sendError('Not authorized to view earnings. User role: ' . $currentUser['role'] . ', User ID: ' . $currentUser['id'] . ', Requested ID: ' . $userId, 403);
+    }
+    
+    try {
+        // Get basic earnings metrics
+        $stmt = $pdo->prepare("
+            SELECT 
+                w.balance as available_balance,
+                w.total_earned,
+                COALESCE(
+                    (SELECT SUM(amount) 
+                     FROM wallet_transactions wt 
+                     WHERE wt.wallet_id = w.id 
+                     AND wt.type = 'earning' 
+                     AND MONTH(wt.created_at) = MONTH(CURRENT_DATE())
+                     AND YEAR(wt.created_at) = YEAR(CURRENT_DATE())
+                    ), 0
+                ) as monthly_earnings,
+                (SELECT COUNT(*) FROM videos WHERE creator_id = ? AND status = 'published') as total_videos,
+                (SELECT COUNT(*) FROM video_purchases vp 
+                 JOIN videos v ON vp.video_id = v.id 
+                 WHERE v.creator_id = ? AND vp.payment_status = 'completed') as total_purchases
+            FROM user_wallets w 
+            WHERE w.user_id = ?
+        ");
+        $stmt->execute([$userId, $userId, $userId]);
+        $metrics = $stmt->fetch();
+        
+        // Get recent purchases of creator's videos
+        $stmt = $pdo->prepare("
+            SELECT 
+                vp.purchased_at as date,
+                v.title as video_title,
+                u.email as customer_email,
+                vp.amount
+            FROM video_purchases vp
+            JOIN videos v ON vp.video_id = v.id
+            JOIN users u ON vp.user_id = u.id
+            WHERE v.creator_id = ? AND vp.payment_status = 'completed'
+            ORDER BY vp.purchased_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$userId]);
+        $recent_purchases = $stmt->fetchAll();
+        
+        // Get payout history
+        $stmt = $pdo->prepare("
+            SELECT 
+                wt.created_at as date,
+                wt.amount,
+                wt.description as method,
+                'completed' as status
+            FROM wallet_transactions wt
+            JOIN user_wallets w ON wt.wallet_id = w.id
+            WHERE w.user_id = ? AND wt.type = 'payout'
+            ORDER BY wt.created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$userId]);
+        $payout_history = $stmt->fetchAll();
+        
+        sendResponse([
+            'metrics' => $metrics,
+            'recent_purchases' => $recent_purchases,
+            'payout_history' => $payout_history
+        ], 'Earnings data retrieved successfully');
+        
+    } catch (PDOException $e) {
+        logError('Get user earnings error: ' . $e->getMessage());
+        sendError('Failed to retrieve earnings data', 500);
     }
 }
 

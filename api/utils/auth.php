@@ -86,14 +86,25 @@ function verifyJWT($token) {
  * @return string|null
  */
 function getAuthorizationHeader() {
-    $headers = apache_request_headers();
-    
-    if (isset($headers['Authorization'])) {
-        return $headers['Authorization'];
+    // Try Apache function first (may not work in built-in server)
+    if (function_exists('apache_request_headers')) {
+        $headers = apache_request_headers();
+        if (isset($headers['Authorization'])) {
+            return $headers['Authorization'];
+        }
+        if (isset($headers['authorization'])) {
+            return $headers['authorization'];
+        }
     }
     
-    if (isset($headers['authorization'])) {
-        return $headers['authorization'];
+    // Fallback for PHP built-in server
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        return $_SERVER['HTTP_AUTHORIZATION'];
+    }
+    
+    // Alternative Authorization header formats
+    if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
     }
     
     return null;
