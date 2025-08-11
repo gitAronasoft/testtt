@@ -31,7 +31,7 @@ function initializeDashboard() {
     getCurrentUser();
     
     // Determine dashboard type
-    const isCreatorDashboard = window.location.pathname.includes('creator-dashboard');
+    const isCreatorDashboard = window.location.pathname.includes('creator');
     dashboardState.isCreator = isCreatorDashboard;
     
     // Set default section for viewer dashboard
@@ -83,6 +83,7 @@ function getCurrentUser() {
  * Setup navigation between dashboard sections
  */
 function setupNavigation() {
+    // Only set up section navigation for links with data-section attributes
     const navLinks = document.querySelectorAll('[data-section]');
     
     navLinks.forEach(link => {
@@ -97,12 +98,17 @@ function setupNavigation() {
         });
     });
     
-    // Handle hash navigation
-    window.addEventListener('hashchange', handleHashChange);
+    // Handle hash navigation only if we're on a main dashboard page
+    const isMainDashboard = window.location.pathname.includes('creator-overview.html') || 
+                           window.location.pathname.includes('viewer-dashboard.html');
     
-    // Check initial hash
-    if (window.location.hash) {
-        handleHashChange();
+    if (isMainDashboard) {
+        window.addEventListener('hashchange', handleHashChange);
+        
+        // Check initial hash
+        if (window.location.hash) {
+            handleHashChange();
+        }
     }
 }
 
@@ -111,7 +117,7 @@ function setupNavigation() {
  */
 function switchSection(sectionName) {
     // Check if we're on the main dashboard page or individual page
-    const isMainDashboard = window.location.pathname.includes('creator-dashboard.html') || 
+    const isMainDashboard = window.location.pathname.includes('creator-overview.html') || 
                            window.location.pathname.includes('viewer-dashboard.html');
     
     if (isMainDashboard) {
@@ -169,42 +175,47 @@ function redirectToIndividualPage(sectionName) {
     const userRole = dashboardState.currentUser?.role || 'viewer';
     let targetPage = '';
     
+    // Check if we're already in a subdirectory (creator/ or viewer/)
+    const currentPath = window.location.pathname;
+    const isInCreatorDir = currentPath.includes('/creator/');
+    const isInViewerDir = currentPath.includes('/viewer/');
+    
     if (userRole === 'creator') {
         switch (sectionName) {
             case 'dashboard':
             case 'overview':
-                // Stay on main dashboard for overview
-                return;
+                targetPage = isInCreatorDir ? 'creator-overview.html' : 'creator/creator-overview.html';
+                break;
             case 'videos':
-                targetPage = 'creator-videos.html';
+                targetPage = isInCreatorDir ? 'creator-videos.html' : 'creator/creator-videos.html';
                 break;
             case 'upload':
-                targetPage = 'creator-upload.html';
+                targetPage = isInCreatorDir ? 'creator-upload.html' : 'creator/creator-upload.html';
                 break;
             case 'analytics':
-                targetPage = 'creator-analytics.html';
+                targetPage = isInCreatorDir ? 'creator-analytics.html' : 'creator/creator-analytics.html';
                 break;
             case 'earnings':
-                targetPage = 'creator-earnings.html';
+                targetPage = isInCreatorDir ? 'creator-earnings.html' : 'creator/creator-earnings.html';
                 break;
             case 'settings':
-                targetPage = 'creator-settings.html';
+                targetPage = isInCreatorDir ? 'creator-settings.html' : 'creator/creator-settings.html';
                 break;
         }
     } else {
         switch (sectionName) {
             case 'browse':
             case 'discover':
-                // Browse section stays on main dashboard
-                return;
+                targetPage = isInViewerDir ? 'viewer-dashboard.html' : 'viewer/viewer-dashboard.html';
+                break;
             case 'library':
-                targetPage = 'viewer-library.html';
+                targetPage = isInViewerDir ? 'viewer-library.html' : 'viewer/viewer-library.html';
                 break;
             case 'wallet':
-                targetPage = 'viewer-wallet.html';
+                targetPage = isInViewerDir ? 'viewer-wallet.html' : 'viewer/viewer-wallet.html';
                 break;
             case 'settings':
-                targetPage = 'viewer-settings.html';
+                targetPage = isInViewerDir ? 'viewer-settings.html' : 'viewer/viewer-settings.html';
                 break;
         }
     }

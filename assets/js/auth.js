@@ -50,8 +50,222 @@ function setupFormValidation() {
         inputs.forEach(input => {
             input.addEventListener('blur', () => validateField(input));
             input.addEventListener('input', () => clearFieldError(input));
+            
+            // Enhanced password strength indicator
+            if (input.type === 'password' && input.id !== 'loginPassword') {
+                input.addEventListener('input', () => updatePasswordStrength(input));
+            }
+        });
+        
+        // Enhanced form submission
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            handleEnhancedFormSubmission(form);
         });
     });
+}
+
+/**
+ * Enhanced form submission handler
+ */
+function handleEnhancedFormSubmission(form) {
+    const formId = form.id;
+    setFormLoading(form, true);
+    
+    // Clear previous errors
+    clearFormErrors(form);
+    
+    // Validate all fields
+    const isValid = validateForm(form);
+    
+    if (!isValid) {
+        setFormLoading(form, false);
+        showFormError(form, 'Please correct the errors below');
+        return;
+    }
+    
+    // Handle specific forms with improved UX
+    switch (formId) {
+        case 'loginForm':
+            handleLoginSubmission(form);
+            break;
+        case 'signupForm':
+            handleSignupSubmission(form);
+            break;
+        case 'forgotPasswordForm':
+            handleForgotPasswordSubmission(form);
+            break;
+        default:
+            setFormLoading(form, false);
+    }
+}
+
+/**
+ * Enhanced login submission
+ */
+function handleLoginSubmission(form) {
+    const formData = new FormData(form);
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const rememberMe = formData.get('rememberMe');
+    
+    // Simulate API call with realistic timing
+    setTimeout(() => {
+        try {
+            const user = authenticateUser(email, password);
+            if (user) {
+                showSuccessMessage('Login successful! Redirecting...');
+                saveUserSession(user, rememberMe);
+                
+                setTimeout(() => {
+                    redirectToDashboard(user.role);
+                }, 1500);
+            } else {
+                setFormLoading(form, false);
+                showFormError(form, 'Invalid email or password. Please try again.');
+                
+                // Add shake animation to form
+                form.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    form.style.animation = '';
+                }, 500);
+            }
+        } catch (error) {
+            setFormLoading(form, false);
+            showFormError(form, 'An error occurred. Please try again.');
+        }
+    }, 1500);
+}
+
+/**
+ * Enhanced signup submission
+ */
+function handleSignupSubmission(form) {
+    const formData = new FormData(form);
+    
+    setTimeout(() => {
+        showSuccessMessage('Account created successfully! Redirecting to login...');
+        
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 2000);
+    }, 2000);
+}
+
+/**
+ * Update password strength indicator
+ */
+function updatePasswordStrength(passwordInput) {
+    const password = passwordInput.value;
+    const strengthIndicator = document.getElementById('passwordStrength');
+    
+    if (!strengthIndicator) return;
+    
+    if (password.length === 0) {
+        strengthIndicator.style.display = 'none';
+        return;
+    }
+    
+    strengthIndicator.style.display = 'block';
+    
+    const strength = calculatePasswordStrength(password);
+    const strengthClasses = ['weak', 'fair', 'good', 'strong'];
+    const strengthTexts = ['Weak', 'Fair', 'Good', 'Strong'];
+    
+    strengthIndicator.className = `password-strength ${strengthClasses[strength.level]}`;
+    strengthIndicator.innerHTML = `
+        ${strengthTexts[strength.level]}
+        <div class="strength-bar" style="width: ${(strength.level + 1) * 25}%"></div>
+    `;
+}
+
+/**
+ * Calculate password strength
+ */
+function calculatePasswordStrength(password) {
+    let score = 0;
+    let level = 0;
+    
+    if (password.length >= 8) score += 1;
+    if (password.match(/[a-z]+/)) score += 1;
+    if (password.match(/[A-Z]+/)) score += 1;
+    if (password.match(/[0-9]+/)) score += 1;
+    if (password.match(/[^a-zA-Z0-9]+/)) score += 1;
+    
+    if (score >= 4) level = 3; // Strong
+    else if (score >= 3) level = 2; // Good
+    else if (score >= 2) level = 1; // Fair
+    else level = 0; // Weak
+    
+    return { score, level };
+}
+
+/**
+ * Show form error with animation
+ */
+function showFormError(form, message) {
+    const alertContainer = form.querySelector('.alert-container') || 
+                          form.insertBefore(document.createElement('div'), form.firstChild);
+    alertContainer.className = 'alert-container';
+    
+    alertContainer.innerHTML = `
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Scroll to error
+    alertContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/**
+ * Show success message
+ */
+function showSuccessMessage(message) {
+    const successAlert = document.createElement('div');
+    successAlert.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3';
+    successAlert.style.zIndex = '9999';
+    successAlert.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        ${message}
+    `;
+    
+    document.body.appendChild(successAlert);
+    
+    setTimeout(() => {
+        successAlert.remove();
+    }, 4000);
+}
+
+/**
+ * Clear form errors
+ */
+function clearFormErrors(form) {
+    const alerts = form.querySelectorAll('.alert');
+    alerts.forEach(alert => alert.remove());
+}
+
+/**
+ * Enhanced form loading state
+ */
+function setFormLoading(form, isLoading) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    
+    if (isLoading) {
+        submitBtn.disabled = true;
+        submitBtn.dataset.originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        inputs.forEach(input => input.disabled = true);
+        form.style.opacity = '0.7';
+    } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = submitBtn.dataset.originalText || submitBtn.innerHTML;
+        inputs.forEach(input => input.disabled = false);
+        form.style.opacity = '1';
+    }
 }
 
 /**
@@ -160,11 +374,11 @@ async function handleSignup(e) {
         await simulateSignup(formData);
         
         // Show success message
-        showAlert('Account created successfully! Redirecting to dashboard...', 'success');
+        showAlert('Account created successfully! Redirecting to login...', 'success');
         
-        // Redirect to appropriate dashboard
+        // Redirect to login page
         setTimeout(() => {
-            window.location.href = getDashboardUrl(formData.userRole);
+            window.location.href = CONFIG.ROUTES.LOGIN;
         }, CONFIG.UI.LOADING_TIMEOUT);
         
     } catch (error) {
@@ -201,8 +415,15 @@ async function handleLogin(e) {
         // Simulate API call
         const user = await simulateLogin(email, password);
         
-        // Save session
-        saveSession(user);
+        // Save session and remember email if checked
+        const rememberMe = document.getElementById('rememberMe')?.checked || false;
+        saveSession(user, rememberMe);
+        
+        if (rememberMe) {
+            localStorage.setItem('rememberedEmail', user.email);
+        } else {
+            localStorage.removeItem('rememberedEmail');
+        }
         
         // Show success message
         showAlert('Login successful! Redirecting...', 'success');
@@ -513,15 +734,203 @@ async function simulateLogin(email, password) {
 async function simulateForgotPassword(email) {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
-            if (!isValidEmail(email)) {
-                reject(new Error('Please enter a valid email address.'));
+            const account = CONFIG.DEMO_ACCOUNTS[email];
+            
+            if (!account) {
+                reject(new Error('No account found with this email address.'));
                 return;
             }
             
-            // Simulate successful reset request
             resolve({ message: 'Password reset email sent successfully.' });
-        }, 1500);
+        }, 1000);
     });
+}
+
+/**
+ * Validate email format
+ * @param {string} email - Email to validate
+ * @returns {boolean} Is valid email
+ */
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+/**
+ * Validate password strength
+ * @param {string} password - Password to validate
+ * @returns {boolean} Is valid password
+ */
+function isValidPassword(password) {
+    // At least 8 characters, contains number and special character
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+    return passwordRegex.test(password);
+}
+
+/**
+ * Show alert message
+ * @param {string} message - Alert message
+ * @param {string} type - Alert type (success, danger, warning, info)
+ */
+function showAlert(message, type = 'info') {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    // Create new alert
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Auto remove after timeout
+    setTimeout(() => {
+        if (alert && alert.parentNode) {
+            alert.remove();
+        }
+    }, CONFIG.UI.ALERT_TIMEOUT);
+}
+
+/**
+ * Show login error with shake animation
+ * @param {string} message - Error message
+ */
+function showLoginError(message) {
+    const form = authState.currentForm;
+    showAlert(message, 'danger');
+    
+    // Add shake animation
+    if (form) {
+        form.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+            form.style.animation = '';
+        }, 500);
+    }
+}
+
+/**
+ * Set loading state for forms
+ * @param {boolean} isLoading - Loading state
+ */
+function setLoadingState(isLoading) {
+    authState.isLoading = isLoading;
+    const form = authState.currentForm;
+    
+    if (!form) return;
+    
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const inputs = form.querySelectorAll('input');
+    
+    if (isLoading) {
+        submitBtn.disabled = true;
+        submitBtn.dataset.originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        inputs.forEach(input => input.disabled = true);
+        form.style.opacity = '0.7';
+    } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = submitBtn.dataset.originalText || submitBtn.innerHTML;
+        inputs.forEach(input => input.disabled = false);
+        form.style.opacity = '1';
+    }
+}
+
+/**
+ * Setup logout functionality
+ */
+function setupLogout() {
+    const logoutLinks = document.querySelectorAll('.logout-link');
+    logoutLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
+    });
+}
+
+/**
+ * Setup password toggle functionality
+ */
+function setupPasswordToggle() {
+    const toggleButtons = document.querySelectorAll('#togglePassword, #toggleLoginPassword');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.id === 'togglePassword' ? 'password' : 'loginPassword';
+            const passwordInput = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    });
+}
+
+/**
+ * Setup form event listeners
+ */
+function setupFormEventListeners() {
+    // Signup form
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+        signupForm.addEventListener('submit', handleSignup);
+    }
+    
+    // Login form
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Forgot password form
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    if (forgotPasswordForm) {
+        forgotPasswordForm.addEventListener('submit', handleForgotPassword);
+    }
+}
+
+/**
+ * Load saved credentials if remember me was checked
+ */
+function loadSavedCredentials() {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    const emailInput = document.getElementById('loginEmail');
+    const rememberCheckbox = document.getElementById('rememberMe');
+    
+    if (savedEmail && emailInput) {
+        emailInput.value = savedEmail;
+        if (rememberCheckbox) {
+            rememberCheckbox.checked = true;
+        }
+    }
+}
+
+/**
+ * Check for existing session
+ */
+function checkExistingSession() {
+    if (isAuthenticated()) {
+        const user = getCurrentUser();
+        const currentPage = window.location.pathname.split('/').pop();
+        
+        // If user is on auth pages but already logged in, redirect to dashboard
+        if (currentPage === 'login.html' || currentPage === 'signup.html') {
+            window.location.href = getDashboardUrl(user.role);
+        }
+    }
 }
 
 /**
@@ -550,6 +959,24 @@ function handleRoleSelection(e) {
     
     // Update UI based on selected role
     updateRoleUI(selectedRole);
+}
+
+/**
+ * Update UI based on selected role
+ */
+function updateRoleUI(role) {
+    // This can be expanded later to show role-specific information
+    console.log(`Role selected: ${role}`);
+}
+
+/**
+ * Handle terms and conditions change
+ */
+function handleTermsChange(e) {
+    const feedback = e.target.parentElement.querySelector('.invalid-feedback');
+    if (feedback && e.target.checked) {
+        feedback.style.display = 'none';
+    }
 }
 
 /**

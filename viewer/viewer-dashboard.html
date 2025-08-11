@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Viewer Dashboard - VideoShare</title>
     <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-
+    
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome Icons -->
@@ -13,23 +13,23 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
-<body class="dashboard-page">
+<body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="../index.html">
                 <i class="fas fa-play-circle me-2"></i>VideoShare
             </a>
-
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars text-white"></i>
             </button>
-
+            
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="viewer-dashboard.html">
-                            <i class="fas fa-video me-2"></i>Browse Videos
+                            <i class="fas fa-home me-2"></i>Browse Videos
                         </a>
                     </li>
                     <li class="nav-item">
@@ -37,34 +37,15 @@
                             <i class="fas fa-bookmark me-2"></i>My Library
                         </a>
                     </li>
-
                 </ul>
-
-                <!-- Search Bar -->
-                <form class="d-flex me-3">
-                    <div class="input-group">
-                        <input class="form-control" type="search" placeholder="Search videos..." aria-label="Search">
-                        <button class="btn btn-outline-light" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </form>
-
+                
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#notifications">
-                            <i class="fas fa-bell position-relative">
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning">
-                                    3
-                                </span>
-                            </i>
-                        </a>
-                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user-circle me-2"></i>Viewer Name
                         </a>
                         <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="viewer-settings.html"><i class="fas fa-user me-2"></i>Profile</a></li>
                             <li><a class="dropdown-item" href="viewer-settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item logout-link" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
@@ -78,10 +59,10 @@
     <!-- Sidebar -->
     <div class="sidebar d-none d-lg-block">
         <div class="p-3">
-            <h6 class="text-muted text-uppercase fw-bold mb-3">Navigation</h6>
+            <h6 class="text-muted text-uppercase fw-bold mb-3">Viewer Tools</h6>
             <nav class="nav flex-column">
                 <a class="nav-link active" href="viewer-dashboard.html">
-                    <i class="fas fa-video me-2"></i>Browse Videos
+                    <i class="fas fa-home me-2"></i>Browse Videos
                 </a>
                 <a class="nav-link" href="viewer-library.html">
                     <i class="fas fa-bookmark me-2"></i>My Library
@@ -99,293 +80,36 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 fw-bold mb-1">Browse Videos</h1>
-                    <p class="text-muted mb-0">Discover and purchase premium content from creators</p>
-                </div>
-                <div class="d-flex gap-3">
-                    <div class="dropdown">
-                        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-filter me-2"></i>Filter
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">All Categories</a></li>
-                            <li><a class="dropdown-item" href="#">Tutorial</a></li>
-                            <li><a class="dropdown-item" href="#">Entertainment</a></li>
-                            <li><a class="dropdown-item" href="#">Education</a></li>
-                        </ul>
+                    <p class="text-muted mb-0">Discover amazing content from creators around the world</p>
+                    <div class="mt-2">
+                        <span class="badge bg-success me-2">
+                            <i class="fas fa-check-circle me-1"></i>Active Viewer
+                        </span>
+                        <span class="text-muted small">
+                            <i class="fas fa-calendar me-1"></i>Last login: Today at 2:34 PM
+                        </span>
                     </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="viewer-library.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-bookmark me-2"></i>My Library
+                    </a>
+                    <a href="viewer-settings.html" class="btn btn-outline-primary">
+                        <i class="fas fa-wallet me-2"></i>Wallet
+                    </a>
                 </div>
             </div>
         </div>
-        <div class="content-area">
-            <!-- Header Stats -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                <div class="stats-card primary">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-shrink-0">
-                                            <i class="fas fa-play-circle text-primary fa-2x"></i>
-                                        </div>
-                                        <div class="flex-grow-1 ms-3">
-                                            <div class="fw-bold h4 mb-0">47</div>
-                                            <div class="text-muted">Videos Watched</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stats-card success">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-shrink-0">
-                                            <i class="fas fa-clock text-success fa-2x"></i>
-                                        </div>
-                                        <div class="flex-grow-1 ms-3">
-                                            <div class="fw-bold h4 mb-0">23.5h</div>
-                                            <div class="text-muted">Watch Time</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stats-card info">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-shrink-0">
-                                            <i class="fas fa-shopping-cart text-info fa-2x"></i>
-                                        </div>
-                                        <div class="flex-grow-1 ms-3">
-                                            <div class="fw-bold h4 mb-0">12</div>
-                                            <div class="text-muted">Videos Purchased</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- All Videos Section -->
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <div>
-                                    <h4 class="fw-bold mb-1">All Available Videos</h4>
-                                    <p class="text-muted mb-0">Discover and purchase premium content from creators</p>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <select class="form-select form-select-sm" style="width: auto;">
-                                        <option>Latest</option>
-                                        <option>Popular</option>
-                                        <option>Price: Low to High</option>
-                                        <option>Price: High to Low</option>
-                                    </select>
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-sm btn-outline-primary active">
-                                            <i class="fas fa-th"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-list"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="video-grid">
-                                <div class="video-card">
-                                    <div class="video-thumbnail">
-                                        <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=225&fit=crop" 
-                                             class="w-100" alt="Video thumbnail" style="height: 200px; object-fit: cover;">
-                                        <div class="position-absolute top-0 end-0 m-2">
-                                            <span class="badge bg-dark bg-opacity-75">15:32</span>
-                                        </div>
-                                        <div class="position-absolute top-0 start-0 m-2">
-                                            <span class="badge bg-warning text-dark fw-bold">$1.99</span>
-                                        </div>
-                                        <div class="play-overlay">
-                                            <i class="fas fa-play"></i>
-                                        </div>
-                                    </div>
-                                    <div class="p-3">
-                                        <h6 class="fw-bold mb-2">Master Class: Advanced Techniques</h6>
-                                        <p class="text-muted small mb-2">by Professional Creator</p>
-                                        <p class="text-muted small mb-3">Learn advanced techniques that professionals use in their daily workflow and boost productivity.</p>
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rating me-2">
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <small class="text-muted ms-1">(4.8)</small>
-                                                </div>
-                                            </div>
-                                            <small class="text-muted">2.1K views</small>
-                                        </div>
-                                        <button class="btn btn-primary w-100">
-                                            <i class="fas fa-play me-2"></i>Watch Now - $1.99
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="video-card">
-                                    <div class="video-thumbnail">
-                                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=225&fit=crop" 
-                                             class="w-100" alt="Video thumbnail" style="height: 200px; object-fit: cover;">
-                                        <div class="position-absolute top-0 end-0 m-2">
-                                            <span class="badge bg-dark bg-opacity-75">08:45</span>
-                                        </div>
-                                        <div class="position-absolute top-0 start-0 m-2">
-                                            <span class="badge bg-warning text-dark fw-bold">$0.99</span>
-                                        </div>
-                                        <div class="play-overlay">
-                                            <i class="fas fa-play"></i>
-                                        </div>
-                                    </div>
-                                    <div class="p-3">
-                                        <h6 class="fw-bold mb-2">Quick Start Guide for Beginners</h6>
-                                        <p class="text-muted small mb-2">by Expert Tutor</p>
-                                        <p class="text-muted small mb-3">Perfect for beginners who want to get started quickly with step-by-step instructions.</p>
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rating me-2">
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="far fa-star text-muted"></i>
-                                                    <small class="text-muted ms-1">(4.2)</small>
-                                                </div>
-                                            </div>
-                                            <small class="text-muted">892 views</small>
-                                        </div>
-                                        <button class="btn btn-primary w-100">
-                                            <i class="fas fa-play me-2"></i>Watch Now - $0.99
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="video-card">
-                                    <div class="video-thumbnail">
-                                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=225&fit=crop" 
-                                             class="w-100" alt="Video thumbnail" style="height: 200px; object-fit: cover;">
-                                        <div class="position-absolute top-0 end-0 m-2">
-                                            <span class="badge bg-dark bg-opacity-75">22:18</span>
-                                        </div>
-                                        <div class="position-absolute top-0 start-0 m-2">
-                                            <span class="badge bg-warning text-dark fw-bold">$2.99</span>
-                                        </div>
-                                        <div class="play-overlay">
-                                            <i class="fas fa-play"></i>
-                                        </div>
-                                    </div>
-                                    <div class="p-3">
-                                        <h6 class="fw-bold mb-2">Complete Workshop Series</h6>
-                                        <p class="text-muted small mb-2">by Workshop Leader</p>
-                                        <p class="text-muted small mb-3">Comprehensive workshop covering everything you need to know about modern techniques.</p>
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rating me-2">
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <small class="text-muted ms-1">(5.0)</small>
-                                                </div>
-                                            </div>
-                                            <small class="text-muted">3.4K views</small>
-                                        </div>
-                                        <button class="btn btn-primary w-100">
-                                            <i class="fas fa-play me-2"></i>Watch Now - $2.99
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="video-card">
-                                    <div class="video-thumbnail">
-                                        <img src="https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=225&fit=crop" 
-                                             class="w-100" alt="Video thumbnail" style="height: 200px; object-fit: cover;">
-                                        <div class="position-absolute top-0 end-0 m-2">
-                                            <span class="badge bg-dark bg-opacity-75">35:10</span>
-                                        </div>
-                                        <div class="position-absolute top-0 start-0 m-2">
-                                            <span class="badge bg-warning text-dark fw-bold">$3.49</span>
-                                        </div>
-                                        <div class="play-overlay">
-                                            <i class="fas fa-play"></i>
-                                        </div>
-                                    </div>
-                                    <div class="p-3">
-                                        <h6 class="fw-bold mb-2">Digital Marketing Essentials</h6>
-                                        <p class="text-muted small mb-2">by Marketing Expert</p>
-                                        <p class="text-muted small mb-3">Everything you need to know about digital marketing in today's world.</p>
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rating me-2">
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="far fa-star text-muted"></i>
-                                                    <small class="text-muted ms-1">(4.6)</small>
-                                                </div>
-                                            </div>
-                                            <small class="text-muted">1.8K views</small>
-                                        </div>
-                                        <button class="btn btn-primary w-100">
-                                            <i class="fas fa-play me-2"></i>Watch Now - $3.49
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="card video-card border-0 shadow-sm">
-                                    <div class="video-thumbnail position-relative">
-                                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400" 
-                                             class="card-img-top" alt="Video thumbnail">
-                                        <div class="video-duration">42:30</div>
-                                        <div class="video-price">$4.99</div>
-                                        <div class="play-overlay">
-                                            <i class="fas fa-play-circle"></i>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <h6 class="card-title">Data Analysis Deep Dive</h6>
-                                        <p class="text-muted small mb-2">by Data Scientist</p>
-                                        <p class="card-text">Master data analysis techniques with real-world examples and case studies.</p>
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rating me-2">
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <small class="text-muted ms-1">(4.9)</small>
-                                                </div>
-                                            </div>
-                                            <small class="text-muted">956 views</small>
-                                        </div>
-                                        <button class="btn btn-primary btn-sm w-100">
-                                            <i class="fas fa-play me-2"></i>Watch Now - $4.99
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <!-- Video Grid -->
+        <div class="container-fluid">
+            <div class="row g-4" id="videosContainer">
+                <!-- Videos will be loaded here by JavaScript -->
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading videos...</span>
                     </div>
-                </div>
-        </div>
-    </div>
-
-    <!-- Video Modal -->
-    <div class="modal fade" id="videoModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Video Player</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="ratio ratio-16x9">
-                        <div class="bg-dark d-flex align-items-center justify-content-center">
-                            <p class="text-white">Video player will be embedded here</p>
-                        </div>
-                    </div>
+                    <p class="mt-3 text-muted">Loading latest videos...</p>
                 </div>
             </div>
         </div>
@@ -395,7 +119,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/auth.js"></script>
     <script src="../assets/js/dashboard.js"></script>
 </body>
-</html>          
-
+</html>
