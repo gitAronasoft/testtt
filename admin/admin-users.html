@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - VideoShare Admin</title>
-    
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome Icons -->
@@ -20,11 +20,11 @@
             <a class="navbar-brand fw-bold" href="../index.html">
                 <i class="fas fa-shield-alt me-2"></i>VideoShare Admin
             </a>
-            
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -43,7 +43,7 @@
                         </a>
                     </li>
                 </ul>
-                
+
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
@@ -99,23 +99,29 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="content-area">
-            <!-- Search and Filters -->
+            <!-- Search and Filters Section -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Search Users</label>
+                <div class="card-header bg-transparent border-bottom-0 pb-0">
+                    <h6 class="mb-0 fw-bold text-primary">
+                        <i class="fas fa-search me-2"></i>Search & Filter Users
+                    </h6>
+                </div>
+                <div class="card-body pt-3">
+                    <div class="row g-4">
+                        <div class="col-lg-4 col-md-6">
+                            <label class="form-label fw-semibold">Search Users</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" placeholder="Search by name, email..." id="userSearch">
-                                <button class="btn btn-outline-secondary" type="button">
-                                    <i class="fas fa-search"></i>
-                                </button>
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" 
+                                       placeholder="Search by name, email..." id="userSearch">
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">User Role</label>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label fw-semibold">User Role</label>
                             <select class="form-select" id="roleFilter">
                                 <option value="">All Roles</option>
                                 <option value="viewer">Viewers</option>
@@ -123,8 +129,8 @@
                                 <option value="admin">Admins</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Account Status</label>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label fw-semibold">Account Status</label>
                             <select class="form-select" id="statusFilter">
                                 <option value="">All Status</option>
                                 <option value="active">Active</option>
@@ -132,77 +138,138 @@
                                 <option value="pending">Pending</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-primary w-100" id="applyFilters">
-                                <i class="fas fa-filter me-2"></i>Filter
-                            </button>
+                        <div class="col-lg-2 col-md-6">
+                            <label class="form-label fw-semibold">&nbsp;</label>
+                            <div class="d-grid">
+                                <button class="btn btn-primary" id="applyFilters">
+                                    <i class="fas fa-filter me-2"></i>Apply Filters
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- User Stats -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-users text-primary fa-2x mb-2"></i>
-                            <h5 class="fw-bold mb-0">247</h5>
-                            <small class="text-muted">Total Users</small>
+            <!-- User Statistics Dashboard -->
+            <div class="row g-4 mb-4">
+                <div class="col-xl-3 col-lg-6 col-md-6">
+                    <div class="metric-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="metric-icon text-primary mb-3">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h4 class="mb-1">247</h4>
+                                <p class="text-muted mb-0">Total Users</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>12%
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-video text-success fa-2x mb-2"></i>
-                            <h5 class="fw-bold mb-0">89</h5>
-                            <small class="text-muted">Creators</small>
+                <div class="col-xl-3 col-lg-6 col-md-6">
+                    <div class="metric-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="metric-icon text-success mb-3">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <h4 class="mb-1">89</h4>
+                                <p class="text-muted mb-0">Creators</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>8%
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-eye text-info fa-2x mb-2"></i>
-                            <h5 class="fw-bold mb-0">158</h5>
-                            <small class="text-muted">Viewers</small>
+                <div class="col-xl-3 col-lg-6 col-md-6">
+                    <div class="metric-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="metric-icon text-info mb-3">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <h4 class="mb-1">158</h4>
+                                <p class="text-muted mb-0">Viewers</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-info-subtle text-info">
+                                    <i class="fas fa-arrow-up me-1"></i>15%
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-user-plus text-warning fa-2x mb-2"></i>
-                            <h5 class="fw-bold mb-0">12</h5>
-                            <small class="text-muted">This Week</small>
+                <div class="col-xl-3 col-lg-6 col-md-6">
+                    <div class="metric-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="metric-icon text-warning mb-3">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
+                                <h4 class="mb-1">12</h4>
+                                <p class="text-muted mb-0">New This Week</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-warning-subtle text-warning">
+                                    <i class="fas fa-arrow-up me-1"></i>5%
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Users Table -->
+            <!-- Users Management Table -->
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent">
-                    <h6 class="mb-0 fw-bold">All Users</h6>
+                <div class="card-header bg-transparent d-flex align-items-center justify-content-between py-3">
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="fas fa-table me-2 text-primary"></i>All Users
+                        </h6>
+                        <small class="text-muted">Manage user accounts and permissions</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-download me-1"></i>Export
+                        </button>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="fas fa-plus me-1"></i>Add User
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 align-middle">
                             <thead class="table-light">
                                 <tr>
-                                    <th>User</th>
-                                    <th>Role</th>
-                                    <th>Status</th>
-                                    <th>Joined</th>
-                                    <th>Videos/Purchases</th>
-                                    <th>Earnings</th>
-                                    <th>Actions</th>
+                                    <th class="ps-4 border-0">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAll">
+                                        </div>
+                                    </th>
+                                    <th class="border-0">User</th>
+                                    <th class="border-0">Role</th>
+                                    <th class="border-0">Status</th>
+                                    <th class="border-0">Joined</th>
+                                    <th class="border-0">Activity</th>
+                                    <th class="border-0">Earnings</th>
+                                    <th class="border-0 text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody">
                                 <tr>
+                                    <td class="ps-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox">
+                                        </div>
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" 
@@ -214,10 +281,10 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">Creator</span>
+                                        <span class="badge bg-success-subtle text-success rounded-pill">Creator</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-success-subtle text-success rounded-pill">Active</span>
                                     </td>
                                     <td>
                                         <small>March 15, 2025</small>
@@ -229,20 +296,25 @@
                                         <small class="text-success fw-bold">$1,247.50</small>
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" title="View Details">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-outline-primary btn-sm" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-warning" title="Edit User">
+                                            <button class="btn btn-outline-warning btn-sm" title="Edit User">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button class="btn btn-outline-danger" title="Suspend User">
+                                            <button class="btn btn-outline-danger btn-sm" title="Suspend User">
                                                 <i class="fas fa-ban"></i>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td class="ps-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox">
+                                        </div>
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <img src="https://images.unsplash.com/photo-1494790108755-2616b612b5bb?w=40&h=40&fit=crop&crop=face" 
@@ -254,10 +326,10 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-primary">Viewer</span>
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill">Viewer</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-success-subtle text-success rounded-pill">Active</span>
                                     </td>
                                     <td>
                                         <small>April 2, 2025</small>
@@ -269,20 +341,25 @@
                                         <small class="text-muted">N/A</small>
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" title="View Details">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-outline-primary btn-sm" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-warning" title="Edit User">
+                                            <button class="btn btn-outline-warning btn-sm" title="Edit User">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button class="btn btn-outline-danger" title="Suspend User">
+                                            <button class="btn btn-outline-danger btn-sm" title="Suspend User">
                                                 <i class="fas fa-ban"></i>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td class="ps-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox">
+                                        </div>
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face" 
@@ -294,10 +371,10 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success">Creator</span>
+                                        <span class="badge bg-success-subtle text-success rounded-pill">Creator</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-warning">Suspended</span>
+                                        <span class="badge bg-warning-subtle text-warning rounded-pill">Suspended</span>
                                     </td>
                                     <td>
                                         <small>February 8, 2025</small>
@@ -309,14 +386,14 @@
                                         <small class="text-success fw-bold">$432.80</small>
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" title="View Details">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-outline-primary btn-sm" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-success" title="Unsuspend User">
+                                            <button class="btn btn-outline-success btn-sm" title="Unsuspend User">
                                                 <i class="fas fa-check"></i>
                                             </button>
-                                            <button class="btn btn-outline-danger" title="Delete User">
+                                            <button class="btn btn-outline-danger btn-sm" title="Delete User">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
@@ -326,14 +403,14 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-transparent">
+                <div class="card-footer bg-transparent border-top-0">
                     <nav>
                         <ul class="pagination pagination-sm mb-0 justify-content-center">
                             <li class="page-item disabled">
-                                <span class="page-link">Previous</span>
+                                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
                             </li>
-                            <li class="page-item active">
-                                <span class="page-link">1</span>
+                            <li class="page-item active" aria-current="page">
+                                <a class="page-link" href="#">1</a>
                             </li>
                             <li class="page-item">
                                 <a class="page-link" href="#">2</a>
@@ -352,26 +429,26 @@
     </div>
 
     <!-- Add User Modal -->
-    <div class="modal fade" id="addUserModal" tabindex="-1">
-        <div class="modal-dialog">
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add New User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addUserForm">
                         <div class="mb-3">
-                            <label class="form-label">Full Name</label>
-                            <input type="text" class="form-control" name="name" required>
+                            <label for="userName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="userName" name="name" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" class="form-control" name="email" required>
+                            <label for="userEmail" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="userEmail" name="email" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">User Role</label>
-                            <select class="form-select" name="role" required>
+                            <label for="userRole" class="form-label">User Role</label>
+                            <select class="form-select" id="userRole" name="role" required>
                                 <option value="">Select Role</option>
                                 <option value="viewer">Viewer</option>
                                 <option value="creator">Creator</option>
@@ -379,8 +456,8 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Temporary Password</label>
-                            <input type="password" class="form-control" name="password" required>
+                            <label for="userPassword" class="form-label">Temporary Password</label>
+                            <input type="password" class="form-control" id="userPassword" name="password" required>
                         </div>
                     </form>
                 </div>

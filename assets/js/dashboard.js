@@ -3,6 +3,17 @@
  * Handles dynamic data loading for creator and viewer dashboards
  */
 
+// Helper function to get current user from localStorage
+function getCurrentUser() {
+    try {
+        const userData = localStorage.getItem(CONFIG.STORAGE.USER);
+        return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+        console.error('Error getting current user:', error);
+        return null;
+    }
+}
+
 class Dashboard {
     constructor() {
         this.user = null;

@@ -149,12 +149,24 @@ class StatsController {
             $spentResult = $spentStmt->get_result();
             $totalSpent = $spentResult->fetch_assoc()['total_spent'];
             
+            // Get wallet balance
+            $walletStmt = $this->db->prepare("SELECT COALESCE(balance, 0) as wallet_balance FROM wallets WHERE user_id = ?");
+            $walletStmt->bind_param("i", $userId);
+            $walletStmt->execute();
+            $walletResult = $walletStmt->get_result();
+            $walletBalance = 0;
+            if ($walletResult->num_rows > 0) {
+                $walletBalance = $walletResult->fetch_assoc()['wallet_balance'];
+            }
+            
             // Get watch time (simulated for now)
             $watchTime = $purchasedVideos * 25; // Assume 25 minutes per video
             
             return $this->sendSuccess([
+                'total_purchases' => $purchasedVideos,
                 'purchased_videos' => $purchasedVideos,
                 'total_spent' => number_format($totalSpent, 2),
+                'wallet_balance' => number_format($walletBalance, 2),
                 'watch_time' => $watchTime,
                 'favorite_genre' => 'Technology' // TODO: Calculate from actual data
             ], 'Viewer stats retrieved successfully');

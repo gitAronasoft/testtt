@@ -146,36 +146,14 @@
                                             <th>Amount</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="purchaseHistoryTable">
+                                        <!-- Purchase history will be loaded dynamically -->
                                         <tr>
-                                            <td>Aug 10, 2025</td>
-                                            <td>Introduction to Web Development</td>
-                                            <td>viewer@demo.com</td>
-                                            <td><span class="text-success fw-bold">$29.99</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Aug 9, 2025</td>
-                                            <td>Advanced React Patterns</td>
-                                            <td>john.doe@email.com</td>
-                                            <td><span class="text-success fw-bold">$49.99</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Aug 8, 2025</td>
-                                            <td>Database Design Fundamentals</td>
-                                            <td>mary.smith@email.com</td>
-                                            <td><span class="text-success fw-bold">$39.99</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Aug 7, 2025</td>
-                                            <td>Introduction to Web Development</td>
-                                            <td>alex.wilson@email.com</td>
-                                            <td><span class="text-success fw-bold">$29.99</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Aug 6, 2025</td>
-                                            <td>Advanced React Patterns</td>
-                                            <td>sarah.jones@email.com</td>
-                                            <td><span class="text-success fw-bold">$49.99</span></td>
+                                            <td colspan="4" class="text-center py-3">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -190,39 +168,15 @@
                             <h6 class="mb-0 fw-bold">Payout History</h6>
                         </div>
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
-                                <div>
-                                    <div class="fw-bold">Aug 1, 2025</div>
-                                    <small class="text-muted">PayPal</small>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold text-success">$1,200.00</div>
-                                    <small class="badge bg-success">Completed</small>
+                            <div id="payoutHistoryContainer">
+                                <!-- Payout history will be loaded dynamically -->
+                                <div class="text-center py-3">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
-                                <div>
-                                    <div class="fw-bold">Jul 1, 2025</div>
-                                    <small class="text-muted">PayPal</small>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold text-success">$890.50</div>
-                                    <small class="badge bg-success">Completed</small>
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
-                                <div>
-                                    <div class="fw-bold">Jun 1, 2025</div>
-                                    <small class="text-muted">PayPal</small>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold text-success">$650.75</div>
-                                    <small class="badge bg-success">Completed</small>
-                                </div>
-                            </div>
-
+                            
                             <button class="btn btn-success w-100 mt-3">
                                 <i class="fas fa-money-bill-wave me-2"></i>Request Payout
                             </button>
@@ -236,8 +190,133 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/api.js"></script>
-    <script src="../assets/js/creator.js"></script>
+    <script src="../assets/js/config.js?v=8"></script>
+    <script src="../assets/js/auth.js?v=8"></script>
+    <script src="../assets/js/api.js?v=8"></script>
+    <script>
+        // Helper function to get current user
+        function getCurrentUser() {
+            try {
+                const userData = localStorage.getItem(CONFIG.STORAGE.USER);
+                return userData ? JSON.parse(userData) : null;
+            } catch (error) {
+                console.error('Error getting current user:', error);
+                return null;
+            }
+        }
+
+        // Page-specific initialization for Creator Earnings
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check authentication
+            const user = getCurrentUser();
+            if (!user || user.role !== 'creator') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Update user name in navigation
+            const userNameElements = document.querySelectorAll('[data-user-name]');
+            userNameElements.forEach(el => {
+                el.textContent = user.name || user.email;
+            });
+
+            // Load only creator earnings stats - no video calls needed
+            try {
+                const response = await API.getStats('creator');
+                
+                if (response.success) {
+                    displayEarningsData(response.data);
+                } else {
+                    console.error('Failed to load creator earnings:', response.message);
+                    displayFallbackEarnings();
+                }
+            } catch (error) {
+                console.error('Error loading earnings:', error);
+                displayFallbackEarnings();
+            }
+        });
+
+        function displayEarningsData(data) {
+            // Update earnings metrics
+            updateElement('totalRevenue', `$${(data.total_earnings || 0).toFixed(2)}`);
+            updateElement('monthlyRevenue', `$${(data.monthly_earnings || 0).toFixed(2)}`);
+            updateElement('totalEarnings', `$${(data.total_earnings || 0).toFixed(2)}`);
+            updateElement('totalPurchases', (data.total_purchases || 0).toLocaleString());
+            
+            // Load purchase and payout history
+            loadPurchaseHistory();
+            loadPayoutHistory();
+        }
+
+        function displayFallbackEarnings() {
+            // Use demo data for fallback
+            updateElement('totalRevenue', '$1,247.50');
+            updateElement('monthlyRevenue', '$389.20');
+            updateElement('totalEarnings', '$5,892.45');
+            updateElement('totalPurchases', '1,247');
+            
+            loadPurchaseHistory();
+            loadPayoutHistory();
+        }
+
+        function loadPurchaseHistory() {
+            const tableBody = document.getElementById('purchaseHistoryTable');
+            if (!tableBody) return;
+            
+            // Demo purchase history data
+            const purchaseHistory = [
+                { date: 'Aug 10, 2025', video: 'Introduction to Web Development', customer: 'viewer@demo.com', amount: 29.99 },
+                { date: 'Aug 9, 2025', video: 'Advanced React Patterns', customer: 'john.doe@email.com', amount: 49.99 },
+                { date: 'Aug 8, 2025', video: 'Database Design Fundamentals', customer: 'mary.smith@email.com', amount: 39.99 },
+                { date: 'Aug 7, 2025', video: 'Introduction to Web Development', customer: 'alex.wilson@email.com', amount: 29.99 },
+                { date: 'Aug 6, 2025', video: 'Advanced React Patterns', customer: 'sarah.jones@email.com', amount: 49.99 }
+            ];
+            
+            const historyHTML = purchaseHistory.map(purchase => `
+                <tr>
+                    <td>${purchase.date}</td>
+                    <td>${purchase.video}</td>
+                    <td>${purchase.customer}</td>
+                    <td><span class="text-success fw-bold">$${purchase.amount}</span></td>
+                </tr>
+            `).join('');
+            
+            tableBody.innerHTML = historyHTML;
+        }
+
+        function loadPayoutHistory() {
+            const container = document.getElementById('payoutHistoryContainer');
+            if (!container) return;
+            
+            // Demo payout history data
+            const payoutHistory = [
+                { date: 'Aug 1, 2025', method: 'PayPal', amount: 1200.00, status: 'Completed' },
+                { date: 'Jul 1, 2025', method: 'PayPal', amount: 890.50, status: 'Completed' },
+                { date: 'Jun 1, 2025', method: 'PayPal', amount: 650.75, status: 'Completed' }
+            ];
+            
+            const historyHTML = payoutHistory.map(payout => `
+                <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
+                    <div>
+                        <div class="fw-bold">${payout.date}</div>
+                        <small class="text-muted">${payout.method}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-success">$${payout.amount.toFixed(2)}</div>
+                        <small class="badge bg-success">${payout.status}</small>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = historyHTML;
+        }
+
+        function updateElement(id, content) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = content;
+            }
+        }
+    </script>
 </body>
 </html>

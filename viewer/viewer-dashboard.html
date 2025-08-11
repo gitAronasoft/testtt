@@ -21,6 +21,10 @@
                 <i class="fas fa-play-circle me-2"></i>VideoShare
             </a>
             
+            <button class="sidebar-toggle d-lg-none" type="button" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <i class="fas fa-bars text-white"></i>
             </button>
@@ -56,8 +60,11 @@
         </div>
     </nav>
 
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay d-lg-none" onclick="toggleSidebar()"></div>
+    
     <!-- Sidebar -->
-    <div class="sidebar d-none d-lg-block">
+    <div class="sidebar">
         <div class="p-3">
             <h6 class="text-muted text-uppercase fw-bold mb-3">Viewer Tools</h6>
             <nav class="nav flex-column">
@@ -101,264 +108,39 @@
             </div>
         </div>
 
-        
-
-        <!-- Video Grid -->
-        <div class="container-fluid">
-            <div class="row g-4" id="videosContainer">
-                <!-- Video Card 1 -->
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card video-card border-0 shadow-sm h-100" data-video-id="video_001">
-                        <div class="video-thumbnail position-relative">
-                            <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400" 
-                                 class="card-img-top" alt="JavaScript Tutorial">
-                            <div class="video-price">$12.99</div>
-                            <div class="play-overlay">
-                                <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">Advanced JavaScript Concepts</h6>
-                            <p class="card-text text-muted small">Master advanced JavaScript patterns and modern ES6+ features</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>John Smith
-                                </small>
-                                <small class="text-muted">2.1k views</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-sm flex-fill">
-                                    <i class="fas fa-shopping-cart me-1"></i>Purchase
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                    <i class="far fa-bookmark"></i>
-                                </button>
-                            </div>
-                        </div>
+        <div class="content-area">
+            <!-- Search and Filter Section -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Search videos..." id="searchInput">
                     </div>
                 </div>
-
-                <!-- Video Card 2 -->
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card video-card border-0 shadow-sm h-100" data-video-id="video_002">
-                        <div class="video-thumbnail position-relative">
-                            <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400" 
-                                 class="card-img-top" alt="React Tutorial">
-                            <div class="video-price">$15.99</div>
-                            <div class="play-overlay">
-                                <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">React Components Deep Dive</h6>
-                            <p class="card-text text-muted small">Learn advanced React patterns and component architecture</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>Sarah Johnson
-                                </small>
-                                <small class="text-muted">1.8k views</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-sm flex-fill">
-                                    <i class="fas fa-shopping-cart me-1"></i>Purchase
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                    <i class="far fa-bookmark"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="technology">Technology</option>
+                        <option value="education">Education</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="business">Business</option>
+                    </select>
                 </div>
+            </div>
 
-                <!-- Video Card 3 -->
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card video-card border-0 shadow-sm h-100" data-video-id="video_003">
-                        <div class="video-thumbnail position-relative">
-                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400" 
-                                 class="card-img-top" alt="Data Science">
-                            <div class="video-price">$24.99</div>
-                            <div class="play-overlay">
-                                <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">Data Science Fundamentals</h6>
-                            <p class="card-text text-muted small">Complete introduction to data science with Python and pandas</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>Mike Chen
-                                </small>
-                                <small class="text-muted">3.2k views</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-sm flex-fill">
-                                    <i class="fas fa-shopping-cart me-1"></i>Purchase
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                    <i class="far fa-bookmark"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Video Grid -->
+            <div class="video-grid" id="videosContainer">
+                <!-- Videos will be loaded dynamically here -->
 
-                <!-- Video Card 4 -->
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card video-card border-0 shadow-sm h-100" data-video-id="video_004">
-                        <div class="video-thumbnail position-relative">
-                            <img src="https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400" 
-                                 class="card-img-top" alt="Digital Marketing">
-                            <div class="video-price">$18.99</div>
-                            <div class="play-overlay">
-                                <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">Digital Marketing Strategy</h6>
-                            <p class="card-text text-muted small">Modern digital marketing techniques and social media strategies</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>Emma Davis
-                                </small>
-                                <small class="text-muted">1.5k views</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-sm flex-fill">
-                                    <i class="fas fa-shopping-cart me-1"></i>Purchase
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                    <i class="far fa-bookmark"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Video Card 5 -->
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card video-card border-0 shadow-sm h-100" data-video-id="video_005">
-                        <div class="video-thumbnail position-relative">
-                            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400" 
-                                 class="card-img-top" alt="Web Design">
-                            <div class="video-price">$21.99</div>
-                            <div class="play-overlay">
-                                <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">Modern Web Design</h6>
-                            <p class="card-text text-muted small">Create stunning websites with modern design principles and CSS</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>Alex Rodriguez
-                                </small>
-                                <small class="text-muted">2.7k views</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-sm flex-fill">
-                                    <i class="fas fa-shopping-cart me-1"></i>Purchase
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                    <i class="far fa-bookmark"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Video Card 6 -->
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card video-card border-0 shadow-sm h-100" data-video-id="video_006">
-                        <div class="video-thumbnail position-relative">
-                            <img src="https://images.unsplash.com/photo-1556075798-4825dfaaf498?w=400" 
-                                 class="card-img-top" alt="Mobile Development">
-                            <div class="video-price">$29.99</div>
-                            <div class="play-overlay">
-                                <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">Mobile App Development</h6>
-                            <p class="card-text text-muted small">Build native mobile apps with React Native and modern tools</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>David Kim
-                                </small>
-                                <small class="text-muted">1.9k views</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-sm flex-fill">
-                                    <i class="fas fa-shopping-cart me-1"></i>Purchase
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                    <i class="far fa-bookmark"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Video Card 7 -->
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card video-card border-0 shadow-sm h-100" data-video-id="video_007">
-                        <div class="video-thumbnail position-relative">
-                            <img src="https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=400" 
-                                 class="card-img-top" alt="Cybersecurity">
-                            <div class="video-price">$26.99</div>
-                            <div class="play-overlay">
-                                <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">Cybersecurity Essentials</h6>
-                            <p class="card-text text-muted small">Learn fundamental cybersecurity concepts and best practices</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>Lisa Wang
-                                </small>
-                                <small class="text-muted">1.3k views</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-sm flex-fill">
-                                    <i class="fas fa-shopping-cart me-1"></i>Purchase
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                    <i class="far fa-bookmark"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Video Card 8 -->
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card video-card border-0 shadow-sm h-100" data-video-id="video_008">
-                        <div class="video-thumbnail position-relative">
-                            <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400" 
-                                 class="card-img-top" alt="Photography">
-                            <div class="video-price">$19.99</div>
-                            <div class="play-overlay">
-                                <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">Professional Photography</h6>
-                            <p class="card-text text-muted small">Master photography techniques and composition for stunning shots</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-user me-1"></i>James Wilson
-                                </small>
-                                <small class="text-muted">2.4k views</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-sm flex-fill">
-                                    <i class="fas fa-shopping-cart me-1"></i>Purchase
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                    <i class="far fa-bookmark"></i>
-                                </button>
-                            </div>
-                        </div>
+                <!-- Videos will be loaded dynamically here -->
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading videos...</span>
                     </div>
                 </div>
             </div>
@@ -368,10 +150,113 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/auth.js"></script>
-    <script src="../assets/js/api.js"></script>
-    <script src="../assets/js/main.js"></script>
-    <script src="../assets/js/dashboard.js"></script>
+    <script src="../assets/js/config.js?v=4"></script>
+    <script src="../assets/js/auth.js?v=4"></script>
+    <script src="../assets/js/api.js?v=4"></script>
+    <script src="../assets/js/main.js?v=4"></script>
+    <script src="../assets/js/dashboard.js?v=4"></script>
+    <script>
+        // Helper function to get current user
+        function getCurrentUser() {
+            try {
+                const userData = localStorage.getItem(CONFIG.STORAGE.USER);
+                return userData ? JSON.parse(userData) : null;
+            } catch (error) {
+                console.error('Error getting current user:', error);
+                return null;
+            }
+        }
+
+        // Page-specific initialization for Viewer Dashboard
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check authentication
+            const user = getCurrentUser();
+            if (!user || user.role !== 'viewer') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            try {
+                // Load videos for browsing
+                const videos = await API.getVideos({ limit: 20 });
+                
+                if (videos && videos.length > 0) {
+                    const container = document.getElementById('videosContainer');
+                    container.innerHTML = ''; // Clear existing content
+                    
+                    videos.forEach(video => {
+                        const videoCard = createVideoCard(video);
+                        container.appendChild(videoCard);
+                    });
+                } else {
+                    document.getElementById('videosContainer').innerHTML = 
+                        '<div class="col-12 text-center"><p class="text-muted">No videos available at the moment.</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading videos:', error);
+                document.getElementById('videosContainer').innerHTML = 
+                    '<div class="col-12 text-center"><p class="text-danger">Error loading videos. Please try again later.</p></div>';
+            }
+        });
+
+        function createVideoCard(video) {
+            const videoCard = document.createElement('div');
+            videoCard.className = 'video-card-item';
+            
+            videoCard.innerHTML = `
+                <div class="card video-card border-0 shadow-sm h-100" data-video-id="${video.id}">
+                    <div class="video-thumbnail position-relative">
+                        <img src="${video.thumbnail_url || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400'}" 
+                             class="card-img-top" alt="${video.title}">
+                        <div class="video-price">$${parseFloat(video.price || 0).toFixed(2)}</div>
+                        <div class="play-overlay">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">${video.title}</h6>
+                        <p class="card-text text-muted small">${video.description || 'No description available'}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-user me-1"></i>${video.creator_name || 'Unknown Creator'}
+                            </small>
+                            <small class="text-muted">${(video.views || 0).toLocaleString()} views</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary btn-sm flex-fill" onclick="purchaseVideo(${video.id})">
+                                <i class="fas fa-shopping-cart me-1"></i>Purchase
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm btn-bookmark">
+                                <i class="far fa-bookmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return videoCard;
+        }
+
+        function purchaseVideo(videoId) {
+            // Placeholder for purchase functionality
+            alert('Purchase functionality will be implemented soon!');
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const body = document.body;
+            
+            if (sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                overlay.style.display = 'none';
+                body.classList.remove('sidebar-open');
+            } else {
+                sidebar.classList.add('show');
+                overlay.style.display = 'block';
+                body.classList.add('sidebar-open');
+            }
+        }
+    </script>
 </body>
 </html>

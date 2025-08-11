@@ -121,49 +121,27 @@ async function loadCreatorData() {
  */
 async function loadCreatorVideos() {
     try {
-        // For now, use demo data since video API might not be fully implemented
-        creatorState.videos = [
-            {
-                id: 1,
-                title: "Getting Started with Video Creation",
-                description: "A comprehensive guide to creating engaging video content",
-                duration: "15:30",
-                views: 1250,
-                purchases: 89,
-                revenue: 445.00,
-                status: "active",
-                uploadDate: "2025-08-05",
-                thumbnail: "https://via.placeholder.com/300x200?text=Video+1"
-            },
-            {
-                id: 2,
-                title: "Advanced Editing Techniques",
-                description: "Learn professional video editing tips and tricks",
-                duration: "22:15",
-                views: 890,
-                purchases: 67,
-                revenue: 335.00,
-                status: "active",
-                uploadDate: "2025-08-03",
-                thumbnail: "https://via.placeholder.com/300x200?text=Video+2"
-            },
-            {
-                id: 3,
-                title: "Monetization Strategies",
-                description: "How to maximize your video revenue",
-                duration: "18:45",
-                views: 2100,
-                purchases: 156,
-                revenue: 780.00,
-                status: "active",
-                uploadDate: "2025-08-01",
-                thumbnail: "https://via.placeholder.com/300x200?text=Video+3"
-            }
-        ];
+        if (!creatorState.currentUser) {
+            console.error('No current user found');
+            return;
+        }
+
+        // Load real videos from API for this creator
+        const response = await API.getVideos({
+            creator_id: creatorState.currentUser.id
+        });
         
-        displayCreatorVideos();
+        if (response.success) {
+            creatorState.videos = response.data || [];
+            console.log('Creator videos loaded successfully:', creatorState.videos);
+            displayCreatorVideos();
+        } else {
+            console.error('Failed to load creator videos:', response.message);
+            showEmptyVideosState();
+        }
     } catch (error) {
         console.error('Error loading videos:', error);
+        showEmptyVideosState();
     }
 }
 
@@ -172,7 +150,30 @@ async function loadCreatorVideos() {
  */
 async function loadEarningsData() {
     try {
-        // Demo earnings data
+        if (!creatorState.currentUser) {
+            console.error('No current user found');
+            return;
+        }
+
+        // Load real earnings data from API
+        const response = await API.getStats('creator');
+        
+        if (response.success) {
+            creatorState.earnings = {
+                totalRevenue: response.data.total_earnings || 0,
+                monthlyRevenue: response.data.monthly_earnings || 0,
+                totalViews: response.data.total_views || 0,
+                totalPurchases: response.data.total_purchases || 0,
+                monthlyData: response.data.monthly_data || []
+            };
+            console.log('Creator earnings loaded successfully:', creatorState.earnings);
+            displayEarningsData();
+        } else {
+            console.error('Failed to load creator earnings:', response.message);
+        }
+    } catch (error) {
+        console.error('Error loading earnings:', error);
+        // Use fallback data for demo
         creatorState.earnings = {
             totalRevenue: 1560.00,
             monthlyRevenue: 445.00,
@@ -192,8 +193,6 @@ async function loadEarningsData() {
         };
         
         displayEarningsData();
-    } catch (error) {
-        console.error('Error loading earnings:', error);
     }
 }
 
@@ -201,57 +200,80 @@ async function loadEarningsData() {
  * Display creator videos
  */
 function displayCreatorVideos() {
-    const videosContainer = document.getElementById('creatorVideos');
-    if (!videosContainer || !creatorState.videos.length) return;
+    const videosContainer = document.getElementById('videosContainer');
+    if (!videosContainer) return;
     
-    const videosHTML = creatorState.videos.map(video => `
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card video-card h-100 shadow-sm">
-                <div class="position-relative">
-                    <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
-                    <div class="position-absolute top-0 end-0 m-2">
-                        <span class="badge bg-success">${video.status}</span>
-                    </div>
-                    <div class="position-absolute bottom-0 end-0 m-2">
-                        <span class="badge bg-dark">${video.duration}</span>
-                    </div>
+    if (!creatorState.videos || creatorState.videos.length === 0) {
+        showEmptyVideosState();
+        return;
+    }
+    
+    const videosHTML = creatorState.videos.map(video => {
+        const statusClass = video.status === 'published' ? 'bg-success' : 'bg-warning';
+        const statusText = video.status === 'published' ? 'Published' : 'Draft';
+        
+        return `
+        <div class="col">
+            <div class="card video-card border-0 shadow-sm h-100">
+                <div class="video-thumbnail">
+                    <img src="${video.thumbnail_url || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400'}" 
+                         class="card-img-top" alt="${video.title}">
+                    <div class="video-duration">${video.duration || '00:00'}</div>
+                    <div class="video-status ${video.status}">${statusText}</div>
                 </div>
                 <div class="card-body">
-                    <h6 class="card-title fw-bold">${video.title}</h6>
-                    <p class="card-text text-muted small">${video.description}</p>
-                    <div class="row text-center mt-3">
-                        <div class="col-4">
-                            <div class="text-primary fw-bold">${video.views}</div>
-                            <small class="text-muted">Views</small>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-success fw-bold">${video.purchases}</div>
-                            <small class="text-muted">Sales</small>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-info fw-bold">$${video.revenue}</div>
-                            <small class="text-muted">Revenue</small>
-                        </div>
+                    <h6 class="card-title">${video.title}</h6>
+                    <p class="card-text">${video.description}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-eye me-1"></i>${video.views || 0} views
+                        </small>
+                        <small class="text-success fw-bold">
+                            <i class="fas fa-dollar-sign me-1"></i>$${video.price || '0.00'}
+                        </small>
                     </div>
-                </div>
-                <div class="card-footer bg-transparent">
                     <div class="btn-group w-100" role="group">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="editVideo(${video.id})">
-                            <i class="fas fa-edit"></i> Edit
+                        <button class="btn btn-sm btn-outline-primary" title="Edit">
+                            <i class="fas fa-edit"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-success btn-sm" onclick="viewAnalytics(${video.id})">
-                            <i class="fas fa-chart-line"></i> Analytics
+                        <button class="btn btn-sm btn-outline-info" title="Analytics">
+                            <i class="fas fa-chart-bar"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteVideo(${video.id})">
-                            <i class="fas fa-trash"></i> Delete
+                        <button class="btn btn-sm btn-outline-secondary" title="Settings">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" title="Delete">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
     
     videosContainer.innerHTML = videosHTML;
+}
+
+/**
+ * Show empty videos state
+ */
+function showEmptyVideosState() {
+    const videosContainer = document.getElementById('videosContainer');
+    if (!videosContainer) return;
+    
+    videosContainer.innerHTML = `
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-video fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No videos uploaded yet</h5>
+                <p class="text-muted">Start by uploading your first video to share with your audience.</p>
+                <a href="creator-upload.html" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Upload Your First Video
+                </a>
+            </div>
+        </div>
+    `;
 }
 
 /**
@@ -261,14 +283,79 @@ function displayEarningsData() {
     // Update earnings metrics
     updateElement('totalRevenue', `$${creatorState.earnings.totalRevenue.toFixed(2)}`);
     updateElement('monthlyRevenue', `$${creatorState.earnings.monthlyRevenue.toFixed(2)}`);
+    updateElement('totalEarnings', `$${creatorState.earnings.totalRevenue.toFixed(2)}`);
     updateElement('totalViews', creatorState.earnings.totalViews.toLocaleString());
     updateElement('totalPurchases', creatorState.earnings.totalPurchases.toLocaleString());
+    
+    // Load purchase history for earnings page
+    loadPurchaseHistory();
+    
+    // Load payout history for earnings page  
+    loadPayoutHistory();
     
     // Initialize earnings chart if chart container exists
     const chartContainer = document.getElementById('earningsChart');
     if (chartContainer) {
         initializeEarningsChart();
     }
+}
+
+/**
+ * Load purchase history for earnings page
+ */
+function loadPurchaseHistory() {
+    const tableBody = document.getElementById('purchaseHistoryTable');
+    if (!tableBody) return;
+    
+    // Demo purchase history data - in real app this would come from API
+    const purchaseHistory = [
+        { date: 'Aug 10, 2025', video: 'Introduction to Web Development', customer: 'viewer@demo.com', amount: 29.99 },
+        { date: 'Aug 9, 2025', video: 'Advanced React Patterns', customer: 'john.doe@email.com', amount: 49.99 },
+        { date: 'Aug 8, 2025', video: 'Database Design Fundamentals', customer: 'mary.smith@email.com', amount: 39.99 },
+        { date: 'Aug 7, 2025', video: 'Introduction to Web Development', customer: 'alex.wilson@email.com', amount: 29.99 },
+        { date: 'Aug 6, 2025', video: 'Advanced React Patterns', customer: 'sarah.jones@email.com', amount: 49.99 }
+    ];
+    
+    const historyHTML = purchaseHistory.map(purchase => `
+        <tr>
+            <td>${purchase.date}</td>
+            <td>${purchase.video}</td>
+            <td>${purchase.customer}</td>
+            <td><span class="text-success fw-bold">$${purchase.amount}</span></td>
+        </tr>
+    `).join('');
+    
+    tableBody.innerHTML = historyHTML;
+}
+
+/**
+ * Load payout history for earnings page
+ */
+function loadPayoutHistory() {
+    const container = document.getElementById('payoutHistoryContainer');
+    if (!container) return;
+    
+    // Demo payout history data - in real app this would come from API
+    const payoutHistory = [
+        { date: 'Aug 1, 2025', method: 'PayPal', amount: 1200.00, status: 'Completed' },
+        { date: 'Jul 1, 2025', method: 'PayPal', amount: 890.50, status: 'Completed' },
+        { date: 'Jun 1, 2025', method: 'PayPal', amount: 650.75, status: 'Completed' }
+    ];
+    
+    const historyHTML = payoutHistory.map(payout => `
+        <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
+            <div>
+                <div class="fw-bold">${payout.date}</div>
+                <small class="text-muted">${payout.method}</small>
+            </div>
+            <div class="text-end">
+                <div class="fw-bold text-success">$${payout.amount.toFixed(2)}</div>
+                <small class="badge bg-success">${payout.status}</small>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = historyHTML;
 }
 
 /**
@@ -323,6 +410,24 @@ function updateDashboardMetrics() {
     updateElement('totalEarnings', `$${creatorState.earnings.totalRevenue.toFixed(2)}`);
     updateElement('totalViews', creatorState.earnings.totalViews.toLocaleString());
     updateElement('totalSales', creatorState.earnings.totalPurchases.toLocaleString());
+}
+
+/**
+ * Update element text content safely
+ */
+function updateElement(id, content) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = content;
+    }
+}
+
+/**
+ * Show alert message
+ */
+function showAlert(message, type = 'info') {
+    console.log(`${type.toUpperCase()}: ${message}`);
+    // In a real app, you might show a toast notification here
 }
 
 

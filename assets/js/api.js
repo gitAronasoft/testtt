@@ -130,6 +130,12 @@ const API = {
     async getEarnings() {
         return this.request('/earnings');
     },
+
+    // General stats function for dashboard compatibility
+    async getStats(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.request(`/stats${query ? '?' + query : ''}`);
+    },
     
     // Get platform statistics for homepage
     async getPlatformStats() {
