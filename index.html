@@ -13,7 +13,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
-<body>
+<body class="homepage">
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
         <div class="container">
@@ -61,15 +61,15 @@
                         </div>
                         <div class="hero-stats d-flex gap-4 flex-wrap justify-content-center justify-content-md-start">
                             <div class="stat-item text-white text-center-mobile">
-                                <div class="fw-bold h4 mb-0" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">10K+</div>
+                                <div class="fw-bold h4 mb-0 total-creators" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">0</div>
                                 <small class="opacity-75 fw-medium">Active Creators</small>
                             </div>
                             <div class="stat-item text-white text-center-mobile">
-                                <div class="fw-bold h4 mb-0" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">100K+</div>
+                                <div class="fw-bold h4 mb-0 total-videos" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">0</div>
                                 <small class="opacity-75 fw-medium">Premium Videos</small>
                             </div>
                             <div class="stat-item text-white text-center-mobile">
-                                <div class="fw-bold h4 mb-0" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$2M+</div>
+                                <div class="fw-bold h4 mb-0 total-earnings" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$0</div>
                                 <small class="opacity-75 fw-medium">Creator Earnings</small>
                             </div>
                         </div>
@@ -102,8 +102,29 @@
         </div>
     </section>
 
-    <!-- Features Section -->
+    <!-- Featured Videos Section -->
     <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-12">
+                    <h2 class="display-5 fw-bold">Featured Videos</h2>
+                    <p class="lead text-muted">Discover premium content from our top creators</p>
+                </div>
+            </div>
+            
+            <div class="row featured-videos-container">
+                <!-- Featured videos will be loaded dynamically -->
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading videos...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-5 bg-white">
         <div class="container">
             <div class="row text-center mb-5">
                 <div class="col-12">

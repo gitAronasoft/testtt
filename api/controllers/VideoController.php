@@ -17,9 +17,10 @@ class VideoController {
      */
     public function getVideos($page = 1, $limit = 12, $creatorId = null) {
         try {
+            
             $offset = ($page - 1) * $limit;
             
-            $whereClause = "WHERE v.status = 'active'";
+            $whereClause = "WHERE v.status = 'published'";
             $params = "";
             $types = "";
             
@@ -44,13 +45,25 @@ class VideoController {
                 $stmt->bind_param("ii", $limit, $offset);
             }
             
-            $stmt->execute();
+            if (!$stmt->execute()) {
+                error_log("Video query execution failed: " . $this->db->getConnection()->error);
+                return $this->sendError('Database query failed', 500);
+            }
+            
             $result = $stmt->get_result();
+            if (!$result) {
+                error_log("Video query result failed: " . $this->db->getConnection()->error);
+                return $this->sendError('Database result failed', 500);
+            }
             
             $videos = [];
             while ($row = $result->fetch_assoc()) {
                 $videos[] = $row;
             }
+            
+            error_log("Videos found: " . count($videos));
+            error_log("Query executed: " . $sql);
+            error_log("Where clause: " . $whereClause);
             
             // Get total count
             $countSql = "SELECT COUNT(*) as total FROM videos v $whereClause";
@@ -116,8 +129,9 @@ class VideoController {
                 return $this->sendError('Title, price and creator ID are required', 400);
             }
             
-            $stmt = $this->db->prepare("INSERT INTO videos (title, description, price, creator_id) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("ssdi", $title, $description, $price, $creatorId);
+            $status = 'published';
+            $stmt = $this->db->prepare("INSERT INTO videos (title, description, price, creator_id, status) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssdis", $title, $description, $price, $creatorId, $status);
             
             if ($stmt->execute()) {
                 $videoId = $this->db->lastInsertId();

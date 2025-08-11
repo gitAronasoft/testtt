@@ -22,6 +22,8 @@ require_once 'config/database.php';
 require_once 'controllers/AuthController.php';
 require_once 'controllers/VideoController.php';
 require_once 'controllers/PurchaseController.php';
+require_once 'controllers/WalletController.php';
+require_once 'controllers/StatsController.php';
 
 // Initialize database
 $db = Database::getInstance();
@@ -68,6 +70,10 @@ $input = json_decode(file_get_contents('php://input'), true);
 $authController = new AuthController();
 $videoController = new VideoController();
 $purchaseController = new PurchaseController();
+
+// Initialize additional controllers only when needed
+$walletController = null;
+$statsController = null;
 
 // Route handlers
 switch (true) {
@@ -179,6 +185,68 @@ switch (true) {
             sendError('Unauthorized', 401);
         }
         $result = $purchaseController->getCreatorEarnings($userId);
+        sendResponse($result, $result['success'] ? 200 : ($result['code'] ?? 400));
+        break;
+        
+    // Wallet endpoints
+    case ($path === '/wallet' && $method === 'GET'):
+        if (!$userId) {
+            sendError('Unauthorized', 401);
+        }
+        if (!$walletController) $walletController = new WalletController();
+        $result = $walletController->getWallet($userId);
+        sendResponse($result, $result['success'] ? 200 : ($result['code'] ?? 400));
+        break;
+        
+    case ($path === '/wallet' && $method === 'POST'):
+        if (!$userId) {
+            sendError('Unauthorized', 401);
+        }
+        if (!$walletController) $walletController = new WalletController();
+        $result = $walletController->addFunds($userId, $input['amount'] ?? 0);
+        sendResponse($result, $result['success'] ? 200 : ($result['code'] ?? 400));
+        break;
+        
+    case ($path === '/wallet/transactions' && $method === 'GET'):
+        if (!$userId) {
+            sendError('Unauthorized', 401);
+        }
+        if (!$walletController) $walletController = new WalletController();
+        $result = $walletController->getTransactionHistory($userId);
+        sendResponse($result, $result['success'] ? 200 : ($result['code'] ?? 400));
+        break;
+        
+    // Stats endpoints
+    case ($path === '/stats' && $method === 'GET'):
+        if (!$statsController) $statsController = new StatsController();
+        
+        // Check if requesting platform stats (for homepage)
+        if (isset($_GET['type']) && $_GET['type'] === 'platform') {
+            $result = $statsController->getPlatformStats();
+            sendResponse($result, $result['success'] ? 200 : ($result['code'] ?? 400));
+            break;
+        }
+        
+        // User-specific stats require authentication
+        if (!$userId) {
+            sendError('Unauthorized', 401);
+        }
+        
+        // Get user role first
+        $userStmt = $db->prepare("SELECT role FROM users WHERE id = ?");
+        $userStmt->bind_param("i", $userId);
+        $userStmt->execute();
+        $userResult = $userStmt->get_result();
+        if ($userResult->num_rows === 0) {
+            sendError('User not found', 404);
+        }
+        $user = $userResult->fetch_assoc();
+        
+        if ($user['role'] === 'creator') {
+            $result = $statsController->getCreatorStats($userId);
+        } else {
+            $result = $statsController->getViewerStats($userId);
+        }
         sendResponse($result, $result['success'] ? 200 : ($result['code'] ?? 400));
         break;
         

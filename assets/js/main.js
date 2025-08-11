@@ -351,3 +351,97 @@ function handleFormSubmission(e) {
     // Add your form handling logic here
     console.log('Form submitted:', form.id);
 }
+
+/**
+ * Load platform statistics for homepage
+ */
+async function loadPlatformStats() {
+    try {
+        const response = await API.getPlatformStats();
+        if (response && response.success && response.data) {
+            const stats = response.data;
+            
+            // Update creators count
+            const creatorsElement = document.querySelector('.total-creators');
+            if (creatorsElement) {
+                creatorsElement.textContent = stats.total_creators || '0';
+            }
+            
+            // Update videos count
+            const videosElement = document.querySelector('.total-videos');
+            if (videosElement) {
+                videosElement.textContent = stats.total_videos || '0';
+            }
+            
+            // Update total earnings
+            const earningsElement = document.querySelector('.total-earnings');
+            if (earningsElement) {
+                earningsElement.textContent = '$' + (stats.total_earnings || '0');
+            }
+            
+            console.log('Platform stats loaded successfully');
+        }
+    } catch (error) {
+        console.error('Failed to load platform stats:', error);
+        // Show fallback values without breaking the UI
+    }
+}
+
+/**
+ * Load featured videos for homepage
+ */
+async function loadFeaturedVideos() {
+    try {
+        const response = await API.getVideos({ limit: 6 });
+        if (response && response.success && response.data) {
+            const videos = response.data;
+            const videosContainer = document.querySelector('.featured-videos-container');
+            
+            if (videosContainer && videos.length > 0) {
+                videosContainer.innerHTML = videos.map(video => `
+                    <div class="col-md-4 mb-4">
+                        <div class="card video-card">
+                            <div class="video-thumbnail">
+                                <i class="fas fa-play-circle play-icon"></i>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">${video.title}</h6>
+                                <p class="card-text text-muted small">${video.description?.substring(0, 80) || ''}${video.description?.length > 80 ? '...' : ''}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">By ${video.creator_name}</small>
+                                    <span class="text-primary fw-bold">$${video.price}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            console.log('Featured videos loaded successfully');
+        }
+    } catch (error) {
+        console.error('Failed to load featured videos:', error);
+    }
+}
+
+/**
+ * Initialize homepage dynamic content
+ */
+function initializeHomepage() {
+    // Load platform stats
+    loadPlatformStats();
+    
+    // Load featured videos
+    loadFeaturedVideos();
+    
+    // Set up periodic updates
+    setInterval(() => {
+        loadPlatformStats();
+        loadFeaturedVideos();
+    }, 30000); // Update every 30 seconds
+}
+
+// Initialize homepage if on homepage
+if (document.body.classList.contains('homepage') || window.location.pathname === '/' || window.location.pathname === '/index.html') {
+    document.addEventListener('DOMContentLoaded', initializeHomepage);
+}

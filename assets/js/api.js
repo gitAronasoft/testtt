@@ -68,7 +68,7 @@ const API = {
      * User management
      */
     async getProfile() {
-        return this.request('/user/profile');
+        return this.request('/auth/profile');
     },
     
     async updateProfile(userData) {
@@ -128,11 +128,41 @@ const API = {
      * Analytics endpoints
      */
     async getEarnings() {
-        return this.request('/analytics/earnings');
+        return this.request('/earnings');
     },
     
-    async getViewStats() {
-        return this.request('/analytics/views');
+    // Get platform statistics for homepage
+    async getPlatformStats() {
+        return this.request('/stats?type=platform');
+    },
+
+    // Get user-specific statistics (requires auth)
+    async getUserStats() {
+        return this.request('/stats');
+    },
+
+    // Get creator statistics
+    async getCreatorStats(userId) {
+        return this.request(`/stats?user_id=${userId}`);
+    },
+
+    // Get viewer statistics
+    async getViewerStats(userId) {
+        return this.request(`/stats?type=viewer&user_id=${userId}`);
+    },
+
+    /**
+     * Wallet endpoints
+     */
+    async getWallet() {
+        return this.request('/wallet');
+    },
+
+    async updateWallet(amount) {
+        return this.request('/wallet', {
+            method: 'POST',
+            body: JSON.stringify({ amount })
+        });
     }
 };
 

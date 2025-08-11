@@ -105,6 +105,9 @@ class Database {
         
         // Insert demo data
         $this->insertDemoData();
+        
+        // Add demo videos
+        $this->createDemoVideos();
     }
     
     private function insertDemoData() {
@@ -152,6 +155,92 @@ class Database {
         
         $stmt->close();
         $walletStmt->close();
+        $checkStmt->close();
+    }
+    
+    private function createDemoVideos() {
+        // Check if demo videos already exist
+        $checkStmt = $this->connection->prepare("SELECT COUNT(*) FROM videos");
+        $checkStmt->execute();
+        $result = $checkStmt->get_result();
+        $count = $result->fetch_row()[0];
+        
+        if ($count > 0) {
+            return; // Demo videos already exist
+        }
+        
+        // Get creator ID
+        $creatorStmt = $this->connection->prepare("SELECT id FROM users WHERE email = 'creator@demo.com'");
+        $creatorStmt->execute();
+        $creatorResult = $creatorStmt->get_result();
+        
+        if ($creatorResult->num_rows === 0) {
+            return; // Creator not found
+        }
+        
+        $creatorId = $creatorResult->fetch_assoc()['id'];
+        
+        // Demo videos data
+        $demoVideos = [
+            [
+                'Advanced JavaScript Concepts',
+                'Master advanced JavaScript patterns and modern ES6+ features including closures, promises, async/await, and more.',
+                12.99,
+                'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400',
+                $creatorId,
+                145
+            ],
+            [
+                'React Hooks Deep Dive',
+                'Complete guide to React Hooks - useState, useEffect, custom hooks and advanced patterns.',
+                15.99,
+                'https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=400',
+                $creatorId,
+                89
+            ],
+            [
+                'Node.js Backend Development',
+                'Build scalable backend applications with Node.js, Express, and MongoDB.',
+                18.99,
+                'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400',
+                $creatorId,
+                203
+            ],
+            [
+                'Python Data Science Fundamentals',
+                'Learn data analysis and visualization with Python, pandas, and matplotlib.',
+                16.99,
+                'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400',
+                $creatorId,
+                67
+            ],
+            [
+                'Mobile App Development with Flutter',
+                'Create beautiful cross-platform mobile apps using Flutter and Dart.',
+                22.99,
+                'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400',
+                $creatorId,
+                134
+            ],
+            [
+                'Database Design & SQL Mastery',
+                'Master database design principles and advanced SQL queries for better applications.',
+                14.99,
+                'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400',
+                $creatorId,
+                98
+            ]
+        ];
+        
+        $stmt = $this->connection->prepare("INSERT INTO videos (title, description, price, thumbnail_path, creator_id, view_count, status) VALUES (?, ?, ?, ?, ?, ?, 'active')");
+        
+        foreach ($demoVideos as $video) {
+            $stmt->bind_param("ssdsii", $video[0], $video[1], $video[2], $video[3], $video[4], $video[5]);
+            $stmt->execute();
+        }
+        
+        $stmt->close();
+        $creatorStmt->close();
         $checkStmt->close();
     }
     
