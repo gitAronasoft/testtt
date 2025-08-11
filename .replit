@@ -1,10 +1,10 @@
-modules = ["web", "nodejs-20", "php-8.2", "python-3.11", "postgresql-16"]
+modules = ["web", "nodejs-20", "php-8.2", "python-3.11"]
 [agent]
 expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["mysql80", "nginx", "sqlite"]
+packages = ["mysql80", "nginx"]
 
 [workflows]
 runButton = "Project"
