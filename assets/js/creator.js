@@ -448,20 +448,8 @@ function setupNavigation() {
     // Sidebar toggle functionality
     setupSidebarToggle();
     
-    // Logout functionality
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
-    }
-    
-    // Logout links in dropdown
-    const logoutLinks = document.querySelectorAll('.logout-link');
-    logoutLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            handleLogout();
-        });
-    });
+    // Logout functionality is handled globally by main.js
+    // No need for duplicate handlers here
     
     // Navigation links
     const navLinks = document.querySelectorAll('.nav-link');

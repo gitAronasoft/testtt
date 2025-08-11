@@ -17,8 +17,12 @@
 </head>
 <body class="dashboard-page">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark dashboard-nav creator-nav">
         <div class="container-fluid">
+            <button class="sidebar-toggle me-3" type="button" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            
             <a class="navbar-brand fw-bold" href="../index.html">
                 <i class="fas fa-play-circle me-2"></i>VideoShare
             </a>
@@ -64,71 +68,37 @@
     </nav>
 
     <!-- Sidebar -->
-    <div class="sidebar d-lg-block">
-        <div class="sidebar-overlay"></div>
-        <div class="p-3">
-            <h6 class="text-muted text-uppercase fw-bold mb-3">Creator Tools</h6>
-            <nav class="nav flex-column">
+    <div class="sidebar-overlay d-lg-none" onclick="toggleSidebar()" aria-hidden="true"></div>
+    
+    <aside class="sidebar creator-sidebar d-lg-block" role="navigation" aria-label="Main navigation">
+        <div class="p-4">
+            <h6 class="text-white text-uppercase fw-bold mb-3 opacity-75">Creator Tools</h6>
+            <nav class="nav flex-column" role="navigation">
                 <a class="nav-link active" href="creator-overview.html">
-                    <i class="fas fa-home me-2"></i>Overview
+                    <i class="fas fa-home"></i>Overview
                 </a>
                 <a class="nav-link" href="creator-videos.html">
-                    <i class="fas fa-video me-2"></i>Video Library
+                    <i class="fas fa-video"></i>Video Library
                 </a>
                 <a class="nav-link" href="creator-upload.html">
-                    <i class="fas fa-upload me-2"></i>Upload Video
+                    <i class="fas fa-upload"></i>Upload Video
                 </a>
                 <a class="nav-link" href="creator-earnings.html">
-                    <i class="fas fa-money-bill-wave me-2"></i>Earnings
+                    <i class="fas fa-money-bill-wave"></i>Earnings
                 </a>
                 <a class="nav-link" href="creator-settings.html">
-                    <i class="fas fa-cog me-2"></i>Settings
+                    <i class="fas fa-cog"></i>Settings
                 </a>
             </nav>
         </div>
-    </div>
+    </aside>
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="dashboard-header">
-            <div class="d-flex align-items-center w-100">
-                <button class="sidebar-toggle d-lg-none me-3">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="flex-grow-1">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="creator-avatar me-3" style="width: 60px; height: 60px; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: bold;">
-                            DC
-                        </div>
-                        <div>
-                            <h1 class="h3 fw-bold mb-1">Creator Dashboard</h1>
-                            <p class="text-muted mb-0">Welcome back! Here's your content performance and earnings overview</p>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="badge" style="background: linear-gradient(135deg, var(--success-color), #0f5132); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem;">
-                            <i class="fas fa-check-circle me-1"></i>Active Creator
-                        </span>
-                        <span class="badge" style="background: linear-gradient(135deg, var(--info-color), #0c4a6e); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem;">
-                            <i class="fas fa-crown me-1"></i>Pro Member
-                        </span>
-                        <span class="text-muted small d-flex align-items-center">
-                            <i class="fas fa-calendar me-2"></i>Last login: Today at 2:34 PM
-                        </span>
-                    </div>
-                </div>
-                <div class="d-flex gap-3 ms-auto">
-                    <a href="creator-upload.html" class="btn btn-primary" style="background: var(--gradient-primary); border: none; padding: 0.875rem 1.75rem; border-radius: 16px;">
-                        <i class="fas fa-plus me-2"></i>
-                        <span class="d-none d-sm-inline">Upload Video</span>
-                    </a>
-                    <a href="creator-earnings.html" class="btn" style="background: linear-gradient(135deg, var(--success-color), #0f5132); color: white; border: none; padding: 0.875rem 1.75rem; border-radius: 16px;">
-                        <i class="fas fa-dollar-sign me-2"></i>
-                        <span class="d-none d-sm-inline">Earnings</span>
-                    </a>
-                </div>
-            </div>
-        </div>
+        <!-- Mobile Sidebar Toggle -->
+        <button class="sidebar-toggle d-lg-none position-fixed" style="top: 20px; left: 20px; z-index: 1030; background: rgba(255,255,255,0.9); border: none; border-radius: 12px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" aria-label="Toggle sidebar navigation">
+            <i class="fas fa-bars text-primary" aria-hidden="true"></i>
+        </button>
         <div class="content-area">
             <!-- Stats Cards - Dynamic Content -->
             <div class="row g-3 mb-4" id="statsContainer">
@@ -372,5 +342,6 @@
             }
         }
     </script>
+    <script src="../assets/js/sidebar.js"></script>
 </body>
 </html>

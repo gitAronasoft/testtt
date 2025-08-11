@@ -14,9 +14,13 @@
     <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
-    <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark dashboard-nav creator-nav">
         <div class="container-fluid">
+            <button class="sidebar-toggle me-3" type="button" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            
             <a class="navbar-brand fw-bold" href="../index.html">
                 <i class="fas fa-play-circle me-2"></i>VideoShare
             </a>
@@ -26,10 +30,28 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="creator-overview.html">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="creator-videos.html">
+                            <i class="fas fa-video me-2"></i>Videos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="creator-earnings.html">
+                            <i class="fas fa-dollar-sign me-2"></i>Earnings
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-2"></i>Demo Creator
+                            <i class="fas fa-user-circle me-2"></i>Creator Name
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="creator-settings.html"><i class="fas fa-user me-2"></i>Profile</a></li>
@@ -44,56 +66,37 @@
     </nav>
 
     <!-- Sidebar -->
-    <div class="sidebar d-none d-lg-block">
-        <div class="sidebar-overlay"></div>
-        <div class="p-3">
-            <h6 class="text-muted text-uppercase fw-bold mb-3">Creator Tools</h6>
-            <nav class="nav flex-column">
+    <div class="sidebar-overlay d-lg-none" onclick="toggleSidebar()" aria-hidden="true"></div>
+    
+    <aside class="sidebar creator-sidebar d-lg-block" role="navigation" aria-label="Main navigation">
+        <div class="p-4">
+            <h6 class="text-white text-uppercase fw-bold mb-3 opacity-75">Creator Tools</h6>
+            <nav class="nav flex-column" role="navigation">
                 <a class="nav-link" href="creator-overview.html">
-                    <i class="fas fa-home me-2"></i>Overview
+                    <i class="fas fa-home"></i>Overview
                 </a>
                 <a class="nav-link" href="creator-videos.html">
-                    <i class="fas fa-video me-2"></i>Video Library
+                    <i class="fas fa-video"></i>Video Library
                 </a>
                 <a class="nav-link" href="creator-upload.html">
-                    <i class="fas fa-upload me-2"></i>Upload Video
+                    <i class="fas fa-upload"></i>Upload Video
                 </a>
                 <a class="nav-link active" href="creator-earnings.html">
-                    <i class="fas fa-money-bill-wave me-2"></i>Earnings
+                    <i class="fas fa-money-bill-wave"></i>Earnings
                 </a>
                 <a class="nav-link" href="creator-settings.html">
-                    <i class="fas fa-cog me-2"></i>Settings
+                    <i class="fas fa-cog"></i>Settings
                 </a>
             </nav>
         </div>
-    </div>
+    </aside>
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="dashboard-header bg-white border-bottom">
-            <button class="sidebar-toggle d-lg-none">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="d-flex justify-content-between align-items-center w-100">
-                <div>
-                    <h1 class="h3 fw-bold mb-1">Earnings</h1>
-                    <p class="text-muted mb-0">Track your revenue and payment history</p>
-                    <div class="mt-2">
-                        <span class="badge bg-success me-2">
-                            <i class="fas fa-check-circle me-1"></i>Active Creator
-                        </span>
-                        <span class="text-muted small">
-                            <i class="fas fa-calendar me-1"></i>Last updated: Today
-                        </span>
-                    </div>
-                </div>
-                <div>
-                    <button class="btn btn-success">
-                        <i class="fas fa-money-bill-wave me-2"></i>Request Payout
-                    </button>
-                </div>
-            </div>
-        </div>
+        <!-- Mobile Sidebar Toggle -->
+        <button class="sidebar-toggle d-lg-none position-fixed" style="top: 20px; left: 20px; z-index: 1030; background: rgba(255,255,255,0.9); border: none; border-radius: 12px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" aria-label="Toggle sidebar navigation">
+            <i class="fas fa-bars text-primary" aria-hidden="true"></i>
+        </button>
 
         <div class="content-area">
             <!-- Earnings Metrics - Dynamic Content -->
@@ -167,6 +170,7 @@
     <script src="../assets/js/auth.js?v=9"></script>
     <script src="../assets/js/api.js?v=9"></script>
     <script src="../assets/js/skeleton.js?v=1"></script>
+    <script src="../assets/js/sidebar.js"></script>
     <script>
         // Helper function to get current user
         function getCurrentUser() {

@@ -16,8 +16,12 @@
 </head>
 <body class="dashboard-page">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <nav class="navbar navbar-expand-lg navbar-dark dashboard-nav viewer-nav">
         <div class="container-fluid">
+            <button class="sidebar-toggle me-3" type="button" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            
             <a class="navbar-brand fw-bold d-flex align-items-center" href="../index.html" aria-label="VideoShare Home">
                 <i class="fas fa-play-circle me-2" aria-hidden="true"></i>
                 <span>VideoShare</span>
@@ -79,20 +83,20 @@
     <!-- Sidebar -->
     <div class="sidebar-overlay d-lg-none" onclick="toggleSidebar()" aria-hidden="true"></div>
     
-    <aside class="sidebar d-lg-block" role="navigation" aria-label="Main navigation">
+    <aside class="sidebar viewer-sidebar d-lg-block" role="navigation" aria-label="Main navigation">
         <div class="p-4">
-            <h2 class="h6 text-muted text-uppercase fw-bold mb-3 letter-spacing-wide">Viewer Tools</h2>
+            <h6 class="text-white text-uppercase fw-bold mb-3 opacity-75">Viewer Tools</h6>
             <nav class="nav flex-column" role="navigation">
-                <a class="nav-link active d-flex align-items-center" href="viewer-dashboard.html" aria-current="page">
-                    <i class="fas fa-home me-3" aria-hidden="true"></i>
+                <a class="nav-link active" href="viewer-dashboard.html" aria-current="page">
+                    <i class="fas fa-home"></i>
                     <span>Browse Videos</span>
                 </a>
-                <a class="nav-link d-flex align-items-center" href="viewer-library.html">
-                    <i class="fas fa-bookmark me-3" aria-hidden="true"></i>
+                <a class="nav-link" href="viewer-library.html">
+                    <i class="fas fa-bookmark"></i>
                     <span>My Library</span>
                 </a>
-                <a class="nav-link d-flex align-items-center" href="viewer-settings.html">
-                    <i class="fas fa-cog me-3" aria-hidden="true"></i>
+                <a class="nav-link" href="viewer-settings.html">
+                    <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
             </nav>
@@ -101,118 +105,14 @@
 
     <!-- Main Content -->
     <main class="main-content" role="main">
-        <!-- Dashboard Header -->
-        <header class="dashboard-header">
-            <div class="d-flex align-items-center w-100">
-                <button class="sidebar-toggle d-lg-none me-4" aria-label="Toggle sidebar navigation">
-                    <i class="fas fa-bars" aria-hidden="true"></i>
-                </button>
-                <div class="flex-grow-1">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="header-icon me-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                                 style="width: 48px; height: 48px; background: var(--gradient-primary); color: white;">
-                                <i class="fas fa-compass fa-lg"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h1 class="h2 fw-bold mb-1" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                                Discover Amazing Content
-                            </h1>
-                            <p class="text-muted mb-0 d-flex align-items-center fs-6">
-                                <i class="fas fa-globe me-2" aria-hidden="true"></i>
-                                <span>Browse premium videos from creators worldwide</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="d-flex gap-3 ms-auto align-items-center">
-                    <button class="btn btn-outline-success d-flex align-items-center add-funds-btn" type="button">
-                        <i class="fas fa-wallet me-2" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Add Funds</span>
-                    </button>
-                    <button class="btn btn-primary d-flex align-items-center refresh-dashboard" type="button" aria-label="Refresh content">
-                        <i class="fas fa-sync-alt me-2" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Refresh</span>
-                    </button>
-                </div>
-            </div>
-        </header>
+        <!-- Mobile Sidebar Toggle -->
+        <button class="sidebar-toggle d-lg-none position-fixed" style="top: 20px; left: 20px; z-index: 1030; background: rgba(255,255,255,0.9); border: none; border-radius: 12px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" aria-label="Toggle sidebar navigation">
+            <i class="fas fa-bars text-primary" aria-hidden="true"></i>
+        </button>
         
         <!-- Content Area -->
         <div class="content-area">
-            <!-- Welcome Message -->
-            <div class="welcome-banner mb-5">
-                <div class="card border-0 shadow-xl" style="background: var(--gradient-primary); border-radius: 24px; overflow: hidden; min-height: 200px;">
-                    <div class="card-body p-5 text-white position-relative">
-                        <div class="row align-items-center g-4">
-                            <div class="col-lg-8">
-                                <div class="mb-3">
-                                    <span class="badge bg-white bg-opacity-20 px-3 py-2 rounded-pill mb-3">
-                                        <i class="fas fa-sparkles me-1"></i>
-                                        Premium Experience
-                                    </span>
-                                </div>
-                                <h2 class="h3 fw-bold mb-3" style="line-height: 1.2;">Welcome to Your Video Discovery Hub</h2>
-                                <p class="mb-4 opacity-90 fs-6">Explore premium content from creators worldwide. Find tutorials, entertainment, and educational videos tailored to your interests.</p>
-                                <div class="row g-3">
-                                    <div class="col-sm-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="feature-icon-sm me-3" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-video"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-semibold small">Premium Content</div>
-                                                <div class="text-white-50 small">High-quality videos</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="feature-icon-sm me-3" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-shield-alt"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-semibold small">Secure Payments</div>
-                                                <div class="text-white-50 small">Protected transactions</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="feature-icon-sm me-3" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-download"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-semibold small">Offline Access</div>
-                                                <div class="text-white-50 small">Download & watch</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4 text-center">
-                                <div class="welcome-icon position-relative" style="width: 120px; height: 120px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; backdrop-filter: blur(10px);">
-                                    <i class="fas fa-play-circle" style="font-size: 3rem;"></i>
-                                    <div class="position-absolute" style="top: -10px; right: -10px; width: 30px; height: 30px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fas fa-heart text-danger small"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="position-absolute top-0 end-0 p-4">
-                            <div class="d-flex gap-2">
-                                <div class="bg-white bg-opacity-15 rounded-circle p-2" style="backdrop-filter: blur(10px);">
-                                    <i class="fas fa-star text-warning"></i>
-                                </div>
-                                <div class="bg-white bg-opacity-15 rounded-circle p-2" style="backdrop-filter: blur(10px);">
-                                    <i class="fas fa-crown text-warning"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    
 
             <!-- Quick Stats Section -->
             <section class="mb-4" aria-labelledby="stats-heading">
@@ -348,7 +248,7 @@
                 </div>
 
                 <!-- Videos Grid -->
-                <div class="video-grid" id="videosContainer" role="region" aria-label="Video collection">
+                <div class="row video-grid" id="videosContainer" role="region" aria-label="Video collection">
                     <!-- Videos will be loaded dynamically -->
                 </div>
 
@@ -382,7 +282,10 @@
     <!-- Custom JS -->
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/sidebar.js"></script>
     <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/payment.js"></script>
+    <script src="../assets/js/video-renderer.js"></script>
     <script src="../assets/js/viewer-init.js?v=6"></script>
 
     <script>
@@ -392,6 +295,20 @@
             if (typeof initViewerDashboard === 'function') {
                 initViewerDashboard();
             }
+            
+            // Load videos using video renderer
+            setTimeout(() => {
+                if (window.videoRenderer) {
+                    window.videoRenderer.loadBrowseVideos();
+                } else {
+                    console.log('Video renderer not available, trying again...');
+                    setTimeout(() => {
+                        if (window.videoRenderer) {
+                            window.videoRenderer.loadBrowseVideos();
+                        }
+                    }, 500);
+                }
+            }, 100);
 
             // Setup view toggle
             const viewButtons = document.querySelectorAll('[data-view]');
@@ -409,7 +326,11 @@
                     
                     // Update container class
                     const view = this.getAttribute('data-view');
-                    videosContainer.className = view === 'list' ? 'video-list' : 'video-grid';
+                    if (view === 'list') {
+                        videosContainer.className = 'video-list';
+                    } else {
+                        videosContainer.className = 'row video-grid';
+                    }
                 });
             });
 

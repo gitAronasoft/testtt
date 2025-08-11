@@ -72,26 +72,39 @@ async function loadBrowsingVideos() {
     try {
         const videos = await API.getVideos({ limit: 20 });
         
+        // Find the correct videos container - specifically the one under "Available Videos" section
+        const container = document.querySelector('#videosContainer.video-grid, #videosContainer');
+        if (!container) {
+            console.error('Videos container not found');
+            return;
+        }
+        
         if (videos && videos.length > 0) {
-            const container = document.getElementById('videosContainer');
-            if (container) {
-                container.innerHTML = ''; // Clear existing content
-                
-                videos.forEach(video => {
-                    const videoCard = createVideoCard(video);
-                    container.appendChild(videoCard);
-                });
+            container.innerHTML = ''; // Clear existing content
+            
+            videos.forEach(video => {
+                const videoCard = createVideoCard(video);
+                container.appendChild(videoCard);
+            });
+            
+            // Update video count
+            const countElement = document.getElementById('videoCount');
+            if (countElement) {
+                countElement.textContent = `${videos.length} videos found`;
             }
         } else {
-            const container = document.getElementById('videosContainer');
-            if (container) {
-                container.innerHTML = 
-                    '<div class="col-12 text-center"><p class="text-muted">No videos available at the moment.</p></div>';
+            container.innerHTML = 
+                '<div class="col-12 text-center"><p class="text-muted">No videos available at the moment.</p></div>';
+            
+            // Update video count
+            const countElement = document.getElementById('videoCount');
+            if (countElement) {
+                countElement.textContent = '0 videos found';
             }
         }
     } catch (error) {
         console.error('Error loading videos:', error);
-        const container = document.getElementById('videosContainer');
+        const container = document.querySelector('#videosContainer.video-grid, #videosContainer');
         if (container) {
             container.innerHTML = 
                 '<div class="col-12 text-center"><p class="text-danger">Error loading videos. Please try again later.</p></div>';

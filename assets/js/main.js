@@ -11,6 +11,10 @@ let isLoggedIn = false;
  * Initialize the application
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // Prevent multiple initialization
+    if (window.mainInitialized) return;
+    window.mainInitialized = true;
+
     // Check existing session
     checkExistingSession();
 
@@ -25,6 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize dashboard features
     initializeDashboardFeatures();
+    
+    // Make handleLogout globally available
+    window.handleLogout = handleLogout;
+    window.clearSession = clearSession;
 });
 
 /**
@@ -104,13 +112,18 @@ console.log('VideoShare platform initialized');
  * Setup global event listeners
  */
 function setupGlobalEventListeners() {
-    // Handle logout links
-    const logoutLinks = document.querySelectorAll('.logout-link');
-    logoutLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
+    // Prevent duplicate event listeners
+    if (window.globalEventListenersSetup) return;
+    window.globalEventListenersSetup = true;
+
+    // Handle logout links and buttons
+    document.addEventListener('click', function(e) {
+        // Check if clicked element is a logout link or button
+        if (e.target.matches('.logout-link, #logoutBtn, [data-action="logout"]') || 
+            e.target.closest('.logout-link, #logoutBtn, [data-action="logout"]')) {
             e.preventDefault();
-            logout();
-        });
+            handleLogout();
+        }
     });
 
     // Handle mobile navbar toggle
@@ -188,22 +201,53 @@ function checkExistingSession() {
  * Clear user session
  */
 function clearSession() {
+    // Clear all session-related storage
     localStorage.removeItem(CONFIG.STORAGE.USER);
     localStorage.removeItem(CONFIG.STORAGE.TOKEN);
     localStorage.removeItem(CONFIG.STORAGE.SESSION);
+    localStorage.removeItem('rememberedEmail');
+    localStorage.removeItem('videoShareEmail');
+    
+    // Reset global variables
     currentUser = null;
     isLoggedIn = false;
+    
+    // Clear any cached user data
+    if (typeof window.currentUser !== 'undefined') {
+        window.currentUser = null;
+    }
 }
 
 /**
- * Logout user
+ * Handle logout functionality
+ */
+function handleLogout() {
+    // Clear all session data
+    clearSession();
+    
+    // Show logout message
+    showAlert('You have been logged out successfully.', 'info');
+    
+    // Redirect to login page after a short delay
+    setTimeout(() => {
+        // Determine the correct path to login based on current location
+        const currentPath = window.location.pathname;
+        let loginPath = 'login.html';
+        
+        // If we're in a subdirectory (creator, viewer, admin), go up one level
+        if (currentPath.includes('/creator/') || currentPath.includes('/viewer/') || currentPath.includes('/admin/')) {
+            loginPath = '../login.html';
+        }
+        
+        window.location.href = loginPath;
+    }, 1000);
+}
+
+/**
+ * Logout user (legacy function for backward compatibility)
  */
 function logout() {
-    clearSession();
-    showAlert('You have been logged out successfully.', 'info');
-    setTimeout(() => {
-        window.location.href = 'login.html';
-    }, 1000);
+    handleLogout();
 }
 
 /**
