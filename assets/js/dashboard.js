@@ -83,32 +83,37 @@ function getCurrentUser() {
  * Setup navigation between dashboard sections
  */
 function setupNavigation() {
-    // Only set up section navigation for links with data-section attributes
-    const navLinks = document.querySelectorAll('[data-section]');
-    
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const targetSection = this.getAttribute('data-section');
-            switchSection(targetSection);
-            
-            // Update active states
-            updateActiveNavigation(this);
-        });
-    });
-    
-    // Handle hash navigation only if we're on a main dashboard page
-    const isMainDashboard = window.location.pathname.includes('creator-overview.html') || 
-                           window.location.pathname.includes('viewer-dashboard.html');
+    // Only set up section navigation for links with data-section attributes on main dashboard pages
+    const isMainDashboard = window.location.pathname.includes('viewer-dashboard.html');
     
     if (isMainDashboard) {
+        const navLinks = document.querySelectorAll('[data-section]');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetSection = this.getAttribute('data-section');
+                switchSection(targetSection);
+                
+                // Update active states
+                updateActiveNavigation(this);
+            });
+        });
+        
         window.addEventListener('hashchange', handleHashChange);
         
         // Check initial hash
         if (window.location.hash) {
             handleHashChange();
         }
+    }
+    
+    // For creator pages, use simple direct navigation without interception
+    const isCreatorPage = window.location.pathname.includes('/creator/');
+    if (isCreatorPage) {
+        // No special navigation handling needed - let links work normally
+        console.log('Creator page detected - using direct navigation');
     }
 }
 

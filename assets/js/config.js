@@ -25,7 +25,8 @@ const CONFIG = {
         SIGNUP: 'signup.html',
         FORGOT_PASSWORD: 'forgot-password.html',
         CREATOR_DASHBOARD: 'creator/creator-overview.html',
-        VIEWER_DASHBOARD: 'viewer/viewer-dashboard.html'
+        VIEWER_DASHBOARD: 'viewer/viewer-dashboard.html',
+        ADMIN_DASHBOARD: 'admin/admin-dashboard.html'
     },
 
     // Dashboard sections
@@ -47,6 +48,12 @@ const CONFIG = {
             role: 'viewer',
             name: 'Demo Viewer',
             id: 'viewer_001'
+        },
+        'admin@demo.com': {
+            password: 'admin123',
+            role: 'admin',
+            name: 'Platform Admin',
+            id: 'admin_001'
         }
     },
 
@@ -71,11 +78,20 @@ const CONFIG = {
 
 /**
  * Get dashboard URL based on user role
- * @param {string} role - User role ('creator' or 'viewer')
+ * @param {string} role - User role ('creator', 'viewer', or 'admin')
  * @returns {string} Dashboard URL
  */
 function getDashboardUrl(role) {
-    return role === 'creator' ? CONFIG.ROUTES.CREATOR_DASHBOARD : CONFIG.ROUTES.VIEWER_DASHBOARD;
+    switch (role) {
+        case 'creator':
+            return CONFIG.ROUTES.CREATOR_DASHBOARD;
+        case 'viewer':
+            return CONFIG.ROUTES.VIEWER_DASHBOARD;
+        case 'admin':
+            return CONFIG.ROUTES.ADMIN_DASHBOARD;
+        default:
+            return CONFIG.ROUTES.VIEWER_DASHBOARD;
+    }
 }
 
 /**
@@ -133,18 +149,7 @@ function logout() {
     clearSession();
     window.location.href = CONFIG.ROUTES.HOME;
 }
- 
-function getDashboardUrl(role) {
-    // Check current location to determine correct relative path
-    const currentPath = window.location.pathname;
-    const isInSubdir = currentPath.includes('/creator/') || currentPath.includes('/viewer/');
-    
-    if (role === 'creator') {
-        return isInSubdir ? 'creator-overview.html' : CONFIG.ROUTES.CREATOR_DASHBOARD;
-    } else {
-        return isInSubdir ? 'viewer-dashboard.html' : CONFIG.ROUTES.VIEWER_DASHBOARD;
-    }
-}
+
 
 /**
  * Get sections for user role
@@ -172,6 +177,80 @@ function getRelativePathToRoot() {
 }
 
 // Export configuration (for ES6 modules compatibility)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = CONFIG;
+}
+/**
+ * Configuration file for VideoShare platform
+ */
+const CONFIG = {
+    // API Configuration
+    API: {
+        BASE_URL: '/api',
+        TIMEOUT: 30000
+    },
+    
+    // Routes
+    ROUTES: {
+        LOGIN: 'login.html',
+        SIGNUP: 'signup.html',
+        CREATOR_DASHBOARD: 'creator/creator-overview.html',
+        VIEWER_DASHBOARD: 'viewer/viewer-dashboard.html'
+    },
+    
+    // Storage keys
+    STORAGE: {
+        USER: 'videoShareUser',
+        TOKEN: 'videoShareToken',
+        SESSION: 'videoShareSession'
+    },
+    
+    // UI Configuration
+    UI: {
+        LOADING_TIMEOUT: 2000,
+        REDIRECT_DELAY: 1500,
+        ALERT_TIMEOUT: 5000
+    },
+    
+    // Demo accounts for testing
+    DEMO_ACCOUNTS: {
+        'creator@demo.com': {
+            id: 'user_1',
+            name: 'John Creator',
+            role: 'creator',
+            password: 'password123'
+        },
+        'viewer@demo.com': {
+            id: 'user_2',
+            name: 'Jane Viewer',
+            role: 'viewer',
+            password: 'password123'
+        }
+    }
+};
+
+// Utility functions
+function getDashboardUrl(role) {
+    return role === 'creator' ? CONFIG.ROUTES.CREATOR_DASHBOARD : CONFIG.ROUTES.VIEWER_DASHBOARD;
+}
+
+function isAuthenticated() {
+    return !!localStorage.getItem(CONFIG.STORAGE.TOKEN);
+}
+
+function getCurrentUser() {
+    const userData = localStorage.getItem(CONFIG.STORAGE.USER);
+    return userData ? JSON.parse(userData) : null;
+}
+
+function logout() {
+    localStorage.removeItem(CONFIG.STORAGE.USER);
+    localStorage.removeItem(CONFIG.STORAGE.TOKEN);
+    localStorage.removeItem(CONFIG.STORAGE.SESSION);
+    window.location.href = CONFIG.ROUTES.LOGIN;
+}
+
+// Export for modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
 }

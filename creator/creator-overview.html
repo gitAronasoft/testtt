@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Creator Overview - VideoShare</title>
-    
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome Icons -->
@@ -22,11 +22,11 @@
             <a class="navbar-brand fw-bold" href="../index.html">
                 <i class="fas fa-play-circle me-2"></i>VideoShare
             </a>
-            
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -45,7 +45,7 @@
                         </a>
                     </li>
                 </ul>
-                
+
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
@@ -64,7 +64,8 @@
     </nav>
 
     <!-- Sidebar -->
-    <div class="sidebar d-none d-lg-block">
+    <div class="sidebar d-lg-block">
+        <div class="sidebar-overlay"></div>
         <div class="p-3">
             <h6 class="text-muted text-uppercase fw-bold mb-3">Creator Tools</h6>
             <nav class="nav flex-column">
@@ -89,8 +90,11 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="dashboard-header">
-            <div class="d-flex justify-content-between align-items-center">
+        <div class="dashboard-header bg-white border-bottom">
+            <button class="sidebar-toggle d-lg-none">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="d-flex justify-content-between align-items-center w-100">
                 <div>
                     <h1 class="h3 fw-bold mb-1">Creator Dashboard</h1>
                     <p class="text-muted mb-0">Welcome back! Here's your content performance and earnings overview</p>
@@ -131,7 +135,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-3">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
@@ -147,7 +151,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-3">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
@@ -163,7 +167,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-3">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
@@ -194,7 +198,7 @@
                                     <div class="row g-2">
                                         <div class="col-md-4">
                                             <div class="d-flex align-items-center p-2 border rounded">
-                                                <img src="https://pixabay.com/get/ga6f9d885c926f5b7538a9a0b391fd7689ee7b712eaecc168ba915044e284fce35bdac6ac12c050f0b20d604684e43455b2e15acb762b7c95ca270cd2dfbae7e8_1280.jpg" 
+                                                <img src="https://pixabay.com/get/ga6f9d885c926f5b7538a9a0b391fd7689ee7b712eaecc168ba915044e284fce35bdac6ac12c050f0b20d604684e43455b2e15acb762b7c95ca270cd2dfbae7e8_1280.jpg"
                                                      alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
                                                 <div class="flex-grow-1">
                                                     <h6 class="mb-1 small">Advanced Tutorial Series</h6>
@@ -207,7 +211,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <div class="d-flex align-items-center p-2 border rounded">
-                                                <img src="https://pixabay.com/get/gfc8ea08a622b6a0c762cf3a9a7362ada81616d7727a1226dcb7322d97e12894098301acc6d3a6ddcd43651da52c428d43184eadc1eccdac725caf54ef9e15533_1280.jpg" 
+                                                <img src="https://pixabay.com/get/gfc8ea08a622b6a0c762cf3a9a7362ada81616d7727a1226dcb7322d97e12894098301acc6d3a6ddcd43651da52c428d43184eadc1eccdac725caf54ef9e15533_1280.jpg"
                                                      alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
                                                 <div class="flex-grow-1">
                                                     <h6 class="mb-1 small">Beginner's Guide</h6>
@@ -220,7 +224,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <div class="d-flex align-items-center p-2 border rounded">
-                                                <img src="https://pixabay.com/get/gda64e03e0b0d4d11b5d8cc0e60be62e3a56a23ff44ae9734b8bb3a28fdd1d6b9e1b5e2b8a2c8b0d01a62e3e7a6b2a4af1b8e5e1b0dcfcfc5b5b6b3b3b3b3b3b3b_1280.jpg" 
+                                                <img src="https://pixabay.com/get/gda64e03e0b0d4d11b5d8cc0e60be62e3a56a23ff44ae9734b8bb3a28fdd1d6b9e1b5e2b8a2c8b0d01a62e3e7a6b2a4af1b8e5e1b0dcfcfc5b5b6b3b3b3b3b3b3b_1280.jpg"
                                                      alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
                                                 <div class="flex-grow-1">
                                                     <h6 class="mb-1 small">Tips & Tricks</h6>
@@ -291,7 +295,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-4">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-header bg-transparent">
@@ -310,7 +314,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
 
                 </div>
         </div>
@@ -321,7 +325,6 @@
     <!-- Custom JS -->
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/api.js"></script>
-    <script src="../assets/js/dashboard.js"></script>
-    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/dashboard-simple.js"></script>
 </body>
 </html>

@@ -88,103 +88,173 @@
             </div>
         </div>
         <div class="content-area">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
+            <div class="container-fluid">
+                <div class="row justify-content-center">
+                    <div class="col-xl-10">
+                        <div class="row g-4">
+                            <!-- Profile Settings -->
+                            <div class="col-lg-6">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-header bg-transparent border-bottom">
+                                        <h6 class="mb-0 fw-bold text-primary">
+                                            <i class="fas fa-user me-2"></i>Profile Information
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <form>
+                                            <div class="mb-3">
+                                                <label for="fullName" class="form-label fw-semibold">Display Name</label>
+                                                <input type="text" class="form-control" id="fullName" value="Demo Viewer">
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="email" class="form-label fw-semibold">Email Address</label>
+                                                <input type="email" class="form-control" id="email" value="viewer@demo.com" readonly>
+                                                <div class="form-text text-muted">
+                                                    <i class="fas fa-info-circle me-1"></i>Email cannot be changed
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="timezone" class="form-label fw-semibold">Timezone</label>
+                                                <select class="form-select" id="timezone">
+                                                    <option value="UTC">UTC (Coordinated Universal Time)</option>
+                                                    <option value="EST" selected>EST (Eastern Standard Time)</option>
+                                                    <option value="PST">PST (Pacific Standard Time)</option>
+                                                    <option value="GMT">GMT (Greenwich Mean Time)</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save me-2"></i>Save Changes
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                             
-                            <div class="row g-4">
-                                <!-- Profile Settings -->
-                                <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header bg-transparent">
-                                            <h6 class="mb-0 fw-bold">
-                                                <i class="fas fa-user me-2"></i>Profile
-                                            </h6>
+                            <!-- Notification Settings -->
+                            <div class="col-lg-6">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-header bg-transparent border-bottom">
+                                        <h6 class="mb-0 fw-bold text-primary">
+                                            <i class="fas fa-bell me-2"></i>Notification Preferences
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                            <label class="form-check-label fw-semibold" for="emailNotifications">
+                                                Email Notifications
+                                            </label>
+                                            <div class="form-text text-muted small">
+                                                Receive emails about new videos and platform updates
+                                            </div>
                                         </div>
-                                        <div class="card-body">
-                                            <form>
-                                                <div class="mb-3">
-                                                    <label for="fullName" class="form-label">Display Name</label>
-                                                    <input type="text" class="form-control" id="fullName" value="Demo Viewer">
-                                                </div>
-                                                
-                                                <div class="mb-3">
-                                                    <label for="email" class="form-label">Email</label>
-                                                    <input type="email" class="form-control" id="email" value="viewer@demo.com" readonly>
-                                                    <div class="form-text">Email cannot be changed</div>
-                                                </div>
-                                                
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="fas fa-save me-2"></i>Save Changes
-                                                </button>
-                                            </form>
+                                        
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="newVideoNotifications" checked>
+                                            <label class="form-check-label fw-semibold" for="newVideoNotifications">
+                                                New Video Alerts
+                                            </label>
+                                            <div class="form-text text-muted small">
+                                                Get notified when creators you follow upload new content
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check form-switch mb-4">
+                                            <input class="form-check-input" type="checkbox" id="purchaseNotifications" checked>
+                                            <label class="form-check-label fw-semibold" for="purchaseNotifications">
+                                                Purchase Confirmations
+                                            </label>
+                                            <div class="form-text text-muted small">
+                                                Receive confirmations for video purchases and transactions
+                                            </div>
+                                        </div>
+                                        
+                                        <hr class="my-4">
+                                        
+                                        <h6 class="fw-bold mb-3">
+                                            <i class="fas fa-play me-2 text-success"></i>Video Playback Settings
+                                        </h6>
+                                        
+                                        <div class="mb-3">
+                                            <label for="defaultQuality" class="form-label fw-semibold">Default Video Quality</label>
+                                            <select class="form-select" id="defaultQuality">
+                                                <option value="auto" selected>Auto (Recommended)</option>
+                                                <option value="1080p">1080p HD</option>
+                                                <option value="720p">720p</option>
+                                                <option value="480p">480p</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="autoplay" checked>
+                                            <label class="form-check-label fw-semibold" for="autoplay">
+                                                Autoplay Next Video
+                                            </label>
+                                            <div class="form-text text-muted small">
+                                                Automatically play the next video in queue
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Preferences -->
-                                <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm mb-4">
-                                        <div class="card-header bg-transparent">
-                                            <h6 class="mb-0 fw-bold">
-                                                <i class="fas fa-bell me-2"></i>Notifications
-                                            </h6>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
-                                                <label class="form-check-label" for="emailNotifications">
-                                                    Email Notifications
-                                                </label>
-                                                <div class="form-text">Receive emails about new videos and updates</div>
-                                            </div>
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="newVideoNotifications" checked>
-                                                <label class="form-check-label" for="newVideoNotifications">
-                                                    New Video Alerts
-                                                </label>
-                                                <div class="form-text">Get notified when creators you follow upload new content</div>
-                                            </div>
-                                        </div>
+                            </div>
+                            
+                            <!-- Account Security -->
+                            <div class="col-lg-6">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-transparent border-bottom">
+                                        <h6 class="mb-0 fw-bold text-primary">
+                                            <i class="fas fa-shield-alt me-2"></i>Account Security
+                                        </h6>
                                     </div>
-                                    
-                                    <div class="card border-0 shadow-sm mb-4">
-                                        <div class="card-header bg-transparent">
-                                            <h6 class="mb-0 fw-bold">
-                                                <i class="fas fa-play me-2"></i>Video Playback
-                                            </h6>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="mb-3">
-                                                <label for="defaultQuality" class="form-label">Default Quality</label>
-                                                <select class="form-select" id="defaultQuality">
-                                                    <option value="auto" selected>Auto (Recommended)</option>
-                                                    <option value="1080p">1080p HD</option>
-                                                    <option value="720p">720p</option>
-                                                    <option value="480p">480p</option>
-                                                </select>
-                                            </div>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="autoplay" checked>
-                                                <label class="form-check-label" for="autoplay">
-                                                    Autoplay Next Video
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Account Actions -->
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header bg-transparent">
-                                            <h6 class="mb-0 fw-bold">
-                                                <i class="fas fa-key me-2"></i>Account Security
-                                            </h6>
-                                        </div>
-                                        <div class="card-body">
-                                            <button class="btn btn-outline-primary w-100 mb-3">
+                                    <div class="card-body">
+                                        <div class="d-grid gap-3">
+                                            <button class="btn btn-outline-primary">
                                                 <i class="fas fa-lock me-2"></i>Change Password
                                             </button>
-                                            <button class="btn btn-outline-danger w-100 logout-link">
+                                            <button class="btn btn-outline-secondary">
+                                                <i class="fas fa-mobile-alt me-2"></i>Two-Factor Authentication
+                                            </button>
+                                            <button class="btn btn-outline-warning">
+                                                <i class="fas fa-download me-2"></i>Download My Data
+                                            </button>
+                                            <hr class="my-2">
+                                            <button class="btn btn-outline-danger logout-link">
                                                 <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Wallet Settings -->
+                            <div class="col-lg-6">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-transparent border-bottom">
+                                        <h6 class="mb-0 fw-bold text-primary">
+                                            <i class="fas fa-wallet me-2"></i>Wallet & Billing
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Current Balance</label>
+                                            <div class="h4 text-success mb-2">
+                                                <i class="fas fa-dollar-sign"></i>127.50
+                                            </div>
+                                            <small class="text-muted">Available for video purchases</small>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <a href="viewer-wallet.html" class="btn btn-primary">
+                                                <i class="fas fa-plus me-2"></i>Add Funds
+                                            </a>
+                                            <button class="btn btn-outline-secondary">
+                                                <i class="fas fa-credit-card me-2"></i>Payment Methods
+                                            </button>
+                                            <button class="btn btn-outline-info">
+                                                <i class="fas fa-history me-2"></i>Transaction History
                                             </button>
                                         </div>
                                     </div>

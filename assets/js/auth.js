@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeAuth();
     setupFormValidation();
     setupEventListeners();
+    initializeScrollAnimations();
 });
 
 /**
@@ -68,36 +69,259 @@ function setupFormValidation() {
 /**
  * Enhanced form submission handler
  */
-function handleEnhancedFormSubmission(form) {
+async function handleEnhancedFormSubmission(form) {
     const formId = form.id;
     setFormLoading(form, true);
     
-    // Clear previous errors
+    try {
+        if (formId === 'loginForm') {
+            await handleLogin(form);
+        } else if (formId === 'signupForm') {
+            await handleSignup(form);
+        } else if (formId === 'forgotPasswordForm') {
+            await handleForgotPassword(form);
+        }
+    } catch (error) {
+        console.error('Form submission error:', error);
+        showFormError(form, error.message || 'An error occurred');
+    } finally {
+        setFormLoading(form, false);
+    }
+}
+
+/**
+ * Handle login form submission
+ */
+async function handleLogin(form) {
+    const formData = new FormData(form);
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const rememberMe = formData.get('rememberMe');
+
+    try {
+        const response = await API.login(email, password);
+        
+        if (response.success) {
+            showAlert('Login successful! Redirecting...', 'success');
+            
+            // Save user data
+            if (rememberMe) {
+                localStorage.setItem('rememberMe', email);
+            }
+            
+            setTimeout(() => {
+                redirectToDashboard(response.data.user.role);
+            }, 1500);
+        } else {
+            throw new Error(response.error || 'Login failed');
+        }
+    } catch (error) {
+        showFormError(form, error.message || 'Invalid email or password');
+    }
+}
+
+/**
+ * Handle signup form submission
+ */
+async function handleSignup(form) {
+    const formData = new FormData(form);
+    const userData = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        role: formData.get('role') || 'viewer'
+    };
+
+    try {
+        const response = await API.register(userData);
+        
+        if (response.success) {
+            showAlert('Account created successfully! Redirecting to login...', 'success');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        } else {
+            throw new Error(response.error || 'Registration failed');
+        }
+    } catch (error) {
+        showFormError(form, error.message || 'Registration failed');
+    }
+}
+
+/**
+ * Handle forgot password form submission
+ */
+async function handleForgotPassword(form) {
+    const formData = new FormData(form);
+    const email = formData.get('email');
+
+    try {
+        // This would typically make an API call to request password reset
+        showAlert('Password reset instructions have been sent to your email.', 'success');
+        form.reset();
+    } catch (error) {
+        showFormError(form, 'Failed to send reset instructions');
+    }
+}
+
+/**
+ * Show form error message
+ */
+function showFormError(form, message) {
     clearFormErrors(form);
     
-    // Validate all fields
-    const isValid = validateForm(form);
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-danger mt-3';
+    errorDiv.textContent = message;
+    errorDiv.id = 'form-error';
     
+    form.appendChild(errorDiv);
+}
+
+/**
+ * Clear form errors
+ */
+function clearFormErrors(form) {
+    const existingError = form.querySelector('#form-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Clear individual field errors
+    const errorFields = form.querySelectorAll('.is-invalid');
+    errorFields.forEach(field => field.classList.remove('is-invalid'));
+}
+
+/**
+ * Validate form field
+ */
+function validateField(input) {
+    const value = input.value.trim();
+    let isValid = true;
+    let errorMessage = '';
+
+    // Required field validation
+    if (input.hasAttribute('required') && !value) {
+        isValid = false;
+        errorMessage = 'This field is required';
+    }
+
+    // Email validation
+    if (input.type === 'email' && value) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+            isValid = false;
+            errorMessage = 'Please enter a valid email address';
+        }
+    }
+
+    // Password validation
+    if (input.type === 'password' && input.id !== 'loginPassword' && value) {
+        if (value.length < 6) {
+            isValid = false;
+            errorMessage = 'Password must be at least 6 characters long';
+        }
+    }
+
+    // Update UI
     if (!isValid) {
-        setFormLoading(form, false);
-        showFormError(form, 'Please correct the errors below');
-        return;
+        input.classList.add('is-invalid');
+        showFieldError(input, errorMessage);
+    } else {
+        input.classList.remove('is-invalid');
+        clearFieldError(input);
     }
+
+    return isValid;
+}
+
+/**
+ * Show field error
+ */
+function showFieldError(input, message) {
+    clearFieldError(input);
     
-    // Handle specific forms with improved UX
-    switch (formId) {
-        case 'loginForm':
-            handleLoginSubmission(form);
-            break;
-        case 'signupForm':
-            handleSignupSubmission(form);
-            break;
-        case 'forgotPasswordForm':
-            handleForgotPasswordSubmission(form);
-            break;
-        default:
-            setFormLoading(form, false);
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'invalid-feedback';
+    errorDiv.textContent = message;
+    
+    input.parentNode.appendChild(errorDiv);
+}
+
+/**
+ * Clear field error
+ */
+function clearFieldError(input) {
+    const existingError = input.parentNode.querySelector('.invalid-feedback');
+    if (existingError) {
+        existingError.remove();
     }
+    input.classList.remove('is-invalid');
+}
+
+/**
+ * Setup form submissions
+ */
+function setupFormSubmissions() {
+    // This function is called from initializeAuth
+    console.log('Form submissions setup complete');
+}
+
+/**
+ * Setup password toggles
+ */
+function setupPasswordToggles() {
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+    passwordInputs.forEach(input => {
+        const toggleButton = document.createElement('button');
+        toggleButton.type = 'button';
+        toggleButton.className = 'btn btn-outline-secondary password-toggle';
+        toggleButton.innerHTML = '<i class="fas fa-eye"></i>';
+        
+        toggleButton.addEventListener('click', function() {
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+            
+            const icon = toggleButton.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+        
+        // Add toggle button after input
+        if (input.parentNode.classList.contains('input-group')) {
+            const inputGroup = input.parentNode;
+            const appendDiv = document.createElement('div');
+            appendDiv.className = 'input-group-append';
+            appendDiv.appendChild(toggleButton);
+            inputGroup.appendChild(appendDiv);
+        }
+    });
+}
+
+/**
+ * Load saved credentials
+ */
+function loadSavedCredentials() {
+    const rememberedEmail = localStorage.getItem('rememberMe');
+    if (rememberedEmail) {
+        const emailInput = document.querySelector('input[type="email"]');
+        const rememberCheckbox = document.querySelector('input[name="rememberMe"]');
+        
+        if (emailInput) emailInput.value = rememberedEmail;
+        if (rememberCheckbox) rememberCheckbox.checked = true;
+    }
+}
+
+/**
+ * Setup event listeners
+ */
+function setupEventListeners() {
+    // Handle form field validation on blur
+    document.addEventListener('blur', function(e) {
+        if (e.target.tagName === 'INPUT') {
+            validateField(e.target);
+        }
+    }, true);
 }
 
 /**
@@ -221,22 +445,52 @@ function showFormError(form, message) {
 }
 
 /**
- * Show success message
+ * Show modern success message with animation
  */
 function showSuccessMessage(message) {
     const successAlert = document.createElement('div');
     successAlert.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3';
-    successAlert.style.zIndex = '9999';
+    successAlert.style.cssText = `
+        z-index: 9999;
+        backdrop-filter: blur(12px);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.9));
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+        transform: translateX(-50%) translateY(-100px);
+        opacity: 0;
+        transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    `;
     successAlert.innerHTML = `
-        <i class="fas fa-check-circle me-2"></i>
-        ${message}
+        <div class="d-flex align-items-center">
+            <div class="success-checkmark me-3">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" fill="#10b981"/>
+                    <path d="M8 12l3 3 5-5" stroke="white" stroke-width="2" fill="none"/>
+                </svg>
+            </div>
+            <span style="color: white; font-weight: 500;">${message}</span>
+        </div>
     `;
     
     document.body.appendChild(successAlert);
     
+    // Trigger animation
+    requestAnimationFrame(() => {
+        successAlert.style.transform = 'translateX(-50%) translateY(0)';
+        successAlert.style.opacity = '1';
+    });
+    
+    // Auto remove with fade out
     setTimeout(() => {
-        successAlert.remove();
-    }, 4000);
+        successAlert.style.transform = 'translateX(-50%) translateY(-100px)';
+        successAlert.style.opacity = '0';
+        setTimeout(() => {
+            if (successAlert.parentNode) {
+                successAlert.remove();
+            }
+        }, 500);
+    }, 3500);
 }
 
 /**
@@ -248,7 +502,7 @@ function clearFormErrors(form) {
 }
 
 /**
- * Enhanced form loading state
+ * Enhanced form loading state with modern animations
  */
 function setFormLoading(form, isLoading) {
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -257,13 +511,35 @@ function setFormLoading(form, isLoading) {
     if (isLoading) {
         submitBtn.disabled = true;
         submitBtn.dataset.originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-        inputs.forEach(input => input.disabled = true);
-        form.style.opacity = '0.7';
+        submitBtn.classList.add('loading', 'btn-ripple');
+        submitBtn.innerHTML = '<span style="opacity: 0;">Processing...</span>';
+        
+        // Add loading overlay to form
+        form.classList.add('form-loading');
+        
+        // Disable inputs with smooth transition
+        inputs.forEach(input => {
+            input.disabled = true;
+            input.style.transition = 'opacity 0.3s ease';
+            input.style.opacity = '0.6';
+        });
+        
+        form.style.transition = 'opacity 0.3s ease';
+        form.style.opacity = '0.8';
     } else {
         submitBtn.disabled = false;
+        submitBtn.classList.remove('loading', 'btn-ripple');
         submitBtn.innerHTML = submitBtn.dataset.originalText || submitBtn.innerHTML;
-        inputs.forEach(input => input.disabled = false);
+        
+        // Remove loading overlay
+        form.classList.remove('form-loading');
+        
+        // Re-enable inputs
+        inputs.forEach(input => {
+            input.disabled = false;
+            input.style.opacity = '1';
+        });
+        
         form.style.opacity = '1';
     }
 }
@@ -620,28 +896,49 @@ function validateField(field) {
 }
 
 /**
- * Set field error
+ * Set field error with modern animation
  */
 function setFieldError(field, message) {
     field.classList.add('is-invalid');
     field.classList.remove('is-valid');
     
+    // Add shake animation
+    field.style.animation = 'shake 0.5s ease-in-out';
+    
     let feedback = field.parentElement.querySelector('.invalid-feedback');
     if (feedback) {
         feedback.textContent = message;
+        feedback.style.animation = 'fadeInUp 0.3s ease-out';
     }
+    
+    // Remove animation after completion
+    setTimeout(() => {
+        field.style.animation = '';
+    }, 500);
 }
 
 /**
- * Clear field error
+ * Clear field error with smooth transition
  */
 function clearFieldError(field) {
     field.classList.remove('is-invalid');
     
     if (field.value.trim()) {
         field.classList.add('is-valid');
+        
+        // Add success animation
+        field.style.animation = 'focusPulse 0.3s ease-out';
+        setTimeout(() => {
+            field.style.animation = '';
+        }, 300);
     } else {
         field.classList.remove('is-valid');
+    }
+    
+    // Hide feedback smoothly
+    let feedback = field.parentElement.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.style.animation = 'fadeOut 0.3s ease-out';
     }
 }
 
@@ -977,6 +1274,48 @@ function handleTermsChange(e) {
     if (feedback && e.target.checked) {
         feedback.style.display = 'none';
     }
+}
+
+/**
+ * Initialize scroll animations
+ */
+function initializeScrollAnimations() {
+    const animatedElements = document.querySelectorAll('.animate-on-scroll');
+    
+    // Function to check if element is in viewport
+    function isInViewport(element) {
+        const rect = element.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    }
+    
+    // Function to handle scroll
+    function handleScroll() {
+        animatedElements.forEach((element, index) => {
+            if (isInViewport(element) || window.scrollY === 0) {
+                setTimeout(() => {
+                    element.classList.add('animated');
+                }, index * 100);
+            }
+        });
+    }
+    
+    // Initial check and scroll listener
+    handleScroll();
+    window.addEventListener('scroll', handleScroll);
+    
+    // Trigger animations immediately for elements already in view
+    setTimeout(() => {
+        animatedElements.forEach((element, index) => {
+            setTimeout(() => {
+                element.classList.add('animated');
+            }, index * 200);
+        });
+    }, 300);
 }
 
 /**
