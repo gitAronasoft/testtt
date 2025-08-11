@@ -67,6 +67,19 @@ function setupEventListeners() {
 }
 
 /**
+ * Get current user from localStorage
+ */
+function getCurrentUser() {
+    try {
+        const userData = localStorage.getItem(CONFIG.STORAGE.USER);
+        return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+        console.error('Error getting current user:', error);
+        return null;
+    }
+}
+
+/**
  * Check authentication status
  */
 function checkAuthStatus() {
@@ -102,6 +115,65 @@ function checkExistingSession() {
             clearSession();
         }
     }
+}
+
+/**
+ * Clear user session
+ */
+function clearSession() {
+    localStorage.removeItem(CONFIG.STORAGE.USER);
+    localStorage.removeItem(CONFIG.STORAGE.TOKEN);
+    localStorage.removeItem(CONFIG.STORAGE.SESSION);
+    currentUser = null;
+    isLoggedIn = false;
+}
+
+/**
+ * Logout user
+ */
+function logout() {
+    clearSession();
+    showAlert('You have been logged out successfully.', 'info');
+    setTimeout(() => {
+        window.location.href = 'login.html';
+    }, 1000);
+}
+
+/**
+ * Redirect to appropriate dashboard
+ */
+function redirectToDashboard(role) {
+    const dashboardUrls = {
+        'creator': 'creator/creator-overview.html',
+        'viewer': 'viewer/viewer-dashboard.html',
+        'admin': 'admin/admin-dashboard.html'
+    };
+    
+    const dashboardUrl = dashboardUrls[role] || 'viewer/viewer-dashboard.html';
+    window.location.href = dashboardUrl;
+}
+
+/**
+ * Show alert message
+ */
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }
 
 /**

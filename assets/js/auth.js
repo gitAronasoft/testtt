@@ -92,75 +92,140 @@ async function handleEnhancedFormSubmission(form) {
 /**
  * Handle login form submission
  */
-async function handleLogin(form) {
-    const formData = new FormData(form);
-    const email = formData.get('email');
-    const password = formData.get('password');
-    const rememberMe = formData.get('rememberMe');
-
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    if (authState.isLoading) return;
+    
+    const form = e.target;
+    authState.currentForm = form;
+    
+    // Validate form
+    if (!validateLoginForm(form)) {
+        return;
+    }
+    
+    // Get form data
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    // Show loading state
+    setLoadingState(true);
+    
     try {
+        // Make API call
         const response = await API.login(email, password);
         
         if (response.success) {
-            showAlert('Login successful! Redirecting...', 'success');
+            // Save session data properly
+            const userData = response.data.user;
+            const token = response.data.token;
             
-            // Save user data
+            // Store user data and token
+            localStorage.setItem(CONFIG.STORAGE.USER, JSON.stringify(userData));
+            localStorage.setItem(CONFIG.STORAGE.TOKEN, token);
+            
+            const rememberMe = document.getElementById('rememberMe')?.checked || false;
             if (rememberMe) {
-                localStorage.setItem('rememberMe', email);
+                localStorage.setItem('rememberedEmail', userData.email);
+            } else {
+                localStorage.removeItem('rememberedEmail');
             }
             
+            // Show success message
+            showAlert('Login successful! Redirecting...', 'success');
+            
+            // Redirect to appropriate dashboard  
             setTimeout(() => {
-                redirectToDashboard(response.data.user.role);
+                window.location.href = getDashboardUrl(userData.role);
             }, 1500);
         } else {
             throw new Error(response.error || 'Login failed');
         }
+        
     } catch (error) {
-        showFormError(form, error.message || 'Invalid email or password');
+        console.error('Login error:', error);
+        showFormError(form, error.message || 'Login failed. Please check your credentials.');
+    } finally {
+        setLoadingState(false);
     }
 }
 
 /**
  * Handle signup form submission
  */
-async function handleSignup(form) {
-    const formData = new FormData(form);
-    const userData = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        role: formData.get('role') || 'viewer'
-    };
-
+async function handleSignup(e) {
+    e.preventDefault();
+    
+    if (authState.isLoading) return;
+    
+    const form = e.target;
+    authState.currentForm = form;
+    
+    // Validate form
+    if (!validateSignupForm(form)) {
+        return;
+    }
+    
+    // Get form data
+    const formData = getFormData(form);
+    
+    // Show loading state
+    setLoadingState(true);
+    
     try {
-        const response = await API.register(userData);
+        // Simulate API call
+        await simulateSignup(formData);
         
-        if (response.success) {
-            showAlert('Account created successfully! Redirecting to login...', 'success');
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
-        } else {
-            throw new Error(response.error || 'Registration failed');
-        }
+        // Show success message
+        showAlert('Account created successfully! Redirecting to login...', 'success');
+        
+        // Redirect to login page
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 2000);
+        
     } catch (error) {
-        showFormError(form, error.message || 'Registration failed');
+        showAlert(error.message, 'danger');
+    } finally {
+        setLoadingState(false);
     }
 }
 
 /**
  * Handle forgot password form submission
  */
-async function handleForgotPassword(form) {
-    const formData = new FormData(form);
-    const email = formData.get('email');
-
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    
+    if (authState.isLoading) return;
+    
+    const form = e.target;
+    const email = document.getElementById('resetEmail').value;
+    
+    // Validate email
+    if (!isValidEmail(email)) {
+        showError('Please enter a valid email address.');
+        return;
+    }
+    
+    // Show loading state
+    setLoadingState(true);
+    
     try {
-        // This would typically make an API call to request password reset
-        showAlert('Password reset instructions have been sent to your email.', 'success');
-        form.reset();
+        // Simulate API call
+        await simulateForgotPassword(email);
+        
+        // Show success message
+        showSuccess('Password reset link has been sent to your email address.');
+        
+        // Hide form and show success state
+        form.style.display = 'none';
+        
     } catch (error) {
-        showFormError(form, 'Failed to send reset instructions');
+        showError(error.message);
+    } finally {
+        setLoadingState(false);
     }
 }
 
@@ -542,6 +607,36 @@ function setFormLoading(form, isLoading) {
         
         form.style.opacity = '1';
     }
+}
+
+/**
+ * Save user session
+ */
+function saveSession(user, rememberMe) {
+    localStorage.setItem(CONFIG.STORAGE.USER, JSON.stringify(user));
+    localStorage.setItem(CONFIG.STORAGE.TOKEN, user.token || 'demo_token');
+    localStorage.setItem(CONFIG.STORAGE.SESSION, JSON.stringify({
+        user: user,
+        token: user.token || 'demo_token',
+        timestamp: Date.now()
+    }));
+    
+    if (rememberMe) {
+        localStorage.setItem('rememberMe', user.email);
+    }
+}
+
+/**
+ * Get dashboard URL based on role
+ */
+function getDashboardUrl(role) {
+    const dashboardUrls = {
+        'creator': 'creator/creator-overview.html',
+        'viewer': 'viewer/viewer-dashboard.html',
+        'admin': 'admin/admin-dashboard.html'
+    };
+    
+    return dashboardUrls[role] || 'viewer/viewer-dashboard.html';
 }
 
 /**
@@ -1534,6 +1629,49 @@ function getAlertIcon(type) {
         info: 'info-circle'
     };
     return icons[type] || 'info-circle';
+}
+
+/**
+ * Get dashboard URL based on user role
+ */
+function getDashboardUrl(role) {
+    const dashboards = {
+        creator: 'creator/creator-overview.html',
+        viewer: 'viewer/viewer-dashboard.html',
+        admin: 'admin/admin-dashboard.html'
+    };
+    return dashboards[role] || 'viewer/viewer-dashboard.html';
+}
+
+/**
+ * Check if user is authenticated
+ */
+function isAuthenticated() {
+    const sessionData = localStorage.getItem(CONFIG.STORAGE.SESSION);
+    if (!sessionData) return false;
+    
+    try {
+        const session = JSON.parse(sessionData);
+        const now = new Date();
+        const expiresAt = new Date(session.expiresAt);
+        return now < expiresAt;
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
+ * Get current user from storage
+ */
+function getCurrentUser() {
+    const userData = localStorage.getItem(CONFIG.STORAGE.USER);
+    if (!userData) return null;
+    
+    try {
+        return JSON.parse(userData);
+    } catch (error) {
+        return null;
+    }
 }
 
 /**

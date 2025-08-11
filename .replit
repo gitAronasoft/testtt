@@ -1,10 +1,10 @@
-modules = ["web", "nodejs-20", "php-8.2", "python-3.11"]
+modules = ["web", "nodejs-20", "python-3.11"]
 [agent]
 expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["mysql80", "nginx"]
+packages = ["mysql80", "nginx", "php82"]
 
 [workflows]
 runButton = "Project"
@@ -20,7 +20,7 @@ args = "Static Server"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "PHP Server"
+args = "PHP API Server"
 
 [[workflows.workflow]]
 name = "Static Server"
@@ -32,7 +32,7 @@ args = "python -m http.server 5000"
 waitForPort = 5000
 
 [[workflows.workflow]]
-name = "PHP Server"
+name = "PHP API Server"
 author = "agent"
 
 [[workflows.workflow.tasks]]
