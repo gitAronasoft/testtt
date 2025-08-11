@@ -381,92 +381,114 @@ function handleFormSubmission(e) {
 }
 
 /**
- * Load platform statistics for homepage
+ * Load static platform statistics for homepage
  */
-async function loadPlatformStats() {
-    try {
-        const response = await API.getPlatformStats();
-        if (response && response.success && response.data) {
-            const stats = response.data;
+function loadStaticPlatformStats() {
+    // Static stats for homepage display
+    const staticStats = {
+        total_creators: '1,250+',
+        total_videos: '8,500+',
+        total_earnings: '2,450,000'
+    };
 
-            // Update creators count
-            const creatorsElement = document.querySelector('.total-creators');
-            if (creatorsElement) {
-                creatorsElement.textContent = stats.total_creators || '0';
-            }
-
-            // Update videos count
-            const videosElement = document.querySelector('.total-videos');
-            if (videosElement) {
-                videosElement.textContent = stats.total_videos || '0';
-            }
-
-            // Update total earnings
-            const earningsElement = document.querySelector('.total-earnings');
-            if (earningsElement) {
-                earningsElement.textContent = '$' + (stats.total_earnings || '0');
-            }
-
-            console.log('Platform stats loaded successfully');
-        }
-    } catch (error) {
-        console.error('Failed to load platform stats:', error);
-        // Show fallback values without breaking the UI
+    // Update creators count
+    const creatorsElement = document.querySelector('.total-creators');
+    if (creatorsElement) {
+        creatorsElement.textContent = staticStats.total_creators;
     }
+
+    // Update videos count
+    const videosElement = document.querySelector('.total-videos');
+    if (videosElement) {
+        videosElement.textContent = staticStats.total_videos;
+    }
+
+    // Update total earnings
+    const earningsElement = document.querySelector('.total-earnings');
+    if (earningsElement) {
+        earningsElement.textContent = '$' + staticStats.total_earnings;
+    }
+
+    console.log('Platform stats loaded successfully');
 }
 
 /**
- * Load featured videos for homepage
+ * Load static featured videos for homepage
  */
-async function loadFeaturedVideos() {
-    try {
-        const response = await API.getVideos({ limit: 6 });
-        if (response && response.success && response.data) {
-            const videos = response.data;
-            const videosContainer = document.querySelector('.featured-videos-container');
+function loadStaticFeaturedVideos() {
+    // Static featured videos for homepage display
+    const staticVideos = [
+        {
+            title: 'Advanced Photography Techniques',
+            description: 'Learn professional photography skills with hands-on examples and expert tips.',
+            creator_name: 'Sarah Chen',
+            price: '12.99'
+        },
+        {
+            title: 'Web Development Masterclass',
+            description: 'Complete guide to modern web development using React and Node.js frameworks.',
+            creator_name: 'Mike Rodriguez',
+            price: '24.99'
+        },
+        {
+            title: 'Digital Marketing Strategies',
+            description: 'Boost your online presence with proven marketing techniques and case studies.',
+            creator_name: 'Emma Thompson',
+            price: '18.99'
+        },
+        {
+            title: 'Fitness and Nutrition Guide',
+            description: 'Transform your health with personalized workout plans and meal prep tips.',
+            creator_name: 'David Kim',
+            price: '15.99'
+        },
+        {
+            title: 'Creative Writing Workshop',
+            description: 'Develop your storytelling skills and learn to craft compelling narratives.',
+            creator_name: 'Lisa Garcia',
+            price: '22.99'
+        },
+        {
+            title: 'Data Science Fundamentals',
+            description: 'Master data analysis and visualization using Python and popular libraries.',
+            creator_name: 'Alex Johnson',
+            price: '29.99'
+        }
+    ];
 
-            if (videosContainer && videos.length > 0) {
-                videosContainer.innerHTML = videos.map(video => `
-                    <div class="col-md-4 mb-4">
-                        <div class="card video-card">
-                            <div class="video-thumbnail">
-                                <i class="fas fa-play-circle play-icon"></i>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-title">${video.title}</h6>
-                                <p class="card-text text-muted small">${video.description?.substring(0, 80) || ''}${video.description?.length > 80 ? '...' : ''}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">By ${video.creator_name}</small>
-                                    <span class="text-primary fw-bold">$${video.price}</span>
-                                </div>
-                            </div>
+    const videosContainer = document.querySelector('.featured-videos-container');
+    if (videosContainer) {
+        videosContainer.innerHTML = staticVideos.map(video => `
+            <div class="col-md-4 mb-4">
+                <div class="card video-card h-100 shadow-sm">
+                    <div class="video-thumbnail position-relative" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-play-circle text-white" style="font-size: 3rem; opacity: 0.8;"></i>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h6 class="card-title fw-bold">${video.title}</h6>
+                        <p class="card-text text-muted small flex-grow-1">${video.description}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <small class="text-muted">By ${video.creator_name}</small>
+                            <span class="text-primary fw-bold fs-6">$${video.price}</span>
                         </div>
                     </div>
-                `).join('');
-            }
-
-            console.log('Featured videos loaded successfully');
-        }
-    } catch (error) {
-        console.error('Failed to load featured videos:', error);
+                </div>
+            </div>
+        `).join('');
     }
+
+    console.log('Featured videos loaded successfully');
 }
 
 /**
- * Initialize homepage dynamic content
+ * Initialize homepage with static content
  */
 function initializeHomepage() {
-    // Load platform stats
-    loadPlatformStats();
+    // Load static platform stats
+    loadStaticPlatformStats();
 
-    // Load featured videos
-    loadFeaturedVideos();
-
-    // Set up periodic updates
-    setInterval(() => {
-        loadPlatformStats();
-        loadFeaturedVideos();
-    }, 30000); // Update every 30 seconds
+    // Load static featured videos
+    loadStaticFeaturedVideos();
 }
 
 // Initialize homepage if on homepage
@@ -485,7 +507,6 @@ const bootstrap = {
 // Load page-specific content - only for homepage
 function loadPageContent() {
     const currentPage = window.location.pathname;
-    console.log('Loading page content...');
     
     // Only load homepage content if we're actually on the homepage, not on dashboard pages
     if ((currentPage.includes('index.html') || currentPage === '/') && 

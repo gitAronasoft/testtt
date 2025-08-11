@@ -157,7 +157,7 @@
                             </h4>
                             <a href="#" class="text-primary text-decoration-none">View All</a>
                         </div>
-                        <div id="purchasedVideosContainer" class="video-grid">
+                        <div id="libraryContainer" class="video-grid">
                             <!-- Purchased videos will be loaded dynamically -->
                             <div class="col-12">
                                 <div class="text-center py-5">
@@ -301,123 +301,15 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="../assets/js/config.js?v=8"></script>
-    <script src="../assets/js/auth.js?v=8"></script>
-    <script src="../assets/js/api.js?v=8"></script>
+    <script src="../assets/js/config.js?v=5"></script>
+    <script src="../assets/js/auth.js?v=5"></script>
+    <script src="../assets/js/api.js?v=5"></script>
+    <script src="../assets/js/viewer-init.js?v=5"></script>
     <script>
-        // Helper function to get current user
-        function getCurrentUser() {
-            try {
-                const userData = localStorage.getItem(CONFIG.STORAGE.USER);
-                return userData ? JSON.parse(userData) : null;
-            } catch (error) {
-                console.error('Error getting current user:', error);
-                return null;
-            }
-        }
-
         // Page-specific initialization for Viewer Library
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Check authentication
-            const user = getCurrentUser();
-            if (!user || user.role !== 'viewer') {
-                window.location.href = '../login.html';
-                return;
-            }
-
-            // Update user name in navigation
-            const userNameElements = document.querySelectorAll('[data-user-name]');
-            userNameElements.forEach(el => {
-                el.textContent = user.name || user.email;
-            });
-
-            // Load purchased videos for this viewer - no stats calls needed
-            try {
-                // In a real app, this would call API.getPurchasedVideos(user.id)
-                // For demo, we'll load some videos and mark them as purchased
-                const response = await API.getVideos({ limit: 20 });
-                
-                if (response.success && response.data) {
-                    // Show some videos as "purchased" for demo
-                    const purchasedVideos = response.data.slice(0, 4).map(video => ({
-                        ...video,
-                        isPurchased: true,
-                        watchCount: Math.floor(Math.random() * 10) + 1,
-                        purchaseDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
-                    }));
-                    
-                    displayPurchasedVideos(purchasedVideos);
-                } else {
-                    showEmptyLibraryState();
-                }
-            } catch (error) {
-                console.error('Error loading viewer library:', error);
-                showEmptyLibraryState();
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            initViewerLibrary();
         });
-
-        function displayPurchasedVideos(videos) {
-            const container = document.getElementById('purchasedVideosContainer');
-            if (!container) return;
-            
-            if (!videos || videos.length === 0) {
-                showEmptyLibraryState();
-                return;
-            }
-            
-            const videosHTML = videos.map(video => `
-                <div class="card video-card border-0 shadow-sm">
-                    <div class="video-thumbnail position-relative">
-                        <img src="${video.thumbnail_url || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400'}" 
-                             class="card-img-top" alt="${video.title}">
-                        <div class="purchased-badge">
-                            <i class="fas fa-check-circle"></i> OWNED
-                        </div>
-                        <div class="play-overlay">
-                            <i class="fas fa-play-circle"></i>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <h6 class="card-title">${video.title}</h6>
-                        <p class="card-text text-muted small">${video.description}</p>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <small class="text-muted">
-                                <i class="fas fa-user me-1"></i>${video.creator_name || 'Creator'}
-                            </small>
-                            <small class="text-success">Watched ${video.watchCount || 0} times</small>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-success btn-sm flex-fill">
-                                <i class="fas fa-play me-2"></i>Watch Now
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" title="Download">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            
-            container.innerHTML = videosHTML;
-        }
-
-        function showEmptyLibraryState() {
-            const container = document.getElementById('purchasedVideosContainer');
-            if (!container) return;
-            
-            container.innerHTML = `
-                <div class="col-12">
-                    <div class="text-center py-5">
-                        <i class="fas fa-bookmark fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Your library is empty</h5>
-                        <p class="text-muted">Purchase some videos to start building your collection.</p>
-                        <a href="viewer-dashboard.html" class="btn btn-primary">
-                            <i class="fas fa-video me-2"></i>Browse Videos
-                        </a>
-                    </div>
-                </div>
-            `;
-        }
     </script>
 </body>
 </html>

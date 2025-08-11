@@ -1,10 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viewer Dashboard - VideoShare</title>
-    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <title>Browse Videos - VideoShare</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,47 +12,63 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 </head>
-<body>
+<body class="dashboard-page">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="../index.html">
-                <i class="fas fa-play-circle me-2"></i>VideoShare
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="../index.html" aria-label="VideoShare Home">
+                <i class="fas fa-play-circle me-2" aria-hidden="true"></i>
+                <span>VideoShare</span>
             </a>
             
-            <button class="sidebar-toggle d-lg-none" type="button" onclick="toggleSidebar()">
-                <i class="fas fa-bars"></i>
-            </button>
-            
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <i class="fas fa-bars text-white"></i>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="viewer-dashboard.html">
-                            <i class="fas fa-home me-2"></i>Browse Videos
+                        <a class="nav-link active d-flex align-items-center" href="viewer-dashboard.html" aria-current="page">
+                            <i class="fas fa-home me-2" aria-hidden="true"></i>
+                            <span>Browse</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="viewer-library.html">
-                            <i class="fas fa-bookmark me-2"></i>My Library
+                        <a class="nav-link d-flex align-items-center" href="viewer-library.html">
+                            <i class="fas fa-bookmark me-2" aria-hidden="true"></i>
+                            <span>My Library</span>
                         </a>
                     </li>
                 </ul>
                 
                 <ul class="navbar-nav">
+                    <li class="nav-item me-3">
+                        <span class="navbar-text d-flex align-items-center">
+                            <i class="fas fa-wallet me-2 text-warning" aria-hidden="true"></i>
+                            <span class="fw-bold" data-wallet-balance>$0.00</span>
+                        </span>
+                    </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-2"></i>Viewer Name
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-2" aria-hidden="true"></i>
+                            <span>Viewer Name</span>
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="viewer-settings.html"><i class="fas fa-user me-2"></i>Profile</a></li>
-                            <li><a class="dropdown-item" href="viewer-settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="viewer-settings.html">
+                                    <i class="fas fa-cog me-2" aria-hidden="true"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item logout-link" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center logout-link" href="#" role="button">
+                                    <i class="fas fa-sign-out-alt me-2" aria-hidden="true"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -60,203 +76,393 @@
         </div>
     </nav>
 
-    <!-- Sidebar Overlay -->
-    <div class="sidebar-overlay d-lg-none" onclick="toggleSidebar()"></div>
-    
     <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="p-3">
-            <h6 class="text-muted text-uppercase fw-bold mb-3">Viewer Tools</h6>
-            <nav class="nav flex-column">
-                <a class="nav-link active" href="viewer-dashboard.html">
-                    <i class="fas fa-home me-2"></i>Browse Videos
+    <div class="sidebar-overlay d-lg-none" onclick="toggleSidebar()" aria-hidden="true"></div>
+    
+    <aside class="sidebar d-lg-block" role="navigation" aria-label="Main navigation">
+        <div class="p-4">
+            <h2 class="h6 text-muted text-uppercase fw-bold mb-3 letter-spacing-wide">Viewer Tools</h2>
+            <nav class="nav flex-column" role="navigation">
+                <a class="nav-link active d-flex align-items-center" href="viewer-dashboard.html" aria-current="page">
+                    <i class="fas fa-home me-3" aria-hidden="true"></i>
+                    <span>Browse Videos</span>
                 </a>
-                <a class="nav-link" href="viewer-library.html">
-                    <i class="fas fa-bookmark me-2"></i>My Library
+                <a class="nav-link d-flex align-items-center" href="viewer-library.html">
+                    <i class="fas fa-bookmark me-3" aria-hidden="true"></i>
+                    <span>My Library</span>
                 </a>
-                <a class="nav-link" href="viewer-settings.html">
-                    <i class="fas fa-cog me-2"></i>Settings
+                <a class="nav-link d-flex align-items-center" href="viewer-settings.html">
+                    <i class="fas fa-cog me-3" aria-hidden="true"></i>
+                    <span>Settings</span>
                 </a>
             </nav>
         </div>
-    </div>
+    </aside>
 
     <!-- Main Content -->
-    <div class="main-content">
-        <div class="dashboard-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 fw-bold mb-1">Browse Videos</h1>
-                    <p class="text-muted mb-0">Discover amazing content from creators around the world</p>
-                    <div class="mt-2">
-                        <span class="badge bg-success me-2">
-                            <i class="fas fa-check-circle me-1"></i>Active Viewer
-                        </span>
-                        <span class="text-muted small">
-                            <i class="fas fa-calendar me-1"></i>Last login: Today at 2:34 PM
-                        </span>
+    <main class="main-content" role="main">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div class="d-flex align-items-center w-100">
+                <button class="sidebar-toggle d-lg-none me-4" aria-label="Toggle sidebar navigation">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </button>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="header-icon me-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 48px; height: 48px; background: var(--gradient-primary); color: white;">
+                                <i class="fas fa-compass fa-lg"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h1 class="h2 fw-bold mb-1" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                Discover Amazing Content
+                            </h1>
+                            <p class="text-muted mb-0 d-flex align-items-center fs-6">
+                                <i class="fas fa-globe me-2" aria-hidden="true"></i>
+                                <span>Browse premium videos from creators worldwide</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="viewer-library.html" class="btn btn-primary btn-lg">
-                        <i class="fas fa-bookmark me-2"></i>My Library
-                    </a>
-                    <a href="viewer-settings.html" class="btn btn-outline-primary">
-                        <i class="fas fa-wallet me-2"></i>Wallet
-                    </a>
+                <div class="d-flex gap-3 ms-auto align-items-center">
+                    <button class="btn btn-outline-success d-flex align-items-center add-funds-btn" type="button">
+                        <i class="fas fa-wallet me-2" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Add Funds</span>
+                    </button>
+                    <button class="btn btn-primary d-flex align-items-center refresh-dashboard" type="button" aria-label="Refresh content">
+                        <i class="fas fa-sync-alt me-2" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Refresh</span>
+                    </button>
                 </div>
             </div>
-        </div>
-
+        </header>
+        
+        <!-- Content Area -->
         <div class="content-area">
+            <!-- Welcome Message -->
+            <div class="welcome-banner mb-5">
+                <div class="card border-0 shadow-xl" style="background: var(--gradient-primary); border-radius: 24px; overflow: hidden; min-height: 200px;">
+                    <div class="card-body p-5 text-white position-relative">
+                        <div class="row align-items-center g-4">
+                            <div class="col-lg-8">
+                                <div class="mb-3">
+                                    <span class="badge bg-white bg-opacity-20 px-3 py-2 rounded-pill mb-3">
+                                        <i class="fas fa-sparkles me-1"></i>
+                                        Premium Experience
+                                    </span>
+                                </div>
+                                <h2 class="h3 fw-bold mb-3" style="line-height: 1.2;">Welcome to Your Video Discovery Hub</h2>
+                                <p class="mb-4 opacity-90 fs-6">Explore premium content from creators worldwide. Find tutorials, entertainment, and educational videos tailored to your interests.</p>
+                                <div class="row g-3">
+                                    <div class="col-sm-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="feature-icon-sm me-3" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-video"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold small">Premium Content</div>
+                                                <div class="text-white-50 small">High-quality videos</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="feature-icon-sm me-3" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-shield-alt"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold small">Secure Payments</div>
+                                                <div class="text-white-50 small">Protected transactions</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="feature-icon-sm me-3" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-download"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold small">Offline Access</div>
+                                                <div class="text-white-50 small">Download & watch</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-center">
+                                <div class="welcome-icon position-relative" style="width: 120px; height: 120px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; backdrop-filter: blur(10px);">
+                                    <i class="fas fa-play-circle" style="font-size: 3rem;"></i>
+                                    <div class="position-absolute" style="top: -10px; right: -10px; width: 30px; height: 30px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-heart text-danger small"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="position-absolute top-0 end-0 p-4">
+                            <div class="d-flex gap-2">
+                                <div class="bg-white bg-opacity-15 rounded-circle p-2" style="backdrop-filter: blur(10px);">
+                                    <i class="fas fa-star text-warning"></i>
+                                </div>
+                                <div class="bg-white bg-opacity-15 rounded-circle p-2" style="backdrop-filter: blur(10px);">
+                                    <i class="fas fa-crown text-warning"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Section -->
+            <section class="mb-4" aria-labelledby="stats-heading">
+                <h2 id="stats-heading" class="h5 fw-bold mb-3 d-flex align-items-center">
+                    <i class="fas fa-chart-line me-2 text-primary"></i>
+                    <span>Your Activity Overview</span>
+                </h2>
+                <div class="row g-3 stats-cards" role="region" aria-label="Platform overview statistics">
+                    <!-- Stats will be loaded dynamically -->
+                    <div class="col-sm-6 col-xl-4">
+                        <div class="card border-0 shadow-sm h-100 glass-effect">
+                            <div class="card-body text-center p-3">
+                                <div class="metric-icon mb-2">
+                                    <i class="fas fa-video text-primary fa-2x" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="h5 fw-bold mb-1" data-stat="videos-purchased">0</h3>
+                                <p class="text-muted mb-0 small">Videos Purchased</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-4">
+                        <div class="card border-0 shadow-sm h-100 glass-effect">
+                            <div class="card-body text-center p-3">
+                                <div class="metric-icon mb-2">
+                                    <i class="fas fa-credit-card text-danger fa-2x" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="h5 fw-bold mb-1" data-stat="total-spent">$0.00</h3>
+                                <p class="text-muted mb-0 small">Total Spent</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-4">
+                        <div class="card border-0 shadow-sm h-100 glass-effect">
+                            <div class="card-body text-center p-3">
+                                <div class="metric-icon mb-2">
+                                    <i class="fas fa-wallet text-success fa-2x" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="h5 fw-bold mb-1" data-wallet-balance>$0.00</h3>
+                                <p class="text-muted mb-0 small">Wallet Balance</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Search and Filter Section -->
-            <div class="row mb-4">
-                <div class="col-md-8">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-search"></i>
+            <section class="mb-4" aria-labelledby="search-heading">
+                <h2 id="search-heading" class="visually-hidden">Search and Filter Videos</h2>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-6">
+                                <label for="searchInput" class="form-label fw-semibold">
+                                    <i class="fas fa-search me-2" aria-hidden="true"></i>
+                                    Search Videos
+                                </label>
+                                <input type="search" class="form-control" id="searchInput" placeholder="Search by title, creator, or category..." aria-describedby="searchHelp">
+                                <div id="searchHelp" class="form-text">
+                                    <i class="fas fa-info-circle me-1" aria-hidden="true"></i>
+                                    Find videos by entering keywords
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="categoryFilter" class="form-label fw-semibold">
+                                    <i class="fas fa-filter me-2" aria-hidden="true"></i>
+                                    Category
+                                </label>
+                                <select class="form-select" id="categoryFilter" aria-describedby="categoryHelp">
+                                    <option value="">All Categories</option>
+                                    <option value="education">Education</option>
+                                    <option value="technology">Technology</option>
+                                    <option value="entertainment">Entertainment</option>
+                                    <option value="tutorial">Tutorial</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="sortBy" class="form-label fw-semibold">
+                                    <i class="fas fa-sort me-2" aria-hidden="true"></i>
+                                    Sort By
+                                </label>
+                                <select class="form-select" id="sortBy" aria-describedby="sortHelp">
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="price-low">Price: Low to High</option>
+                                    <option value="price-high">Price: High to Low</option>
+                                    <option value="popular">Most Popular</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-primary d-flex align-items-center" id="applyFilters">
+                                <i class="fas fa-search me-2" aria-hidden="true"></i>
+                                <span>Apply Filters</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary d-flex align-items-center" id="clearFilters">
+                                <i class="fas fa-times me-2" aria-hidden="true"></i>
+                                <span>Clear All</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Videos Section -->
+            <section aria-labelledby="videos-heading">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 id="videos-heading" class="h3 fw-bold mb-0 d-flex align-items-center">
+                        <i class="fas fa-video me-3 text-primary" aria-hidden="true"></i>
+                        <span>Available Videos</span>
+                    </h2>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="text-muted small d-flex align-items-center">
+                            <i class="fas fa-info-circle me-2" aria-hidden="true"></i>
+                            <span id="videoCount">Loading...</span>
                         </span>
-                        <input type="text" class="form-control" placeholder="Search videos..." id="searchInput">
+                        <div class="btn-group" role="group" aria-label="View options">
+                            <button type="button" class="btn btn-outline-secondary btn-sm active" data-view="grid" aria-pressed="true">
+                                <i class="fas fa-th-large" aria-hidden="true"></i>
+                                <span class="visually-hidden">Grid view</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-view="list" aria-pressed="false">
+                                <i class="fas fa-list" aria-hidden="true"></i>
+                                <span class="visually-hidden">List view</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <select class="form-select" id="categoryFilter">
-                        <option value="">All Categories</option>
-                        <option value="technology">Technology</option>
-                        <option value="education">Education</option>
-                        <option value="entertainment">Entertainment</option>
-                        <option value="business">Business</option>
-                    </select>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-5" style="display: none;" role="status" aria-live="polite">
+                    <div class="spinner-border text-primary mb-3" role="status" aria-hidden="true"></div>
+                    <p class="text-muted">Loading amazing videos...</p>
                 </div>
-            </div>
 
-            <!-- Video Grid -->
-            <div class="video-grid" id="videosContainer">
-                <!-- Videos will be loaded dynamically here -->
+                <!-- Videos Grid -->
+                <div class="video-grid" id="videosContainer" role="region" aria-label="Video collection">
+                    <!-- Videos will be loaded dynamically -->
+                </div>
 
-
-
-
-                <!-- Videos will be loaded dynamically here -->
-                <div class="col-12 text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading videos...</span>
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state" style="display: none;" role="status" aria-live="polite">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-search" aria-hidden="true"></i>
                     </div>
+                    <h3 class="h4 fw-bold mb-3">No Videos Found</h3>
+                    <p class="lead mb-4">We couldn't find any videos matching your criteria.</p>
+                    <button type="button" class="btn btn-primary d-flex align-items-center mx-auto" id="clearSearchBtn">
+                        <i class="fas fa-times me-2" aria-hidden="true"></i>
+                        <span>Clear Search</span>
+                    </button>
                 </div>
-            </div>
+
+                <!-- Load More Button -->
+                <div class="text-center mt-5" id="loadMoreSection" style="display: none;">
+                    <button type="button" class="btn btn-outline-primary btn-lg d-flex align-items-center mx-auto" id="loadMoreBtn">
+                        <i class="fas fa-plus me-2" aria-hidden="true"></i>
+                        <span>Load More Videos</span>
+                    </button>
+                </div>
+            </section>
         </div>
-    </div>
+    </main>
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <!-- Custom JS -->
-    <script src="../assets/js/config.js?v=4"></script>
-    <script src="../assets/js/auth.js?v=4"></script>
-    <script src="../assets/js/api.js?v=4"></script>
-    <script src="../assets/js/main.js?v=4"></script>
-    <script src="../assets/js/dashboard.js?v=4"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/main.js"></script>
+    <script src="../assets/js/viewer-init.js?v=6"></script>
+
     <script>
-        // Helper function to get current user
-        function getCurrentUser() {
-            try {
-                const userData = localStorage.getItem(CONFIG.STORAGE.USER);
-                return userData ? JSON.parse(userData) : null;
-            } catch (error) {
-                console.error('Error getting current user:', error);
-                return null;
-            }
-        }
-
-        // Page-specific initialization for Viewer Dashboard
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Check authentication
-            const user = getCurrentUser();
-            if (!user || user.role !== 'viewer') {
-                window.location.href = '../login.html';
-                return;
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize viewer dashboard
+            if (typeof initViewerDashboard === 'function') {
+                initViewerDashboard();
             }
 
-            try {
-                // Load videos for browsing
-                const videos = await API.getVideos({ limit: 20 });
-                
-                if (videos && videos.length > 0) {
-                    const container = document.getElementById('videosContainer');
-                    container.innerHTML = ''; // Clear existing content
-                    
-                    videos.forEach(video => {
-                        const videoCard = createVideoCard(video);
-                        container.appendChild(videoCard);
+            // Setup view toggle
+            const viewButtons = document.querySelectorAll('[data-view]');
+            const videosContainer = document.getElementById('videosContainer');
+            
+            viewButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active state
+                    viewButtons.forEach(b => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-pressed', 'false');
                     });
+                    this.classList.add('active');
+                    this.setAttribute('aria-pressed', 'true');
+                    
+                    // Update container class
+                    const view = this.getAttribute('data-view');
+                    videosContainer.className = view === 'list' ? 'video-list' : 'video-grid';
+                });
+            });
+
+            // Setup search and filter functionality
+            const searchInput = document.getElementById('searchInput');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const sortBy = document.getElementById('sortBy');
+            const applyFilters = document.getElementById('applyFilters');
+            const clearFilters = document.getElementById('clearFilters');
+
+            if (applyFilters) {
+                applyFilters.addEventListener('click', function() {
+                    // Apply filters logic here
+                    console.log('Applying filters...');
+                });
+            }
+
+            if (clearFilters) {
+                clearFilters.addEventListener('click', function() {
+                    searchInput.value = '';
+                    categoryFilter.value = '';
+                    sortBy.value = 'newest';
+                    // Reload videos
+                    console.log('Clearing filters...');
+                });
+            }
+
+            // Setup sidebar toggle
+            function toggleSidebar() {
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+                const body = document.body;
+                
+                if (sidebar.classList.contains('show')) {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                    body.classList.remove('sidebar-open');
                 } else {
-                    document.getElementById('videosContainer').innerHTML = 
-                        '<div class="col-12 text-center"><p class="text-muted">No videos available at the moment.</p></div>';
+                    sidebar.classList.add('show');
+                    overlay.classList.add('show');
+                    body.classList.add('sidebar-open');
                 }
-            } catch (error) {
-                console.error('Error loading videos:', error);
-                document.getElementById('videosContainer').innerHTML = 
-                    '<div class="col-12 text-center"><p class="text-danger">Error loading videos. Please try again later.</p></div>';
+            }
+
+            // Make toggleSidebar globally available
+            window.toggleSidebar = toggleSidebar;
+
+            // Setup sidebar toggle button
+            const sidebarToggle = document.querySelector('.sidebar-toggle');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', toggleSidebar);
             }
         });
-
-        function createVideoCard(video) {
-            const videoCard = document.createElement('div');
-            videoCard.className = 'video-card-item';
-            
-            videoCard.innerHTML = `
-                <div class="card video-card border-0 shadow-sm h-100" data-video-id="${video.id}">
-                    <div class="video-thumbnail position-relative">
-                        <img src="${video.thumbnail_url || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400'}" 
-                             class="card-img-top" alt="${video.title}">
-                        <div class="video-price">$${parseFloat(video.price || 0).toFixed(2)}</div>
-                        <div class="play-overlay">
-                            <i class="fas fa-play-circle"></i>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <h6 class="card-title">${video.title}</h6>
-                        <p class="card-text text-muted small">${video.description || 'No description available'}</p>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <small class="text-muted">
-                                <i class="fas fa-user me-1"></i>${video.creator_name || 'Unknown Creator'}
-                            </small>
-                            <small class="text-muted">${(video.views || 0).toLocaleString()} views</small>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-primary btn-sm flex-fill" onclick="purchaseVideo(${video.id})">
-                                <i class="fas fa-shopping-cart me-1"></i>Purchase
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm btn-bookmark">
-                                <i class="far fa-bookmark"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            return videoCard;
-        }
-
-        function purchaseVideo(videoId) {
-            // Placeholder for purchase functionality
-            alert('Purchase functionality will be implemented soon!');
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            const body = document.body;
-            
-            if (sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                overlay.style.display = 'none';
-                body.classList.remove('sidebar-open');
-            } else {
-                sidebar.classList.add('show');
-                overlay.style.display = 'block';
-                body.classList.add('sidebar-open');
-            }
-        }
     </script>
 </body>
 </html>
