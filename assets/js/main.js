@@ -474,30 +474,7 @@ if (document.body.classList.contains('homepage') || window.location.pathname ===
     document.addEventListener('DOMContentLoaded', initializeHomepage);
 }
 
-// Placeholder for API object, assuming it's defined elsewhere
-const API = {
-    getPlatformStats: async () => ({ success: true, data: { total_creators: 100, total_videos: 500, total_earnings: 15000 } }),
-    getVideos: async (params) => {
-        const mockVideos = [
-            { id: 1, title: "Intro to JavaScript", description: "Learn the basics of JavaScript programming.", creator_name: "John Doe", price: 10 },
-            { id: 2, title: "Advanced CSS", description: "Master advanced CSS techniques.", creator_name: "Jane Smith", price: 15 },
-            { id: 3, title: "React Fundamentals", description: "Get started with React framework.", creator_name: "Peter Jones", price: 20 },
-            { id: 4, title: "Node.js Backend", description: "Build server-side applications with Node.js.", creator_name: "Mary Lee", price: 25 },
-            { id: 5, title: "Vue.js Essentials", description: "Core concepts of Vue.js.", creator_name: "David Kim", price: 18 },
-            { id: 6, title: "Python for Data Science", description: "Introduction to data science with Python.", creator_name: "Sarah Chen", price: 22 }
-        ];
-        return { success: true, data: mockVideos.slice(0, params.limit) };
-    }
-};
-
-// Placeholder for CONFIG object, assuming it's defined elsewhere
-const CONFIG = {
-    STORAGE: {
-        USER: 'videoShareUser',
-        TOKEN: 'videoShareToken',
-        SESSION: 'videoShareSession'
-    }
-};
+// Note: API and CONFIG objects are loaded from separate files (api.js and config.js)
 
 // Placeholder for bootstrap object, assuming it's defined elsewhere
 const bootstrap = {
@@ -505,14 +482,39 @@ const bootstrap = {
     Popover: class { constructor(el) { /* ... */ } }
 };
 
-// Placeholder for loadPageContent function, assuming it's defined elsewhere
+// Load page-specific content - only for homepage
 function loadPageContent() {
-    console.log("Loading page content...");
-    // Actual content loading logic would go here
+    const currentPage = window.location.pathname;
+    console.log('Loading page content...');
+    
+    // Only load homepage content if we're actually on the homepage, not on dashboard pages
+    if ((currentPage.includes('index.html') || currentPage === '/') && 
+        !currentPage.includes('/creator/') && 
+        !currentPage.includes('/viewer/') &&
+        !currentPage.includes('/admin/')) {
+        initializeHomepage();
+    }
 }
 
-// Placeholder for setupGlobalEventListeners function, assuming it's defined elsewhere
+// Setup global event listeners - optimized to avoid redundant calls
 function setupGlobalEventListeners() {
     console.log("Setting up global event listeners...");
-    // Actual event listener setup would go here
+    
+    // Handle logout links
+    const logoutLinks = document.querySelectorAll('.logout-link');
+    logoutLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            logout();
+        });
+    });
+
+    // Handle mobile navbar toggle
+    const navbarToggler = document.querySelector('.navbar-toggler');
+    if (navbarToggler) {
+        navbarToggler.addEventListener('click', function() {
+            const navbar = document.querySelector('.navbar-collapse');
+            navbar.classList.toggle('show');
+        });
+    }
 }

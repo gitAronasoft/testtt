@@ -132,9 +132,12 @@ const API = {
     },
 
     // General stats function for dashboard compatibility
-    async getStats(params = {}) {
-        const query = new URLSearchParams(params).toString();
-        return this.request(`/stats${query ? '?' + query : ''}`);
+    async getStats(type = 'platform', userId = null) {
+        let query = `type=${type}`;
+        if (userId) {
+            query += `&user_id=${userId}`;
+        }
+        return this.request(`/stats?${query}`);
     },
     
     // Get platform statistics for homepage

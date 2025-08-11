@@ -102,98 +102,22 @@
             </div>
         </div>
         <div class="content-area">
-            <!-- Video Grid -->
-                    <div id="videosContainer" class="video-grid">
-                        <!-- Videos will be loaded dynamically here -->
-                        <div class="col-12">
-                            <div class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="mt-3 text-muted">Loading your videos...</p>
-                            </div>
-                        </div>
-                    </div>
-                        
-                        <div class="card video-card border-0 shadow-sm">
-                            <div class="video-thumbnail">
-                                <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400" class="card-img-top" alt="Video thumbnail">
-                                <div class="video-duration">8:15</div>
-                                <div class="video-status draft">Draft</div>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-title">Photography Essentials</h6>
-                                <p class="card-text">A comprehensive guide for beginners starting their photography journey with essential techniques.</p>
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <small class="text-warning">
-                                        <i class="fas fa-edit me-1"></i>Draft
-                                    </small>
-                                    <small class="text-muted">
-                                        <i class="fas fa-dollar-sign me-1"></i>Not published
-                                    </small>
-                                </div>
-                                <div class="btn-group w-100" role="group">
-                                    <button class="btn btn-sm btn-outline-primary" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-success" title="Publish">
-                                        <i class="fas fa-upload"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary" title="Preview">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card video-card border-0 shadow-sm">
-                            <div class="video-thumbnail">
-                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400" class="card-img-top" alt="Video thumbnail">
-                                <div class="video-duration">25:18</div>
-                                <div class="video-status published">Published</div>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-title">Complete Workshop Series</h6>
-                                <p class="card-text">Comprehensive workshop covering everything you need to know about modern techniques and tools.</p>
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <small class="text-muted">
-                                        <i class="fas fa-eye me-1"></i>1.8K views
-                                    </small>
-                                    <small class="text-success fw-bold">
-                                        <i class="fas fa-dollar-sign me-1"></i>$89.30
-                                    </small>
-                                </div>
-                                <div class="btn-group w-100" role="group">
-                                    <button class="btn btn-sm btn-outline-primary" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-info" title="Analytics">
-                                        <i class="fas fa-chart-bar"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary" title="Settings">
-                                        <i class="fas fa-cog"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Video Grid - Dynamic Content -->
+            <div id="videosContainer" class="row g-3">
+                <!-- Videos will be loaded dynamically with skeleton effects -->
             </div>
+
+
         </div>
     </div>
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="../assets/js/config.js?v=8"></script>
-    <script src="../assets/js/auth.js?v=8"></script>
-    <script src="../assets/js/api.js?v=8"></script>
+    <script src="../assets/js/config.js?v=9"></script>
+    <script src="../assets/js/auth.js?v=9"></script>
+    <script src="../assets/js/api.js?v=9"></script>
+    <script src="../assets/js/skeleton.js?v=1"></script>
     <script>
         // Helper function to get current user
         function getCurrentUser() {
@@ -221,14 +145,24 @@
                 el.textContent = user.name || user.email;
             });
 
-            // Load only creator videos - no other API calls needed
+            // Load creator videos with skeleton loading
+            const videosContainer = document.getElementById('videosContainer');
+            
             try {
-                const response = await API.getVideos({
-                    creator_id: user.id
-                });
+                // Show skeleton loading for videos
+                window.SkeletonLoader.showVideoGridSkeletons(videosContainer, 6);
+                
+                // Load creator videos with minimum delay for UX
+                const response = await window.SkeletonLoader.wrapApiCall(
+                    () => API.getVideos({ creator_id: user.id }),
+                    videosContainer,
+                    'videos',
+                    { count: 6, minDelay: 600 }
+                );
                 
                 if (response.success) {
-                    displayCreatorVideos(response.data || []);
+                    const videos = Array.isArray(response.data) ? response.data : (response.data?.videos || []);
+                    displayCreatorVideos(videos);
                 } else {
                     console.error('Failed to load creator videos:', response.message);
                     showEmptyVideosState();
@@ -242,6 +176,13 @@
         function displayCreatorVideos(videos) {
             const videosContainer = document.getElementById('videosContainer');
             if (!videosContainer) return;
+
+            // Ensure videos is an array
+            if (!Array.isArray(videos)) {
+                console.error('Videos data is not an array:', videos);
+                showEmptyVideosState();
+                return;
+            }
             
             if (!videos || videos.length === 0) {
                 showEmptyVideosState();

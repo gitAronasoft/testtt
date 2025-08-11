@@ -77,12 +77,37 @@ class StatsController {
                 $recentActivity[] = $row;
             }
             
+            // Get top performing videos (by revenue)
+            $topVideosStmt = $this->db->prepare("
+                SELECT 
+                    v.id,
+                    v.title,
+                    v.view_count,
+                    v.price,
+                    COALESCE(SUM(p.amount), 0) as total_revenue,
+                    COUNT(p.id) as purchase_count
+                FROM videos v 
+                LEFT JOIN purchases p ON v.id = p.video_id AND p.status = 'completed'
+                WHERE v.creator_id = ? AND v.status = 'published'
+                GROUP BY v.id, v.title, v.view_count, v.price
+                ORDER BY total_revenue DESC, v.view_count DESC
+                LIMIT 3
+            ");
+            $topVideosStmt->bind_param("i", $userId);
+            $topVideosStmt->execute();
+            $topVideosResult = $topVideosStmt->get_result();
+            $topPerformingVideos = [];
+            while ($row = $topVideosResult->fetch_assoc()) {
+                $topPerformingVideos[] = $row;
+            }
+
             return $this->sendSuccess([
                 'total_videos' => $totalVideos,
                 'total_earnings' => number_format($totalEarnings, 2),
                 'total_sales' => $totalSales,
                 'total_views' => $totalViews,
                 'recent_activity' => $recentActivity,
+                'top_performing_videos' => $topPerformingVideos,
                 'monthly_earnings' => $this->getMonthlyEarnings($userId),
                 'earnings_chart_data' => $this->getEarningsChartData($userId)
             ], 'Creator stats retrieved successfully');

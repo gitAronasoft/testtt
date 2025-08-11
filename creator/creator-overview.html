@@ -118,159 +118,44 @@
             </div>
         </div>
         <div class="content-area">
-            <!-- Stats Cards -->
-                    <div class="row g-3 mb-4" id="statsContainer">
-                        <div class="col-md-3">
-                            <div class="metric-card">
-                                <div class="metric-icon">
-                                    <i class="fas fa-video"></i>
-                                </div>
-                                <h4 id="totalVideos">-</h4>
-                                <p>Total Videos</p>
-                            </div>
-                        </div>
+            <!-- Stats Cards - Dynamic Content -->
+            <div class="row g-3 mb-4" id="statsContainer">
+                <!-- Stats will be loaded dynamically with skeleton effects -->
+            </div>
 
-                        <div class="col-md-3">
-                            <div class="metric-card">
-                                <div class="metric-icon">
-                                    <i class="fas fa-eye"></i>
-                                </div>
-                                <h4 id="totalViews">-</h4>
-                                <p>Total Views</p>
-                            </div>
-                        </div>
 
-                        <div class="col-md-3">
-                            <div class="metric-card">
-                                <div class="metric-icon">
-                                    <i class="fas fa-dollar-sign"></i>
-                                </div>
-                                <h4 id="totalEarnings">-</h4>
-                                <p>Total Earnings</p>
-                            </div>
-                        </div>
 
-                        <div class="col-md-3">
-                            <div class="metric-card">
-                                <div class="metric-icon">
-                                    <i class="fas fa-shopping-cart"></i>
-                                </div>
-                                <h4 id="videosPurchased">-</h4>
-                                <p>Videos Purchased</p>
+            <!-- Top Performing Videos - Dynamic Content -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent">
+                            <h6 class="mb-0 fw-bold">Top Performing Videos</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2" id="topVideosContainer">
+                                <!-- Top performing videos will be loaded dynamically -->
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-
-
-                    <!-- Top Performing Videos -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header bg-transparent">
-                                    <h6 class="mb-0 fw-bold">Top Performing Videos</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-2">
-                                        <div class="col-md-4">
-                                            <div class="d-flex align-items-center p-2 border rounded">
-                                                <img src="https://pixabay.com/get/ga6f9d885c926f5b7538a9a0b391fd7689ee7b712eaecc168ba915044e284fce35bdac6ac12c050f0b20d604684e43455b2e15acb762b7c95ca270cd2dfbae7e8_1280.jpg"
-                                                     alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
-                                                <div class="flex-grow-1">
-                                                    <h6 class="mb-1 small">Advanced Tutorial Series</h6>
-                                                    <div class="d-flex justify-content-between">
-                                                        <small class="text-muted">2.3K views</small>
-                                                        <small class="text-success fw-bold">$145.20</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="d-flex align-items-center p-2 border rounded">
-                                                <img src="https://pixabay.com/get/gfc8ea08a622b6a0c762cf3a9a7362ada81616d7727a1226dcb7322d97e12894098301acc6d3a6ddcd43651da52c428d43184eadc1eccdac725caf54ef9e15533_1280.jpg"
-                                                     alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
-                                                <div class="flex-grow-1">
-                                                    <h6 class="mb-1 small">Beginner's Guide</h6>
-                                                    <div class="d-flex justify-content-between">
-                                                        <small class="text-muted">1.8K views</small>
-                                                        <small class="text-success fw-bold">$89.50</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="d-flex align-items-center p-2 border rounded">
-                                                <img src="https://pixabay.com/get/gda64e03e0b0d4d11b5d8cc0e60be62e3a56a23ff44ae9734b8bb3a28fdd1d6b9e1b5e2b8a2c8b0d01a62e3e7a6b2a4af1b8e5e1b0dcfcfc5b5b6b3b3b3b3b3b3b_1280.jpg"
-                                                     alt="Thumbnail" class="rounded me-2" style="width: 50px; height: 35px; object-fit: cover;">
-                                                <div class="flex-grow-1">
-                                                    <h6 class="mb-1 small">Tips & Tricks</h6>
-                                                    <div class="d-flex justify-content-between">
-                                                        <small class="text-muted">1.2K views</small>
-                                                        <small class="text-success fw-bold">$67.30</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+            <!-- Recent Activity & Platform Updates -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold">Recent Activity</h6>
+                            <a href="creator-earnings.html" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush" id="recentActivityContainer">
+                                <!-- Recent activity will be loaded dynamically -->
                             </div>
                         </div>
                     </div>
-
-                    <!-- Recent Activity & Platform Updates -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0 fw-bold">Recent Activity</h6>
-                                    <a href="creator-videos.html" class="btn btn-sm btn-outline-primary">View All</a>
-                                </div>
-                                <div class="card-body">
-                                    <div class="list-group list-group-flush">
-                                        <div class="list-group-item d-flex justify-content-between align-items-start border-0 px-0">
-                                            <div class="ms-2 me-auto">
-                                                <div class="fw-bold text-primary">
-                                                    <i class="fas fa-upload text-success me-2"></i>Video Uploaded
-                                                </div>
-                                                <p class="mb-1 small">"Advanced Tutorial Series Part 3" was successfully uploaded</p>
-                                                <small class="text-muted">2 hours ago</small>
-                                            </div>
-                                            <span class="badge bg-success rounded-pill">Success</span>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-start border-0 px-0">
-                                            <div class="ms-2 me-auto">
-                                                <div class="fw-bold text-primary">
-                                                    <i class="fas fa-dollar-sign text-warning me-2"></i>Earnings Update
-                                                </div>
-                                                <p class="mb-1 small">You earned $45.30 from recent video views</p>
-                                                <small class="text-muted">5 hours ago</small>
-                                            </div>
-                                            <span class="badge bg-warning rounded-pill">Earnings</span>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-start border-0 px-0">
-                                            <div class="ms-2 me-auto">
-                                                <div class="fw-bold text-primary">
-                                                    <i class="fas fa-star text-info me-2"></i>Milestone Reached
-                                                </div>
-                                                <p class="mb-1 small">Congratulations! Your video reached 10K total views</p>
-                                                <small class="text-muted">1 day ago</small>
-                                            </div>
-                                            <span class="badge bg-info rounded-pill">Achievement</span>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-start border-0 px-0">
-                                            <div class="ms-2 me-auto">
-                                                <div class="fw-bold text-primary">
-                                                    <i class="fas fa-comments text-primary me-2"></i>New Comments
-                                                </div>
-                                                <p class="mb-1 small">5 new comments on "Beginner's Guide to Content Creation"</p>
-                                                <small class="text-muted">2 days ago</small>
-                                            </div>
-                                            <span class="badge bg-primary rounded-pill">5</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                </div>
 
                         <div class="col-md-4">
                             <div class="card border-0 shadow-sm">
@@ -299,11 +184,10 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="../assets/js/config.js?v=4"></script>
-    <script src="../assets/js/api.js?v=4"></script>
+    <script src="../assets/js/config.js?v=9"></script>
+    <script src="../assets/js/api.js?v=9"></script>
+    <script src="../assets/js/auth.js?v=9"></script>
     <script src="../assets/js/skeleton.js?v=1"></script>
-    <script src="../assets/js/main.js?v=4"></script>
-    <script src="../assets/js/dashboard.js?v=4"></script>
     <script>
         // Helper function to get current user
         function getCurrentUser() {
@@ -329,15 +213,22 @@
             
             try {
                 // Show skeleton loading
-                SkeletonLoader.showStatsSkeletons(statsContainer);
+                window.SkeletonLoader.showStatsSkeletons(statsContainer);
                 
                 // Load creator stats with minimum delay for UX
-                const stats = await SkeletonLoader.wrapApiCall(
+                const response = await window.SkeletonLoader.wrapApiCall(
                     () => API.getStats('creator', user.id),
                     statsContainer,
                     'stats',
                     { minDelay: 800 }
                 );
+                
+                const stats = response.success ? response.data : {
+                    totalVideos: 0,
+                    totalViews: 0,
+                    totalEarnings: 0,
+                    videosPurchased: 0
+                };
                 
                 // Restore the stats HTML structure
                 statsContainer.innerHTML = `
@@ -346,7 +237,7 @@
                             <div class="metric-icon">
                                 <i class="fas fa-video"></i>
                             </div>
-                            <h4 id="totalVideos">${stats.totalVideos || 0}</h4>
+                            <h4 id="totalVideos">${stats.total_videos || 0}</h4>
                             <p>Total Videos</p>
                         </div>
                     </div>
@@ -355,7 +246,7 @@
                             <div class="metric-icon">
                                 <i class="fas fa-eye"></i>
                             </div>
-                            <h4 id="totalViews">${(stats.totalViews || 0).toLocaleString()}</h4>
+                            <h4 id="totalViews">${(stats.total_views || 0).toLocaleString()}</h4>
                             <p>Total Views</p>
                         </div>
                     </div>
@@ -364,7 +255,7 @@
                             <div class="metric-icon">
                                 <i class="fas fa-dollar-sign"></i>
                             </div>
-                            <h4 id="totalEarnings">$${(stats.totalEarnings || 0).toFixed(2)}</h4>
+                            <h4 id="totalEarnings">$${stats.total_earnings || '0.00'}</h4>
                             <p>Total Earnings</p>
                         </div>
                     </div>
@@ -373,7 +264,7 @@
                             <div class="metric-icon">
                                 <i class="fas fa-shopping-cart"></i>
                             </div>
-                            <h4 id="videosPurchased">${(stats.videosPurchased || 0).toLocaleString()}</h4>
+                            <h4 id="videosPurchased">${(stats.total_sales || 0).toLocaleString()}</h4>
                             <p>Videos Purchased</p>
                         </div>
                     </div>
@@ -390,10 +281,16 @@
                         card.style.transform = 'translateY(0)';
                     }, index * 100);
                 });
+
+                // Update Top Performing Videos dynamically
+                updateTopPerformingVideos(stats);
+
+                // Update Recent Activity dynamically
+                updateRecentActivity(stats);
                 
             } catch (error) {
                 console.error('Error loading creator overview:', error);
-                SkeletonLoader.showEmptyState(statsContainer, {
+                window.SkeletonLoader.showEmptyState(statsContainer, {
                     icon: 'fas fa-chart-line',
                     title: 'Unable to Load Stats',
                     message: 'There was a problem loading your dashboard statistics.',
@@ -402,6 +299,66 @@
                 });
             }
         });
+
+        function updateTopPerformingVideos(stats) {
+            const topVideosContainer = document.getElementById('topVideosContainer');
+            if (!topVideosContainer) return;
+
+            if (stats.top_performing_videos && stats.top_performing_videos.length > 0) {
+                topVideosContainer.innerHTML = stats.top_performing_videos.map(video => `
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center p-2 border rounded">
+                            <div class="rounded me-2 bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 35px;">
+                                <i class="fas fa-video text-muted"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 small">${video.title}</h6>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">${video.view_count || 0} views</small>
+                                    <small class="text-success fw-bold">$${parseFloat(video.total_revenue || 0).toFixed(2)}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                topVideosContainer.innerHTML = `
+                    <div class="col-12 text-center text-muted py-4">
+                        <i class="fas fa-video fa-2x mb-2"></i>
+                        <div>No performance data available yet</div>
+                        <small>Upload videos to see performance metrics</small>
+                    </div>
+                `;
+            }
+        }
+
+        function updateRecentActivity(stats) {
+            const recentActivityContainer = document.getElementById('recentActivityContainer');
+            if (!recentActivityContainer) return;
+
+            if (stats.recent_activity && stats.recent_activity.length > 0) {
+                recentActivityContainer.innerHTML = stats.recent_activity.map(activity => `
+                    <div class="list-group-item d-flex justify-content-between align-items-start border-0 px-0">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold text-primary">
+                                <i class="fas fa-shopping-cart text-success me-2"></i>Video Purchase
+                            </div>
+                            <p class="mb-1 small">"${activity.title}" was purchased by ${activity.buyer_name}</p>
+                            <small class="text-muted">${new Date(activity.created_at).toLocaleDateString()}</small>
+                        </div>
+                        <span class="badge bg-success rounded-pill">$${activity.amount}</span>
+                    </div>
+                `).join('');
+            } else {
+                recentActivityContainer.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <div>No recent activity</div>
+                        <small>Recent purchases and updates will appear here</small>
+                    </div>
+                `;
+            }
+        }
     </script>
 </body>
 </html>

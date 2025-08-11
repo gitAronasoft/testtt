@@ -96,36 +96,9 @@
         </div>
 
         <div class="content-area">
-            <!-- Earnings Metrics -->
-            <div class="row g-4 mb-4">
-                <div class="col-md-3">
-                    <div class="metric-card">
-                        <i class="fas fa-wallet text-success metric-icon"></i>
-                        <h4 class="mb-1" id="totalRevenue">$1,247.50</h4>
-                        <p class="mb-0">Available Balance</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="metric-card">
-                        <i class="fas fa-calendar text-primary metric-icon"></i>
-                        <h4 class="mb-1" id="monthlyRevenue">$389.20</h4>
-                        <p class="mb-0">This Month</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="metric-card">
-                        <i class="fas fa-coins text-warning metric-icon"></i>
-                        <h4 class="mb-1" id="totalEarnings">$5,892.45</h4>
-                        <p class="mb-0">Total Earnings</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="metric-card">
-                        <i class="fas fa-shopping-cart text-info metric-icon"></i>
-                        <h4 class="mb-1" id="totalPurchases">1,247</h4>
-                        <p class="mb-0">Total Purchases</p>
-                    </div>
-                </div>
+            <!-- Earnings Metrics - Dynamic Content -->
+            <div class="row g-4 mb-4" id="earningsStatsContainer">
+                <!-- Earnings stats will be loaded dynamically with skeleton effects -->
             </div>
 
             <!-- Purchase History & Payout History -->
@@ -190,9 +163,10 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="../assets/js/config.js?v=8"></script>
-    <script src="../assets/js/auth.js?v=8"></script>
-    <script src="../assets/js/api.js?v=8"></script>
+    <script src="../assets/js/config.js?v=9"></script>
+    <script src="../assets/js/auth.js?v=9"></script>
+    <script src="../assets/js/api.js?v=9"></script>
+    <script src="../assets/js/skeleton.js?v=1"></script>
     <script>
         // Helper function to get current user
         function getCurrentUser() {
@@ -214,108 +188,133 @@
                 return;
             }
 
-            // Update user name in navigation
-            const userNameElements = document.querySelectorAll('[data-user-name]');
-            userNameElements.forEach(el => {
-                el.textContent = user.name || user.email;
-            });
-
-            // Load only creator earnings stats - no video calls needed
+            // Load earnings data with skeleton loading
+            const purchaseHistoryTable = document.getElementById('purchaseHistoryTable');
+            const payoutHistoryContainer = document.getElementById('payoutHistoryContainer');
+            
             try {
-                const response = await API.getStats('creator');
+                // Show skeleton loading for earnings stats
+                window.SkeletonLoader.showStatsSkeletons(document.getElementById('earningsStatsContainer'));
+                
+                // Show skeleton loading for purchase history table  
+                window.SkeletonLoader.showTableSkeletons(purchaseHistoryTable, 5, 4);
+                
+                // Show skeleton loading for payout history
+                window.SkeletonLoader.showCardSkeleton(payoutHistoryContainer);
+                
+                // Load creator stats for earnings page
+                const response = await window.SkeletonLoader.wrapApiCall(
+                    () => API.getStats('creator', user.id),
+                    document.getElementById('earningsStatsContainer'),
+                    'stats',
+                    { minDelay: 700 }
+                );
                 
                 if (response.success) {
-                    displayEarningsData(response.data);
+                    updateEarningsData(response.data);
                 } else {
-                    console.error('Failed to load creator earnings:', response.message);
-                    displayFallbackEarnings();
+                    showEmptyEarningsState();
                 }
             } catch (error) {
-                console.error('Error loading earnings:', error);
-                displayFallbackEarnings();
+                console.error('Error loading earnings data:', error);
+                showEmptyEarningsState();
             }
         });
 
-        function displayEarningsData(data) {
-            // Update earnings metrics
-            updateElement('totalRevenue', `$${(data.total_earnings || 0).toFixed(2)}`);
-            updateElement('monthlyRevenue', `$${(data.monthly_earnings || 0).toFixed(2)}`);
-            updateElement('totalEarnings', `$${(data.total_earnings || 0).toFixed(2)}`);
-            updateElement('totalPurchases', (data.total_purchases || 0).toLocaleString());
-            
-            // Load purchase and payout history
-            loadPurchaseHistory();
-            loadPayoutHistory();
-        }
-
-        function displayFallbackEarnings() {
-            // Use demo data for fallback
-            updateElement('totalRevenue', '$1,247.50');
-            updateElement('monthlyRevenue', '$389.20');
-            updateElement('totalEarnings', '$5,892.45');
-            updateElement('totalPurchases', '1,247');
-            
-            loadPurchaseHistory();
-            loadPayoutHistory();
-        }
-
-        function loadPurchaseHistory() {
-            const tableBody = document.getElementById('purchaseHistoryTable');
-            if (!tableBody) return;
-            
-            // Demo purchase history data
-            const purchaseHistory = [
-                { date: 'Aug 10, 2025', video: 'Introduction to Web Development', customer: 'viewer@demo.com', amount: 29.99 },
-                { date: 'Aug 9, 2025', video: 'Advanced React Patterns', customer: 'john.doe@email.com', amount: 49.99 },
-                { date: 'Aug 8, 2025', video: 'Database Design Fundamentals', customer: 'mary.smith@email.com', amount: 39.99 },
-                { date: 'Aug 7, 2025', video: 'Introduction to Web Development', customer: 'alex.wilson@email.com', amount: 29.99 },
-                { date: 'Aug 6, 2025', video: 'Advanced React Patterns', customer: 'sarah.jones@email.com', amount: 49.99 }
-            ];
-            
-            const historyHTML = purchaseHistory.map(purchase => `
-                <tr>
-                    <td>${purchase.date}</td>
-                    <td>${purchase.video}</td>
-                    <td>${purchase.customer}</td>
-                    <td><span class="text-success fw-bold">$${purchase.amount}</span></td>
-                </tr>
-            `).join('');
-            
-            tableBody.innerHTML = historyHTML;
-        }
-
-        function loadPayoutHistory() {
-            const container = document.getElementById('payoutHistoryContainer');
-            if (!container) return;
-            
-            // Demo payout history data
-            const payoutHistory = [
-                { date: 'Aug 1, 2025', method: 'PayPal', amount: 1200.00, status: 'Completed' },
-                { date: 'Jul 1, 2025', method: 'PayPal', amount: 890.50, status: 'Completed' },
-                { date: 'Jun 1, 2025', method: 'PayPal', amount: 650.75, status: 'Completed' }
-            ];
-            
-            const historyHTML = payoutHistory.map(payout => `
-                <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
-                    <div>
-                        <div class="fw-bold">${payout.date}</div>
-                        <small class="text-muted">${payout.method}</small>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-bold text-success">$${payout.amount.toFixed(2)}</div>
-                        <small class="badge bg-success">${payout.status}</small>
+        function updateEarningsData(data) {
+            // Create dynamic stats cards
+            const earningsStatsContainer = document.getElementById('earningsStatsContainer');
+            earningsStatsContainer.innerHTML = `
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <i class="fas fa-wallet text-success metric-icon"></i>
+                        <h4 class="mb-1">${data.total_earnings ? '$' + parseFloat(data.total_earnings).toFixed(2) : '$0.00'}</h4>
+                        <p class="mb-0">Available Balance</p>
                     </div>
                 </div>
-            `).join('');
-            
-            container.innerHTML = historyHTML;
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <i class="fas fa-calendar text-primary metric-icon"></i>
+                        <h4 class="mb-1">${data.monthly_earnings ? '$' + parseFloat(data.monthly_earnings).toFixed(2) : '$0.00'}</h4>
+                        <p class="mb-0">This Month</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <i class="fas fa-coins text-warning metric-icon"></i>
+                        <h4 class="mb-1">${data.total_earnings ? '$' + parseFloat(data.total_earnings).toFixed(2) : '$0.00'}</h4>
+                        <p class="mb-0">Total Earnings</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <i class="fas fa-shopping-cart text-info metric-icon"></i>
+                        <h4 class="mb-1">${(data.total_sales || 0).toLocaleString()}</h4>
+                        <p class="mb-0">Total Purchases</p>
+                    </div>
+                </div>
+            `;
+
+            // Update purchase history table
+            const purchaseHistoryTable = document.getElementById('purchaseHistoryTable');
+            if (data.recent_activity && data.recent_activity.length > 0) {
+                purchaseHistoryTable.innerHTML = data.recent_activity.map(activity => `
+                    <tr>
+                        <td>${new Date(activity.created_at).toLocaleDateString()}</td>
+                        <td>${activity.title}</td>
+                        <td>${activity.buyer_name}</td>
+                        <td class="text-success fw-bold">$${activity.amount}</td>
+                    </tr>
+                `).join('');
+            } else {
+                purchaseHistoryTable.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <div>No purchases yet</div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // Update payout history  
+            const payoutHistoryContainer = document.getElementById('payoutHistoryContainer');
+            if (data.earnings_chart_data && data.earnings_chart_data.length > 0) {
+                // Show earnings chart data as payout history for now
+                payoutHistoryContainer.innerHTML = data.earnings_chart_data.map(entry => `
+                    <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-2">
+                        <div>
+                            <div class="fw-bold">${entry.month}</div>
+                            <small class="text-muted">Monthly Earnings</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-success">$${entry.earnings.toFixed(2)}</div>
+                            <small class="badge bg-info">Calculated</small>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                payoutHistoryContainer.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                        <div>No payout history</div>
+                        <small>Payouts will appear here once processed</small>
+                    </div>
+                `;
+            }
         }
 
-        function updateElement(id, content) {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = content;
-            }
+        function showEmptyEarningsState() {
+            const purchaseHistoryTable = document.getElementById('purchaseHistoryTable');
+            purchaseHistoryTable.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <div>Unable to load earnings data</div>
+                        <button class="btn btn-sm btn-primary mt-2" onclick="window.location.reload()">Retry</button>
+                    </td>
+                </tr>
+            `;
         }
     </script>
 </body>

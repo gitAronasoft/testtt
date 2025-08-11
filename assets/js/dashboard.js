@@ -108,7 +108,7 @@ class Dashboard {
             { selector: '[data-stat="total-videos"]', value: stats.total_videos },
             { selector: '[data-stat="total-sales"]', value: stats.total_sales },
             { selector: '[data-stat="total-earnings"]', value: `$${parseFloat(stats.total_earnings).toFixed(2)}` },
-            { selector: '[data-stat="total-views"]', value: stats.total_views.toLocaleString() }
+            { selector: '[data-stat="total-views"]', value: (stats.total_views || 0).toLocaleString() }
         ];
 
         updates.forEach(update => {
@@ -123,7 +123,7 @@ class Dashboard {
             { title: 'Total Videos', value: stats.total_videos, icon: 'fas fa-video', color: 'primary' },
             { title: 'Total Sales', value: stats.total_sales, icon: 'fas fa-shopping-cart', color: 'success' },
             { title: 'Total Earnings', value: `$${parseFloat(stats.total_earnings).toFixed(2)}`, icon: 'fas fa-dollar-sign', color: 'info' },
-            { title: 'Total Views', value: stats.total_views.toLocaleString(), icon: 'fas fa-eye', color: 'warning' }
+            { title: 'Total Views', value: (stats.total_views || 0).toLocaleString(), icon: 'fas fa-eye', color: 'warning' }
         ]);
     }
 
