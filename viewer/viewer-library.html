@@ -75,10 +75,8 @@
         </div>
     </nav>
 
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-2 bg-light sidebar d-none d-lg-block">
+    <!-- Sidebar -->
+    <div class="sidebar d-none d-lg-block">
                 <div class="p-3">
                     <h6 class="text-muted text-uppercase fw-bold mb-3">Navigation</h6>
                     <nav class="nav flex-column">
@@ -106,27 +104,31 @@
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-lg-10 main-content">
-                <div class="p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h1 class="h3 fw-bold">
-                            <i class="fas fa-bookmark me-2"></i>My Purchased Videos
-                        </h1>
-                        <div class="d-flex gap-2">
-                            <select class="form-select" style="width: auto;">
-                                <option>Recently Added</option>
-                                <option>Most Watched</option>
-                                <option>A-Z</option>
-                                <option>Duration</option>
-                            </select>
-                            <button class="btn btn-outline-primary">
-                                <i class="fas fa-th me-2"></i>Grid View
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Quick Stats -->
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="dashboard-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 fw-bold mb-1">
+                        <i class="fas fa-bookmark me-2"></i>My Library
+                    </h1>
+                    <p class="text-muted mb-0">Your purchased videos collection</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <select class="form-select" style="width: auto;">
+                        <option>Recently Added</option>
+                        <option>Most Watched</option>
+                        <option>A-Z</option>
+                        <option>Duration</option>
+                    </select>
+                    <button class="btn btn-outline-primary">
+                        <i class="fas fa-th me-2"></i>Grid View
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="content-area">
+            <!-- Quick Stats -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
                             <div class="card border-0 shadow-sm bg-primary text-white">

@@ -68,10 +68,8 @@
         </div>
     </nav>
 
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-2 bg-light sidebar d-none d-lg-block">
+    <!-- Sidebar -->
+    <div class="sidebar d-none d-lg-block">
                 <div class="p-3">
                     <h6 class="text-muted text-uppercase fw-bold mb-3">Creator Tools</h6>
                     <nav class="nav flex-column">
@@ -95,23 +93,40 @@
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-lg-10 main-content">
-                <div class="p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h1 class="h3 fw-bold">Earnings</h1>
-                        <button class="btn btn-success">
-                            <i class="fas fa-download me-2"></i>Request Payout
-                        </button>
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="dashboard-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 fw-bold mb-1">Earnings Dashboard</h1>
+                    <p class="text-muted mb-0">Track your revenue, payment history, and earnings analytics</p>
+                    <div class="mt-2">
+                        <span class="badge bg-success me-2">
+                            <i class="fas fa-dollar-sign me-1"></i>Total Earned: $2,847.50
+                        </span>
+                        <span class="text-muted small">
+                            <i class="fas fa-calendar me-1"></i>This month: $387.20 (+15.2%)
+                        </span>
                     </div>
-
-                    <!-- Earnings Summary -->
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary">
+                        <i class="fas fa-download me-2"></i>Export Report
+                    </button>
+                    <button class="btn btn-success btn-lg">
+                        <i class="fas fa-money-bill-wave me-2"></i>Request Payout
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="content-area">
+            <!-- Earnings Summary -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
                             <div class="card border-0 shadow-sm bg-success text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-dollar-sign fa-2x mb-2"></i>
-                                    <h4 class="mb-1">$2,847.50</h4>
+                                    <h4 class="mb-1" data-earnings-card="total">$2,847.50</h4>
                                     <p class="mb-0">Total Earnings</p>
                                 </div>
                             </div>
@@ -120,7 +135,7 @@
                             <div class="card border-0 shadow-sm bg-primary text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-calendar-month fa-2x mb-2"></i>
-                                    <h4 class="mb-1">$387.20</h4>
+                                    <h4 class="mb-1" data-earnings-card="monthly">$387.20</h4>
                                     <p class="mb-0">This Month</p>
                                 </div>
                             </div>
@@ -129,7 +144,7 @@
                             <div class="card border-0 shadow-sm bg-warning text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-clock fa-2x mb-2"></i>
-                                    <h4 class="mb-1">$1,245.30</h4>
+                                    <h4 class="mb-1" data-earnings-card="pending">$1,245.30</h4>
                                     <p class="mb-0">Pending</p>
                                 </div>
                             </div>
@@ -138,22 +153,65 @@
                             <div class="card border-0 shadow-sm bg-info text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-hand-holding-usd fa-2x mb-2"></i>
-                                    <h4 class="mb-1">$1,602.20</h4>
+                                    <h4 class="mb-1" data-earnings-card="paid">$1,602.20</h4>
                                     <p class="mb-0">Paid Out</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Earnings Chart -->
+                    <!-- Video Performance & Earnings Breakdown -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-8">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-header bg-transparent">
-                                    <h6 class="mb-0 fw-bold">Earnings Over Time</h6>
+                                    <h6 class="mb-0 fw-bold">Video Performance by Category</h6>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="earningsChart" height="100"></canvas>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                                                <div>
+                                                    <h6 class="mb-1">Tutorials</h6>
+                                                    <small class="text-muted">12 videos • 8.2K views</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <div class="fw-bold text-success">$1,245.60</div>
+                                                    <small class="text-muted">43.7% of total</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                                                <div>
+                                                    <h6 class="mb-1">Reviews</h6>
+                                                    <small class="text-muted">7 videos • 4.8K views</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <div class="fw-bold text-success">$756.20</div>
+                                                    <small class="text-muted">26.5% of total</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                                                <div>
+                                                    <h6 class="mb-1">Entertainment</h6>
+                                                    <small class="text-muted">5 videos • 2.1K views</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <div class="fw-bold text-success">$845.50</div>
+                                                    <small class="text-muted">29.7% of total</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="alert alert-info border-0 mb-0">
+                                                <i class="fas fa-lightbulb me-2"></i>
+                                                <strong>Tip:</strong> Tutorial videos have the highest conversion rate!
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -161,10 +219,39 @@
                         <div class="col-md-4">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-header bg-transparent">
-                                    <h6 class="mb-0 fw-bold">Revenue Sources</h6>
+                                    <h6 class="mb-0 fw-bold">Earnings Breakdown</h6>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="revenueChart" height="200"></canvas>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="small">Video Sales</span>
+                                            <span class="fw-bold">$2,456.80</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-primary" style="width: 86%"></div>
+                                        </div>
+                                        <small class="text-muted">86% of earnings</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="small">Viewer Tips</span>
+                                            <span class="fw-bold">$235.70</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-success" style="width: 8%"></div>
+                                        </div>
+                                        <small class="text-muted">8% of earnings</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="small">Bonus/Incentives</span>
+                                            <span class="fw-bold">$155.00</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-warning" style="width: 6%"></div>
+                                        </div>
+                                        <small class="text-muted">6% of earnings</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -287,6 +374,120 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Earnings Analytics & Insights -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h6 class="mb-0 fw-bold">Earnings Analytics & Insights</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="text-center p-3 border rounded bg-light">
+                                                <i class="fas fa-chart-line text-primary fa-2x mb-2"></i>
+                                                <h5 class="text-primary fw-bold mb-1">$3.45</h5>
+                                                <p class="mb-0 small text-muted">Average Earnings per View</p>
+                                                <small class="text-success">
+                                                    <i class="fas fa-arrow-up me-1"></i>+12% from last month
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-center p-3 border rounded bg-light">
+                                                <i class="fas fa-shopping-bag text-success fa-2x mb-2"></i>
+                                                <h5 class="text-success fw-bold mb-1">87%</h5>
+                                                <p class="mb-0 small text-muted">Purchase Conversion Rate</p>
+                                                <small class="text-success">
+                                                    <i class="fas fa-arrow-up me-1"></i>+5% from last month
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-center p-3 border rounded bg-light">
+                                                <i class="fas fa-clock text-warning fa-2x mb-2"></i>
+                                                <h5 class="text-warning fw-bold mb-1">7 days</h5>
+                                                <p class="mb-0 small text-muted">Average Payout Time</p>
+                                                <small class="text-muted">
+                                                    Standard processing time
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payout History -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold">Payout History</h6>
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-download me-2"></i>Download Statement
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Payout Date</th>
+                                                    <th>Period</th>
+                                                    <th>Videos Sold</th>
+                                                    <th>Gross Amount</th>
+                                                    <th>Platform Fee</th>
+                                                    <th>Net Amount</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>July 15, 2025</td>
+                                                    <td>June 15 - July 14</td>
+                                                    <td>156 videos</td>
+                                                    <td>$845.60</td>
+                                                    <td>$84.56 (10%)</td>
+                                                    <td><strong>$761.04</strong></td>
+                                                    <td><span class="badge bg-success">Paid</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>June 15, 2025</td>
+                                                    <td>May 15 - June 14</td>
+                                                    <td>124 videos</td>
+                                                    <td>$672.80</td>
+                                                    <td>$67.28 (10%)</td>
+                                                    <td><strong>$605.52</strong></td>
+                                                    <td><span class="badge bg-success">Paid</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>May 15, 2025</td>
+                                                    <td>Apr 15 - May 14</td>
+                                                    <td>98 videos</td>
+                                                    <td>$523.45</td>
+                                                    <td>$52.35 (10%)</td>
+                                                    <td><strong>$471.10</strong></td>
+                                                    <td><span class="badge bg-success">Paid</span></td>
+                                                </tr>
+                                                <tr class="table-warning">
+                                                    <td>August 15, 2025</td>
+                                                    <td>July 15 - August 14</td>
+                                                    <td>189 videos</td>
+                                                    <td>$1,245.30</td>
+                                                    <td>$124.53 (10%)</td>
+                                                    <td><strong>$1,120.77</strong></td>
+                                                    <td><span class="badge bg-warning">Pending</span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -296,6 +497,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/dashboard.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/dashboard-api.js"></script>
+    <script src="../assets/js/auth.js"></script>
 </body>
 </html>
