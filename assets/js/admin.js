@@ -132,15 +132,23 @@ class AdminManager {
 
     async loadAdminDashboardData() {
         try {
-            console.log('Fetching admin dashboard data...');
-            const response = await fetch('/data/admin_dashboard.json');
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Admin dashboard data loaded:', data);
-                return data;
-            } else {
-                console.error('Failed to load admin dashboard data, status:', response.status);
+            console.log('Fetching admin dashboard data from API...');
+            
+            // Wait for API service to be available
+            let retries = 0;
+            while (retries < 50 && !window.apiService) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
             }
+            
+            if (window.apiService) {
+                const response = await window.apiService.getAdminStats();
+                if (response.success) {
+                    console.log('Admin dashboard data loaded:', response.data);
+                    return response.data;
+                }
+            }
+            console.error('Failed to load admin dashboard data');
         } catch (error) {
             console.error('Error loading admin dashboard data:', error);
         }
@@ -462,9 +470,11 @@ class AdminManager {
 
     async loadAnalyticsData() {
         try {
-            const response = await fetch('/data/analytics.json');
-            if (response.ok) {
-                return await response.json();
+            if (window.apiService) {
+                const response = await window.apiService.getAnalytics();
+                if (response.success) {
+                    return response.data;
+                }
             }
         } catch (error) {
             console.error('Error loading analytics data:', error);

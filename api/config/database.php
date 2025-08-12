@@ -4,11 +4,19 @@
  */
 
 class Database {
-    private $host = 'srv637.hstgr.io';
-    private $db_name = 'u742355347_youtube';
-    private $username = 'u742355347_youtube';
-    private $password = 'Arona1@1@1@1';
+    private $host;
+    private $db_name;
+    private $username;
+    private $password;
     public $conn;
+    
+    public function __construct() {
+        // Use environment variables if available, fallback to original values
+        $this->host = getenv('DB_HOST') ?: 'srv637.hstgr.io';
+        $this->db_name = getenv('DB_NAME') ?: 'u742355347_youtube';
+        $this->username = getenv('DB_USERNAME') ?: 'u742355347_youtube';
+        $this->password = getenv('DB_PASSWORD') ?: 'Arona1@1@1@1';
+    }
 
     public function getConnection() {
         $this->conn = null;

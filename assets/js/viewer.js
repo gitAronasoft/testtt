@@ -17,13 +17,13 @@ class ViewerManager {
     }
 
     async init() {
-        await this.loadDataFromJSON();
+        await this.loadDataFromAPI();
         this.bindEvents();
         this.loadPageSpecificHandlers();
         this.initializePlayer();
     }
 
-    async loadDataFromJSON() {
+    async loadDataFromAPI() {
         try {
             // Wait for API service to be available and load data
             let retries = 0;
@@ -41,8 +41,21 @@ class ViewerManager {
                     window.apiService.getPurchases()
                 ]);
                 
-                this.videos = videosResponse.data || videosResponse.videos || [];
-                this.purchases = purchasesResponse.data || purchasesResponse.purchases || [];
+                // Handle API response format properly
+                this.videos = Array.isArray(videosResponse.videos) ? videosResponse.videos : 
+                             Array.isArray(videosResponse.data?.videos) ? videosResponse.data.videos : 
+                             Array.isArray(videosResponse.data) ? videosResponse.data : [];
+                             
+                this.purchases = Array.isArray(purchasesResponse.purchases) ? purchasesResponse.purchases : 
+                                Array.isArray(purchasesResponse.data?.purchases) ? purchasesResponse.data.purchases : 
+                                Array.isArray(purchasesResponse.data) ? purchasesResponse.data : [];
+                
+                console.log('Raw API responses:', {
+                    videosResponse: videosResponse,
+                    purchasesResponse: purchasesResponse,
+                    processedVideos: this.videos.length,
+                    processedPurchases: this.purchases.length
+                });
             } else {
                 console.error('API service not available');
                 this.videos = [];

@@ -221,6 +221,81 @@ class Video {
         return false;
     }
 
+    // Get all videos with optional filters (alias for read method)
+    public function readAll($filters = []) {
+        $stmt = $this->read($filters);
+        $videos = [];
+        
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $videos[] = $row;
+        }
+        
+        return $videos;
+    }
+    
+    // Get creator statistics
+    public function getCreatorStats($creatorId = null) {
+        if (!$creatorId) {
+            $creatorId = 1; // Default creator for demo
+        }
+        
+        $query = "SELECT 
+                    COUNT(*) as totalVideos,
+                    COALESCE(SUM(views), 0) as totalViews,
+                    COALESCE(SUM(youtube_likes), 0) as totalLikes,
+                    COALESCE(SUM(CAST(price AS DECIMAL(10,2))), 0) as totalEarnings
+                  FROM " . $this->table_name . " 
+                  WHERE uploader_id = :creator_id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':creator_id', $creatorId);
+        $stmt->execute();
+        
+        $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return [
+            'totalVideos' => (int)$stats['totalVideos'],
+            'totalViews' => (int)$stats['totalViews'],
+            'totalLikes' => (int)$stats['totalLikes'],
+            'totalEarnings' => (float)$stats['totalEarnings']
+        ];
+    }
+    
+    // Get creator earnings
+    public function getCreatorEarnings($creatorId = null) {
+        if (!$creatorId) {
+            $creatorId = 1; // Default creator for demo
+        }
+        
+        $query = "SELECT 
+                    id,
+                    title as videoTitle,
+                    CAST(price AS DECIMAL(10,2)) as amount,
+                    created_at as date,
+                    'completed' as status
+                  FROM " . $this->table_name . " 
+                  WHERE uploader_id = :creator_id AND CAST(price AS DECIMAL(10,2)) > 0
+                  ORDER BY created_at DESC";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':creator_id', $creatorId);
+        $stmt->execute();
+        
+        $earnings = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $earnings[] = [
+                'id' => $row['id'],
+                'creatorId' => $creatorId,
+                'amount' => (float)$row['amount'],
+                'date' => $row['date'],
+                'videoTitle' => $row['videoTitle'],
+                'status' => $row['status']
+            ];
+        }
+        
+        return $earnings;
+    }
+
     // Update views count
     public function incrementViews() {
         $query = "UPDATE " . $this->table_name . " SET views = views + 1 WHERE id = :id";

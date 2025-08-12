@@ -22,17 +22,21 @@ class DataService {
 
     async loadAllData() {
         try {
-            const [users, videos, earnings, purchases] = await Promise.all([
-                this.loadJSON('/data/users.json'),
-                this.loadJSON('/data/videos.json'),
-                this.loadJSON('/data/earnings.json'),
-                this.loadJSON('/data/purchases.json')
-            ]);
+            // Migration to API - load data from database instead of JSON files
+            console.warn('DataService is deprecated. Use APIService instead.');
+            
+            if (window.apiService) {
+                const [users, videos, earnings, purchases] = await Promise.all([
+                    window.apiService.get('/users'),
+                    window.apiService.get('/videos'),
+                    window.apiService.get('/creator/earnings'),
+                    window.apiService.get('/purchases')
+                ]);
 
-            this.cache.users = users.users || [];
-            this.cache.videos = videos.videos || [];
-            this.cache.earnings = earnings.earnings || [];
-            this.cache.purchases = purchases.purchases || [];
+                this.cache.users = users.data?.users || [];
+                this.cache.videos = videos.data?.videos || [];
+                this.cache.earnings = earnings.data?.earnings || [];
+                this.cache.purchases = purchases.data?.purchases || [];
 
             console.log('Data loaded successfully:', {
                 users: this.cache.users.length,

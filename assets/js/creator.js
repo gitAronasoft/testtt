@@ -21,8 +21,13 @@ class CreatorManager {
     }
 
     loadMockData() {
-        // Initialize empty arrays - data will be loaded from dataService
-        this.stats = {};
+        // Initialize empty arrays - data will be loaded from API
+        this.stats = {
+            totalVideos: 0,
+            totalViews: 0,
+            totalEarnings: 0,
+            subscribers: 0
+        };
         this.videos = [];
         this.earnings = [];
     }
@@ -39,40 +44,41 @@ class CreatorManager {
             }
 
             if (window.apiService) {
-                // Load data from API - filter for current creator (ID 1 - John Smith)
-                const currentCreatorId = 1;
-                const [videosResponse] = await Promise.all([
-                    window.apiService.getVideos()
+                // Load data from API
+                const [videosResponse, earningsResponse] = await Promise.all([
+                    window.apiService.getCreatorVideos(),
+                    window.apiService.getCreatorEarnings()
                 ]);
                 
-                const allVideos = videosResponse.data || videosResponse.videos || [];
-                this.videos = allVideos.filter(v => v.uploader_id === currentCreatorId) || [];
+                // Ensure arrays are properly initialized
+                this.videos = Array.isArray(videosResponse.data?.videos) ? videosResponse.data.videos : 
+                             Array.isArray(videosResponse.videos) ? videosResponse.videos : 
+                             Array.isArray(videosResponse.data) ? videosResponse.data : [];
+                             
+                this.earnings = Array.isArray(earningsResponse.data?.earnings) ? earningsResponse.data.earnings : 
+                               Array.isArray(earningsResponse.earnings) ? earningsResponse.earnings : 
+                               Array.isArray(earningsResponse.data) ? earningsResponse.data : [];
                 
-                // Calculate earnings from video data (simplified for demo)
-                this.earnings = this.videos.map(video => ({
-                    id: video.id,
-                    creatorId: currentCreatorId,
-                    amount: parseFloat(video.price || 0),
-                    date: video.upload_date || new Date().toISOString(),
-                    videoTitle: video.title
-                }));
-                
-                console.log('Filtered creator data:', {
-                    allVideos: window.dataService.cache.videos.length,
-                    creatorVideos: this.videos.length,
-                    creatorId: currentCreatorId,
-                    sampleVideo: window.dataService.cache.videos[0]
+                console.log('Creator data loaded:', {
+                    videosType: typeof this.videos,
+                    videosIsArray: Array.isArray(this.videos),
+                    videosLength: this.videos.length,
+                    earningsType: typeof this.earnings,
+                    earningsIsArray: Array.isArray(this.earnings),
+                    earningsLength: this.earnings.length
                 });
                 
-                // Calculate stats from loaded data
+                // Calculate stats from loaded data with safety checks
                 this.stats = {
                     totalVideos: this.videos.length,
-                    totalViews: this.videos.reduce((sum, v) => sum + (v.views || 0), 0),
-                    totalEarnings: this.earnings.reduce((sum, e) => sum + (e.amount || 0), 0),
-                    subscribers: this.videos.reduce((sum, v) => sum + (v.likes || 0), 0) // Using likes as subscriber count for demo
+                    totalViews: this.videos.reduce((sum, v) => sum + (parseInt(v.views) || 0), 0),
+                    totalEarnings: this.earnings.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0),
+                    subscribers: this.videos.reduce((sum, v) => sum + (parseInt(v.likes || v.youtube_likes) || 0), 0)
                 };
             } else {
-                // Fallback data
+                console.error('API service not available');
+                this.videos = [];
+                this.earnings = [];
                 this.stats = {
                     totalVideos: 0,
                     totalViews: 0,

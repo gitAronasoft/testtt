@@ -284,6 +284,21 @@
         return this.get('/admin/health');
     }
 
+    async getAnalytics() {
+        if (this.useDataService && window.dataService) {
+            return window.dataService.getAnalyticsData();
+        }
+        return this.get('/admin/analytics');
+    }
+
+    async getPurchases(params = {}) {
+        if (this.useDataService && window.dataService) {
+            return window.dataService.getViewerPurchases(null, params);
+        }
+        const queryString = new URLSearchParams(params).toString();
+        return this.get(`/purchases${queryString ? '?' + queryString : ''}`);
+    }
+
     // Search API endpoints
     async searchVideos(query, filters = {}) {
         const params = { q: query, ...filters };

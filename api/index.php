@@ -31,6 +31,11 @@ switch (true) {
         require_once 'endpoints/purchases.php';
         break;
         
+    // Creator endpoints
+    case preg_match('/^\/creator/', $path):
+        require_once 'endpoints/creator.php';
+        break;
+        
     // Admin endpoints
     case preg_match('/^\/admin/', $path):
         require_once 'endpoints/admin.php';

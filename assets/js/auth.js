@@ -392,7 +392,7 @@ class AuthManager {
         const dashboardUrls = {
             admin: '../admin/dashboard.html',
             creator: '../creator/dashboard.html',
-            viewer: '../viewer/browse.html'
+            viewer: '../viewer/dashboard.html'
         };
         
         window.location.href = dashboardUrls[userType];
