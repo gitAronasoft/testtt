@@ -45,9 +45,9 @@ class Video {
         $conditions = [];
         $params = [];
 
-        if (isset($filters['user_id']) && !empty($filters['user_id'])) {
-            $conditions[] = "user_id = :user_id";
-            $params[':user_id'] = $filters['user_id'];
+        if (isset($filters['uploader_id']) && !empty($filters['uploader_id'])) {
+            $conditions[] = "user_id = :uploader_id";
+            $params[':uploader_id'] = $filters['uploader_id'];
         }
 
         if (isset($filters['category']) && !empty($filters['category'])) {

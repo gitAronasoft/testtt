@@ -66,16 +66,16 @@ try {
                 
                 $metrics = [];
                 
-                // Fix uploader_id data type issue by converting to int
-                $stmt = $db->query("UPDATE videos SET uploader_id = CAST(uploader_id AS UNSIGNED) WHERE uploader_id REGEXP '^[0-9]+$'");
+                // Fix user_id data type issue by converting to int
+                $stmt = $db->query("UPDATE videos SET user_id = CAST(user_id AS UNSIGNED) WHERE user_id REGEXP '^[0-9]+$'");
                 
                 // Total videos by creator
-                $stmt = $db->prepare("SELECT COUNT(*) as count FROM videos WHERE CAST(uploader_id AS UNSIGNED) = ?");
+                $stmt = $db->prepare("SELECT COUNT(*) as count FROM videos WHERE CAST(user_id AS UNSIGNED) = ?");
                 $stmt->execute([$creatorId]);
                 $metrics['totalVideos'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
                 // Total views by creator
-                $stmt = $db->prepare("SELECT COALESCE(SUM(views), 0) as total FROM videos WHERE CAST(uploader_id AS UNSIGNED) = ?");
+                $stmt = $db->prepare("SELECT COALESCE(SUM(views), 0) as total FROM videos WHERE CAST(user_id AS UNSIGNED) = ?");
                 $stmt->execute([$creatorId]);
                 $metrics['totalViews'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
                 
@@ -89,7 +89,7 @@ try {
                     SELECT COUNT(DISTINCT p.user_id_new) as count 
                     FROM purchases p 
                     JOIN videos v ON p.video_id = v.id 
-                    WHERE CAST(v.uploader_id AS UNSIGNED) = ? AND p.user_id_new IS NOT NULL
+                    WHERE CAST(v.user_id AS UNSIGNED) = ? AND p.user_id_new IS NOT NULL
                 ");
                 $stmt->execute([$creatorId]);
                 $metrics['subscribers'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];

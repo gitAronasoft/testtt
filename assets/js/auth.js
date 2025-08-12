@@ -5,6 +5,8 @@
 
 class AuthManager {
     constructor() {
+        this.verificationProcessed = false;
+        this.googleClientId = '824425517340-c4g9ilvg3i7cddl75hvq1a8gromuc95n.apps.googleusercontent.com';
         this.init();
     }
 
@@ -38,10 +40,17 @@ class AuthManager {
             setPasswordForm.addEventListener('submit', this.handleSetPassword.bind(this));
         }
 
-        // Email verification actions
-        const verifyButton = document.getElementById('verifyButton');
-        if (verifyButton) {
-            verifyButton.addEventListener('click', this.handleEmailVerification.bind(this));
+        // Auto-verify if token is present in URL (only once)
+        if (window.location.pathname.includes('email-verification.html')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token && !this.verificationProcessed) {
+                this.verificationProcessed = true;
+                // Auto-verify email when token is present
+                setTimeout(() => {
+                    this.handleEmailVerification();
+                }, 1000);
+            }
         }
 
         const resendEmail = document.getElementById('resendEmail');
@@ -60,6 +69,17 @@ class AuthManager {
         if (togglePassword) {
             togglePassword.addEventListener('click', this.togglePasswordVisibility.bind(this));
         }
+
+        // Google Sign-In buttons
+        const googleSignInBtn = document.getElementById('googleSignInBtn');
+        if (googleSignInBtn) {
+            googleSignInBtn.addEventListener('click', this.handleGoogleSignIn.bind(this));
+        }
+
+        const googleSignUpBtn = document.getElementById('googleSignUpBtn');
+        if (googleSignUpBtn) {
+            googleSignUpBtn.addEventListener('click', this.handleGoogleSignUp.bind(this));
+        }
     }
 
     loadPageSpecificHandlers() {
@@ -68,6 +88,9 @@ class AuthManager {
         
         // Handle URL parameters for verification
         this.handleUrlParameters();
+        
+        // Initialize Google Sign-In
+        this.initializeGoogleSignIn();
     }
 
     setupDemoLogin() {
@@ -199,12 +222,26 @@ class AuthManager {
             const response = await window.apiService.post('/auth/register', formData);
             
             if (response.success && response.data) {
-                this.showSuccess('Account created successfully! You can now log in.');
-                
-                // Redirect to login page
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 1500);
+                if (response.data.verification_required) {
+                    // Show email verification message
+                    this.showSuccess(response.message);
+                    
+                    // Store email for verification page
+                    sessionStorage.setItem('pendingVerificationEmail', formData.email);
+                    
+                    // Redirect to email verification page
+                    setTimeout(() => {
+                        window.location.href = `email-verification.html?email=${encodeURIComponent(formData.email)}`;
+                    }, 2000);
+                } else {
+                    // Traditional registration flow (if email verification is disabled)
+                    this.showSuccess('Account created successfully! You can now log in.');
+                    
+                    // Redirect to login page
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                }
             } else {
                 throw new Error(response.error || 'Registration failed');
             }
@@ -243,15 +280,49 @@ class AuthManager {
         try {
             this.showLoading('Verifying email...');
             
-            // Simulate API call
-            await this.delay(1500);
+            // Get token from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
             
-            // Hide pending verification and show success
-            document.getElementById('pendingVerification').style.display = 'none';
-            document.getElementById('verificationSuccess').classList.remove('d-none');
+            if (!token) {
+                throw new Error('No verification token provided');
+            }
+            
+            // Make direct API call without waiting for API service
+            const response = await fetch('/api/endpoints/auth.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    action: 'verify-email',
+                    token: token 
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Hide pending verification and show success
+                const pendingVerification = document.getElementById('pendingVerification');
+                const verificationSuccess = document.getElementById('verificationSuccess');
+                
+                if (pendingVerification) pendingVerification.style.display = 'none';
+                if (verificationSuccess) verificationSuccess.classList.remove('d-none');
+                
+                this.showSuccess('Email verified successfully! You can now log in.');
+                
+                // Redirect to login page after success
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
+            } else {
+                throw new Error(result.message || 'Verification failed');
+            }
             
         } catch (error) {
-            this.showError('Verification failed. Please try again.');
+            console.error('Email verification error:', error);
+            this.showError(error.message || 'Verification failed. Please try again.');
         } finally {
             this.hideLoading();
         }
@@ -261,13 +332,37 @@ class AuthManager {
         try {
             this.showLoading('Resending verification email...');
             
-            // Simulate API call
-            await this.delay(1000);
+            // Get email from URL parameters or session storage
+            const urlParams = new URLSearchParams(window.location.search);
+            const email = urlParams.get('email') || sessionStorage.getItem('pendingVerificationEmail');
             
-            this.showSuccess('Verification email sent successfully!');
+            if (!email) {
+                throw new Error('No email address available for resending');
+            }
+            
+            // Make direct API call without waiting for API service  
+            const response = await fetch('/api/endpoints/auth.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    action: 'resend-verification',
+                    email: email 
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showSuccess('Verification email sent successfully!');
+            } else {
+                throw new Error(result.message || 'Failed to resend email');
+            }
             
         } catch (error) {
-            this.showError('Failed to resend email. Please try again.');
+            console.error('Resend email error:', error);
+            this.showError(error.message || 'Failed to resend email. Please try again.');
         } finally {
             this.hideLoading();
         }
@@ -597,6 +692,135 @@ class AuthManager {
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    initializeGoogleSignIn() {
+        // Wait for Google Sign-In API to load with retry limit
+        let retries = 0;
+        const maxRetries = 50;
+        
+        const checkAndInit = () => {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                try {
+                    google.accounts.id.initialize({
+                        client_id: this.googleClientId,
+                        callback: this.handleGoogleCredentialResponse.bind(this),
+                        auto_select: false,
+                        cancel_on_tap_outside: true
+                    });
+                    console.log('Google Sign-In initialized successfully');
+                } catch (error) {
+                    console.error('Error initializing Google Sign-In:', error);
+                }
+            } else if (retries < maxRetries) {
+                retries++;
+                setTimeout(checkAndInit, 100);
+            } else {
+                console.error('Google Sign-In API failed to load after maximum retries');
+            }
+        };
+        
+        checkAndInit();
+    }
+
+    handleGoogleSignIn() {
+        if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+            try {
+                // Use renderButton for more reliable sign-in
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.display = 'none';
+                document.body.appendChild(buttonContainer);
+                
+                google.accounts.id.renderButton(buttonContainer, {
+                    theme: 'outline',
+                    size: 'large',
+                    width: 250
+                });
+                
+                // Trigger click programmatically
+                setTimeout(() => {
+                    const googleButton = buttonContainer.querySelector('div[role="button"]');
+                    if (googleButton) {
+                        googleButton.click();
+                    } else {
+                        // Fallback to prompt
+                        google.accounts.id.prompt();
+                    }
+                    document.body.removeChild(buttonContainer);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Google Sign-In error:', error);
+                this.showError('Google Sign-In encountered an error. Please try again.');
+            }
+        } else {
+            this.showError('Google Sign-In is not available. Please refresh the page and try again.');
+        }
+    }
+
+    handleGoogleSignUp() {
+        // Same logic as sign-in, the backend will handle the difference
+        this.handleGoogleSignIn();
+    }
+
+    async handleGoogleCredentialResponse(response) {
+        try {
+            console.log('Google credential response received');
+            this.showLoading('Authenticating with Google...');
+            
+            if (!response || !response.credential) {
+                throw new Error('No credential received from Google');
+            }
+            
+            // Wait for API service to be available
+            await this.waitForAPIService();
+            
+            const isSignupPage = window.location.pathname.includes('signup.html');
+            const action = isSignupPage ? 'google-signup' : 'google-login';
+            
+            // Send Google credential to backend using action-based endpoint
+            const apiResponse = await window.apiService.post('/auth', {
+                action: action,
+                credential: response.credential
+            });
+            
+            if (apiResponse.success && apiResponse.data) {
+                const userData = apiResponse.data.user;
+                const token = apiResponse.data.token;
+                
+                this.setUserSession({
+                    email: userData.email,
+                    userType: userData.role,
+                    name: userData.name,
+                    id: userData.id,
+                    rememberMe: true
+                });
+                
+                // Store auth token
+                if (window.apiService) {
+                    window.apiService.setAuthToken(token);
+                }
+                
+                const successMessage = isSignupPage ? 
+                    'Account created successfully with Google!' : 
+                    'Google Sign-In successful! Redirecting...';
+                    
+                this.showSuccess(successMessage);
+                
+                // Redirect based on user type
+                setTimeout(() => {
+                    this.redirectToUserDashboard(userData.role);
+                }, 1500);
+            } else {
+                throw new Error(apiResponse.message || 'Google authentication failed');
+            }
+            
+        } catch (error) {
+            console.error('Google authentication error:', error);
+            this.showError(error.message || 'Google authentication failed. Please try again.');
+        } finally {
+            this.hideLoading();
+        }
     }
 }
 

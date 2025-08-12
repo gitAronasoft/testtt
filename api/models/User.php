@@ -12,6 +12,7 @@ class User {
     public $email;
     public $role;
     public $status;
+    public $email_verified_at;
     public $created_at;
     public $updated_at;
 
@@ -21,7 +22,8 @@ class User {
 
     // Get all users with optional filters
     public function read($filters = []) {
-        $query = "SELECT id, name, email, role, status, created_at, updated_at FROM " . $this->table_name;
+        $this->createEmailVerifiedColumnIfNotExists();
+        $query = "SELECT id, name, email, role, status, email_verified_at, created_at, updated_at FROM " . $this->table_name;
         $conditions = [];
         $params = [];
 
@@ -66,7 +68,8 @@ class User {
 
     // Get single user by ID
     public function readOne() {
-        $query = "SELECT id, name, email, role, status, created_at, updated_at FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
+        $this->createEmailVerifiedColumnIfNotExists();
+        $query = "SELECT id, name, email, role, status, email_verified_at, created_at, updated_at FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $this->id);
         $stmt->execute();
@@ -78,6 +81,7 @@ class User {
             $this->email = $row['email'];
             $this->role = $row['role'];
             $this->status = $row['status'];
+            $this->email_verified_at = $row['email_verified_at'];
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];
             return true;
@@ -187,6 +191,48 @@ class User {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
         return $row['total'];
+    }
+    
+    /**
+     * Create email_verified_at column if it doesn't exist
+     */
+    public function createEmailVerifiedColumnIfNotExists() {
+        try {
+            // Check if column exists
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM " . $this->table_name . " LIKE 'email_verified_at'");
+            $stmt->execute();
+            
+            if ($stmt->rowCount() === 0) {
+                // Column doesn't exist, create it
+                $alterQuery = "ALTER TABLE " . $this->table_name . " ADD COLUMN email_verified_at DATETIME NULL";
+                $this->conn->exec($alterQuery);
+                error_log("Added email_verified_at column to users table");
+            }
+        } catch (PDOException $e) {
+            error_log("Error checking/creating email_verified_at column: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Check if user email is verified
+     */
+    public function isEmailVerified() {
+        return $this->email_verified_at !== null;
+    }
+    
+    /**
+     * Mark email as verified
+     */
+    public function markEmailVerified() {
+        $query = "UPDATE " . $this->table_name . " SET email_verified_at = NOW() WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        
+        if ($stmt->execute([$this->id])) {
+            $this->email_verified_at = date('Y-m-d H:i:s');
+            return true;
+        }
+        
+        return false;
     }
 }
 ?>

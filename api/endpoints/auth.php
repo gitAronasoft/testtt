@@ -6,13 +6,22 @@
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/EmailVerification.php';
+require_once __DIR__ . '/../services/EmailService.php';
+require_once __DIR__ . '/../services/GoogleAuthService.php'; // Assuming GoogleAuthService is in this path
 
 // Get database connection
 $database = new Database();
 $db = $database->getConnection();
 
-// Initialize user object
+// Initialize objects
 $user = new User($db);
+$emailVerification = new EmailVerification($db);
+$emailService = new EmailService();
+$googleAuthService = new GoogleAuthService(); // Initialize GoogleAuthService
+
+// Ensure email_verified_at column exists
+$user->createEmailVerifiedColumnIfNotExists();
 
 // Get request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -22,10 +31,333 @@ $path_parts = explode('/', trim($path, '/'));
 try {
     switch ($method) {
         case 'POST':
+            // Handle action-based requests (direct endpoint calls)
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            if (isset($data['action'])) {
+                $action = $data['action'];
+
+                switch ($action) {
+                    case 'google-login':
+                        if (empty($data['credential'])) {
+                            http_response_code(400);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Google credential (token) is required'
+                            ]);
+                            exit;
+                        }
+
+                        // Verify Google JWT token
+                        $googleUserData = $googleAuthService->verifyGoogleToken($data['credential']);
+
+                        if (!$googleUserData || !isset($googleUserData['email'])) {
+                            http_response_code(401);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Invalid Google credential'
+                            ]);
+                            exit;
+                        }
+
+                        // Check if user already exists with this email
+                        $stmt = $db->prepare("SELECT id, name, email, role, email_verified_at FROM users WHERE email = ?");
+                        $stmt->execute([$googleUserData['email']]);
+                        $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                        $userName = $googleUserData['name'] ?? $googleUserData['email']; // Use name from Google or fallback to email
+                        $userEmail = $googleUserData['email'];
+                        $userVerified = $googleUserData['email_verified'] ?? false; // Google usually provides this
+                        $userPicture = $googleUserData['picture'] ?? null;
+
+                        if ($existingUser) {
+                            // User exists, log them in
+                            $userId = $existingUser['id'];
+                            $userRole = $existingUser['role'];
+                            $emailVerified = $existingUser['email_verified_at'] !== null;
+
+                            // Update user if necessary (e.g., picture, name)
+                            // For simplicity, we'll just use existing user data and session
+                        } else {
+                            // User does not exist, create a new one
+                            $role = 'viewer'; // Default role for new users
+                            $hashedPassword = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT); // Set a random password as it's not used for login
+
+                            $createUserStmt = $db->prepare("
+                                INSERT INTO users (name, email, password, role, email_verified_at) 
+                                VALUES (?, ?, ?, ?, ?)
+                            ");
+
+                            // Set email_verified_at based on Google's verification status
+                            $verifiedAt = $userVerified ? date('Y-m-d H:i:s') : null;
+
+                            if ($createUserStmt->execute([$userName, $userEmail, $hashedPassword, $role, $verifiedAt])) {
+                                $userId = $db->lastInsertId();
+                                $emailVerified = $userVerified;
+                                $userRole = $role;
+                            } else {
+                                http_response_code(500);
+                                echo json_encode([
+                                    'success' => false,
+                                    'message' => 'Failed to create user account from Google data'
+                                ]);
+                                exit;
+                            }
+                        }
+
+                        // Generate session token
+                        $token = bin2hex(random_bytes(32));
+
+                        // Store session in database
+                        try {
+                            $sessionStmt = $db->prepare("
+                                INSERT INTO user_sessions (user_id, token, expires_at) 
+                                VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))
+                                ON DUPLICATE KEY UPDATE token = VALUES(token), expires_at = VALUES(expires_at)
+                            ");
+                            $sessionStmt->execute([$userId, $token]);
+                        } catch (PDOException $e) {
+                            // If sessions table doesn't exist, create it
+                            $db->exec("
+                                CREATE TABLE IF NOT EXISTS user_sessions (
+                                    id INT AUTO_INCREMENT PRIMARY KEY,
+                                    user_id INT NOT NULL,
+                                    token VARCHAR(255) NOT NULL UNIQUE,
+                                    expires_at DATETIME NOT NULL,
+                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                                )
+                            ");
+                            $sessionStmt = $db->prepare("
+                                INSERT INTO user_sessions (user_id, token, expires_at) 
+                                VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))
+                            ");
+                            $sessionStmt->execute([$userId, $token]);
+                        }
+
+                        http_response_code(200);
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Google login successful',
+                            'data' => [
+                                'user' => [
+                                    'id' => $userId,
+                                    'name' => $userName,
+                                    'email' => $userEmail,
+                                    'role' => $userRole,
+                                    'email_verified' => $emailVerified
+                                ],
+                                'token' => $token
+                            ]
+                        ]);
+                        exit;
+
+                    case 'google-signup':
+                        if (empty($data['credential'])) {
+                            http_response_code(400);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Google credential (token) is required'
+                            ]);
+                            exit;
+                        }
+
+                        // Verify Google JWT token
+                        $googleUserData = $googleAuthService->verifyGoogleToken($data['credential']);
+
+                        if (!$googleUserData || !isset($googleUserData['email'])) {
+                            http_response_code(401);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Invalid Google credential'
+                            ]);
+                            exit;
+                        }
+
+                        $userName = $googleUserData['name'] ?? $googleUserData['email'];
+                        $userEmail = $googleUserData['email'];
+                        $userVerified = $googleUserData['email_verified'] ?? false;
+                        $userPicture = $googleUserData['picture'] ?? null;
+
+                        // Check if email already exists
+                        $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
+                        $stmt->execute([$userEmail]);
+                        if ($stmt->fetch()) {
+                            http_response_code(400);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Email already registered. Please log in instead.'
+                            ]);
+                            exit;
+                        }
+
+                        // Create a new user
+                        $role = 'viewer'; // Default role for new users
+                        $hashedPassword = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT); // Set a random password
+
+                        $createUserStmt = $db->prepare("
+                            INSERT INTO users (name, email, password, role, email_verified_at) 
+                            VALUES (?, ?, ?, ?, ?)
+                        ");
+
+                        $verifiedAt = $userVerified ? date('Y-m-d H:i:s') : null;
+
+                        if ($createUserStmt->execute([$userName, $userEmail, $hashedPassword, $role, $verifiedAt])) {
+                            $userId = $db->lastInsertId();
+
+                            // Generate session token for the newly created user
+                            $token = bin2hex(random_bytes(32));
+                            $sessionStmt = $db->prepare("
+                                INSERT INTO user_sessions (user_id, token, expires_at) 
+                                VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))
+                            ");
+                            $sessionStmt->execute([$userId, $token]);
+
+                            http_response_code(201);
+                            echo json_encode([
+                                'success' => true,
+                                'message' => 'Google signup successful!',
+                                'data' => [
+                                    'user' => [
+                                        'id' => $userId,
+                                        'name' => $userName,
+                                        'email' => $userEmail,
+                                        'role' => $role,
+                                        'email_verified' => $userVerified
+                                    ],
+                                    'token' => $token
+                                ]
+                            ]);
+                            exit;
+                        } else {
+                            http_response_code(500);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Google signup failed'
+                            ]);
+                        }
+                        break;
+
+                    case 'verify-email':
+                        if (empty($data['token'])) {
+                            http_response_code(400);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Verification token is required'
+                            ]);
+                            exit;
+                        }
+
+                        try {
+                            $verificationResult = $emailVerification->verifyToken($data['token']);
+
+                            if ($verificationResult) {
+                                // Update user email verification status
+                                $userId = $verificationResult['user_id'];
+                                $user->markEmailVerified($userId);
+
+                                http_response_code(200);
+                                echo json_encode([
+                                    'success' => true,
+                                    'message' => 'Email verified successfully!',
+                                    'data' => [
+                                        'user_id' => $verificationResult['user_id'],
+                                        'email' => $verificationResult['email']
+                                    ]
+                                ]);
+                            } else {
+                                http_response_code(400);
+                                echo json_encode([
+                                    'success' => false,
+                                    'message' => 'Invalid or expired verification token'
+                                ]);
+                            }
+                        } catch (Exception $e) {
+                            error_log('Email verification error: ' . $e->getMessage());
+                            http_response_code(500);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Server error occurred'
+                            ]);
+                        }
+                        exit;
+
+                    case 'resend-verification':
+                        if (empty($data['email'])) {
+                            http_response_code(400);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Email is required'
+                            ]);
+                            exit;
+                        }
+
+                        try {
+                            // Find user by email  
+                            $user->createEmailVerifiedColumnIfNotExists();
+                            $stmt = $db->prepare("SELECT id, name, email, email_verified_at FROM users WHERE email = ?");
+                            $stmt->execute([$data['email']]);
+                            $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                            if (!$userData) {
+                                http_response_code(404);
+                                echo json_encode([
+                                    'success' => false,
+                                    'message' => 'User not found'
+                                ]);
+                                exit;
+                            }
+
+                            if ($userData['email_verified_at']) {
+                                http_response_code(400);
+                                echo json_encode([
+                                    'success' => false,
+                                    'message' => 'Email is already verified'
+                                ]);
+                                exit;
+                            }
+
+                            // Create new verification token
+                            $token = $emailVerification->createToken($userData['id'], $userData['email']);
+
+                            if ($token) {
+                                // Send verification email
+                                $emailSent = $emailService->sendVerificationEmail($userData['email'], $userData['name'], $token);
+
+                                if ($emailSent) {
+                                    echo json_encode([
+                                        'success' => true,
+                                        'message' => 'Verification email sent successfully!'
+                                    ]);
+                                } else {
+                                    echo json_encode([
+                                        'success' => true,
+                                        'message' => 'Verification token created, but email could not be sent. Please contact support.'
+                                    ]);
+                                }
+                            } else {
+                                http_response_code(500);
+                                echo json_encode([
+                                    'success' => false,
+                                    'message' => 'Failed to create verification token'
+                                ]);
+                            }
+                        } catch (Exception $e) {
+                            error_log('Resend verification error: ' . $e->getMessage());
+                            http_response_code(500);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Server error occurred'
+                            ]);
+                        }
+                        exit;
+                }
+            }
+
             if (isset($path_parts[2]) && $path_parts[2] === 'login') {
                 // Handle login
                 $data = json_decode(file_get_contents("php://input"), true);
-                
+
                 if (empty($data['email']) || empty($data['password'])) {
                     http_response_code(400);
                     echo json_encode([
@@ -34,16 +366,19 @@ try {
                     ]);
                     break;
                 }
-                
+
                 // Check if user exists and password is correct
-                $stmt = $db->prepare("SELECT id, name, email, role, password FROM users WHERE email = ?");
+                $stmt = $db->prepare("SELECT id, name, email, role, password, email_verified_at FROM users WHERE email = ?");
                 $stmt->execute([$data['email']]);
                 $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-                
+
                 if ($userData && password_verify($data['password'], $userData['password'])) {
+                    // Check if email is verified (optional - you can require it or not)
+                    $emailVerified = $userData['email_verified_at'] !== null;
+
                     // Generate session token
                     $token = bin2hex(random_bytes(32));
-                    
+
                     // Store session in database (create sessions table if needed)
                     try {
                         $sessionStmt = $db->prepare("
@@ -70,7 +405,7 @@ try {
                         ");
                         $sessionStmt->execute([$userData['id'], $token]);
                     }
-                    
+
                     http_response_code(200);
                     echo json_encode([
                         'success' => true,
@@ -80,7 +415,8 @@ try {
                                 'id' => $userData['id'],
                                 'name' => $userData['name'],
                                 'email' => $userData['email'],
-                                'role' => $userData['role']
+                                'role' => $userData['role'],
+                                'email_verified' => $emailVerified
                             ],
                             'token' => $token
                         ]
@@ -92,11 +428,11 @@ try {
                         'message' => 'Invalid email or password'
                     ]);
                 }
-                
+
             } elseif (isset($path_parts[2]) && $path_parts[2] === 'register') {
                 // Handle registration
                 $data = json_decode(file_get_contents("php://input"), true);
-                
+
                 if (empty($data['firstName']) || empty($data['lastName']) || 
                     empty($data['email']) || empty($data['password'])) {
                     http_response_code(400);
@@ -106,7 +442,7 @@ try {
                     ]);
                     break;
                 }
-                
+
                 // Check if email already exists
                 $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
                 $stmt->execute([$data['email']]);
@@ -118,31 +454,50 @@ try {
                     ]);
                     break;
                 }
-                
+
                 // Hash password and create user
                 $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
                 $userName = $data['firstName'] . ' ' . $data['lastName'];
                 $role = $data['userType'] ?? 'viewer';
-                
+
                 $stmt = $db->prepare("
                     INSERT INTO users (name, email, password, role) 
                     VALUES (?, ?, ?, ?)
                 ");
-                
+
                 if ($stmt->execute([$userName, $data['email'], $hashedPassword, $role])) {
                     $userId = $db->lastInsertId();
-                    
+
+                    // Create email verification token
+                    $verificationToken = $emailVerification->createToken($userId, $data['email']);
+
+                    if ($verificationToken) {
+                        // Send verification email
+                        $emailSent = $emailService->sendVerificationEmail($data['email'], $userName, $verificationToken);
+
+                        $message = 'Registration successful! ';
+                        if ($emailSent) {
+                            $message .= 'Please check your email to verify your account.';
+                        } else {
+                            $message .= 'However, we could not send the verification email. Please contact support.';
+                        }
+                    } else {
+                        $message = 'Registration successful, but verification token creation failed.';
+                    }
+
                     http_response_code(201);
                     echo json_encode([
                         'success' => true,
-                        'message' => 'Registration successful',
+                        'message' => $message,
                         'data' => [
                             'user' => [
                                 'id' => $userId,
                                 'name' => $userName,
                                 'email' => $data['email'],
-                                'role' => $role
-                            ]
+                                'role' => $role,
+                                'email_verified' => false
+                            ],
+                            'verification_required' => true
                         ]
                     ]);
                 } else {
@@ -152,44 +507,186 @@ try {
                         'message' => 'Registration failed'
                     ]);
                 }
-                
+
+            } elseif (isset($path_parts[2]) && $path_parts[2] === 'verify-email') {
+                // Handle email verification
+                $data = json_decode(file_get_contents("php://input"), true);
+
+                if (empty($data['token'])) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Verification token is required'
+                    ]);
+                    break;
+                }
+
+                $verificationResult = $emailVerification->verifyToken($data['token']);
+
+                if ($verificationResult) {
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Email verified successfully!',
+                        'data' => [
+                            'user_id' => $verificationResult['user_id'],
+                            'email' => $verificationResult['email']
+                        ]
+                    ]);
+                } else {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid or expired verification token'
+                    ]);
+                }
+
+            } elseif (isset($path_parts[2]) && $path_parts[2] === 'resend-verification') {
+                // Handle resending verification email
+                $data = json_decode(file_get_contents("php://input"), true);
+
+                if (empty($data['email'])) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Email is required'
+                    ]);
+                    break;
+                }
+
+                // Find user by email  
+                $user->createEmailVerifiedColumnIfNotExists();
+                $stmt = $db->prepare("SELECT id, name, email, email_verified_at FROM users WHERE email = ?");
+                $stmt->execute([$data['email']]);
+                $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$userData) {
+                    http_response_code(404);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'User not found'
+                    ]);
+                    break;
+                }
+
+                if ($userData['email_verified_at'] !== null) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Email is already verified'
+                    ]);
+                    break;
+                }
+
+                // Create new verification token
+                $verificationToken = $emailVerification->createToken($userData['id'], $userData['email']);
+
+                if ($verificationToken) {
+                    // Send verification email
+                    $emailSent = $emailService->sendVerificationEmail($userData['email'], $userData['name'], $verificationToken);
+
+                    if ($emailSent) {
+                        http_response_code(200);
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Verification email sent successfully!'
+                        ]);
+                    } else {
+                        http_response_code(500);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Failed to send verification email'
+                        ]);
+                    }
+                } else {
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to create verification token'
+                    ]);
+                }
+
             } elseif (isset($path_parts[2]) && $path_parts[2] === 'logout') {
                 // Handle logout
                 $headers = getallheaders();
                 $authHeader = $headers['Authorization'] ?? '';
-                
+
                 if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
                     $token = $matches[1];
-                    
+
                     // Delete session from database
                     $stmt = $db->prepare("DELETE FROM user_sessions WHERE token = ?");
                     $stmt->execute([$token]);
                 }
-                
+
                 http_response_code(200);
                 echo json_encode([
                     'success' => true,
                     'message' => 'Logout successful'
                 ]);
-                
+
             } else {
-                http_response_code(404);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Auth endpoint not found'
-                ]);
+                // Handle direct /api/auth requests (for Google auth)
+                if (end($path_parts) === 'auth' && count($path_parts) >= 2) {
+                    // This is a direct call to /api/auth, which should be handled by action-based logic above
+                    // If we reach here, it means no valid action was provided
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid or missing action parameter'
+                    ]);
+                } else {
+                    http_response_code(404);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Auth endpoint not found'
+                    ]);
+                }
             }
             break;
-            
+
         case 'GET':
-            if (isset($path_parts[2]) && $path_parts[2] === 'verify') {
+            if (isset($path_parts[2]) && $path_parts[2] === 'verify-email') {
+                // Handle email verification via GET (for URL clicks)
+                $token = $_GET['token'] ?? '';
+
+                if (empty($token)) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Verification token is required'
+                    ]);
+                    break;
+                }
+
+                $verificationResult = $emailVerification->verifyToken($token);
+
+                if ($verificationResult) {
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Email verified successfully!',
+                        'data' => [
+                            'user_id' => $verificationResult['user_id'],
+                            'email' => $verificationResult['email']
+                        ]
+                    ]);
+                } else {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid or expired verification token'
+                    ]);
+                }
+
+            } elseif (isset($path_parts[2]) && $path_parts[2] === 'verify') {
                 // Handle token verification
                 $headers = getallheaders();
                 $authHeader = $headers['Authorization'] ?? '';
-                
+
                 if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
                     $token = $matches[1];
-                    
+
                     // Check if session is valid
                     $stmt = $db->prepare("
                         SELECT u.id, u.name, u.email, u.role 
@@ -199,7 +696,7 @@ try {
                     ");
                     $stmt->execute([$token]);
                     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-                    
+
                     if ($userData) {
                         http_response_code(200);
                         echo json_encode([
@@ -230,7 +727,7 @@ try {
                 ]);
             }
             break;
-            
+
         default:
             http_response_code(405);
             echo json_encode([
