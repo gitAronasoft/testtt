@@ -750,7 +750,7 @@ function renderVideos(videos) {
 
 function createVideoElement(video) {
     const col = document.createElement("div");
-    col.className = "col-12 col-sm-4 col-md-4 col-lg-4 col-xl-4 mb-4";
+    col.className = "col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12";
 
     let thumbnail = "/api/placeholder/300/200";
     if (video.youtube_thumbnail && video.youtube_thumbnail !== "/api/placeholder/300/200") {
@@ -930,6 +930,44 @@ function renderMyVideosFromDatabase(videos) {
             fragment.appendChild(videoElement);
         }
 
+        // Add mobile sidebar toggle functionality
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.querySelector('.sidebar-backdrop');
+            
+            if (sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                backdrop.style.display = 'none';
+            } else {
+                sidebar.classList.add('show');
+                backdrop.style.display = 'block';
+            }
+        };
+
+        window.closeSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.querySelector('.sidebar-backdrop');
+            
+            sidebar.classList.remove('show');
+            backdrop.style.display = 'none';
+        };
+
+        // Enhanced video management functions
+        window.refreshMyVideos = function() {
+            showNotification("Refreshing videos...", "info");
+            loadMyVideos();
+        };
+
+        window.editVideo = function(videoId) {
+            showNotification(`Opening editor for video ${videoId}`, "info");
+            // Implementation for video editing modal
+        };
+
+        window.previewVideo = function(videoId, title) {
+            showNotification(`Previewing: ${title}`, "info");
+            // Implementation for video preview modal
+        };
+
         if (endIndex < videos.length) {
             requestAnimationFrame(() => renderChunks(endIndex));
         } else {
@@ -942,11 +980,11 @@ function renderMyVideosFromDatabase(videos) {
 }
 
 function createMyVideoElement(video) {
-    const col = document.createElement("div");
-    col.className = "col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3 mb-3";
+    const videoCard = document.createElement("div");
+    videoCard.className = "creator-video-card";
 
     let thumbnail = "/api/placeholder/300/200";
-    if (video.youtube_thumbnail) {
+    if (video.youtube_thumbnail && video.youtube_thumbnail !== "/api/placeholder/300/200") {
         thumbnail = video.youtube_thumbnail;
     } else if (video.youtube_id) {
         thumbnail = `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg`;
@@ -955,50 +993,80 @@ function createMyVideoElement(video) {
     const price = parseFloat(video.price) || 0;
     const isYouTube = video.youtube_id && video.is_youtube_synced;
     const isFree = price === 0;
+    const views = video.views || 0;
 
-    col.innerHTML = `
-        <div class="card video-card h-100 shadow-sm border-0 position-relative">
-            <div class="video-thumbnail position-relative overflow-hidden" style="height: 180px;">
-                <img src="${thumbnail}" alt="${escapeHtml(video.title)}" 
-                     class="card-img-top w-100 h-100" 
-                     style="object-fit: cover; transition: transform 0.3s ease;"
-                     onmouseover="this.style.transform='scale(1.05)'"
-                     onmouseout="this.style.transform='scale(1)'"
-                     onerror="this.src='/api/placeholder/300/200'">
+    videoCard.innerHTML = `
+        <!-- Video Thumbnail Container -->
+        <div class="video-thumbnail-container">
+            <img src="${thumbnail}" 
+                 alt="${escapeHtml(video.title)}" 
+                 onerror="this.src='/api/placeholder/300/200'"
+                 loading="lazy">
+            
+            <!-- Video Badges -->
+            <div class="video-badges">
+                ${!isFree ? 
+                    `<span class="video-badge badge-price">$${price.toFixed(2)}</span>` : 
+                    '<span class="video-badge badge-free">FREE</span>'
+                }
+                ${isYouTube ? 
+                    '<span class="video-badge badge-youtube"><i class="fab fa-youtube me-1"></i>YT</span>' : ''
+                }
             </div>
 
-            <div class="card-body p-2 d-flex flex-column">
-                <h6 class="card-title mb-2 small" title="${escapeHtml(video.title)}" style="line-height: 1.3; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-weight: 600; font-size: 0.85rem;">
-                    ${escapeHtml(video.title)}
-                </h6>
-
-                <div class="video-meta mb-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted" style="font-size: 0.75rem;">
-                            <i class="fas fa-clock me-1"></i>${formatTimeAgo(video.created_at)}
-                        </small>
-                        ${!isFree ? `<span class="badge bg-primary">${price.toFixed(2)}</span>` : '<span class="badge bg-success">FREE</span>'}
-                    </div>
-                </div>
-
-                <div class="mt-auto">
-                    <div class="btn-group btn-group-sm w-100" role="group">
-                        <button class="btn btn-outline-primary btn-sm" onclick="editVideoPrice(${video.id}, ${video.price})" title="Edit Price">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-outline-success btn-sm" onclick="previewVideo('${video.youtube_id || video.id}', '${escapeHtml(video.title)}')" title="Preview">
-                            <i class="fas fa-play"></i>
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="deleteMyVideo(${video.id})" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
+            <!-- Hover Overlay with Play Button -->
+            <div class="video-overlay">
+                <button class="play-button" onclick="previewVideo(${video.id}, '${escapeHtml(video.title)}')">
+                    <i class="fas fa-play"></i>
+                </button>
             </div>
+        </div>
+
+        <!-- Video Content -->
+        <div class="video-content">
+            <h3 class="video-title">${escapeHtml(video.title)}</h3>
+            
+            <div class="video-stats">
+                <span class="video-stat">
+                    <i class="fas fa-eye"></i>
+                    ${views.toLocaleString()}
+                </span>
+                <span class="video-stat">
+                    <i class="fas fa-clock"></i>
+                    ${formatTimeAgo(video.created_at)}
+                </span>
+            </div>
+
+            ${video.description ? 
+                `<p class="video-description">${escapeHtml(video.description)}</p>` : ''
+            }
+
+            <!-- Video Actions -->
+            <div class="video-actions">
+                <button class="video-action-btn primary" onclick="previewVideo(${video.id}, '${escapeHtml(video.title)}')" title="Preview Video">
+                    <i class="fas fa-play"></i>
+                    Preview
+                </button>
+                <button class="video-action-btn secondary" onclick="editVideo(${video.id})" title="Edit Video">
+                    <i class="fas fa-edit"></i>
+                    Edit
+                </button>
+                <button class="video-action-btn danger" onclick="deleteMyVideo(${video.id})" title="Delete Video">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+            </div>
+
+            ${isYouTube ? 
+                `<a href="https://www.youtube.com/watch?v=${video.youtube_id}" target="_blank" class="video-action-btn secondary mt-2" style="text-decoration: none;">
+                    <i class="fab fa-youtube"></i>
+                    View on YouTube
+                </a>` : ''
+            }
         </div>
     `;
 
-    return col;
+    return videoCard;
 }
 
 function renderUsers(users) {
@@ -1885,6 +1953,63 @@ function getRoleBadgeColor(role) {
     }
 }
 
+// Dashboard utility functions
+function refreshDashboard() {
+    showLoading(true);
+    clearCache();
+    
+    // Update current time
+    updateCurrentTime();
+    
+    // Reload all data
+    loadAllDashboardData().then(() => {
+        showNotification('Dashboard refreshed successfully', 'success');
+        
+        // Re-render current panel
+        if (window.currentPanelName) {
+            showPanel(window.currentPanelName);
+        }
+    }).catch(error => {
+        console.error('Failed to refresh dashboard:', error);
+        showNotification('Failed to refresh dashboard', 'error');
+    }).finally(() => {
+        showLoading(false);
+    });
+}
+
+function updateCurrentTime() {
+    const timeElement = document.getElementById('currentTime');
+    if (timeElement) {
+        const now = new Date();
+        const options = { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+        };
+        timeElement.textContent = now.toLocaleTimeString('en-US', options);
+    }
+}
+
+// Update time every minute
+setInterval(updateCurrentTime, 60000);
+
+// Initialize time on load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCurrentTime();
+    
+    // Update current date
+    const dateElement = document.getElementById('currentDate');
+    if (dateElement) {
+        const now = new Date();
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        };
+        dateElement.textContent = now.toLocaleDateString('en-US', options);
+    }
+});
+
 // Export/Delete functions
 function exportUserData() {
     showNotification('Preparing data export...', 'info');
@@ -2204,9 +2329,243 @@ function editVideoPrice(videoId, currentPrice) {
     showNotification('Price update functionality maintained', 'info');
 }
 
+// Enhanced video management functions
 function previewVideo(videoId, title) {
-    // Implementation for video preview
-    showNotification('Preview functionality maintained', 'info');
+    console.log('Previewing video:', videoId, title);
+    
+    // Get video data
+    const video = allVideos.find(v => v.id == videoId);
+    if (!video) {
+        showNotification('Video not found', 'error');
+        return;
+    }
+
+    // Create and show video preview modal
+    const modal = createVideoPreviewModal(video);
+    if (modal) {
+        modal.show();
+    }
+}
+
+function editVideo(videoId) {
+    console.log('Editing video:', videoId);
+    
+    // Get video data
+    const video = allVideos.find(v => v.id == videoId);
+    if (!video) {
+        showNotification('Video not found', 'error');
+        return;
+    }
+
+    // Create and show video edit modal
+    const modal = createVideoEditModal(video);
+    if (modal) {
+        modal.show();
+    }
+}
+
+function createVideoPreviewModal(video) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('videoPreviewModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Create modal HTML
+    const modalHtml = `
+        <div class="modal fade" id="videoPreviewModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-play me-2"></i>${video.title}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                ${video.youtube_id ? 
+                                    `<div class="ratio ratio-16x9">
+                                        <iframe 
+                                            src="https://www.youtube.com/embed/${video.youtube_id}" 
+                                            title="${video.title}"
+                                            allowfullscreen
+                                        ></iframe>
+                                    </div>` :
+                                    `<div class="bg-light p-5 text-center rounded">
+                                        <i class="fas fa-video fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Video preview not available</p>
+                                    </div>`
+                                }
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Video Details</h6>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Description</small>
+                                            <p class="mb-2">${video.description || 'No description available'}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Price</small>
+                                            <h5 class="text-success mb-0">$${parseFloat(video.price || 0).toFixed(2)}</h5>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Views</small>
+                                            <p class="mb-0">${(video.views || 0).toLocaleString()}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Category</small>
+                                            <p class="mb-0">${video.category || 'Uncategorized'}</p>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">Upload Date</small>
+                                            <p class="mb-0">${formatDate(video.created_at)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        ${currentUser && video.uploader_id == currentUser.id ? 
+                            `<button type="button" class="btn btn-primary" onclick="editVideo(${video.id})">
+                                <i class="fas fa-edit me-1"></i>Edit Video
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Return Bootstrap modal instance
+    return new bootstrap.Modal(document.getElementById('videoPreviewModal'));
+}
+
+function createVideoEditModal(video) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('videoEditModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Create modal HTML
+    const modalHtml = `
+        <div class="modal fade" id="videoEditModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-edit me-2"></i>Edit Video
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form id="videoEditForm">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="editVideoTitle" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="editVideoTitle" value="${video.title}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editVideoDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="editVideoDescription" rows="3" required>${video.description || ''}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editVideoPrice" class="form-label">Price ($)</label>
+                                <input type="number" class="form-control" id="editVideoPrice" step="0.01" min="0" value="${video.price || 0}">
+                            </div>
+                            ${video.youtube_id ? 
+                                `<div class="alert alert-info">
+                                    <i class="fab fa-youtube me-2"></i>
+                                    This video is synced with YouTube. Changes will only affect the platform database.
+                                </div>` : ''
+                            }
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Add form submit handler
+    document.getElementById('videoEditForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveVideoChanges(video.id);
+    });
+    
+    // Return Bootstrap modal instance
+    return new bootstrap.Modal(document.getElementById('videoEditModal'));
+}
+
+async function saveVideoChanges(videoId) {
+    const title = document.getElementById('editVideoTitle').value.trim();
+    const description = document.getElementById('editVideoDescription').value.trim();
+    const price = parseFloat(document.getElementById('editVideoPrice').value) || 0;
+
+    if (!title || !description) {
+        showNotification('Please fill in all required fields', 'error');
+        return;
+    }
+
+    try {
+        showLoading(true);
+        
+        const response = await fetch('api/videos.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            credentials: 'include',
+            body: `action=edit_video&id=${videoId}&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}&price=${price}`
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Video updated successfully', 'success');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('videoEditModal'));
+            modal.hide();
+            
+            // Clear cache and reload data
+            clearCache('videos');
+            clearCache('my_videos');
+            await loadAllDashboardData();
+            
+            // Refresh the current view
+            if (window.currentPanelName === 'myVideos') {
+                const myVideos = dashboardData.videos ? dashboardData.videos.filter(video => 
+                    video.uploader_id == currentUser.id
+                ) : [];
+                renderMyVideosFromDatabase(myVideos);
+            } else if (window.currentPanelName === 'videos') {
+                renderVideosFromDatabase(allVideos);
+            }
+        } else {
+            showNotification('Failed to update video: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error updating video:', error);
+        showNotification('Error updating video', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 function deleteMyVideo(videoId) {

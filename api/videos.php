@@ -346,6 +346,7 @@ function handleUploadVideo() {
 }
 
 function handleUpdateVideo() {
+    $input = [];
     parse_str(file_get_contents('php://input'), $input);
 
     if (!isset($input['action'])) {
@@ -415,6 +416,48 @@ function handleUpdateVideo() {
         }
 
         $update_stmt->close();
+    } else if ($action === 'edit_video') {
+        // Handle video editing
+        if (!isset($input['id']) || !isset($input['title']) || !isset($input['description']) || !isset($input['price'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+            return;
+        }
+
+        $video_id = intval($input['id']);
+        $title = trim($input['title']);
+        $description = trim($input['description']);
+        $price = floatval($input['price']);
+
+        // Check if user owns this video
+        $check_sql = "SELECT id FROM videos WHERE id = ? AND uploader_id = ?";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("ii", $video_id, $_SESSION['user']['id']);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+
+        if ($check_result->num_rows === 0) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Video not found or access denied']);
+            $check_stmt->close();
+            $conn->close();
+            return;
+        }
+
+        $check_stmt->close();
+
+        // Update video details
+        $update_sql = "UPDATE videos SET title = ?, description = ?, price = ? WHERE id = ? AND uploader_id = ?";
+        $update_stmt = $conn->prepare($update_sql);
+        $update_stmt->bind_param("ssdii", $title, $description, $price, $video_id, $_SESSION['user']['id']);
+
+        if ($update_stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Video updated successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update video']);
+        }
+
+        $update_stmt->close();
     } else {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
@@ -424,6 +467,7 @@ function handleUpdateVideo() {
 }
 
 function handleDeleteVideo() {
+    $input = [];
     parse_str(file_get_contents("php://input"), $input);
     $video_id = $input['id'] ?? null;
 

@@ -14,8 +14,8 @@
         <div class="container-fluid">
             <!-- Logo -->
             <a class="navbar-brand phoenix-brand" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
-                <i class="fas fa-fire phoenix-icon"></i>
-                <span class="brand-text">phoenix</span>
+                <img src="attached_assets/generated_images/VideoShare_professional_logo_49cb8ac5.png" alt="VideoShare" class="brand-logo">
+                <span class="brand-text">VideoShare</span>
             </a>
 
             <!-- Spacer to push user avatar to the right -->
@@ -54,6 +54,11 @@
 
     <!-- Sidebar Backdrop -->
     <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+    <!-- Mobile Sidebar Toggle -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
 
     <div class="phoenix-layout">
         <!-- Phoenix Sidebar -->
@@ -225,8 +230,7 @@
         </div>
 
         <!-- Phoenix Main Content -->
-        <div class="phoenix-main-content">
-            <div class="phoenix-content-wrapper">
+        <div class="phoenix-main">
                     <!-- Loading Spinner -->
                     <div id="loadingSpinner" class="text-center py-5" style="display: none;">
                         <div class="spinner-border text-primary" role="status">
@@ -236,196 +240,372 @@
 
                     <!-- Phoenix Overview Panel -->
                     <div id="overviewPanel" class="panel" style="display: none;">
-                        <!-- Page Header -->
-                        <div class="phoenix-page-header">
-                            <div class="d-flex justify-content-between align-items-center">
+                        <!-- Sleek Page Header -->
+                        <div class="mb-5">
+                            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4">
                                 <div>
-                                    <h1 class="phoenix-page-title">Projects Dashboard</h1>
-                                    <p class="phoenix-page-subtitle">Here's what's going on at your business right now</p>
-                                    <small class="phoenix-page-date">
-                                        <i class="fas fa-calendar-alt me-1"></i>
+                                    <h1 class="display-6 fw-bold text-dark mb-2">Dashboard Overview</h1>
+                                    <p class="text-muted fs-5 mb-3">Monitor your platform performance and key metrics</p>
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <i class="fas fa-calendar-alt me-2 text-primary"></i>
                                         <span id="currentDate">Mar 1, 2025</span>
-                                    </small>
+                                        <span class="mx-3">•</span>
+                                        <i class="fas fa-clock me-2 text-success"></i>
+                                        <span id="currentTime">Loading...</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 mt-3 mt-lg-0">
+                                    <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+                                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                                    </button>
+                                    <div class="dropdown">
+                                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-download me-2"></i>Export
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf me-2 text-danger"></i>Export as PDF</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel me-2 text-success"></i>Export as Excel</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-file-csv me-2 text-info"></i>Export as CSV</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Welcome Alert -->
+                            <div class="alert alert-primary alert-dismissible fade show border-0 shadow-sm" role="alert" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%);">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary rounded-circle p-2 me-3">
+                                        <i class="fas fa-bell text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 fw-semibold">Welcome back!</h6>
+                                        <p class="mb-0 small">You have 3 new notifications and 2 pending approvals.</p>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Stats Cards with Perfect Alignment -->
+                        <div class="row g-4 mb-5">
+                            <div class="col-xl-3 col-lg-6 col-md-6">
+                                <div class="card border-0 shadow-sm h-100" style="transition: all 0.3s ease;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary bg-gradient rounded-3 p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-video text-white fa-lg"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="h4 mb-1 text-dark fw-bold" id="totalVideosCount">32</h3>
+                                                    <p class="text-muted mb-0 fw-medium">Total Videos</p>
+                                                </div>
+                                            </div>
+                                            <div class="dropdown">
+                                                <button class="btn btn-light btn-sm border-0" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-eye me-2"></i>View Details</a></li>
+                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i>Analytics</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <small class="text-success fw-medium">
+                                                <i class="fas fa-arrow-up me-1"></i>12% increase
+                                            </small>
+                                            <div class="progress bg-light" style="width: 80px; height: 6px; border-radius: 3px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width: 75%; border-radius: 3px;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-lg-6 col-md-6">
+                                <div class="card border-0 shadow-sm h-100" style="transition: all 0.3s ease;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-success bg-gradient rounded-3 p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-users text-white fa-lg"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="h4 mb-1 text-dark fw-bold" id="totalUsersCount">94</h3>
+                                                    <p class="text-muted mb-0 fw-medium">Active Users</p>
+                                                </div>
+                                            </div>
+                                            <div class="dropdown">
+                                                <button class="btn btn-light btn-sm border-0" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-users me-2"></i>Manage Users</a></li>
+                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-user-plus me-2"></i>Add User</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <small class="text-success fw-medium">
+                                                <i class="fas fa-arrow-up me-1"></i>8% increase
+                                            </small>
+                                            <div class="progress bg-light" style="width: 80px; height: 6px; border-radius: 3px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 65%; border-radius: 3px;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-lg-6 col-md-6">
+                                <div class="card border-0 shadow-sm h-100" style="transition: all 0.3s ease;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-warning bg-gradient rounded-3 p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-dollar-sign text-white fa-lg"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="h4 mb-1 text-dark fw-bold">$<span id="totalEarningsCount">2,347</span></h3>
+                                                    <p class="text-muted mb-0 fw-medium">Total Earnings</p>
+                                                </div>
+                                            </div>
+                                            <div class="dropdown">
+                                                <button class="btn btn-light btn-sm border-0" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-chart-pie me-2"></i>Revenue Report</a></li>
+                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-download me-2"></i>Download Statement</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <small class="text-success fw-medium">
+                                                <i class="fas fa-arrow-up me-1"></i>15% increase
+                                            </small>
+                                            <div class="progress bg-light" style="width: 80px; height: 6px; border-radius: 3px;">
+                                                <div class="progress-bar bg-warning" role="progressbar" style="width: 85%; border-radius: 3px;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-lg-6 col-md-6">
+                                <div class="card border-0 shadow-sm h-100" style="transition: all 0.3s ease;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-info bg-gradient rounded-3 p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-chart-line text-white fa-lg"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="h4 mb-1 text-dark fw-bold" id="refundsCount">23%</h3>
+                                                    <p class="text-muted mb-0 fw-medium">Growth Rate</p>
+                                                </div>
+                                            </div>
+                                            <div class="dropdown">
+                                                <button class="btn btn-light btn-sm border-0" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-trending-up me-2"></i>Growth Analysis</a></li>
+                                                    <li><a class="dropdown-item" href="#"><i class="fas fa-calendar me-2"></i>Monthly Report</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <small class="text-success fw-medium">
+                                                <i class="fas fa-arrow-up me-1"></i>23% increase
+                                            </small>
+                                            <div class="progress bg-light" style="width: 80px; height: 6px; border-radius: 3px;">
+                                                <div class="progress-bar bg-info" role="progressbar" style="width: 90%; border-radius: 3px;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Modern Bootstrap Stats Cards -->
-                        <div class="row mb-5 g-4">
-                            <div class="col-lg-3 col-md-6">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-primary bg-gradient rounded-3 p-3 text-white">
-                                                    <i class="fas fa-video fa-lg"></i>
+                        <!-- Enhanced Project Progress Section -->
+                        <div class="row mb-4">
+                            <div class="col-xl-8">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                                        <div>
+                                            <h5 class="card-title mb-1">Project: VideoShare Platform</h5>
+                                            <span class="badge bg-primary-subtle text-primary">Phase 2 is now ongoing</span>
+                                        </div>
+                                        <span class="badge bg-warning text-dark">Coming Soon</span>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Enhanced Progress Controls -->
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+                                            <div class="d-flex gap-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="progressToggle" checked>
+                                                    <label class="form-check-label" for="progressToggle">Show Progress</label>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="linksToggle" checked>
+                                                    <label class="form-check-label" for="linksToggle">Show Links</label>
                                                 </div>
                                             </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <h2 class="h3 mb-1 text-dark" id="totalVideosCount">32</h2>
-                                                <p class="text-muted mb-0 fw-medium">Total Videos</p>
-                                                <small class="text-success">
-                                                    <i class="fas fa-arrow-up me-1"></i>12% from last month
-                                                </small>
+                                            <div class="btn-group" role="group">
+                                                <input type="radio" class="btn-check" name="timeFilter" id="weekFilter" autocomplete="off">
+                                                <label class="btn btn-outline-secondary btn-sm" for="weekFilter">Week</label>
+                                                
+                                                <input type="radio" class="btn-check" name="timeFilter" id="monthFilter" autocomplete="off" checked>
+                                                <label class="btn btn-outline-secondary btn-sm" for="monthFilter">Month</label>
+                                                
+                                                <input type="radio" class="btn-check" name="timeFilter" id="yearFilter" autocomplete="off">
+                                                <label class="btn btn-outline-secondary btn-sm" for="yearFilter">Year</label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Enhanced Progress Timeline -->
+                                        <div class="list-group list-group-flush">
+                                            <div class="list-group-item px-0 py-3">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-medium">Planning</span>
+                                                    <span class="badge bg-success">100%</span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-group-item px-0 py-3">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-medium">Research</span>
+                                                    <span class="badge bg-success">80%</span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 80%" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-group-item px-0 py-3">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-medium">Design</span>
+                                                    <span class="badge bg-primary">65%</span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-group-item px-0 py-3">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-medium">Development</span>
+                                                    <span class="badge bg-warning text-dark">40%</span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 40%" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-group-item px-0 py-3">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-medium">Testing</span>
+                                                    <span class="badge bg-secondary">25%</span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-secondary" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="list-group-item px-0 py-3">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-medium">Deployment</span>
+                                                    <span class="badge bg-light text-dark">15%</span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-light" role="progressbar" style="width: 15%" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="col-lg-3 col-md-6">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-success bg-gradient rounded-3 p-3 text-white">
-                                                    <i class="fas fa-users fa-lg"></i>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <h2 class="h3 mb-1 text-dark" id="totalUsersCount">94</h2>
-                                                <p class="text-muted mb-0 fw-medium">Active Members</p>
-                                                <small class="text-success">
-                                                    <i class="fas fa-arrow-up me-1"></i>8% from last month
-                                                </small>
-                                            </div>
-                                        </div>
+                            
+                            <div class="col-xl-4">
+                                <!-- Enhanced Activity Feed -->
+                                <div class="card border-0 shadow-sm mb-4">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <h6 class="card-title mb-0">Recent Activity</h6>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-warning bg-gradient rounded-3 p-3 text-white">
-                                                    <i class="fas fa-dollar-sign fa-lg"></i>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <h2 class="h3 mb-1 text-dark">$<span id="totalEarningsCount">2,347</span></h2>
-                                                <p class="text-muted mb-0 fw-medium">Total Earnings</p>
-                                                <small class="text-success">
-                                                    <i class="fas fa-arrow-up me-1"></i>15% from last month
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-info bg-gradient rounded-3 p-3 text-white">
-                                                    <i class="fas fa-chart-line fa-lg"></i>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <h2 class="h3 mb-1 text-dark" id="refundsCount">3</h2>
-                                                <p class="text-muted mb-0 fw-medium">Monthly Growth</p>
-                                                <small class="text-success">
-                                                    <i class="fas fa-arrow-up me-1"></i>23% from last month
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Project Progress Section -->
-                        <div class="phoenix-project-section">
-                            <div class="row">
-                                <div class="col-xl-8">
-                                    <div class="phoenix-card">
-                                        <div class="phoenix-card-header">
-                                            <h3 class="phoenix-card-title">Project: zero Roadmap</h3>
-                                            <span class="phoenix-project-status">Phase 2 is now ongoing</span>
-                                            <span class="phoenix-coming-soon">COMING SOON 8</span>
-                                        </div>
-                                        <div class="phoenix-card-body">
-                                            <!-- Progress Controls -->
-                                            <div class="phoenix-progress-controls mb-4">
-                                                <div class="phoenix-toggle-group">
-                                                    <label class="phoenix-toggle">
-                                                        <input type="checkbox" checked>
-                                                        <span class="phoenix-toggle-slider"></span>
-                                                        <span class="phoenix-toggle-label">Progress</span>
-                                                    </label>
-                                                    <label class="phoenix-toggle">
-                                                        <input type="checkbox" checked>
-                                                        <span class="phoenix-toggle-slider"></span>
-                                                        <span class="phoenix-toggle-label">Links</span>
-                                                    </label>
-                                                </div>
-                                                <div class="phoenix-time-filters">
-                                                    <button class="phoenix-time-btn">Week</button>
-                                                    <button class="phoenix-time-btn active">Month</button>
-                                                    <button class="phoenix-time-btn">Year</button>
-                                                </div>
-                                            </div>
-
-                                            <!-- Progress Timeline -->
-                                            <div class="phoenix-progress-timeline">
-                                                <div class="phoenix-progress-item">
-                                                    <div class="phoenix-progress-label">Planning</div>
-                                                    <div class="phoenix-progress-bar">
-                                                        <div class="phoenix-progress-fill" style="width: 100%"></div>
+                                    <div class="card-body p-0">
+                                        <div class="list-group list-group-flush">
+                                            <div class="list-group-item border-0 py-3">
+                                                <div class="d-flex align-items-start">
+                                                    <div class="avatar-circle bg-success text-white me-3 mt-1" style="width: 32px; height: 32px; font-size: 12px;">
+                                                        <i class="fas fa-check"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <p class="mb-1 fw-medium">Design phase completed</p>
+                                                        <small class="text-muted">2 hours ago</small>
                                                     </div>
                                                 </div>
-                                                <div class="phoenix-progress-item">
-                                                    <div class="phoenix-progress-label">Research</div>
-                                                    <div class="phoenix-progress-bar">
-                                                        <div class="phoenix-progress-fill" style="width: 80%"></div>
+                                            </div>
+                                            
+                                            <div class="list-group-item border-0 py-3">
+                                                <div class="d-flex align-items-start">
+                                                    <div class="avatar-circle bg-primary text-white me-3 mt-1" style="width: 32px; height: 32px; font-size: 12px;">
+                                                        <i class="fas fa-user"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <p class="mb-1 fw-medium">New team member added</p>
+                                                        <small class="text-muted">5 hours ago</small>
                                                     </div>
                                                 </div>
-                                                <div class="phoenix-progress-item">
-                                                    <div class="phoenix-progress-label">Design</div>
-                                                    <div class="phoenix-progress-bar">
-                                                        <div class="phoenix-progress-fill phoenix-progress-active" style="width: 65%"></div>
+                                            </div>
+                                            
+                                            <div class="list-group-item border-0 py-3">
+                                                <div class="d-flex align-items-start">
+                                                    <div class="avatar-circle bg-warning text-white me-3 mt-1" style="width: 32px; height: 32px; font-size: 12px;">
+                                                        <i class="fas fa-video"></i>
                                                     </div>
-                                                </div>
-                                                <div class="phoenix-progress-item">
-                                                    <div class="phoenix-progress-label">Review</div>
-                                                    <div class="phoenix-progress-bar">
-                                                        <div class="phoenix-progress-fill" style="width: 40%"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="phoenix-progress-item">
-                                                    <div class="phoenix-progress-label">Develop</div>
-                                                    <div class="phoenix-progress-bar">
-                                                        <div class="phoenix-progress-fill" style="width: 25%"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="phoenix-progress-item">
-                                                    <div class="phoenix-progress-label">Review II</div>
-                                                    <div class="phoenix-progress-bar">
-                                                        <div class="phoenix-progress-fill" style="width: 15%"></div>
+                                                    <div class="flex-grow-1">
+                                                        <p class="mb-1 fw-medium">Video upload feature deployed</p>
+                                                        <small class="text-muted">1 day ago</small>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-xl-4">
-                                    <div class="phoenix-card phoenix-early-bird">
-                                        <div class="phoenix-card-body">
-                                            <h4 class="phoenix-early-bird-title">Early bird gets the warm leads!</h4>
-                                            <p class="phoenix-early-bird-text">
-                                                Phoenix CRM Dashboard is coming to market soon for fulfilling your every CRM related needs.
-                                            </p>
-                                            <div class="phoenix-early-bird-footer">
-                                                Follow <a href="#" class="phoenix-link">ThemeWagon</a> at Bootstrap Marketplace
-                                                <div class="phoenix-chat-demo">
-                                                    <i class="fas fa-comment-dots"></i>
-                                                    <span>Chat demo</span>
-                                                    <div class="phoenix-online-indicator"></div>
-                                                </div>
-                                            </div>
+
+                                <!-- Enhanced Quick Actions Card -->
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-primary bg-gradient text-white border-0 py-3">
+                                        <h6 class="card-title mb-0 text-white">Quick Actions</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-plus me-2"></i>Add New Project
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-upload me-2"></i>Upload Video
+                                            </button>
+                                            <button class="btn btn-outline-info btn-sm">
+                                                <i class="fas fa-chart-bar me-2"></i>View Analytics
+                                            </button>
+                                            <button class="btn btn-outline-warning btn-sm">
+                                                <i class="fas fa-cog me-2"></i>Settings
+                                            </button>
+                                        </div>
+                                        
+                                        <hr class="my-3">
+                                        
+                                        <div class="text-center">
+                                            <p class="small text-muted mb-2">Need help getting started?</p>
+                                            <a href="#" class="btn btn-link btn-sm p-0">
+                                                <i class="fas fa-question-circle me-1"></i>View Documentation
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -489,8 +669,9 @@
 
 
 
-                        <div class="row" id="videosContainer">
-                            <!-- Videos will be populated by JavaScript -->
+                        <!-- Videos Grid with Proper Bootstrap Classes -->
+                        <div class="row g-4" id="videosContainer">
+                            <!-- Videos will be populated by JavaScript with proper col-xl-3 col-lg-4 col-md-6 col-sm-12 classes -->
                         </div>
 
                         <!-- Load More Button -->
@@ -503,93 +684,70 @@
 
                     <!-- My Videos Panel -->
                     <div id="myVideosPanel" class="panel" style="display: none;">
-                        <!-- Creator Metrics Cards -->
-                        <div class="row mb-3 g-3">
-                            <div class="col-xl-3 col-md-6">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-primary bg-gradient rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                    <i class="fas fa-video"></i>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <h4 class="mb-1 text-dark" id="creatorTotalVideos">0</h4>
-                                                <p class="text-muted mb-0 fw-medium small">My Videos</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                        <!-- Panel Header -->
+                        <div class="panel-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h1 class="panel-title">My Videos</h1>
+                                    <p class="panel-subtitle" id="myVideosSubtitle">Manage your video content and track performance</p>
                                 </div>
-                            </div>
-
-                            <div class="col-xl-3 col-md-6">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-success bg-gradient rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                    <i class="fas fa-eye"></i>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <h4 class="mb-1 text-dark" id="creatorTotalViews">0</h4>
-                                                <p class="text-muted mb-0 fw-medium small">Total Views</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-xl-3 col-md-6">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-warning bg-gradient rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                    <i class="fas fa-dollar-sign"></i>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <h4 class="mb-1 text-dark" id="creatorTotalEarnings">$0</h4>
-                                                <p class="text-muted mb-0 fw-medium small">Total Earnings</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-xl-3 col-md-6">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <div class="bg-info bg-gradient rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                    <i class="fas fa-chart-line"></i>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <h4 class="mb-1 text-dark" id="creatorMonthlyEarnings">$0</h4>
-                                                <p class="text-muted mb-0 fw-medium small">This Month</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class="d-flex gap-3">
+                                    <button class="action-btn secondary" onclick="refreshMyVideos()">
+                                        <i class="fas fa-sync-alt"></i>Refresh
+                                    </button>
+                                    <button class="action-btn" onclick="showPanel('upload')">
+                                        <i class="fas fa-plus"></i>Upload Video
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
-                            <div>
-                                <h3 class="mb-1">My Videos</h3>
-                                <p class="text-muted mb-0 small" id="myVideosCount">Loading videos...</p>
+                        <!-- Enhanced Metrics Cards -->
+                        <div class="row mb-4 g-4">
+                            <div class="col-xl-3 col-md-6">
+                                <div class="metrics-card">
+                                    <div class="metrics-icon">
+                                        <i class="fas fa-video"></i>
+                                    </div>
+                                    <div class="metrics-value" id="creatorTotalVideos">0</div>
+                                    <div class="metrics-label">Total Videos</div>
+                                </div>
                             </div>
-                            <button class="btn btn-primary btn-sm" onclick="event.preventDefault(); showPanel('upload'); return false;">
-                                <i class="fas fa-plus me-1"></i>Upload Video
-                            </button>
+
+                            <div class="col-xl-3 col-md-6">
+                                <div class="metrics-card">
+                                    <div class="metrics-icon" style="background: var(--success-gradient);">
+                                        <i class="fas fa-eye"></i>
+                                    </div>
+                                    <div class="metrics-value" id="creatorTotalViews">0</div>
+                                    <div class="metrics-label">Total Views</div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-md-6">
+                                <div class="metrics-card">
+                                    <div class="metrics-icon" style="background: var(--warning-gradient);">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </div>
+                                    <div class="metrics-value" id="creatorTotalEarnings">$0</div>
+                                    <div class="metrics-label">Total Earnings</div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-md-6">
+                                <div class="metrics-card">
+                                    <div class="metrics-icon" style="background: var(--secondary-gradient);">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <div class="metrics-value" id="creatorMonthlyEarnings">$0</div>
+                                    <div class="metrics-label">This Month</div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="row g-3" id="myVideosContainer">
-                            <!-- My videos will be populated by JavaScript -->
+                        <!-- Professional Video Grid -->
+                        <div class="video-grid" id="myVideosContainer">
+                            <!-- My videos will be populated by JavaScript with new creator video cards -->
                         </div>
                     </div>
 
@@ -600,34 +758,52 @@
                         </div>
 
                         <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header bg-white border-0 py-4">
-                                        <h4 class="mb-0 fw-semibold">Upload New Video</h4>
-                                        <p class="text-muted mb-0 mt-1">Share your content with the community</p>
+                            <div class="col-xl-8 col-lg-10 col-md-12">
+                                <div class="card border-0 shadow-lg" style="border-radius: 20px;">
+                                    <div class="card-header bg-gradient text-white border-0 py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px 20px 0 0;">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-white bg-opacity-20 rounded-circle p-3 me-3">
+                                                <i class="fas fa-upload fa-lg text-white"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="mb-0 fw-bold text-white">Upload New Video</h4>
+                                                <p class="text-white-50 mb-0 mt-1">Share your content with the community</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="card-body p-4">
+                                    <div class="card-body p-5">
                                         <form id="uploadForm">
-                                            <div class="row g-3">
+                                            <div class="row g-4">
                                                 <div class="col-12">
-                                                    <label for="videoTitle" class="form-label fw-medium">Video Title</label>
-                                                    <input type="text" class="form-control" id="videoTitle" placeholder="Enter a catchy title for your video" required>
+                                                    <label for="videoTitle" class="form-label fw-semibold text-dark mb-2">
+                                                        <i class="fas fa-video me-2 text-primary"></i>Video Title
+                                                    </label>
+                                                    <input type="text" class="form-control form-control-lg" id="videoTitle" placeholder="Enter a catchy title for your video" required style="border-radius: 12px; border: 2px solid #e9ecef; padding: 1rem 1.25rem;">
                                                 </div>
+                                                
                                                 <div class="col-12">
-                                                    <label for="videoDescription" class="form-label fw-medium">Description</label>
-                                                    <textarea class="form-control" id="videoDescription" rows="4" placeholder="Describe what your video is about..." required></textarea>
+                                                    <label for="videoDescription" class="form-label fw-semibold text-dark mb-2">
+                                                        <i class="fas fa-align-left me-2 text-success"></i>Description
+                                                    </label>
+                                                    <textarea class="form-control" id="videoDescription" rows="5" placeholder="Describe what your video is about..." required style="border-radius: 12px; border: 2px solid #e9ecef; padding: 1rem 1.25rem; resize: vertical;"></textarea>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label for="videoPrice" class="form-label fw-medium">Price ($)</label>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text">$</span>
-                                                        <input type="number" class="form-control" id="videoPrice" min="0" step="0.01" value="0" placeholder="0.00">
+                                                
+                                                <div class="col-lg-6 col-md-6">
+                                                    <label for="videoPrice" class="form-label fw-semibold text-dark mb-2">
+                                                        <i class="fas fa-dollar-sign me-2 text-warning"></i>Price
+                                                    </label>
+                                                    <div class="input-group input-group-lg">
+                                                        <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px; border: 2px solid #e9ecef; border-right: none;">$</span>
+                                                        <input type="number" class="form-control border-start-0" id="videoPrice" min="0" step="0.01" value="0" placeholder="0.00" style="border-radius: 0 12px 12px 0; border: 2px solid #e9ecef; border-left: none; padding: 1rem 1.25rem;">
                                                     </div>
-                                                    <div class="form-text">Set to $0 for free content</div>
+                                                    <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i>Set to $0 for free content</div>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label for="videoCategory" class="form-label fw-medium">Category</label>
-                                                    <select class="form-select" id="videoCategory">
+                                                
+                                                <div class="col-lg-6 col-md-6">
+                                                    <label for="videoCategory" class="form-label fw-semibold text-dark mb-2">
+                                                        <i class="fas fa-tags me-2 text-info"></i>Category
+                                                    </label>
+                                                    <select class="form-select form-select-lg" id="videoCategory" style="border-radius: 12px; border: 2px solid #e9ecef; padding: 1rem 1.25rem;">
                                                         <option value="">Select a category</option>
                                                         <option value="education">📚 Education</option>
                                                         <option value="entertainment">🎬 Entertainment</option>
@@ -639,25 +815,40 @@
                                                         <option value="other">📁 Other</option>
                                                     </select>
                                                 </div>
+                                                
                                                 <div class="col-12">
-                                                    <label for="videoFile" class="form-label fw-medium">Video File</label>
-                                                    <input type="file" class="form-control" id="videoFile" accept="video/*" required>
-                                                    <div class="alert alert-info mt-3 d-flex align-items-center">
-                                                        <i class="fab fa-youtube text-danger me-2 fa-lg"></i>
-                                                        <div>
-                                                            <strong>YouTube Integration:</strong> Your video will be uploaded to YouTube and automatically synced to the platform database.
-                                                            <br><small class="text-muted">Manage your YouTube connection in Settings → YouTube tab.</small>
+                                                    <label for="videoFile" class="form-label fw-semibold text-dark mb-2">
+                                                        <i class="fas fa-file-video me-2 text-primary"></i>Video File
+                                                    </label>
+                                                    <input type="file" class="form-control form-control-lg" id="videoFile" accept="video/*" required style="border-radius: 12px; border: 2px solid #e9ecef; padding: 1rem 1.25rem;">
+                                                    
+                                                    <div class="alert alert-info mt-4 border-0 shadow-sm" role="alert" style="border-radius: 16px; background: linear-gradient(135deg, rgba(13, 202, 240, 0.1) 0%, rgba(13, 202, 240, 0.05) 100%);">
+                                                        <div class="d-flex align-items-start">
+                                                            <div class="bg-danger rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                                <i class="fab fa-youtube text-white"></i>
+                                                            </div>
+                                                            <div>
+                                                                <h6 class="mb-1 fw-semibold">YouTube Integration</h6>
+                                                                <p class="mb-1">Your video will be uploaded to YouTube and automatically synced to the platform database.</p>
+                                                                <small class="text-muted">Manage your YouTube connection in Settings → YouTube tab.</small>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                                                <button type="button" class="btn btn-outline-secondary me-md-2">
-                                                    <i class="fas fa-save me-1"></i>Save Draft
-                                                </button>
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="fas fa-upload me-2"></i>Upload Video
-                                                </button>
+                                            <div class="d-flex flex-column flex-md-row gap-3 justify-content-between align-items-center mt-5 pt-4 border-top">
+                                                <div class="text-muted small">
+                                                    <i class="fas fa-shield-alt me-2 text-success"></i>
+                                                    Your video will be processed securely and made available instantly.
+                                                </div>
+                                                <div class="d-flex gap-3">
+                                                    <button type="button" class="btn btn-outline-secondary btn-lg px-4" style="border-radius: 12px;">
+                                                        <i class="fas fa-save me-2"></i>Save Draft
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary btn-lg px-5" style="border-radius: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                                        <i class="fas fa-upload me-2"></i>Upload Video
+                                                    </button>
+                                                </div>
                                             </div>
                                         </form>
 
