@@ -9,6 +9,11 @@ VideoHub is a comprehensive video management platform designed for creators, vie
 Preferred communication style: Simple, everyday language.
 Project focus: Simple web app for demo purposes without complex analytics or payout features.
 Design preference: Improved and streamlined layout structure.
+Viewer interface: Simplified dashboard with metrics and all videos section. Removed browse videos page and menu items for cleaner navigation.
+Purchases page: Removed metrics and recent purchases sections, keeping only all purchased videos section.
+Data loading: All sections now load dynamically from JSON files instead of static data.
+Settings pages: Removed "Viewing Activity" section from viewer profile page and "Your Stats" section from creator profile page for cleaner interface.
+UI/UX improvements: Enhanced all user panels with modern Bootstrap styling, consistent navigation, improved card designs, and sleek auth forms.
 
 ## System Architecture
 

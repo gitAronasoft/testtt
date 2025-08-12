@@ -27,32 +27,41 @@ class AdminManager {
 
     async loadDashboardData() {
         try {
-            // Wait for services to be ready
-            if (!window.apiService || !window.dataService) {
-                setTimeout(() => this.loadDashboardData(), 100);
-                return;
+            // Wait for data service to be available
+            let retries = 0;
+            const maxRetries = 50;
+            
+            while (retries < maxRetries && (!window.dataService || !window.dataService.cache.users)) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
             }
 
-            // Try to load real data from API
-            const [statsResult, usersResult, videosResult] = await Promise.all([
-                window.apiService.getAdminStats(),
-                window.apiService.getUsers({ limit: 10 }),
-                window.apiService.getVideos({ status: 'all', limit: 10 })
-            ]);
-
-            if (statsResult.success) {
-                this.stats = statsResult.data;
-            }
-            if (usersResult.success) {
-                this.users = usersResult.data.users || usersResult.data;
-            }
-            if (videosResult.success) {
-                this.videos = videosResult.data.videos || videosResult.data;
+            if (window.dataService && window.dataService.cache.users) {
+                // Use data service cache
+                this.users = window.dataService.cache.users || [];
+                this.videos = window.dataService.cache.videos || [];
+                
+                // Calculate stats from loaded data
+                this.stats = {
+                    totalUsers: this.users.length,
+                    totalVideos: this.videos.length,
+                    pendingVideos: this.videos.filter(v => v.status === 'pending').length,
+                    totalViews: this.videos.reduce((sum, v) => sum + (v.views || 0), 0)
+                };
+            } else {
+                // Fallback data
+                this.stats = {
+                    totalUsers: 0,
+                    totalVideos: 0,
+                    pendingVideos: 0,
+                    totalViews: 0
+                };
             }
 
             this.updateDashboardDisplay();
+            console.log('Admin data loaded:', { users: this.users.length, videos: this.videos.length });
         } catch (error) {
-            console.log('API not available, using demo data');
+            console.error('Error loading admin data:', error);
             this.updateDashboardDisplay();
         }
     }

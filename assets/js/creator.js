@@ -27,26 +27,42 @@ class CreatorManager {
 
     async loadDashboardData() {
         try {
-            // Try to load real data from API
-            const [statsResult, videosResult, earningsResult] = await Promise.all([
-                window.apiService.getCreatorStats(),
-                window.apiService.getCreatorVideos({ limit: 5 }),
-                window.apiService.getCreatorEarnings({ limit: 10 })
-            ]);
+            // Wait for data service to be available
+            let retries = 0;
+            const maxRetries = 50;
+            
+            while (retries < maxRetries && (!window.dataService || !window.dataService.cache.videos)) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
 
-            if (statsResult.success) {
-                this.stats = statsResult.data;
-            }
-            if (videosResult.success) {
-                this.videos = videosResult.data.videos || videosResult.data;
-            }
-            if (earningsResult.success) {
-                this.earnings = earningsResult.data.earnings || earningsResult.data;
+            if (window.dataService && window.dataService.cache.videos) {
+                // Use data service cache - filter for current creator (ID 1 - John Smith)
+                const currentCreatorId = 1;
+                this.videos = window.dataService.cache.videos.filter(v => v.creatorId === currentCreatorId) || [];
+                this.earnings = window.dataService.cache.earnings.filter(e => e.creatorId === currentCreatorId) || [];
+                
+                // Calculate stats from loaded data
+                this.stats = {
+                    totalVideos: this.videos.length,
+                    totalViews: this.videos.reduce((sum, v) => sum + (v.views || 0), 0),
+                    totalEarnings: this.earnings.reduce((sum, e) => sum + (e.amount || 0), 0),
+                    subscribers: this.videos.reduce((sum, v) => sum + (v.likes || 0), 0) // Using likes as subscriber count for demo
+                };
+            } else {
+                // Fallback data
+                this.stats = {
+                    totalVideos: 0,
+                    totalViews: 0,
+                    totalEarnings: 0,
+                    subscribers: 0
+                };
             }
 
             this.updateDashboardDisplay();
+            console.log('Creator data loaded:', { videos: this.videos.length, earnings: this.earnings.length });
         } catch (error) {
-            console.log('API not available, using demo data');
+            console.error('Error loading creator data:', error);
             this.updateDashboardDisplay();
         }
     }
