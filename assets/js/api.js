@@ -3,11 +3,20 @@
  * Handles all backend API communications
  */
 
-class APIService {
+// Use a more reliable approach to prevent duplicate loading
+(function() {
+    'use strict';
+    
+    if (window.APIService && window.apiService) {
+        console.log('APIService already loaded');
+        return;
+    }
+
+    class APIService {
     constructor() {
         this.baseURL = '/api';
         this.timeout = 10000;
-        this.useDataService = true; // Switch to false when backend is ready
+        this.useDataService = false; // Now using PHP backend
         this.init();
     }
 
@@ -309,7 +318,11 @@ class APIService {
             window.commonUtils.showToast(message, 'success');
         }
     }
-}
+    }
 
-// Create global instance
-window.apiService = new APIService();
+    // Export to global scope
+    window.APIService = APIService;
+    window.apiService = new APIService();
+    console.log('APIService initialized successfully');
+    
+})(); // End of IIFE

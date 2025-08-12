@@ -4,493 +4,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Videos - VideoHub Creator</title>
+    <title>My Videos - VideoHub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background-color: #f8f9fa;
         }
-        
-        .videos-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            margin: 20px;
-            min-height: calc(100vh - 40px);
-            overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-        }
-        
-        .creator-navbar {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            padding: 1rem 2rem;
-            border-radius: 25px 25px 0 0;
-            box-shadow: 0 4px 20px rgba(40, 167, 69, 0.2);
-        }
-        
         .sidebar {
-            background: linear-gradient(180deg, #ffffff 0%, #f8fffe 100%);
-            border-right: 2px solid rgba(40, 167, 69, 0.1);
-            min-height: calc(100vh - 120px);
+            min-height: 100vh;
+            background-color: white;
+            border-right: 1px solid #dee2e6;
         }
-        
         .nav-link {
-            border-radius: 15px;
-            margin: 8px 12px;
-            padding: 15px 20px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 600;
             color: #495057;
-            border: 2px solid transparent;
+            border-radius: 5px;
+            margin: 2px 0;
         }
-        
         .nav-link:hover {
-            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
-            transform: translateX(8px) scale(1.02);
-            border-color: rgba(40, 167, 69, 0.2);
-            color: #28a745;
+            background-color: #e9ecef;
+            color: #495057;
         }
-        
         .nav-link.active {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white !important;
-            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
-            transform: translateX(8px) scale(1.05);
+            background-color: #0d6efd;
+            color: white;
         }
-        
-        .stat-card {
-            border: none;
-            border-radius: 25px;
-            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
-            position: relative;
-            border: 2px solid rgba(255, 255, 255, 0.8);
+        .card {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        .navbar {
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
         }
-        
-        .stat-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-            border-color: rgba(40, 167, 69, 0.3);
-        }
-        
-        .avatar {
-            width: 70px;
-            height: 70px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            border: 3px solid rgba(255, 255, 255, 0.8);
-        }
-        
-        .btn-modern {
-            border-radius: 18px;
-            font-weight: 700;
-            padding: 15px 30px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            border: 2px solid transparent;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.9rem;
-        }
-        
-        .btn-modern:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-        }
-        
-        .form-control, .form-select {
-            border-radius: 15px;
-            border: 2px solid #e9ecef;
-            padding: 15px 20px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 500;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: #28a745;
-            box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
-            transform: translateY(-2px);
-        }
-        
-        .video-card {
-            border: none;
-            border-radius: 25px;
-            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            position: relative;
-        }
-        
-        .video-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-        
-        .video-card:hover {
-            transform: translateY(-10px) scale(1.03);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-            border-color: rgba(0, 123, 255, 0.3);
-        }
-        
         .video-thumbnail {
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .video-thumbnail img {
             width: 100%;
-            height: 200px;
-            object-fit: cover;
-            transition: transform 0.4s ease;
-        }
-        
-        .video-card:hover .video-thumbnail img {
-            transform: scale(1.1);
-        }
-        
-        .video-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%);
-            opacity: 0;
-            transition: opacity 0.4s ease;
+            height: 180px;
+            background-color: #e9ecef;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .video-card:hover .video-overlay {
-            opacity: 1;
-        }
-        
-        .play-button {
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: #28a745;
-            transition: all 0.4s ease;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-        }
-        
-        .play-button:hover {
-            background: white;
-            transform: scale(1.2);
-            color: #20c997;
-        }
-        
-        .status-badge {
-            border-radius: 15px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            padding: 8px 16px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .status-published {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        }
-        
-        .status-pending {
-            background: linear-gradient(135deg, #ffc107, #fd7e14);
-            color: white;
-            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
-        }
-        
-        .status-draft {
-            background: linear-gradient(135deg, #6c757d, #495057);
-            color: white;
-            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
-        }
-        
-        .action-buttons {
-            opacity: 0;
-            transition: all 0.4s ease;
-            transform: translateY(10px);
-        }
-        
-        .video-card:hover .action-buttons {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .action-buttons .btn {
-            border-radius: 12px;
-            font-weight: 600;
-            padding: 8px 16px;
-            font-size: 0.85rem;
-        }
-        
-        .modal-content {
-            border: none;
-            border-radius: 25px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-        }
-        
-        .modal-header {
-            border-radius: 25px 25px 0 0;
-            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
-            background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(32, 201, 151, 0.05) 100%);
-            padding: 2rem;
-        }
-        
-        .pagination .page-link {
-            border: none;
-            border-radius: 15px;
-            margin: 0 6px;
-            color: #28a745;
-            font-weight: 600;
-            padding: 12px 20px;
-            transition: all 0.3s ease;
-        }
-        
-        .pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        .pagination .page-link:hover {
-            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
-            color: #20c997;
-            transform: translateY(-2px);
-        }
-        
-        @media (max-width: 991.98px) {
-            .videos-container {
-                margin: 10px;
-                border-radius: 20px;
-            }
-            
-            .creator-navbar {
-                border-radius: 20px 20px 0 0;
-                padding: 1rem;
-            }
-            
-            .video-card {
-                margin-bottom: 2rem;
-            }
-        }
-        
-        @media (max-width: 767.98px) {
-            .videos-container {
-                margin: 5px;
-                border-radius: 15px;
-            }
-            
-            .creator-navbar {
-                border-radius: 15px 15px 0 0;
-            }
-            
-            .video-card {
-                border-radius: 20px;
-            }
-            
-            .action-buttons {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
     </style>
 </head>
 <body>
-    <div class="videos-container">
-        <!-- Enhanced Top Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-dark creator-navbar">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-bold d-flex align-items-center" href="dashboard.html">
-                    <div class="bg-white bg-opacity-20 rounded-circle p-3 me-3">
-                        <i class="fas fa-video text-white fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="fs-4 fw-bold">VideoHub Creator</div>
-                        <small class="opacity-75">Video Management</small>
-                    </div>
-                </a>
-                
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <div class="navbar-nav ms-auto">
-                        <div class="nav-item dropdown">
-                            <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center border-2 rounded-pill px-4" type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle me-2 fs-5"></i>
-                                <div class="text-start d-none d-md-block">
-                                    <div class="fw-bold">Creator</div>
-                                    <small class="opacity-75">John Smith</small>
-                                </div>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
-                                <li><a class="dropdown-item rounded-2 py-3" href="profile.html"><i class="fas fa-user me-3 text-primary"></i>Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger rounded-2 py-3" href="../auth/login.html"><i class="fas fa-sign-out-alt me-3"></i>Logout</a></li>
-                            </ul>
-                        </div>
-                    </div>
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-video me-2"></i>VideoHub Creator
+            </span>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i>Creator
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
                 </div>
             </div>
-        </nav>
+        </div>
+    </nav>
 
-        <div class="row g-0">
-            <!-- Enhanced Sidebar -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
             <nav class="col-md-3 col-lg-2 sidebar">
-                <div class="position-sticky pt-4">
-                    <div class="px-3 mb-4">
-                        <h6 class="text-muted fw-bold text-uppercase letter-spacing-1 mb-3">Navigation</h6>
-                    </div>
+                <div class="position-sticky pt-3">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="dashboard.html">
-                                <i class="fas fa-tachometer-alt me-3"></i>
-                                <span class="fw-semibold">Dashboard</span>
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link active d-flex align-items-center" href="videos.html">
-                                <i class="fas fa-video me-3"></i>
-                                <span class="fw-semibold">My Videos</span>
-                                <span class="badge bg-primary ms-auto">12</span>
+                            <a class="nav-link active" href="videos.html">
+                                <i class="fas fa-video me-2"></i>My Videos
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="analytics.html">
-                                <i class="fas fa-chart-bar me-3"></i>
-                                <span class="fw-semibold">Analytics</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="earnings.html">
-                                <i class="fas fa-dollar-sign me-3"></i>
-                                <span class="fw-semibold">Earnings</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="profile.html">
-                                <i class="fas fa-cog me-3"></i>
-                                <span class="fw-semibold">Settings</span>
+                            <a class="nav-link" href="profile.html">
+                                <i class="fas fa-cog me-2"></i>Settings
                             </a>
                         </li>
                     </ul>
                 </div>
             </nav>
 
-            <!-- Enhanced Main Content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <!-- Enhanced Header -->
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5">
-                    <div class="mb-3 mb-md-0">
-                        <h1 class="display-5 fw-bold text-dark mb-2">My Videos</h1>
-                        <p class="lead text-muted mb-0">Manage and track your video content</p>
-                    </div>
-                    <div class="d-flex flex-column flex-sm-row gap-3">
-                        <button type="button" class="btn btn-outline-secondary btn-modern">
-                            <i class="fas fa-download me-2"></i>Export List
-                        </button>
-                        <button type="button" class="btn btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#uploadVideoModal">
-                            <i class="fas fa-upload me-2"></i>Upload Video
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-3">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">My Videos</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="fas fa-upload me-1"></i>Upload Video
                         </button>
                     </div>
                 </div>
 
-                <!-- Enhanced Video Stats -->
-                <div class="row g-4 mb-5">
-                    <div class="col-xl-3 col-md-6">
-                        <div class="card stat-card h-100">
-                            <div class="card-body p-4 text-center">
-                                <div class="avatar bg-primary bg-opacity-10 text-primary mx-auto mb-3">
-                                    <i class="fas fa-video"></i>
-                                </div>
-                                <h2 class="fw-bold mb-2 text-dark" id="totalVideos">--</h2>
-                                <p class="text-muted fw-semibold mb-0 text-uppercase">Total Videos</p>
+                <!-- Video Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0" id="totalVideos">12</h4>
+                                <small class="text-muted">Total Videos</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="card stat-card h-100">
-                            <div class="card-body p-4 text-center">
-                                <div class="avatar bg-success bg-opacity-10 text-success mx-auto mb-3">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
-                                <h2 class="fw-bold mb-2 text-dark" id="publishedVideos">--</h2>
-                                <p class="text-muted fw-semibold mb-0 text-uppercase">Published</p>
+                    <div class="col-md-3 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0" id="publishedVideos">8</h4>
+                                <small class="text-muted">Published</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="card stat-card h-100">
-                            <div class="card-body p-4 text-center">
-                                <div class="avatar bg-warning bg-opacity-10 text-warning mx-auto mb-3">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <h2 class="fw-bold mb-2 text-dark" id="pendingVideos">--</h2>
-                                <p class="text-muted fw-semibold mb-0 text-uppercase">Under Review</p>
+                    <div class="col-md-3 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0" id="pendingVideos">2</h4>
+                                <small class="text-muted">Under Review</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="card stat-card h-100">
-                            <div class="card-body p-4 text-center">
-                                <div class="avatar bg-info bg-opacity-10 text-info mx-auto mb-3">
-                                    <i class="fas fa-eye"></i>
-                                </div>
-                                <h2 class="fw-bold mb-2 text-dark" id="totalViews">--</h2>
-                                <p class="text-muted fw-semibold mb-0 text-uppercase">Total Views</p>
+                    <div class="col-md-3 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0" id="totalViews">3,450</h4>
+                                <small class="text-muted">Total Views</small>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Enhanced Filters and Search -->
-                <div class="card stat-card mb-5">
-                    <div class="card-body p-4">
-                        <h5 class="fw-bold mb-4 text-uppercase letter-spacing-1">Filter & Search</h5>
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <input type="text" class="form-control" placeholder="Search videos..." id="searchInput">
@@ -509,7 +163,6 @@
                                     <option value="education">Education</option>
                                     <option value="technology">Technology</option>
                                     <option value="business">Business</option>
-                                    <option value="design">Design</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -517,30 +170,95 @@
                                     <option value="newest">Newest First</option>
                                     <option value="oldest">Oldest First</option>
                                     <option value="views">Most Views</option>
-                                    <option value="earnings">Highest Earning</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <button class="btn btn-primary btn-modern w-100" id="applyFilters">
-                                    <i class="fas fa-filter me-2"></i>Filter
+                                <button class="btn btn-outline-primary w-100" id="applyFilters">
+                                    <i class="fas fa-filter me-1"></i>Filter
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Enhanced Videos Grid -->
+                <!-- Videos Grid -->
                 <div class="row" id="videosGrid">
-                    <!-- Videos will be populated by JavaScript -->
+                    <!-- Sample Video Cards -->
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card">
+                            <div class="video-thumbnail">
+                                <i class="fas fa-play fa-3x text-muted"></i>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">JavaScript Fundamentals</h6>
+                                <p class="card-text text-muted small">Learn the basics of JavaScript programming...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success">Published</span>
+                                    <span class="text-muted small">$19.99</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">245 views</small>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card">
+                            <div class="video-thumbnail">
+                                <i class="fas fa-play fa-3x text-muted"></i>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">React Components</h6>
+                                <p class="card-text text-muted small">Building reusable components in React...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-warning">Under Review</span>
+                                    <span class="text-muted small">$24.99</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">0 views</small>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card">
+                            <div class="video-thumbnail">
+                                <i class="fas fa-play fa-3x text-muted"></i>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">Node.js API Development</h6>
+                                <p class="card-text text-muted small">Creating REST APIs with Node.js...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success">Published</span>
+                                    <span class="text-muted small">$29.99</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">189 views</small>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Enhanced Pagination -->
-                <nav aria-label="Video pagination" class="mt-5">
+                <!-- Pagination -->
+                <nav>
                     <ul class="pagination justify-content-center">
                         <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1">
-                                <i class="fas fa-chevron-left me-1"></i>Previous
-                            </a>
+                            <a class="page-link" href="#">Previous</a>
                         </li>
                         <li class="page-item active">
                             <a class="page-link" href="#">1</a>
@@ -549,12 +267,7 @@
                             <a class="page-link" href="#">2</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="#">3</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">
-                                Next<i class="fas fa-chevron-right ms-1"></i>
-                            </a>
+                            <a class="page-link" href="#">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -562,123 +275,56 @@
         </div>
     </div>
 
-    <!-- Enhanced Upload Video Modal -->
-    <div class="modal fade" id="uploadVideoModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+    <!-- Upload Video Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title fw-bold">
-                        <i class="fas fa-upload text-success me-3"></i>
-                        Upload New Video
-                    </h4>
+                    <h5 class="modal-title">Upload New Video</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <form id="uploadVideoForm">
-                        <div class="row g-4">
-                            <div class="col-12">
-                                <label for="videoTitle" class="form-label">Video Title</label>
-                                <input type="text" class="form-control" id="videoTitle" placeholder="Enter your video title..." required>
+                <div class="modal-body">
+                    <form id="uploadForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="videoTitle" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="videoTitle" required>
                             </div>
-                            <div class="col-12">
-                                <label for="videoDescription" class="form-label">Description</label>
-                                <textarea class="form-control" id="videoDescription" rows="4" placeholder="Describe your video content..."></textarea>
-                            </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-3">
                                 <label for="videoPrice" class="form-label">Price ($)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-success text-white border-success fw-bold">$</span>
-                                    <input type="number" class="form-control" id="videoPrice" step="0.01" min="0" value="9.99">
-                                </div>
+                                <input type="number" class="form-control" id="videoPrice" step="0.01" value="9.99">
                             </div>
-                            <div class="col-md-6">
+                        </div>
+                        <div class="mb-3">
+                            <label for="videoDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="videoDescription" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="videoCategory" class="form-label">Category</label>
                                 <select class="form-select" id="videoCategory">
                                     <option value="education">Education</option>
                                     <option value="technology">Technology</option>
                                     <option value="business">Business</option>
                                     <option value="design">Design</option>
-                                    <option value="other">Other</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-3">
                                 <label for="videoFile" class="form-label">Video File</label>
                                 <input type="file" class="form-control" id="videoFile" accept="video/*" required>
-                                <div class="form-text">Maximum file size: 500MB. Supported formats: MP4, MOV, AVI</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="thumbnailFile" class="form-label">Thumbnail Image</label>
-                                <input type="file" class="form-control" id="thumbnailFile" accept="image/*">
-                                <div class="form-text">Optional. If not provided, a thumbnail will be auto-generated.</div>
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer p-4">
-                    <button type="button" class="btn btn-outline-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success btn-modern" id="uploadVideo">
-                        <i class="fas fa-upload me-2"></i>Upload Video
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enhanced Edit Video Modal -->
-    <div class="modal fade" id="editVideoModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title fw-bold">
-                        <i class="fas fa-edit text-primary me-3"></i>
-                        Edit Video
-                    </h4>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form id="editVideoForm">
-                        <input type="hidden" id="editVideoId">
-                        <div class="row g-4">
-                            <div class="col-12">
-                                <label for="editVideoTitle" class="form-label">Video Title</label>
-                                <input type="text" class="form-control" id="editVideoTitle" required>
-                            </div>
-                            <div class="col-12">
-                                <label for="editVideoDescription" class="form-label">Description</label>
-                                <textarea class="form-control" id="editVideoDescription" rows="4"></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="editVideoPrice" class="form-label">Price ($)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-primary text-white border-primary fw-bold">$</span>
-                                    <input type="number" class="form-control" id="editVideoPrice" step="0.01" min="0">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="editVideoCategory" class="form-label">Category</label>
-                                <select class="form-select" id="editVideoCategory">
-                                    <option value="education">Education</option>
-                                    <option value="technology">Technology</option>
-                                    <option value="business">Business</option>
-                                    <option value="design">Design</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer p-4">
-                    <button type="button" class="btn btn-outline-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary btn-modern" id="updateVideo">
-                        <i class="fas fa-save me-2"></i>Update Video
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="uploadForm" class="btn btn-primary">Upload</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/dataService.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/creator.js"></script>

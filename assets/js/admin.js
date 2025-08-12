@@ -23,30 +23,41 @@ class AdminManager {
         if (currentPage === 'dashboard.html') {
             await this.loadDashboardData();
         } else {
-            // Wait for data service to be available for other pages
-            await this.waitForDataService();
+            // Wait for API service to be available for other pages
+            await this.waitForAPIService();
         }
         
         this.loadPageSpecificHandlers();
     }
 
-    async waitForDataService() {
+    async waitForAPIService() {
         let retries = 0;
         const maxRetries = 50;
         
-        while (retries < maxRetries && (!window.dataService || !window.dataService.cache.users)) {
+        while (retries < maxRetries && !window.apiService) {
             await new Promise(resolve => setTimeout(resolve, 100));
             retries++;
         }
 
-        if (window.dataService && window.dataService.cache.users) {
-            this.users = window.dataService.cache.users || [];
-            this.videos = window.dataService.cache.videos || [];
+        if (window.apiService) {
+            try {
+                const [usersResponse, videosResponse] = await Promise.all([
+                    window.apiService.get('/admin/users'),
+                    window.apiService.getVideos()
+                ]);
+                
+                this.users = usersResponse.data || usersResponse.users || [];
+                this.videos = videosResponse.data || videosResponse.videos || [];
+            } catch (error) {
+                console.error('Failed to load data from API:', error);
+                this.users = [];
+                this.videos = [];
+            }
         }
     }
 
     loadMockData() {
-        // Initialize empty arrays - data will be loaded from dataService
+        // Initialize empty arrays - data will be loaded from API
         this.users = [];
         this.videos = [];
         this.stats = {};
@@ -58,7 +69,7 @@ class AdminManager {
             let retries = 0;
             const maxRetries = 50;
             
-            while (retries < maxRetries && (!window.dataService || !window.dataService.cache.users)) {
+            while (retries < maxRetries && !window.apiService) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 retries++;
             }
@@ -66,10 +77,15 @@ class AdminManager {
             // Load admin-specific dashboard data
             const adminData = await this.loadAdminDashboardData();
             
-            if (window.dataService && window.dataService.cache.users) {
-                // Use data service cache
-                this.users = window.dataService.cache.users || [];
-                this.videos = window.dataService.cache.videos || [];
+            if (window.apiService) {
+                // Use API service
+                const [usersResponse, videosResponse] = await Promise.all([
+                    window.apiService.get('/admin/users'),
+                    window.apiService.getVideos()
+                ]);
+                
+                this.users = usersResponse.data || usersResponse.users || [];
+                this.videos = videosResponse.data || videosResponse.videos || [];
                 
                 // Use admin dashboard stats if available, otherwise calculate from data
                 this.stats = adminData?.stats || {

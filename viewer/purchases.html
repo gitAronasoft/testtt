@@ -4,533 +4,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Purchases - VideoHub</title>
+    <title>My Purchases - VideoHub Viewer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .purchases-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
             min-height: 100vh;
+            background-color: white;
+            border-right: 1px solid #dee2e6;
         }
-        
-        .modern-card {
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.95);
+        .nav-link {
+            color: #495057;
+            border-radius: 5px;
+            margin: 2px 0;
         }
-        
-        .modern-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+        .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057;
         }
-        
-        .navbar-modern {
-            background: rgba(255, 255, 255, 0.95) !important;
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
         }
-        
-        .sidebar-modern {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
-            min-height: calc(100vh - 76px);
+        .card {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        
-        .nav-link-modern {
-            border-radius: 15px;
-            margin: 0.25rem 0;
-            padding: 1rem 1.25rem;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+        .navbar {
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
         }
-        
-        .nav-link-modern::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
+        .video-thumbnail {
             width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
-            transition: left 0.5s;
-        }
-        
-        .nav-link-modern:hover::before {
-            left: 100%;
-        }
-        
-        .nav-link-modern:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            transform: translateX(4px);
-            color: #667eea;
-        }
-        
-        .nav-link-modern.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .page-header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 2.5rem;
-            margin-bottom: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        
-        .video-card-purchases {
-            border: none;
-            border-radius: 20px;
-            overflow: hidden;
-            transition: all 0.4s ease;
-            background: white;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
-            position: relative;
-        }
-        
-        .video-card-purchases:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
-        
-        .video-card-purchases::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
-        }
-        
-        .video-thumbnail-purchases {
-            position: relative;
-            overflow: hidden;
-            background: #000;
             height: 180px;
-        }
-        
-        .video-thumbnail-purchases img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.4s ease;
-        }
-        
-        .video-card-purchases:hover .video-thumbnail-purchases img {
-            transform: scale(1.1);
-        }
-        
-        .video-overlay-purchases {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(40, 167, 69, 0.8) 0%, rgba(32, 201, 151, 0.8) 100%);
+            background-color: #e9ecef;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0;
-            transition: all 0.4s ease;
-        }
-        
-        .video-card-purchases:hover .video-overlay-purchases {
-            opacity: 1;
-        }
-        
-        .purchase-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            z-index: 2;
-        }
-        
-        .search-filter-section {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .form-control-modern, .form-select-modern {
-            border: 2px solid rgba(102, 126, 234, 0.2);
-            border-radius: 15px;
-            padding: 0.875rem 1.25rem;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.9);
-        }
-        
-        .form-control-modern:focus, .form-select-modern:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-            background: white;
-        }
-        
-        .btn-modern {
-            border-radius: 15px;
-            padding: 0.875rem 2rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-modern::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .btn-modern:hover::before {
-            left: 100%;
-        }
-        
-        .btn-modern:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-        
-        .view-toggle-group {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 0.25rem;
-            backdrop-filter: blur(10px);
-        }
-        
-        .view-toggle-group .btn {
-            border-radius: 12px;
-            border: none;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .view-toggle-group .btn.active {
-            background: white;
-            color: #667eea;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: white;
-        }
-        
-        .empty-state i {
-            font-size: 5rem;
-            opacity: 0.3;
-            margin-bottom: 2rem;
-        }
-        
-        .table-modern {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        }
-        
-        .table-modern thead {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .table-modern thead th {
-            color: white;
-            border: none;
-            padding: 1.5rem 1rem;
-            font-weight: 600;
-        }
-        
-        .table-modern tbody tr {
-            transition: all 0.3s ease;
-            border: none;
-        }
-        
-        .table-modern tbody tr:hover {
-            background: rgba(102, 126, 234, 0.05);
-            transform: scale(1.01);
-        }
-        
-        .table-modern tbody td {
-            padding: 1.25rem 1rem;
-            border: none;
-            vertical-align: middle;
-        }
-        
-        @media (max-width: 991.98px) {
-            .sidebar-modern {
-                transform: translateX(-100%);
-                position: fixed;
-                top: 76px;
-                left: 0;
-                height: calc(100vh - 76px);
-                z-index: 1050;
-                transition: transform 0.3s ease;
-                width: 280px;
-            }
-            
-            .sidebar-modern.show {
-                transform: translateX(0);
-            }
-            
-            .page-header {
-                padding: 2rem;
-            }
-            
-            .search-filter-section {
-                padding: 1.5rem;
-            }
-        }
-        
-        @media (max-width: 575.98px) {
-            .page-header {
-                padding: 1.5rem;
-            }
-            
-            .search-filter-section {
-                padding: 1rem;
-            }
-            
-            .video-card-purchases {
-                margin-bottom: 1.5rem;
-            }
         }
     </style>
 </head>
-<body class="purchases-bg">
-    <!-- Modern Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light navbar-modern sticky-top">
+<body>
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold text-primary" href="dashboard.html">
+            <span class="navbar-brand mb-0 h1">
                 <i class="fas fa-play-circle me-2"></i>VideoHub Viewer
-            </a>
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                <i class="fas fa-user text-primary"></i>
-                            </div>
-                            <span class="fw-semibold">Viewer</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 15px;">
-                            <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
+            </span>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i>Viewer
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
 
     <div class="container-fluid">
         <div class="row">
-            <!-- Modern Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar-modern">
-                <div class="position-sticky pt-4">
-                    <div class="px-3">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link nav-link-modern d-flex align-items-center" href="dashboard.html">
-                                    <i class="fas fa-tachometer-alt me-3"></i>
-                                    <span>Dashboard</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link nav-link-modern active d-flex align-items-center" href="purchases.html">
-                                    <i class="fas fa-shopping-cart me-3"></i>
-                                    <span>My Purchases</span>
-                                    <span class="badge bg-white bg-opacity-20 ms-auto">7</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link nav-link-modern d-flex align-items-center" href="profile.html">
-                                    <i class="fas fa-cog me-3"></i>
-                                    <span>Settings</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="purchases.html">
+                                <i class="fas fa-shopping-cart me-2"></i>My Purchases
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="profile.html">
+                                <i class="fas fa-cog me-2"></i>Settings
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </nav>
 
             <!-- Main Content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <!-- Page Header -->
-                <div class="page-header">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h1 class="display-6 fw-bold mb-2">My Video Library</h1>
-                            <p class="lead mb-0 opacity-75">All your purchased videos in one place</p>
-                        </div>
-                        <div class="col-md-4 text-md-end">
-                            <div class="d-inline-flex bg-white bg-opacity-10 rounded-circle p-3">
-                                <i class="fas fa-video fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-3">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">My Purchases</h1>
                 </div>
 
-                <!-- Filters and Search -->
-                <div class="search-filter-section">
-                    <div class="row align-items-center g-3">
-                        <div class="col-md-4">
-                            <div class="position-relative">
-                                <input type="text" class="form-control form-control-modern" placeholder="Search your videos..." id="searchInput">
-                                <i class="fas fa-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <select class="form-select form-select-modern" id="categoryFilter">
-                                <option value="">All Categories</option>
-                                <option value="education">Education</option>
-                                <option value="technology">Technology</option>
-                                <option value="business">Business</option>
-                                <option value="design">Design</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <select class="form-select form-select-modern" id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="watched">Watched</option>
-                                <option value="unwatched">Unwatched</option>
-                                <option value="favorite">Favorites</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <select class="form-select form-select-modern" id="sortBy">
-                                <option value="newest">Newest Purchase</option>
-                                <option value="oldest">Oldest Purchase</option>
-                                <option value="title">Title A-Z</option>
-                                <option value="creator">By Creator</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-primary btn-modern w-100" id="applyFilters">
-                                <i class="fas fa-filter me-1"></i> Filter
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- All Purchased Videos -->
+                <!-- Purchase Stats -->
                 <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card modern-card">
-                            <div class="card-header bg-transparent border-0 py-4">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h4 class="mb-0 fw-bold">
-                                            <i class="fas fa-video text-success me-2"></i>
-                                            All Your Videos
-                                        </h4>
-                                        <p class="text-muted mb-0">Manage and watch your purchased content</p>
-                                    </div>
-                                    <div class="view-toggle-group d-flex">
-                                        <button type="button" class="btn active" id="gridView">
-                                            <i class="fas fa-th me-1"></i>Grid
-                                        </button>
-                                        <button type="button" class="btn" id="listView">
-                                            <i class="fas fa-list me-1"></i>List
-                                        </button>
-                                    </div>
-                                </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0" id="totalPurchases">7</h4>
+                                <small class="text-muted">Total Purchases</small>
                             </div>
-                            <div class="card-body p-4">
-                                <div id="videosContainer">
-                                    <!-- Grid View -->
-                                    <div class="row g-4" id="videosGrid">
-                                        <!-- Videos will be populated by JavaScript -->
-                                    </div>
-
-                                    <!-- List View -->
-                                    <div class="d-none" id="videosList">
-                                        <div class="table-responsive">
-                                            <table class="table table-modern mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Video</th>
-                                                        <th>Creator</th>
-                                                        <th>Duration</th>
-                                                        <th>Purchase Date</th>
-                                                        <th>Price</th>
-                                                        <th>Status</th>
-                                                        <th>Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="videosTableBody">
-                                                    <!-- Table rows will be populated by JavaScript -->
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0" id="totalSpent">$89.99</h4>
+                                <small class="text-muted">Total Spent</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0" id="thisMonth">2</h4>
+                                <small class="text-muted">This Month</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0" id="avgPrice">$12.86</h4>
+                                <small class="text-muted">Average Price</small>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Empty State -->
-                <div class="row d-none" id="emptyState">
-                    <div class="col-12">
-                        <div class="empty-state">
-                            <i class="fas fa-shopping-cart"></i>
-                            <h3 class="fw-bold">No purchases yet</h3>
-                            <p class="lead mb-4">Start building your video library by browsing our content.</p>
-                            <a href="dashboard.html" class="btn btn-light btn-modern btn-lg">
-                                <i class="fas fa-search me-2"></i>Browse Videos
-                            </a>
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" placeholder="Search purchases..." id="searchInput">
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="categoryFilter">
+                                    <option value="">All Categories</option>
+                                    <option value="education">Education</option>
+                                    <option value="technology">Technology</option>
+                                    <option value="business">Business</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="sortFilter">
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="price-high">Price: High to Low</option>
+                                    <option value="price-low">Price: Low to High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-primary w-100" id="applyFilters">
+                                    <i class="fas fa-filter me-1"></i>Filter
+                                </button>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-secondary w-100" id="clearFilters">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Purchased Videos Grid -->
+                <div class="row" id="purchasesGrid">
+                    <!-- Sample Purchase Cards -->
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card">
+                            <div class="video-thumbnail">
+                                <i class="fas fa-play fa-3x text-success"></i>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">JavaScript Fundamentals</h6>
+                                <p class="card-text text-muted small">Learn the basics of JavaScript programming...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-success fw-bold">$19.99</span>
+                                    <small class="text-muted">by John Smith</small>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">Purchased: Jan 15, 2024</small>
+                                    <button class="btn btn-sm btn-success">Watch Now</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card">
+                            <div class="video-thumbnail">
+                                <i class="fas fa-play fa-3x text-success"></i>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">React Components</h6>
+                                <p class="card-text text-muted small">Building reusable components in React...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-success fw-bold">$24.99</span>
+                                    <small class="text-muted">by John Smith</small>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">Purchased: Jan 20, 2024</small>
+                                    <button class="btn btn-sm btn-success">Watch Now</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card">
+                            <div class="video-thumbnail">
+                                <i class="fas fa-play fa-3x text-success"></i>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">Node.js API Development</h6>
+                                <p class="card-text text-muted small">Creating REST APIs with Node.js...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-success fw-bold">$29.99</span>
+                                    <small class="text-muted">by John Smith</small>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">Purchased: Feb 5, 2024</small>
+                                    <button class="btn btn-sm btn-success">Watch Now</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Pagination -->
-                <nav aria-label="Purchases pagination" class="mt-4">
+                <nav>
                     <ul class="pagination justify-content-center">
                         <li class="page-item disabled">
-                            <a class="page-link border-0 bg-transparent text-white" href="#" tabindex="-1">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
+                            <a class="page-link" href="#">Previous</a>
                         </li>
                         <li class="page-item active">
-                            <a class="page-link border-0" href="#" style="background: white; color: #667eea;">1</a>
+                            <a class="page-link" href="#">1</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link border-0 bg-transparent text-white" href="#">2</a>
+                            <a class="page-link" href="#">2</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link border-0 bg-transparent text-white" href="#">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
+                            <a class="page-link" href="#">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -538,134 +259,9 @@
         </div>
     </div>
 
-    <!-- Video Options Modal -->
-    <div class="modal fade" id="videoOptionsModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 20px; border: none;">
-                <div class="modal-header border-0 bg-gradient-primary text-white" style="border-radius: 20px 20px 0 0;">
-                    <h5 class="modal-title fw-bold">Video Options</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="list-group list-group-flush">
-                        <a href="#" class="list-group-item list-group-item-action border-0 py-3" id="watchVideo">
-                            <i class="fas fa-play text-primary me-3"></i>
-                            <span class="fw-semibold">Watch Video</span>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action border-0 py-3" id="toggleFavorite">
-                            <i class="fas fa-heart text-danger me-3"></i>
-                            <span class="fw-semibold">Add to Favorites</span>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action border-0 py-3" id="downloadVideo">
-                            <i class="fas fa-download text-success me-3"></i>
-                            <span class="fw-semibold">Download (Premium Feature)</span>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action border-0 py-3" id="shareVideo">
-                            <i class="fas fa-share text-info me-3"></i>
-                            <span class="fw-semibold">Share Video</span>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action border-0 py-3" id="reportIssue">
-                            <i class="fas fa-flag text-warning me-3"></i>
-                            <span class="fw-semibold">Report Issue</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Purchase Receipt Modal -->
-    <div class="modal fade" id="receiptModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 20px; border: none;">
-                <div class="modal-header border-0 bg-gradient-success text-white" style="border-radius: 20px 20px 0 0;">
-                    <h5 class="modal-title fw-bold">
-                        <i class="fas fa-receipt me-2"></i>Purchase Receipt
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="text-center mb-4">
-                        <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-flex mb-3">
-                            <i class="fas fa-receipt fa-2x text-success"></i>
-                        </div>
-                        <h4 class="fw-bold">Purchase Receipt</h4>
-                    </div>
-
-                    <div class="card bg-light border-0" style="border-radius: 15px;">
-                        <div class="card-body">
-                            <div class="row mb-2">
-                                <div class="col-4"><strong>Video:</strong></div>
-                                <div class="col-8" id="receiptVideoTitle">-</div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-4"><strong>Creator:</strong></div>
-                                <div class="col-8" id="receiptCreator">-</div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-4"><strong>Date:</strong></div>
-                                <div class="col-8" id="receiptDate">-</div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-4"><strong>Price:</strong></div>
-                                <div class="col-8" id="receiptPrice">-</div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-4"><strong>Transaction ID:</strong></div>
-                                <div class="col-8" id="receiptTransactionId">-</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-outline-primary btn-modern" id="printReceipt">
-                        <i class="fas fa-print me-2"></i>Print
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/dataService.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/viewer.js"></script>
-    <script src="../assets/js/payment.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Initialize data service first
-            if (typeof DataService !== 'undefined' && !window.dataService) {
-                window.dataService = new DataService();
-            }
-            
-            // Wait a bit for data service to load
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Initialize viewer manager for purchases page
-            if (typeof ViewerManager !== 'undefined') {
-                window.viewerManager = new ViewerManager();
-            } else {
-                console.error('ViewerManager not found');
-            }
-        });
-
-        // Enhanced grid/list view toggle
-        document.getElementById('gridView').addEventListener('click', function() {
-            this.classList.add('active');
-            document.getElementById('listView').classList.remove('active');
-            document.getElementById('videosGrid').classList.remove('d-none');
-            document.getElementById('videosList').classList.add('d-none');
-        });
-
-        document.getElementById('listView').addEventListener('click', function() {
-            this.classList.add('active');
-            document.getElementById('gridView').classList.remove('active');
-            document.getElementById('videosGrid').classList.add('d-none');
-            document.getElementById('videosList').classList.remove('d-none');
-        });
-    </script>
 </body>
 </html>

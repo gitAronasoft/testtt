@@ -29,20 +29,33 @@ class CreatorManager {
 
     async loadDashboardData() {
         try {
-            // Wait for data service to be available
+            // Wait for API service to be available
             let retries = 0;
             const maxRetries = 50;
             
-            while (retries < maxRetries && (!window.dataService || !window.dataService.cache.videos)) {
+            while (retries < maxRetries && !window.apiService) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 retries++;
             }
 
-            if (window.dataService && window.dataService.cache.videos) {
-                // Use data service cache - filter for current creator (ID 1 - John Smith)
+            if (window.apiService) {
+                // Load data from API - filter for current creator (ID 1 - John Smith)
                 const currentCreatorId = 1;
-                this.videos = window.dataService.cache.videos.filter(v => v.creatorId === currentCreatorId) || [];
-                this.earnings = window.dataService.cache.earnings.filter(e => e.creatorId === currentCreatorId) || [];
+                const [videosResponse] = await Promise.all([
+                    window.apiService.getVideos()
+                ]);
+                
+                const allVideos = videosResponse.data || videosResponse.videos || [];
+                this.videos = allVideos.filter(v => v.uploader_id === currentCreatorId) || [];
+                
+                // Calculate earnings from video data (simplified for demo)
+                this.earnings = this.videos.map(video => ({
+                    id: video.id,
+                    creatorId: currentCreatorId,
+                    amount: parseFloat(video.price || 0),
+                    date: video.upload_date || new Date().toISOString(),
+                    videoTitle: video.title
+                }));
                 
                 console.log('Filtered creator data:', {
                     allVideos: window.dataService.cache.videos.length,

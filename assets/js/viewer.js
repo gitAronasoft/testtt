@@ -25,31 +25,28 @@ class ViewerManager {
 
     async loadDataFromJSON() {
         try {
-            // Wait for data service to be available and load data
+            // Wait for API service to be available and load data
             let retries = 0;
             const maxRetries = 50; // 5 seconds
             
-            while (retries < maxRetries && (!window.dataService || !window.dataService.cache.videos)) {
+            while (retries < maxRetries && !window.apiService) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 retries++;
             }
             
-            if (window.dataService && window.dataService.cache.videos) {
-                // Use data service cache
-                this.videos = window.dataService.cache.videos || [];
-                this.purchases = window.dataService.cache.purchases || [];
-            } else {
-                // Fallback: Load directly
+            if (window.apiService) {
+                // Load data from API
                 const [videosResponse, purchasesResponse] = await Promise.all([
-                    fetch('/data/videos.json'),
-                    fetch('/data/purchases.json')
+                    window.apiService.getVideos(),
+                    window.apiService.getPurchases()
                 ]);
                 
-                const videosData = await videosResponse.json();
-                const purchasesData = await purchasesResponse.json();
-                
-                this.videos = videosData.videos || [];
-                this.purchases = purchasesData.purchases || [];
+                this.videos = videosResponse.data || videosResponse.videos || [];
+                this.purchases = purchasesResponse.data || purchasesResponse.purchases || [];
+            } else {
+                console.error('API service not available');
+                this.videos = [];
+                this.purchases = [];
             }
             
             // Filter purchases for current viewer

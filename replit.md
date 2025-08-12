@@ -11,9 +11,21 @@ Project focus: Simple web app for demo purposes without complex analytics or pay
 Design preference: Improved and streamlined layout structure.
 Viewer interface: Simplified dashboard with metrics and all videos section. Removed browse videos page and menu items for cleaner navigation.
 Purchases page: Removed metrics and recent purchases sections, keeping only all purchased videos section.
-Data loading: All sections now load dynamically from JSON files instead of static data.
+Data loading: Migrated from JSON files to PHP/MySQL backend with user's existing database.
 Settings pages: Removed "Viewing Activity" section from viewer profile page and "Your Stats" section from creator profile page for cleaner interface.
 UI/UX improvements: Enhanced all user panels with modern Bootstrap styling, consistent navigation, improved card designs, and sleek auth forms.
+
+## Backend Migration (August 2025)
+
+Successfully migrated VideoHub from static JSON files to PHP/MySQL backend:
+- Database: MariaDB 10.11.10 hosted at srv637.hstgr.io
+- PHP 8.1.33 backend with REST API endpoints
+- Adapted to existing database structure with YouTube video integration
+- API endpoints: /api/videos, /api/users, /api/purchases, /api/health
+- Mixed architecture: Frontend JavaScript + PHP backend
+- Frontend now uses APIService instead of DataService for database connectivity
+- Fixed APIService class redeclaration issues with proper guard checks
+- PHP server serves both API endpoints and static files on port 5000
 
 ## System Architecture
 
