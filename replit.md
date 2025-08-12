@@ -7,6 +7,8 @@ VideoHub is a comprehensive video management platform designed for creators, vie
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Project focus: Simple web app for demo purposes without complex analytics or payout features.
+Design preference: Improved and streamlined layout structure.
 
 ## System Architecture
 
@@ -41,23 +43,24 @@ Preferred communication style: Simple, everyday language.
 - **Transaction Management**: Purchase history and earnings tracking
 - **Demo Mode**: Simplified payment flow for testing and demonstration
 
-### Analytics & Reporting
-- **Multi-dashboard Analytics**: Separate analytics views for admins and creators
-- **Performance Metrics**: View counts, engagement rates, earnings data
-- **Chart Visualizations**: Interactive charts using Chart.js library
-- **Real-time Updates**: Dynamic data updates for dashboard metrics
+### Simple Statistics
+- **Basic Overview Cards**: Simple statistics display without complex charts
+- **Clean Interface**: Streamlined design focused on core functionality
+
+### API Integration
+- **Structured API Calls**: Prepared API functions for backend connectivity
+- **RESTful Design**: Following REST conventions for all endpoints
+- **Error Handling**: Comprehensive error handling for API responses
 
 ## External Dependencies
 
 ### Frontend Libraries
 - **Bootstrap 5.3.0**: UI framework and responsive grid system
 - **Font Awesome 6.0.0**: Icon font library for consistent iconography
-- **Chart.js**: JavaScript charting library for analytics visualizations
 
 ### Content Delivery
 - **Bootstrap CDN**: External CSS and JavaScript delivery
 - **Font Awesome CDN**: Icon font delivery
-- **Chart.js CDN**: Analytics library delivery
 
 ### Mock Services
 - **Placeholder Images**: Via.placeholder.com for demo video thumbnails
@@ -71,3 +74,7 @@ Preferred communication style: Simple, everyday language.
 - **Cross-browser Compatibility**: Standard HTML5/CSS3/ES6 features
 - **Consistent UI/UX**: All user interfaces now follow consistent sidebar navigation pattern
 - **Unified Branding**: Consistent VideoHub branding across all user panels (VideoHub Admin, VideoHub Creator, VideoHub Viewer)
+- **Simplified Design**: Removed complex analytics and payout features for demo simplicity  
+- **Clean Navigation**: Streamlined sidebar navigation without analytics sections
+- **Modern Bootstrap 5**: Latest Bootstrap features for responsive design
+- **API-Ready**: Structured for easy backend integration

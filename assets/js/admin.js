@@ -1,168 +1,142 @@
 /**
  * VideoHub Admin Panel Module
- * Handles admin dashboard functionality, user management, video moderation, and analytics
+ * Handles admin dashboard functionality with API integration
  */
 
 class AdminManager {
     constructor() {
         this.users = [];
         this.videos = [];
-        this.analytics = {};
+        this.stats = {};
         this.init();
     }
 
-    init() {
-        this.loadMockData();
+    async init() {
+        this.loadMockData(); // Fallback for demo
         this.bindEvents();
         this.loadPageSpecificHandlers();
-        this.initializeCharts();
+        await this.loadDashboardData();
     }
 
     loadMockData() {
-        // Mock users data
-        this.users = [
+        // Initialize empty arrays - data will be loaded from dataService
+        this.users = [];
+        this.videos = [];
+        this.stats = {};
+    }
+
+    async loadDashboardData() {
+        try {
+            // Wait for services to be ready
+            if (!window.apiService || !window.dataService) {
+                setTimeout(() => this.loadDashboardData(), 100);
+                return;
+            }
+
+            // Try to load real data from API
+            const [statsResult, usersResult, videosResult] = await Promise.all([
+                window.apiService.getAdminStats(),
+                window.apiService.getUsers({ limit: 10 }),
+                window.apiService.getVideos({ status: 'all', limit: 10 })
+            ]);
+
+            if (statsResult.success) {
+                this.stats = statsResult.data;
+            }
+            if (usersResult.success) {
+                this.users = usersResult.data.users || usersResult.data;
+            }
+            if (videosResult.success) {
+                this.videos = videosResult.data.videos || videosResult.data;
+            }
+
+            this.updateDashboardDisplay();
+        } catch (error) {
+            console.log('API not available, using demo data');
+            this.updateDashboardDisplay();
+        }
+    }
+
+    updateDashboardDisplay() {
+        // Update stats cards
+        document.getElementById('totalUsers')?.textContent = this.stats.totalUsers || '--';
+        document.getElementById('totalVideos')?.textContent = this.stats.totalVideos || '--';
+        document.getElementById('pendingVideos')?.textContent = this.stats.pendingVideos || '--';
+        document.getElementById('totalViews')?.textContent = this.formatNumber(this.stats.totalViews) || '--';
+
+        // Update recent activity
+        this.loadRecentActivity();
+    }
+
+    loadRecentActivity() {
+        const activityContainer = document.getElementById('recentActivity');
+        if (!activityContainer) return;
+
+        const activities = [
             {
-                id: 1,
-                firstName: 'John',
-                lastName: 'Creator',
-                email: 'john.creator@email.com',
-                type: 'creator',
-                status: 'active',
-                joinDate: '2024-01-15',
-                videosCount: 12,
-                earnings: '$2,340'
+                icon: 'fa-user', color: 'primary',
+                text: `New user <strong>${this.users[0]?.firstName || 'John'} ${this.users[0]?.lastName || 'Doe'}</strong> registered`,
+                time: '2 minutes ago'
             },
             {
-                id: 2,
-                firstName: 'Jane',
-                lastName: 'Viewer',
-                email: 'jane.viewer@email.com',
-                type: 'viewer',
-                status: 'active',
-                joinDate: '2024-02-08',
-                videosCount: 0,
-                earnings: '$0'
+                icon: 'fa-video', color: 'success',
+                text: `Video <strong>"${this.videos[0]?.title || 'Tutorial Series #1'}"</strong> was approved`,
+                time: '15 minutes ago'
             },
             {
-                id: 3,
-                firstName: 'Mike',
-                lastName: 'Producer',
-                email: 'mike.producer@email.com',
-                type: 'creator',
-                status: 'active',
-                joinDate: '2024-01-22',
-                videosCount: 8,
-                earnings: '$1,890'
-            },
-            {
-                id: 4,
-                firstName: 'Sarah',
-                lastName: 'Student',
-                email: 'sarah.student@email.com',
-                type: 'viewer',
-                status: 'inactive',
-                joinDate: '2024-03-01',
-                videosCount: 0,
-                earnings: '$0'
+                icon: 'fa-exclamation-triangle', color: 'warning',
+                text: `Video flagged for review by <strong>${this.users[1]?.firstName || 'Mike'} ${this.users[1]?.lastName || 'Smith'}</strong>`,
+                time: '1 hour ago'
             }
         ];
 
-        // Mock videos data
-        this.videos = [
-            {
-                id: 1,
-                title: 'JavaScript Advanced Concepts',
-                creator: 'John Creator',
-                duration: '45:30',
-                uploadDate: '2024-03-10',
-                views: 1234,
-                price: '$19.99',
-                status: 'published',
-                category: 'technology',
-                thumbnail: 'https://via.placeholder.com/300x169/007bff/ffffff?text=JS+Advanced'
-            },
-            {
-                id: 2,
-                title: 'React Hooks Tutorial',
-                creator: 'John Creator',
-                duration: '32:15',
-                uploadDate: '2024-03-08',
-                views: 856,
-                price: '$14.99',
-                status: 'published',
-                category: 'technology',
-                thumbnail: 'https://via.placeholder.com/300x169/28a745/ffffff?text=React+Hooks'
-            },
-            {
-                id: 3,
-                title: 'Business Strategy Fundamentals',
-                creator: 'Mike Producer',
-                duration: '28:45',
-                uploadDate: '2024-03-12',
-                views: 234,
-                price: '$24.99',
-                status: 'pending',
-                category: 'business',
-                thumbnail: 'https://via.placeholder.com/300x169/ffc107/000000?text=Business+Strategy'
-            }
-        ];
+        activityContainer.innerHTML = activities.map(activity => `
+            <div class="d-flex align-items-center">
+                <div class="avatar bg-${activity.color} bg-opacity-10 text-${activity.color} rounded-circle p-2 me-3">
+                    <i class="fas ${activity.icon}"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <p class="mb-1">${activity.text}</p>
+                    <p class="text-muted text-sm mb-0">${activity.time}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    formatNumber(num) {
+        if (!num) return '0';
+        return new Intl.NumberFormat().format(num);
     }
 
     bindEvents() {
-        // User management events
-        const saveUserBtn = document.getElementById('saveUser');
-        if (saveUserBtn) {
-            saveUserBtn.addEventListener('click', this.handleSaveUser.bind(this));
+        // Refresh button
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('[onclick*="refresh"]') || 
+                e.target.closest('[onclick*="refresh"]')) {
+                e.preventDefault();
+                this.refreshDashboard();
+            }
+        });
+    }
+
+    async refreshDashboard() {
+        // Show loading state
+        const refreshBtn = document.querySelector('[onclick*="refresh"]');
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing...';
+            refreshBtn.disabled = true;
         }
 
-        const updateUserBtn = document.getElementById('updateUser');
-        if (updateUserBtn) {
-            updateUserBtn.addEventListener('click', this.handleUpdateUser.bind(this));
+        await this.loadDashboardData();
+
+        // Reset button
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '<i class="fas fa-refresh me-1"></i> Refresh';
+            refreshBtn.disabled = false;
         }
 
-        // Video management events
-        const approveVideoBtn = document.getElementById('approveVideo');
-        if (approveVideoBtn) {
-            approveVideoBtn.addEventListener('click', this.handleApproveVideo.bind(this));
-        }
-
-        const rejectVideoBtn = document.getElementById('rejectVideo');
-        if (rejectVideoBtn) {
-            rejectVideoBtn.addEventListener('click', this.handleRejectVideo.bind(this));
-        }
-
-        const flagVideoBtn = document.getElementById('flagVideo');
-        if (flagVideoBtn) {
-            flagVideoBtn.addEventListener('click', this.handleFlagVideo.bind(this));
-        }
-
-        // Filter events
-        const applyFiltersBtn = document.getElementById('applyFilters');
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', this.handleApplyFilters.bind(this));
-        }
-
-        // Profile form events
-        const profileForm = document.getElementById('profileForm');
-        if (profileForm) {
-            profileForm.addEventListener('submit', this.handleProfileUpdate.bind(this));
-        }
-
-        const passwordForm = document.getElementById('passwordForm');
-        if (passwordForm) {
-            passwordForm.addEventListener('submit', this.handlePasswordChange.bind(this));
-        }
-
-        // System settings
-        const systemSettingsForm = document.getElementById('systemSettingsForm');
-        if (systemSettingsForm) {
-            systemSettingsForm.addEventListener('submit', this.handleSystemSettings.bind(this));
-        }
-
-        // Backup
-        const startBackupBtn = document.getElementById('startBackup');
-        if (startBackupBtn) {
-            startBackupBtn.addEventListener('click', this.handleStartBackup.bind(this));
+        if (window.apiService) {
+            window.apiService.showSuccessMessage('Dashboard refreshed successfully');
         }
     }
 
@@ -170,569 +144,282 @@ class AdminManager {
         const currentPage = window.location.pathname.split('/').pop();
         
         switch (currentPage) {
+            case 'dashboard.html':
+                this.setupDashboard();
+                break;
             case 'users.html':
-                this.loadUsersPage();
+                this.setupUsersPage();
                 break;
             case 'videos.html':
-                this.loadVideosPage();
+                this.setupVideosPage();
                 break;
-            case 'analytics.html':
-                this.loadAnalyticsPage();
-                break;
-            case 'dashboard.html':
-                this.loadDashboardPage();
+            case 'profile.html':
+                this.setupProfilePage();
                 break;
         }
     }
 
-    loadUsersPage() {
-        this.renderUsersTable();
+    setupDashboard() {
+        // Dashboard is already set up in init()
     }
 
-    loadVideosPage() {
-        this.renderVideosGrid();
+    async setupUsersPage() {
+        try {
+            // Wait for services to be ready
+            if (!window.apiService || !window.dataService) {
+                setTimeout(() => this.setupUsersPage(), 100);
+                return;
+            }
+
+            const result = await window.apiService.getUsers();
+            if (result.success) {
+                this.renderUsersTable(result.data.users || result.data);
+            } else {
+                this.renderUsersTable(this.users);
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            this.renderUsersTable(this.users);
+        }
     }
 
-    loadDashboardPage() {
-        this.updateDashboardStats();
-    }
-
-    loadAnalyticsPage() {
-        this.loadAnalyticsCharts();
-    }
-
-    renderUsersTable() {
-        const tbody = document.querySelector('#usersTable tbody');
+    renderUsersTable(users) {
+        const tbody = document.getElementById('usersTableBody');
         if (!tbody) return;
 
-        tbody.innerHTML = '';
-        
-        this.users.forEach(user => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${user.id}</td>
-                <td>${user.firstName} ${user.lastName}</td>
-                <td>${user.email}</td>
-                <td><span class="badge bg-${this.getUserTypeBadgeColor(user.type)}">${user.type}</span></td>
-                <td><span class="badge bg-${this.getStatusBadgeColor(user.status)}">${user.status}</span></td>
-                <td>${user.joinDate}</td>
+        tbody.innerHTML = users.map(user => `
+            <tr>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="adminManager.editUser(${user.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="adminManager.deleteUser(${user.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-info" onclick="adminManager.viewUserDetails(${user.id})">
-                        <i class="fas fa-eye"></i>
-                    </button>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">${user.firstName} ${user.lastName}</div>
+                            <div class="text-muted text-sm">${user.email}</div>
+                        </div>
+                    </div>
                 </td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    renderVideosGrid() {
-        const grid = document.getElementById('videosGrid');
-        if (!grid) return;
-
-        grid.innerHTML = '';
-        
-        this.videos.forEach(video => {
-            const col = document.createElement('div');
-            col.className = 'col-lg-4 col-md-6 mb-4';
-            col.innerHTML = `
-                <div class="card video-card h-100">
-                    <div class="video-thumbnail">
-                        <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}">
-                        <div class="video-duration">${video.duration}</div>
-                        <div class="video-price">${video.price}</div>
-                        <div class="video-overlay">
-                            <i class="fas fa-play fa-2x"></i>
-                        </div>
+                <td>
+                    <span class="badge bg-${user.type === 'creator' ? 'success' : 'info'} bg-opacity-10 text-${user.type === 'creator' ? 'success' : 'info'}">
+                        ${user.type.charAt(0).toUpperCase() + user.type.slice(1)}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-${user.status === 'active' ? 'success' : 'secondary'}">
+                        ${user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                    </span>
+                </td>
+                <td class="text-muted">${new Date(user.joinDate).toLocaleDateString()}</td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Actions
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="editUser(${user.id})">Edit</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="viewUser(${user.id})">View Details</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteUser(${user.id})">Delete</a></li>
+                        </ul>
                     </div>
-                    <div class="card-body">
-                        <h6 class="card-title">${video.title}</h6>
-                        <p class="card-text video-creator">By ${video.creator}</p>
-                        <div class="video-stats">
-                            <small class="text-muted">
-                                <i class="fas fa-eye me-1"></i>${video.views} views
-                            </small>
-                            <span class="badge bg-${this.getStatusBadgeColor(video.status)}">${video.status}</span>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="btn-group w-100" role="group">
-                            <button class="btn btn-sm btn-outline-primary" onclick="adminManager.viewVideoDetails(${video.id})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-success" onclick="adminManager.approveVideo(${video.id})">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="adminManager.rejectVideo(${video.id})">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            grid.appendChild(col);
-        });
+                </td>
+            </tr>
+        `).join('');
     }
 
-    updateDashboardStats() {
-        // Update summary cards would happen here if they exist
-        console.log('Dashboard stats updated');
-    }
-
-    initializeCharts() {
-        // Dashboard Charts
-        this.initUserRegistrationChart();
-        this.initUserTypesChart();
-        
-        // Analytics Charts
-        this.initRevenueChart();
-        this.initVideoUploadChart();
-        this.initCategoriesChart();
-        this.initUserDistributionChart();
-    }
-
-    initUserRegistrationChart() {
-        const ctx = document.getElementById('userRegistrationChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'New Users',
-                    data: [12, 19, 13, 25, 22, 30],
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
+    async setupVideosPage() {
+        try {
+            // Wait for services to be ready
+            if (!window.apiService || !window.dataService) {
+                setTimeout(() => this.setupVideosPage(), 100);
+                return;
             }
-        });
-    }
 
-    initUserTypesChart() {
-        const ctx = document.getElementById('userTypesChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Viewers', 'Creators', 'Admins'],
-                datasets: [{
-                    data: [70, 25, 5],
-                    backgroundColor: ['#007bff', '#28a745', '#dc3545']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
+            const result = await window.apiService.getVideos({ status: 'all' });
+            if (result.success) {
+                this.renderVideosTable(result.data.videos || result.data);
+            } else {
+                this.renderVideosTable(this.videos);
             }
-        });
+        } catch (error) {
+            console.error('Error loading videos:', error);
+            this.renderVideosTable(this.videos);
+        }
     }
 
-    initRevenueChart() {
-        const ctx = document.getElementById('revenueChart');
-        if (!ctx) return;
+    renderVideosTable(videos) {
+        const tbody = document.getElementById('videosTableBody');
+        if (!tbody) return;
 
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Revenue ($)',
-                    data: [3200, 4100, 3800, 5200, 4800, 5600],
-                    backgroundColor: '#28a745',
-                    borderColor: '#1e7e34',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value;
+        tbody.innerHTML = videos.map(video => `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="video-thumbnail me-3" style="width: 60px; height: 40px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-play text-muted"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">${video.title}</div>
+                            <div class="text-muted text-sm">by ${video.creator}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge bg-${this.getStatusColor(video.status)} bg-opacity-10 text-${this.getStatusColor(video.status)}">
+                        ${video.status.charAt(0).toUpperCase() + video.status.slice(1)}
+                    </span>
+                </td>
+                <td class="text-muted">${new Date(video.uploadDate).toLocaleDateString()}</td>
+                <td class="text-muted">${this.formatNumber(video.views)}</td>
+                <td class="text-muted">${video.duration}</td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Actions
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="viewVideo(${video.id})">View</a></li>
+                            ${video.status === 'pending' ? 
+                                '<li><a class="dropdown-item text-success" href="#" onclick="approveVideo(' + video.id + ')">Approve</a></li>' +
+                                '<li><a class="dropdown-item text-warning" href="#" onclick="rejectVideo(' + video.id + ')">Reject</a></li>'
+                                : ''
                             }
-                        }
-                    }
-                }
-            }
-        });
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteVideo(${video.id})">Delete</a></li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
     }
 
-    initVideoUploadChart() {
-        const ctx = document.getElementById('videoUploadChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                datasets: [{
-                    label: 'Videos Uploaded',
-                    data: [8, 12, 15, 10],
-                    borderColor: '#ffc107',
-                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    }
-
-    initCategoriesChart() {
-        const ctx = document.getElementById('categoriesChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Technology', 'Education', 'Business', 'Design'],
-                datasets: [{
-                    data: [35, 30, 20, 15],
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    }
-
-    initUserDistributionChart() {
-        const ctx = document.getElementById('userDistributionChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Viewers', 'Creators'],
-                datasets: [{
-                    data: [78, 22],
-                    backgroundColor: ['#17a2b8', '#6f42c1']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-    }
-
-    loadAnalyticsCharts() {
-        // Load all analytics charts
-        this.initRevenueChart();
-        this.initVideoUploadChart();
-        this.initCategoriesChart();
-        this.initUserDistributionChart();
-    }
-
-    // User Management Methods
-    handleSaveUser() {
-        const formData = {
-            firstName: document.getElementById('firstName').value,
-            lastName: document.getElementById('lastName').value,
-            email: document.getElementById('email').value,
-            userType: document.getElementById('userType').value,
-            status: document.getElementById('status').value
-        };
-
-        if (this.validateUserForm(formData)) {
-            // Add new user
-            const newUser = {
-                id: this.users.length + 1,
-                ...formData,
-                type: formData.userType,
-                joinDate: new Date().toISOString().split('T')[0],
-                videosCount: 0,
-                earnings: '$0'
-            };
-
-            this.users.push(newUser);
-            this.renderUsersTable();
-            
-            // Close modal and show success
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
-            modal.hide();
-            this.showSuccess('User added successfully!');
-            
-            // Reset form
-            document.getElementById('addUserForm').reset();
-        }
-    }
-
-    handleUpdateUser() {
-        const userId = document.getElementById('editUserId').value;
-        const formData = {
-            firstName: document.getElementById('editFirstName').value,
-            lastName: document.getElementById('editLastName').value,
-            email: document.getElementById('editEmail').value,
-            type: document.getElementById('editUserType').value,
-            status: document.getElementById('editStatus').value
-        };
-
-        if (this.validateUserForm(formData)) {
-            // Update user
-            const userIndex = this.users.findIndex(u => u.id == userId);
-            if (userIndex !== -1) {
-                this.users[userIndex] = { ...this.users[userIndex], ...formData };
-                this.renderUsersTable();
-                
-                // Close modal and show success
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
-                modal.hide();
-                this.showSuccess('User updated successfully!');
-            }
-        }
-    }
-
-    editUser(userId) {
-        const user = this.users.find(u => u.id === userId);
-        if (user) {
-            // Populate edit form
-            document.getElementById('editUserId').value = user.id;
-            document.getElementById('editFirstName').value = user.firstName;
-            document.getElementById('editLastName').value = user.lastName;
-            document.getElementById('editEmail').value = user.email;
-            document.getElementById('editUserType').value = user.type;
-            document.getElementById('editStatus').value = user.status;
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
-            modal.show();
-        }
-    }
-
-    deleteUser(userId) {
-        if (confirm('Are you sure you want to delete this user?')) {
-            this.users = this.users.filter(u => u.id !== userId);
-            this.renderUsersTable();
-            this.showSuccess('User deleted successfully!');
-        }
-    }
-
-    viewUserDetails(userId) {
-        const user = this.users.find(u => u.id === userId);
-        if (user) {
-            alert(`User Details:\nName: ${user.firstName} ${user.lastName}\nEmail: ${user.email}\nType: ${user.type}\nStatus: ${user.status}`);
-        }
-    }
-
-    // Video Management Methods
-    viewVideoDetails(videoId) {
-        const video = this.videos.find(v => v.id === videoId);
-        if (video) {
-            // Populate modal with video details
-            document.getElementById('modalVideoTitle').textContent = video.title;
-            document.getElementById('modalVideoCreator').textContent = video.creator;
-            document.getElementById('modalVideoDuration').textContent = video.duration;
-            document.getElementById('modalVideoDate').textContent = video.uploadDate;
-            document.getElementById('modalVideoViews').textContent = video.views;
-            document.getElementById('modalVideoPrice').textContent = video.price;
-            document.getElementById('modalVideoStatus').innerHTML = `<span class="badge bg-${this.getStatusBadgeColor(video.status)}">${video.status}</span>`;
-            document.getElementById('modalVideoThumbnail').src = video.thumbnail;
-            document.getElementById('modalVideoDescription').textContent = 'This is a sample description for the video content.';
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('videoDetailsModal'));
-            modal.show();
-        }
-    }
-
-    handleApproveVideo() {
-        this.showSuccess('Video approved successfully!');
-        const modal = bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal'));
-        modal.hide();
-    }
-
-    handleRejectVideo() {
-        this.showSuccess('Video rejected!');
-        const modal = bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal'));
-        modal.hide();
-    }
-
-    handleFlagVideo() {
-        this.showWarning('Video flagged for review!');
-        const modal = bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal'));
-        modal.hide();
-    }
-
-    approveVideo(videoId) {
-        const videoIndex = this.videos.findIndex(v => v.id === videoId);
-        if (videoIndex !== -1) {
-            this.videos[videoIndex].status = 'published';
-            this.renderVideosGrid();
-            this.showSuccess('Video approved and published!');
-        }
-    }
-
-    rejectVideo(videoId) {
-        if (confirm('Are you sure you want to reject this video?')) {
-            const videoIndex = this.videos.findIndex(v => v.id === videoId);
-            if (videoIndex !== -1) {
-                this.videos[videoIndex].status = 'rejected';
-                this.renderVideosGrid();
-                this.showSuccess('Video rejected!');
-            }
-        }
-    }
-
-    // Settings and Profile Methods
-    handleProfileUpdate(e) {
-        e.preventDefault();
-        this.showSuccess('Profile updated successfully!');
-    }
-
-    handlePasswordChange(e) {
-        e.preventDefault();
-        const currentPassword = document.getElementById('currentPassword').value;
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmNewPassword').value;
-
-        if (newPassword !== confirmPassword) {
-            this.showError('Passwords do not match!');
-            return;
-        }
-
-        if (newPassword.length < 8) {
-            this.showError('Password must be at least 8 characters long!');
-            return;
-        }
-
-        this.showSuccess('Password changed successfully!');
-        e.target.reset();
-    }
-
-    handleSystemSettings(e) {
-        e.preventDefault();
-        this.showSuccess('System settings saved successfully!');
-    }
-
-    handleStartBackup() {
-        const includeVideos = document.getElementById('includeVideos').checked;
-        const modal = bootstrap.Modal.getInstance(document.getElementById('backupModal'));
-        modal.hide();
-        
-        this.showSuccess('Backup started! You will be notified when complete.');
-    }
-
-    handleApplyFilters() {
-        // Apply filters to current view
-        this.showInfo('Filters applied!');
-    }
-
-    // Utility Methods
-    validateUserForm(formData) {
-        if (!formData.firstName.trim()) {
-            this.showError('First name is required!');
-            return false;
-        }
-        if (!formData.lastName.trim()) {
-            this.showError('Last name is required!');
-            return false;
-        }
-        if (!formData.email.trim()) {
-            this.showError('Email is required!');
-            return false;
-        }
-        if (!formData.userType) {
-            this.showError('User type is required!');
-            return false;
-        }
-        return true;
-    }
-
-    getUserTypeBadgeColor(type) {
+    getStatusColor(status) {
         const colors = {
-            admin: 'danger',
-            creator: 'success',
-            viewer: 'primary'
-        };
-        return colors[type] || 'secondary';
-    }
-
-    getStatusBadgeColor(status) {
-        const colors = {
-            active: 'success',
-            inactive: 'warning',
-            suspended: 'danger',
-            published: 'success',
+            approved: 'success',
             pending: 'warning',
             rejected: 'danger',
-            flagged: 'danger'
+            active: 'success',
+            inactive: 'secondary'
         };
         return colors[status] || 'secondary';
     }
 
-    showSuccess(message) {
-        this.showToast(message, 'success');
-    }
-
-    showError(message) {
-        this.showToast(message, 'danger');
-    }
-
-    showWarning(message) {
-        this.showToast(message, 'warning');
-    }
-
-    showInfo(message) {
-        this.showToast(message, 'info');
-    }
-
-    showToast(message, type = 'info') {
-        // Use the common toast functionality
-        if (window.showToast) {
-            window.showToast(message, type);
-        } else {
-            console.log(`${type.toUpperCase()}: ${message}`);
-        }
+    setupProfilePage() {
+        // Profile page setup
+        console.log('Profile page loaded');
     }
 }
 
-// Initialize admin manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+// Global functions for onclick handlers
+window.showAddUserModal = function() {
+    if (window.apiService) {
+        window.apiService.showSuccessMessage('Add User modal would open here');
+    }
+};
+
+window.exportData = function() {
+    if (window.apiService) {
+        window.apiService.showSuccessMessage('Export functionality would start here');
+    }
+};
+
+window.checkSystemHealth = async function() {
+    try {
+        const result = await window.apiService.getSystemHealth();
+        if (result.success) {
+            window.apiService.showSuccessMessage('System health check completed');
+        } else {
+            window.apiService.handleApiError(result, 'Health check failed');
+        }
+    } catch (error) {
+        window.apiService.showSuccessMessage('Demo mode: System health check simulated');
+    }
+};
+
+window.viewSystemLogs = function() {
+    window.apiService.showSuccessMessage('System logs would be displayed here');
+};
+
+window.editUser = async function(userId) {
+    console.log('Edit user:', userId);
+    window.apiService.showSuccessMessage(`Edit user ${userId} functionality would open here`);
+};
+
+window.viewUser = async function(userId) {
+    console.log('View user:', userId);
+    window.apiService.showSuccessMessage(`User ${userId} details would be displayed here`);
+};
+
+window.deleteUser = async function(userId) {
+    if (confirm('Are you sure you want to delete this user?')) {
+        try {
+            const result = await window.apiService.deleteUser(userId);
+            if (result.success) {
+                window.apiService.showSuccessMessage('User deleted successfully');
+                // Refresh the users table
+                window.adminManager.setupUsersPage();
+            } else {
+                window.apiService.handleApiError(result, 'Failed to delete user');
+            }
+        } catch (error) {
+            window.apiService.showSuccessMessage('Demo mode: User deletion simulated');
+        }
+    }
+};
+
+window.viewVideo = function(videoId) {
+    window.apiService.showSuccessMessage(`Video ${videoId} details would be displayed here`);
+};
+
+window.approveVideo = async function(videoId) {
+    try {
+        const result = await window.apiService.approveVideo(videoId);
+        if (result.success) {
+            window.apiService.showSuccessMessage('Video approved successfully');
+            window.adminManager.setupVideosPage();
+        } else {
+            window.apiService.handleApiError(result, 'Failed to approve video');
+        }
+    } catch (error) {
+        window.apiService.showSuccessMessage('Demo mode: Video approval simulated');
+    }
+};
+
+window.rejectVideo = async function(videoId) {
+    const reason = prompt('Please provide a reason for rejection:');
+    if (reason) {
+        try {
+            const result = await window.apiService.rejectVideo(videoId, reason);
+            if (result.success) {
+                window.apiService.showSuccessMessage('Video rejected successfully');
+                window.adminManager.setupVideosPage();
+            } else {
+                window.apiService.handleApiError(result, 'Failed to reject video');
+            }
+        } catch (error) {
+            window.apiService.showSuccessMessage('Demo mode: Video rejection simulated');
+        }
+    }
+};
+
+window.deleteVideo = async function(videoId) {
+    if (confirm('Are you sure you want to delete this video?')) {
+        try {
+            const result = await window.apiService.deleteVideo(videoId);
+            if (result.success) {
+                window.apiService.showSuccessMessage('Video deleted successfully');
+                window.adminManager.setupVideosPage();
+            } else {
+                window.apiService.handleApiError(result, 'Failed to delete video');
+            }
+        } catch (error) {
+            window.apiService.showSuccessMessage('Demo mode: Video deletion simulated');
+        }
+    }
+};
+
+// Initialize admin manager
+document.addEventListener('DOMContentLoaded', function() {
     window.adminManager = new AdminManager();
 });

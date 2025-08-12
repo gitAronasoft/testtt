@@ -1,808 +1,470 @@
 /**
  * VideoHub Creator Module
- * Handles creator dashboard functionality, video management, analytics, and earnings
+ * Handles creator dashboard functionality with API integration
  */
 
 class CreatorManager {
     constructor() {
+        this.stats = {};
         this.videos = [];
-        this.analytics = {};
-        this.earnings = {};
+        this.earnings = [];
         this.init();
     }
 
-    init() {
-        this.loadMockData();
+    async init() {
+        this.loadMockData(); // Fallback for demo
         this.bindEvents();
         this.loadPageSpecificHandlers();
-        this.initializeCharts();
+        await this.loadDashboardData();
     }
 
     loadMockData() {
-        // Mock videos data
-        this.videos = [
-            {
-                id: 1,
-                title: 'JavaScript Advanced Concepts',
-                description: 'Deep dive into advanced JavaScript concepts including closures, prototypes, and async programming.',
-                price: 19.99,
-                category: 'technology',
-                duration: '45:30',
-                uploadDate: '2024-03-10',
-                views: 1234,
-                likes: 89,
-                status: 'published',
-                thumbnail: 'https://via.placeholder.com/300x169/007bff/ffffff?text=JS+Advanced',
-                earnings: 342.50
-            },
-            {
-                id: 2,
-                title: 'React Hooks Tutorial',
-                description: 'Complete guide to React Hooks with practical examples and best practices.',
-                price: 14.99,
-                category: 'technology',
-                duration: '32:15',
-                uploadDate: '2024-03-08',
-                views: 856,
-                likes: 67,
-                status: 'published',
-                thumbnail: 'https://via.placeholder.com/300x169/28a745/ffffff?text=React+Hooks',
-                earnings: 234.80
-            },
-            {
-                id: 3,
-                title: 'Node.js Best Practices',
-                description: 'Learn industry best practices for building scalable Node.js applications.',
-                price: 24.99,
-                category: 'technology',
-                duration: '38:20',
-                uploadDate: '2024-03-12',
-                views: 567,
-                likes: 45,
-                status: 'pending',
-                thumbnail: 'https://via.placeholder.com/300x169/ffc107/000000?text=Node.js+Best',
-                earnings: 0
-            }
-        ];
+        // Initialize empty arrays - data will be loaded from dataService
+        this.stats = {};
+        this.videos = [];
+        this.earnings = [];
+    }
 
-        // Mock earnings data
-        this.earnings = {
-            total: 2340.50,
-            thisMonth: 456.75,
-            availableForPayout: 1234.25,
-            transactions: [
-                {
-                    id: 1,
-                    date: '2024-03-15',
-                    video: 'JavaScript Advanced Concepts',
-                    buyer: 'john.doe@email.com',
-                    amount: 19.99,
-                    commission: 2.00,
-                    earnings: 17.99
-                },
-                {
-                    id: 2,
-                    date: '2024-03-14',
-                    video: 'React Hooks Tutorial',
-                    buyer: 'jane.smith@email.com',
-                    amount: 14.99,
-                    commission: 1.50,
-                    earnings: 13.49
-                }
-            ]
-        };
+    async loadDashboardData() {
+        try {
+            // Try to load real data from API
+            const [statsResult, videosResult, earningsResult] = await Promise.all([
+                window.apiService.getCreatorStats(),
+                window.apiService.getCreatorVideos({ limit: 5 }),
+                window.apiService.getCreatorEarnings({ limit: 10 })
+            ]);
+
+            if (statsResult.success) {
+                this.stats = statsResult.data;
+            }
+            if (videosResult.success) {
+                this.videos = videosResult.data.videos || videosResult.data;
+            }
+            if (earningsResult.success) {
+                this.earnings = earningsResult.data.earnings || earningsResult.data;
+            }
+
+            this.updateDashboardDisplay();
+        } catch (error) {
+            console.log('API not available, using demo data');
+            this.updateDashboardDisplay();
+        }
+    }
+
+    updateDashboardDisplay() {
+        // Update stats cards
+        document.getElementById('totalVideos')?.textContent = this.stats.totalVideos || '--';
+        document.getElementById('totalViews')?.textContent = this.formatNumber(this.stats.totalViews) || '--';
+        document.getElementById('totalEarnings')?.textContent = this.formatCurrency(this.stats.totalEarnings) || '--';
+        document.getElementById('subscribers')?.textContent = this.stats.subscribers || '--';
+
+        // Update earnings table and recent videos
+        this.loadEarningsTable();
+        this.loadRecentVideos();
+    }
+
+    loadEarningsTable() {
+        const tbody = document.getElementById('earningsTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = this.earnings.slice(0, 10).map(earning => `
+            <tr>
+                <td class="px-4 py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="video-thumbnail me-3" style="width: 40px; height: 24px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-play text-muted" style="font-size: 10px;"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold text-sm">${earning.videoTitle}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-3">
+                    <div>
+                        <div class="fw-semibold text-sm">${earning.viewerName}</div>
+                        <div class="text-muted text-xs">${earning.viewerEmail}</div>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-muted text-sm">${new Date(earning.purchaseDate).toLocaleDateString()}</td>
+                <td class="px-4 py-3">
+                    <span class="fw-bold text-success">${this.formatCurrency(earning.price)}</span>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="badge bg-${earning.status === 'completed' ? 'success' : 'warning'} bg-opacity-10 text-${earning.status === 'completed' ? 'success' : 'warning'}">
+                        ${earning.status.charAt(0).toUpperCase() + earning.status.slice(1)}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    loadRecentVideos() {
+        const container = document.getElementById('recentVideos');
+        if (!container) return;
+
+        container.innerHTML = this.videos.slice(0, 5).map(video => `
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="video-thumbnail me-3" style="width: 50px; height: 30px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-play text-muted" style="font-size: 12px;"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-sm">${video.title}</div>
+                        <div class="text-muted text-xs">${new Date(video.uploadDate).toLocaleDateString()}</div>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold text-sm">${this.formatNumber(video.views)}</div>
+                    <div class="text-muted text-xs">views</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    formatNumber(num) {
+        if (!num) return '0';
+        return new Intl.NumberFormat().format(num);
+    }
+
+    formatCurrency(amount) {
+        if (!amount) return '$0.00';
+        return new Intl.NumberFormat('en-US', { 
+            style: 'currency', 
+            currency: 'USD' 
+        }).format(amount);
     }
 
     bindEvents() {
-        // Video upload events
-        const uploadVideoBtn = document.getElementById('uploadVideo');
-        if (uploadVideoBtn) {
-            uploadVideoBtn.addEventListener('click', this.handleVideoUpload.bind(this));
+        // Upload video form submission
+        const uploadForm = document.getElementById('uploadVideoForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', (e) => this.handleVideoUpload(e));
         }
 
-        const updateVideoBtn = document.getElementById('updateVideo');
-        if (updateVideoBtn) {
-            updateVideoBtn.addEventListener('click', this.handleVideoUpdate.bind(this));
+        // Refresh button
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('[onclick*="refresh"]') || 
+                e.target.closest('[onclick*="refresh"]')) {
+                e.preventDefault();
+                this.refreshDashboard();
+            }
+        });
+    }
+
+    async refreshDashboard() {
+        const refreshBtn = document.querySelector('[onclick*="refresh"]');
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing...';
+            refreshBtn.disabled = true;
         }
 
-        // Earnings events
-        const submitPayoutBtn = document.getElementById('submitPayout');
-        if (submitPayoutBtn) {
-            submitPayoutBtn.addEventListener('click', this.handlePayoutRequest.bind(this));
+        await this.loadDashboardData();
+
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '<i class="fas fa-refresh me-1"></i> Refresh';
+            refreshBtn.disabled = false;
         }
 
-        const payoutMethodSelect = document.getElementById('payoutMethod');
-        if (payoutMethodSelect) {
-            payoutMethodSelect.addEventListener('change', this.handlePayoutMethodChange.bind(this));
+        window.apiService.showSuccessMessage('Dashboard refreshed successfully');
+    }
+
+    async handleVideoUpload(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const formData = new FormData(form);
+        const videoData = {
+            title: formData.get('videoTitle'),
+            description: formData.get('videoDescription'),
+            price: parseFloat(formData.get('videoPrice')),
+            category: formData.get('videoCategory')
+        };
+
+        // Validate form
+        if (!this.validateVideoForm(form, videoData)) {
+            return;
         }
 
-        // Profile events
-        const profileForm = document.getElementById('profileForm');
-        if (profileForm) {
-            profileForm.addEventListener('submit', this.handleProfileUpdate.bind(this));
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Uploading...';
+        submitBtn.disabled = true;
+
+        try {
+            const result = await window.apiService.uploadVideo(videoData, formData.get('videoFile'));
+            
+            if (result.success) {
+                // Close modal and reset form
+                const modal = bootstrap.Modal.getInstance(document.getElementById('uploadVideoModal'));
+                modal.hide();
+                form.reset();
+                form.classList.remove('was-validated');
+                
+                // Refresh videos list
+                await this.loadDashboardData();
+                
+                window.apiService.showSuccessMessage('Video uploaded successfully');
+            } else {
+                window.apiService.handleApiError(result, 'Failed to upload video');
+            }
+        } catch (error) {
+            // Demo mode
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadVideoModal'));
+            modal.hide();
+            form.reset();
+            form.classList.remove('was-validated');
+            window.apiService.showSuccessMessage('Video uploaded successfully (demo mode)');
+        } finally {
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    validateVideoForm(form, data) {
+        let isValid = true;
+        
+        // Title validation
+        const titleInput = form.querySelector('#videoTitle');
+        if (!data.title || data.title.length < 3) {
+            titleInput.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            titleInput.classList.remove('is-invalid');
+            titleInput.classList.add('is-valid');
+        }
+        
+        // Price validation
+        const priceInput = form.querySelector('#videoPrice');
+        if (!data.price || data.price < 0) {
+            priceInput.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            priceInput.classList.remove('is-invalid');
+            priceInput.classList.add('is-valid');
         }
 
-        const passwordForm = document.getElementById('passwordForm');
-        if (passwordForm) {
-            passwordForm.addEventListener('submit', this.handlePasswordChange.bind(this));
+        // Category validation
+        const categoryInput = form.querySelector('#videoCategory');
+        if (!data.category) {
+            categoryInput.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            categoryInput.classList.remove('is-invalid');
+            categoryInput.classList.add('is-valid');
         }
 
-        const contentPreferencesForm = document.getElementById('contentPreferencesForm');
-        if (contentPreferencesForm) {
-            contentPreferencesForm.addEventListener('submit', this.handleContentPreferences.bind(this));
+        // File validation
+        const fileInput = form.querySelector('#videoFile');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            fileInput.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            fileInput.classList.remove('is-invalid');
+            fileInput.classList.add('is-valid');
         }
 
-        const notificationForm = document.getElementById('notificationForm');
-        if (notificationForm) {
-            notificationForm.addEventListener('submit', this.handleNotificationSettings.bind(this));
-        }
-
-        // Filter events
-        const applyFiltersBtn = document.getElementById('applyFilters');
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', this.handleApplyFilters.bind(this));
-        }
+        form.classList.add('was-validated');
+        return isValid;
     }
 
     loadPageSpecificHandlers() {
         const currentPage = window.location.pathname.split('/').pop();
         
         switch (currentPage) {
-            case 'videos.html':
-                this.loadVideosPage();
-                break;
-            case 'analytics.html':
-                this.loadAnalyticsPage();
-                break;
-            case 'earnings.html':
-                this.loadEarningsPage();
-                break;
             case 'dashboard.html':
-                this.loadDashboardPage();
+                this.setupDashboard();
+                break;
+            case 'videos.html':
+                this.setupVideosPage();
+                break;
+            case 'profile.html':
+                this.setupProfilePage();
                 break;
         }
     }
 
-    loadDashboardPage() {
-        this.updateDashboardStats();
+    setupDashboard() {
+        // Dashboard is already set up in init()
     }
 
-    loadVideosPage() {
-        this.renderVideosGrid();
+    async setupVideosPage() {
+        try {
+            const result = await window.apiService.getCreatorVideos();
+            if (result.success) {
+                this.renderVideosGrid(result.data.videos || result.data);
+            } else {
+                this.renderVideosGrid(this.videos);
+            }
+        } catch (error) {
+            this.renderVideosGrid(this.videos);
+        }
     }
 
-    loadAnalyticsPage() {
-        this.loadAnalyticsCharts();
-        this.loadTopVideosTable();
-    }
-
-    loadEarningsPage() {
-        this.loadEarningsCharts();
-        this.loadTopEarningVideos();
-        this.loadRecentTransactions();
-    }
-
-    updateDashboardStats() {
-        // Update dashboard metrics if elements exist
-        const totalVideos = this.videos.length;
-        const totalViews = this.videos.reduce((sum, video) => sum + video.views, 0);
-        const totalEarnings = this.earnings.total;
-        
-        console.log('Dashboard updated:', { totalVideos, totalViews, totalEarnings });
-    }
-
-    renderVideosGrid() {
+    renderVideosGrid(videos) {
         const grid = document.getElementById('videosGrid');
         if (!grid) return;
 
-        grid.innerHTML = '';
-        
-        this.videos.forEach(video => {
-            const col = document.createElement('div');
-            col.className = 'col-lg-4 col-md-6 mb-4';
-            col.innerHTML = `
-                <div class="card video-card h-100">
-                    <div class="video-thumbnail">
-                        <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}">
-                        <div class="video-duration">${video.duration}</div>
-                        <div class="video-price">$${video.price}</div>
-                        <div class="video-overlay">
-                            <i class="fas fa-play fa-2x"></i>
+        grid.innerHTML = videos.map(video => `
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card video-card shadow-sm border-0">
+                    <div class="position-relative">
+                        <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
+                        <div class="video-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                            <div class="play-button bg-success bg-opacity-75 text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-${this.getStatusColor(video.status)} bg-opacity-90">
+                                ${video.status.charAt(0).toUpperCase() + video.status.slice(1)}
+                            </span>
+                        </div>
+                        <div class="position-absolute bottom-0 end-0 m-2">
+                            <span class="badge bg-dark bg-opacity-75 text-white">
+                                ${video.duration || '00:00'}
+                            </span>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <h6 class="card-title">${video.title}</h6>
-                        <p class="card-text small text-muted">${video.description.substring(0, 100)}...</p>
-                        <div class="video-stats">
-                            <small class="text-muted">
-                                <i class="fas fa-eye me-1"></i>${video.views} views
-                                <i class="fas fa-thumbs-up me-1 ms-2"></i>${video.likes} likes
-                            </small>
-                            <span class="badge bg-${this.getStatusBadgeColor(video.status)}">${video.status}</span>
+                    <div class="card-body p-3">
+                        <h6 class="card-title fw-bold mb-2">${video.title}</h6>
+                        <p class="card-text text-muted small mb-3" style="height: 40px; overflow: hidden;">
+                            ${video.description || 'No description available'}
+                        </p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-success fw-bold">${this.formatCurrency(video.price || 0)}</span>
+                            <span class="text-muted small">
+                                <i class="fas fa-eye me-1"></i>
+                                ${this.formatNumber(video.views)}
+                            </span>
                         </div>
-                    </div>
-                    <div class="card-footer">
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted small">
+                                <i class="fas fa-heart me-1"></i>
+                                ${this.formatNumber(video.likes || 0)}
+                            </span>
+                            <span class="text-success fw-semibold">
+                                ${video.earnings ? this.formatCurrency(video.earnings) : '$0.00'} earned
+                            </span>
+                        </div>
+                        
+                        <div class="text-muted small mb-3">
+                            Uploaded ${new Date(video.uploadDate).toLocaleDateString()}
+                        </div>
+                        
                         <div class="btn-group w-100" role="group">
-                            <button class="btn btn-sm btn-outline-primary" onclick="creatorManager.editVideo(${video.id})" title="Edit">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editVideo(${video.id})" title="Edit video">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-info" onclick="creatorManager.viewAnalytics(${video.id})" title="Analytics">
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="viewVideoStats(${video.id})" title="View stats">
                                 <i class="fas fa-chart-bar"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-success" onclick="creatorManager.viewEarnings(${video.id})" title="Earnings">
-                                <i class="fas fa-dollar-sign"></i>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="duplicateVideo(${video.id})" title="Duplicate">
+                                <i class="fas fa-copy"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="creatorManager.deleteVideo(${video.id})" title="Delete">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteVideo(${video.id})" title="Delete video">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </div>
                 </div>
+            </div>
+        `).join('');
+
+        // Add hover effects with CSS if not already added
+        if (!document.getElementById('video-card-styles')) {
+            const style = document.createElement('style');
+            style.id = 'video-card-styles';
+            style.textContent = `
+                .video-card {
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+                .video-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+                }
+                .video-overlay {
+                    opacity: 0;
+                    transition: opacity 0.2s ease;
+                    background: rgba(0,0,0,0.3);
+                }
+                .video-card:hover .video-overlay {
+                    opacity: 1;
+                }
+                .play-button {
+                    transform: scale(0.8);
+                    transition: transform 0.2s ease;
+                }
+                .video-card:hover .play-button {
+                    transform: scale(1);
+                }
             `;
-            grid.appendChild(col);
-        });
-    }
-
-    initializeCharts() {
-        // Dashboard Charts
-        this.initViewsChart();
-        this.initRevenueSourcesChart();
-        
-        // Analytics Charts
-        this.initViewsOverTimeChart();
-        this.initTrafficSourcesChart();
-        this.initDemographicsChart();
-        this.initDeviceChart();
-        
-        // Earnings Charts
-        this.initEarningsChart();
-        this.initCategoryRevenueChart();
-    }
-
-    initViewsChart() {
-        const ctx = document.getElementById('viewsChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'Views',
-                    data: [65, 89, 120, 81, 156, 155, 140],
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    }
-
-    initRevenueSourcesChart() {
-        const ctx = document.getElementById('revenueSourcesChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Direct Sales', 'Referrals', 'Promotions'],
-                datasets: [{
-                    data: [60, 30, 10],
-                    backgroundColor: ['#28a745', '#007bff', '#ffc107']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    }
-
-    initViewsOverTimeChart() {
-        const ctx = document.getElementById('viewsOverTimeChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                datasets: [{
-                    label: 'Views',
-                    data: [450, 620, 890, 750],
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    }
-
-    initTrafficSourcesChart() {
-        const ctx = document.getElementById('trafficSourcesChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Direct', 'Search', 'Social', 'Referral'],
-                datasets: [{
-                    data: [40, 25, 20, 15],
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    }
-
-    initDemographicsChart() {
-        const ctx = document.getElementById('demographicsChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['18-24', '25-34', '35-44', '45-54', '55+'],
-                datasets: [{
-                    label: 'Viewers',
-                    data: [23, 35, 25, 12, 5],
-                    backgroundColor: '#007bff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    }
-
-    initDeviceChart() {
-        const ctx = document.getElementById('deviceChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Desktop', 'Mobile', 'Tablet'],
-                datasets: [{
-                    data: [55, 35, 10],
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    }
-
-    initEarningsChart() {
-        const ctx = document.getElementById('earningsChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Earnings ($)',
-                    data: [320, 410, 380, 520, 480, 560],
-                    backgroundColor: '#28a745',
-                    borderColor: '#1e7e34',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    initCategoryRevenueChart() {
-        const ctx = document.getElementById('categoryRevenueChart');
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Technology', 'Education', 'Business'],
-                datasets: [{
-                    data: [60, 25, 15],
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    }
-
-    loadAnalyticsCharts() {
-        this.initViewsOverTimeChart();
-        this.initTrafficSourcesChart();
-        this.initDemographicsChart();
-        this.initDeviceChart();
-    }
-
-    loadTopVideosTable() {
-        const tbody = document.getElementById('topVideosTable');
-        if (!tbody) return;
-
-        tbody.innerHTML = '';
-        
-        const sortedVideos = [...this.videos].sort((a, b) => b.views - a.views);
-        
-        sortedVideos.forEach(video => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${video.title}</td>
-                <td>${video.views.toLocaleString()}</td>
-                <td>${video.duration}</td>
-                <td>${Math.round(Math.random() * 30 + 60)}%</td>
-                <td>${video.likes}</td>
-                <td>$${video.earnings.toFixed(2)}</td>
-                <td>${video.uploadDate}</td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    loadEarningsCharts() {
-        this.initEarningsChart();
-        this.initCategoryRevenueChart();
-    }
-
-    loadTopEarningVideos() {
-        const tbody = document.getElementById('topEarningVideos');
-        if (!tbody) return;
-
-        tbody.innerHTML = '';
-        
-        const sortedVideos = [...this.videos].sort((a, b) => b.earnings - a.earnings);
-        
-        sortedVideos.forEach(video => {
-            const purchases = Math.floor(video.earnings / video.price) || 0;
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${video.title}</td>
-                <td>$${video.price.toFixed(2)}</td>
-                <td>${purchases}</td>
-                <td>$${video.earnings.toFixed(2)}</td>
-                <td>${video.uploadDate}</td>
-                <td><span class="badge bg-${this.getStatusBadgeColor(video.status)}">${video.status}</span></td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    loadRecentTransactions() {
-        const tbody = document.getElementById('recentTransactions');
-        if (!tbody) return;
-
-        tbody.innerHTML = '';
-        
-        this.earnings.transactions.forEach(transaction => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${transaction.date}</td>
-                <td>${transaction.video}</td>
-                <td>${transaction.buyer}</td>
-                <td>$${transaction.amount.toFixed(2)}</td>
-                <td>$${transaction.commission.toFixed(2)}</td>
-                <td class="text-success">$${transaction.earnings.toFixed(2)}</td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    // Video Management Methods
-    handleVideoUpload() {
-        const formData = {
-            title: document.getElementById('videoTitle').value,
-            description: document.getElementById('videoDescription').value,
-            price: parseFloat(document.getElementById('videoPrice').value),
-            category: document.getElementById('videoCategory').value
-        };
-
-        if (this.validateVideoForm(formData)) {
-            // Create new video
-            const newVideo = {
-                id: this.videos.length + 1,
-                ...formData,
-                duration: '00:00',
-                uploadDate: new Date().toISOString().split('T')[0],
-                views: 0,
-                likes: 0,
-                status: 'pending',
-                thumbnail: `https://via.placeholder.com/300x169/6c757d/ffffff?text=${encodeURIComponent(formData.title)}`,
-                earnings: 0
-            };
-
-            this.videos.push(newVideo);
-            this.renderVideosGrid();
-            
-            // Close modal and show success
-            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadVideoModal'));
-            modal.hide();
-            this.showSuccess('Video uploaded successfully! It will be reviewed before publishing.');
-            
-            // Reset form
-            document.getElementById('uploadVideoForm').reset();
+            document.head.appendChild(style);
         }
     }
 
-    handleVideoUpdate() {
-        const videoId = document.getElementById('editVideoId').value;
-        const formData = {
-            title: document.getElementById('editVideoTitle').value,
-            description: document.getElementById('editVideoDescription').value,
-            price: parseFloat(document.getElementById('editVideoPrice').value),
-            category: document.getElementById('editVideoCategory').value
-        };
-
-        if (this.validateVideoForm(formData)) {
-            // Update video
-            const videoIndex = this.videos.findIndex(v => v.id == videoId);
-            if (videoIndex !== -1) {
-                this.videos[videoIndex] = { ...this.videos[videoIndex], ...formData };
-                this.renderVideosGrid();
-                
-                // Close modal and show success
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editVideoModal'));
-                modal.hide();
-                this.showSuccess('Video updated successfully!');
-            }
-        }
-    }
-
-    editVideo(videoId) {
-        const video = this.videos.find(v => v.id === videoId);
-        if (video) {
-            // Populate edit form
-            document.getElementById('editVideoId').value = video.id;
-            document.getElementById('editVideoTitle').value = video.title;
-            document.getElementById('editVideoDescription').value = video.description;
-            document.getElementById('editVideoPrice').value = video.price;
-            document.getElementById('editVideoCategory').value = video.category;
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('editVideoModal'));
-            modal.show();
-        }
-    }
-
-    deleteVideo(videoId) {
-        if (confirm('Are you sure you want to delete this video?')) {
-            this.videos = this.videos.filter(v => v.id !== videoId);
-            this.renderVideosGrid();
-            this.showSuccess('Video deleted successfully!');
-        }
-    }
-
-    viewAnalytics(videoId) {
-        const video = this.videos.find(v => v.id === videoId);
-        if (video) {
-            alert(`Analytics for "${video.title}":\nViews: ${video.views}\nLikes: ${video.likes}\nStatus: ${video.status}`);
-        }
-    }
-
-    viewEarnings(videoId) {
-        const video = this.videos.find(v => v.id === videoId);
-        if (video) {
-            const purchases = Math.floor(video.earnings / video.price) || 0;
-            alert(`Earnings for "${video.title}":\nPurchases: ${purchases}\nEarnings: $${video.earnings.toFixed(2)}`);
-        }
-    }
-
-    // Earnings Methods
-    handlePayoutRequest() {
-        const amount = parseFloat(document.getElementById('payoutAmount').value);
-        const method = document.getElementById('payoutMethod').value;
-        const details = document.getElementById('accountDetails').value;
-
-        if (amount < 50) {
-            this.showError('Minimum payout amount is $50.00');
-            return;
-        }
-
-        if (amount > this.earnings.availableForPayout) {
-            this.showError('Amount exceeds available balance');
-            return;
-        }
-
-        if (!method) {
-            this.showError('Please select a payout method');
-            return;
-        }
-
-        if (!details.trim()) {
-            this.showError('Please provide account details');
-            return;
-        }
-
-        // Process payout request
-        const modal = bootstrap.Modal.getInstance(document.getElementById('payoutModal'));
-        modal.hide();
-        this.showSuccess(`Payout request of $${amount.toFixed(2)} submitted successfully!`);
-        
-        // Reset form
-        document.getElementById('payoutForm').reset();
-    }
-
-    handlePayoutMethodChange() {
-        const method = document.getElementById('payoutMethod').value;
-        const detailsDiv = document.getElementById('payoutDetails');
-        
-        if (method) {
-            detailsDiv.style.display = 'block';
-            const placeholder = this.getPayoutPlaceholder(method);
-            document.getElementById('accountDetails').placeholder = placeholder;
-        } else {
-            detailsDiv.style.display = 'none';
-        }
-    }
-
-    getPayoutPlaceholder(method) {
-        const placeholders = {
-            paypal: 'Enter your PayPal email address',
-            bank: 'Enter your bank account details (routing number, account number)',
-            crypto: 'Enter your cryptocurrency wallet address'
-        };
-        return placeholders[method] || 'Enter your account details';
-    }
-
-    // Profile and Settings Methods
-    handleProfileUpdate(e) {
-        e.preventDefault();
-        this.showSuccess('Profile updated successfully!');
-    }
-
-    handlePasswordChange(e) {
-        e.preventDefault();
-        const currentPassword = document.getElementById('currentPassword').value;
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmNewPassword').value;
-
-        if (newPassword !== confirmPassword) {
-            this.showError('Passwords do not match!');
-            return;
-        }
-
-        if (newPassword.length < 8) {
-            this.showError('Password must be at least 8 characters long!');
-            return;
-        }
-
-        this.showSuccess('Password changed successfully!');
-        e.target.reset();
-    }
-
-    handleContentPreferences(e) {
-        e.preventDefault();
-        this.showSuccess('Content preferences saved successfully!');
-    }
-
-    handleNotificationSettings(e) {
-        e.preventDefault();
-        this.showSuccess('Notification settings updated successfully!');
-    }
-
-    handleApplyFilters() {
-        this.showInfo('Filters applied successfully!');
-    }
-
-    // Utility Methods
-    validateVideoForm(formData) {
-        if (!formData.title.trim()) {
-            this.showError('Video title is required!');
-            return false;
-        }
-        if (formData.price < 0) {
-            this.showError('Price cannot be negative!');
-            return false;
-        }
-        if (!formData.category) {
-            this.showError('Category is required!');
-            return false;
-        }
-        return true;
-    }
-
-    getStatusBadgeColor(status) {
+    getStatusColor(status) {
         const colors = {
             published: 'success',
             pending: 'warning',
-            rejected: 'danger',
-            draft: 'secondary'
+            draft: 'secondary',
+            rejected: 'danger'
         };
         return colors[status] || 'secondary';
     }
 
-    showSuccess(message) {
-        this.showToast(message, 'success');
-    }
-
-    showError(message) {
-        this.showToast(message, 'danger');
-    }
-
-    showInfo(message) {
-        this.showToast(message, 'info');
-    }
-
-    showToast(message, type = 'info') {
-        // Use the common toast functionality
-        if (window.showToast) {
-            window.showToast(message, type);
-        } else {
-            console.log(`${type.toUpperCase()}: ${message}`);
-        }
+    setupProfilePage() {
+        // Profile page is handled by profile.js
     }
 }
 
-// Initialize creator manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+// Global functions
+window.exportEarnings = function() {
+    window.apiService.showSuccessMessage('Earnings export would start here');
+};
+
+window.editVideo = function(videoId) {
+    window.apiService.showSuccessMessage(`Edit video ${videoId} functionality would open here`);
+};
+
+window.viewVideoStats = function(videoId) {
+    window.apiService.showSuccessMessage(`Video ${videoId} stats would be displayed here`);
+};
+
+window.deleteVideo = async function(videoId) {
+    if (confirm('Are you sure you want to delete this video?')) {
+        try {
+            const result = await window.apiService.deleteVideo(videoId);
+            if (result.success) {
+                window.apiService.showSuccessMessage('Video deleted successfully');
+                window.creatorManager.setupVideosPage();
+            } else {
+                window.apiService.handleApiError(result, 'Failed to delete video');
+            }
+        } catch (error) {
+            window.apiService.showSuccessMessage('Demo mode: Video deletion simulated');
+        }
+    }
+};
+
+window.duplicateVideo = async function(videoId) {
+    try {
+        const result = await window.apiService.duplicateVideo(videoId);
+        if (result.success) {
+            window.apiService.showSuccessMessage('Video duplicated successfully');
+            window.creatorManager.setupVideosPage();
+        } else {
+            window.apiService.handleApiError(result, 'Failed to duplicate video');
+        }
+    } catch (error) {
+        window.apiService.showSuccessMessage('Demo mode: Video duplication simulated');
+    }
+};
+
+// Initialize creator manager
+document.addEventListener('DOMContentLoaded', function() {
     window.creatorManager = new CreatorManager();
 });
