@@ -128,32 +128,46 @@ class AuthManager {
         try {
             this.showLoading('Signing in...');
             
-            // Simulate API call
-            await this.delay(1500);
+            // Wait for API service to be available
+            await this.waitForAPIService();
             
-            // Demo authentication
-            const userType = this.getUserTypeFromEmail(email);
+            // Make API call to login endpoint
+            const response = await window.apiService.post('/auth/login', {
+                email: email,
+                password: password
+            });
             
-            if (userType) {
-                // Store user session
+            if (response.success && response.data) {
+                // Store user session and token
+                const userData = response.data.user;
+                const token = response.data.token;
+                
                 this.setUserSession({
-                    email: email,
-                    userType: userType,
+                    email: userData.email,
+                    userType: userData.role,
+                    name: userData.name,
+                    id: userData.id,
                     rememberMe: rememberMe
                 });
-
+                
+                // Store auth token
+                if (window.apiService) {
+                    window.apiService.setAuthToken(token);
+                }
+                
                 this.showSuccess('Login successful! Redirecting...');
                 
                 // Redirect based on user type
                 setTimeout(() => {
-                    this.redirectToUserDashboard(userType);
+                    this.redirectToUserDashboard(userData.role);
                 }, 1000);
             } else {
-                throw new Error('Invalid credentials');
+                throw new Error(response.error || 'Login failed');
             }
             
         } catch (error) {
-            this.showError('Invalid email or password. Please try again.');
+            console.error('Login error:', error);
+            this.showError(error.message || 'Invalid email or password. Please try again.');
         } finally {
             this.hideLoading();
         }
@@ -178,18 +192,26 @@ class AuthManager {
             
             this.showLoading('Creating your account...');
             
-            // Simulate API call
-            await this.delay(2000);
+            // Wait for API service to be available
+            await this.waitForAPIService();
             
-            this.showSuccess('Account created successfully! Please check your email for verification.');
+            // Make API call to register endpoint
+            const response = await window.apiService.post('/auth/register', formData);
             
-            // Redirect to email verification
-            setTimeout(() => {
-                window.location.href = `email-verification.html?email=${encodeURIComponent(formData.email)}`;
-            }, 1500);
+            if (response.success && response.data) {
+                this.showSuccess('Account created successfully! You can now log in.');
+                
+                // Redirect to login page
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+            } else {
+                throw new Error(response.error || 'Registration failed');
+            }
             
         } catch (error) {
-            this.showError(error.message);
+            console.error('Registration error:', error);
+            this.showError(error.message || 'Registration failed. Please try again.');
         } finally {
             this.hideLoading();
         }
@@ -429,6 +451,20 @@ class AuthManager {
         return emailRegex.test(email);
     }
 
+    async waitForAPIService() {
+        let retries = 0;
+        const maxRetries = 50;
+        
+        while (retries < maxRetries && !window.apiService) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+        }
+        
+        if (!window.apiService) {
+            throw new Error('API service not available');
+        }
+    }
+
     showLoading(message = 'Loading...') {
         // Create or update loading indicator
         let loader = document.getElementById('globalLoader');
@@ -449,6 +485,60 @@ class AuthManager {
             </div>
         `;
         loader.style.display = 'block';
+    }
+
+    hideLoading() {
+        const loader = document.getElementById('globalLoader');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    }
+
+    showSuccess(message) {
+        this.showMessage(message, 'success');
+    }
+
+    showError(message) {
+        this.showMessage(message, 'danger');
+    }
+
+    showMessage(message, type = 'info') {
+        // Create toast notification
+        const toastContainer = document.getElementById('toastContainer') || this.createToastContainer();
+        
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Initialize and show toast
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Remove toast after it's hidden
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
+    }
+
+    createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     hideLoading() {

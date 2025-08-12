@@ -16,6 +16,11 @@ $path = preg_replace('/^\/api/', '', $path);
 
 // Route requests
 switch (true) {
+    // Authentication endpoints
+    case preg_match('/^\/auth/', $path):
+        require_once 'endpoints/auth.php';
+        break;
+        
     // Users endpoints
     case preg_match('/^\/users/', $path):
         require_once 'endpoints/users.php';
@@ -34,6 +39,11 @@ switch (true) {
     // Creator endpoints
     case preg_match('/^\/creator/', $path):
         require_once 'endpoints/creator.php';
+        break;
+        
+    // Metrics endpoints
+    case preg_match('/^\/metrics/', $path):
+        require_once 'endpoints/metrics.php';
         break;
         
     // Admin endpoints

@@ -27,7 +27,7 @@ class ViewerManager {
         try {
             // Wait for API service to be available and load data
             let retries = 0;
-            const maxRetries = 50; // 5 seconds
+            const maxRetries = 50;
             
             while (retries < maxRetries && !window.apiService) {
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -35,10 +35,20 @@ class ViewerManager {
             }
             
             if (window.apiService) {
+                // Get current user info
+                const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
+                const userId = userSession.userId || 8; // Default to test viewer
+                
+                // Load metrics from new metrics API
+                const metricsResponse = await window.apiService.get(`/metrics/viewer?user_id=${userId}`);
+                if (metricsResponse.success) {
+                    this.updateDashboardMetrics(metricsResponse.data);
+                }
+                
                 // Load data from API
                 const [videosResponse, purchasesResponse] = await Promise.all([
-                    window.apiService.getVideos(),
-                    window.apiService.getPurchases()
+                    window.apiService.get('/videos'),
+                    window.apiService.get('/purchases')
                 ]);
                 
                 // Handle API response format properly
@@ -50,20 +60,44 @@ class ViewerManager {
                                 Array.isArray(purchasesResponse.data?.purchases) ? purchasesResponse.data.purchases : 
                                 Array.isArray(purchasesResponse.data) ? purchasesResponse.data : [];
                 
-                console.log('Raw API responses:', {
-                    videosResponse: videosResponse,
-                    purchasesResponse: purchasesResponse,
-                    processedVideos: this.videos.length,
-                    processedPurchases: this.purchases.length
+                console.log('Viewer data loaded:', {
+                    videosLength: this.videos.length,
+                    purchasesLength: this.purchases.length
                 });
             } else {
                 console.error('API service not available');
                 this.videos = [];
                 this.purchases = [];
             }
-            
-            // Filter purchases for current viewer
-            this.purchases = this.purchases.filter(p => p.viewerId === this.currentViewerId);
+        } catch (error) {
+            console.error('Failed to load viewer data:', error);
+            // Set empty values on error
+            this.updateDashboardMetrics({
+                totalVideosCount: 0,
+                purchasedVideosCount: 0,
+                totalSpentAmount: '0.00',
+                favoritesCount: 0
+            });
+        }
+    }
+
+    updateDashboardMetrics(metrics) {
+        // Update dashboard metric displays
+        const totalVideosCountEl = document.getElementById('totalVideosCount');
+        const purchasedVideosCountEl = document.getElementById('purchasedVideosCount');
+        const totalSpentAmountEl = document.getElementById('totalSpentAmount');
+        const favoritesCountEl = document.getElementById('favoritesCount');
+        
+        if (totalVideosCountEl) totalVideosCountEl.textContent = metrics.totalVideosCount || 0;
+        if (purchasedVideosCountEl) purchasedVideosCountEl.textContent = metrics.purchasedVideosCount || 0;
+        if (totalSpentAmountEl) totalSpentAmountEl.textContent = '$' + (metrics.totalSpentAmount || '0.00');
+        if (favoritesCountEl) favoritesCountEl.textContent = metrics.favoritesCount || 0;
+    }
+
+    async loadRemainingData() {
+        try {
+            // Filter purchases for current viewer (if needed)
+            // this.purchases = this.purchases.filter(p => p.viewerId === this.currentViewerId);
             
             // Enrich purchases with video data
             this.purchases = this.purchases.map(purchase => {

@@ -96,29 +96,7 @@ try {
                 http_response_code(200);
                 echo json_encode([
                     'success' => true,
-                    'purchases' => $purchases
-                ]);
-                    $formattedPurchases[] = [
-                        'id' => (int)$purchaseData['id'],
-                        'viewerId' => (int)$purchaseData['viewer_id'],
-                        'videoId' => (int)$purchaseData['video_id'],
-                        'amount' => (float)$purchaseData['amount'],
-                        'paymentMethod' => $purchaseData['payment_method'],
-                        'transactionId' => $purchaseData['transaction_id'],
-                        'status' => $purchaseData['status'],
-                        'purchaseDate' => $purchaseData['purchase_date'],
-                        'video' => [
-                            'title' => $purchaseData['video_title'],
-                            'thumbnail' => $purchaseData['thumbnail'],
-                            'creator' => $purchaseData['creator_name']
-                        ]
-                    ];
-                }
-
-                http_response_code(200);
-                echo json_encode([
-                    'success' => true,
-                    'purchases' => $formattedPurchases
+                    'data' => ['purchases' => $purchases]
                 ]);
             }
             break;

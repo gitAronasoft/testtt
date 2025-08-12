@@ -69,6 +69,11 @@
             }
 
             const result = await response.json();
+            // If the result has success field, return it as-is
+            if (result.hasOwnProperty('success')) {
+                return result;
+            }
+            // Otherwise wrap it
             return { success: true, data: result };
         } catch (error) {
             console.error(`API Error [${method} ${endpoint}]:`, error);
@@ -264,20 +269,12 @@
         return this.get('/admin/stats');
     }
 
-    async getUsers(params = {}) {
+    async getAdminUsers(params = {}) {
         if (this.useDataService && window.dataService) {
             return window.dataService.getUsers(params);
         }
         const queryString = new URLSearchParams(params).toString();
         return this.get(`/admin/users${queryString ? '?' + queryString : ''}`);
-    }
-
-    async getVideos(params = {}) {
-        if (this.useDataService && window.dataService) {
-            return window.dataService.getVideos(params);
-        }
-        const queryString = new URLSearchParams(params).toString();
-        return this.get(`/videos${queryString ? '?' + queryString : ''}`);
     }
 
     async getSystemHealth() {
