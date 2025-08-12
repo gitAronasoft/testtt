@@ -1,41 +1,12 @@
-run = "php -S 0.0.0.0:8000 -t ."
-modules = ["web", "nodejs-20", "php-8.2", "python-3.11"]
+modules = ["nodejs-20", "python-3.11"]
+[agent]
+expertMode = true
 
 [nix]
 channel = "stable-25_05"
 
-[deployment]
-run = ["sh", "-c", "php -S 0.0.0.0:8000 -t ."]
-deploymentTarget = "cloudrun"
-
-[[ports]]
-localPort = 5000
-externalPort = 5000
-
-[[ports]]
-localPort = 8000
-externalPort = 80
-
 [workflows]
 runButton = "Project"
-
-[[workflows.workflow]]
-name = "Run PHP Server"
-author = 25726037
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "php -S 0.0.0.0:8000 -t ."
-
-[[workflows.workflow]]
-name = "Run Web Server"
-author = 45765530
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "php -S 0.0.0.0:5000 -t ."
 
 [[workflows.workflow]]
 name = "Project"
@@ -44,14 +15,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Static Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "PHP API Server"
+args = "VideoHub Server"
 
 [[workflows.workflow]]
-name = "Static Server"
+name = "VideoHub Server"
 author = "agent"
 
 [[workflows.workflow.tasks]]
@@ -59,17 +26,9 @@ task = "shell.exec"
 args = "python -m http.server 5000"
 waitForPort = 5000
 
-[[workflows.workflow]]
-name = "PHP API Server"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "php -S 0.0.0.0:8000 -t ."
-waitForPort = 8000
-
 [workflows.workflow.metadata]
-outputType = "console"
+outputType = "webview"
 
-[agent]
-expertMode = true
+[[ports]]
+localPort = 5000
+externalPort = 80
