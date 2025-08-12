@@ -23,19 +23,53 @@ try {
     switch ($method) {
         case 'GET':
             if (isset($path_parts[2]) && $path_parts[2] === 'profile') {
-                // Get user profile (demo endpoint)
-                http_response_code(200);
-                echo json_encode([
-                    'success' => true,
-                    'data' => [
-                        'id' => 1,
-                        'firstName' => 'John',
-                        'lastName' => 'Doe',
-                        'email' => 'john@example.com',
-                        'role' => 'viewer',
-                        'status' => 'active'
-                    ]
-                ]);
+                // Get user profile - Get from session or token
+                $headers = getallheaders();
+                $token = null;
+                
+                if (isset($headers['Authorization'])) {
+                    $token = str_replace('Bearer ', '', $headers['Authorization']);
+                }
+                
+                // Get user ID from session token
+                // For demo purposes, try to decode token or use session data
+                // In a real app, you'd validate the JWT token
+                $userId = 7; // Default to creator ID 7 for testing
+                
+                // TODO: In production, extract user ID from validated JWT token
+                
+                // Get user from database
+                $stmt = $db->prepare("SELECT id, name, email, role, created_at FROM users WHERE id = ?");
+                $stmt->execute([$userId]);
+                $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($userData) {
+                    // Split name into first and last name for profile form
+                    $nameParts = explode(' ', $userData['name'], 2);
+                    $firstName = $nameParts[0] ?? '';
+                    $lastName = $nameParts[1] ?? '';
+                    
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'data' => [
+                            'id' => $userData['id'],
+                            'firstName' => $firstName,
+                            'lastName' => $lastName,
+                            'name' => $userData['name'],
+                            'email' => $userData['email'],
+                            'role' => $userData['role'],
+                            'status' => 'active',
+                            'joinDate' => date('M d, Y', strtotime($userData['created_at']))
+                        ]
+                    ]);
+                } else {
+                    http_response_code(404);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'User not found'
+                    ]);
+                }
             } elseif (isset($path_parts[2]) && is_numeric($path_parts[2])) {
                 // Get specific user
                 $user->id = $path_parts[2];

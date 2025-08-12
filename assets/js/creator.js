@@ -29,9 +29,24 @@ class CreatorManager {
             }
 
             if (window.apiService) {
-                // Get current user info
-                const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
-                const creatorId = userSession.userId || 7; // Default to test creator
+                // Get current user info from both localStorage and sessionStorage
+                const localSession = localStorage.getItem('userSession');
+                const sessionSession = sessionStorage.getItem('userSession');
+                const userSession = JSON.parse(localSession || sessionSession || '{}');
+                
+                // Debug: Log the session to see what we have
+                console.log('Current user session:', userSession);
+                
+                // Get creator ID from session
+                const creatorId = userSession.id;
+                
+                if (!creatorId) {
+                    console.error('No creator ID found in session, redirecting to login');
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+                
+                console.log('Using creator ID:', creatorId);
                 
                 // Load metrics from new metrics API
                 const metricsResponse = await window.apiService.get(`/metrics/creator?creator_id=${creatorId}`);
@@ -40,10 +55,10 @@ class CreatorManager {
                     this.updateDashboardMetrics(this.stats);
                 }
                 
-                // Load data from API
+                // Load data from API with creator ID
                 const [videosResponse, earningsResponse] = await Promise.all([
-                    window.apiService.getCreatorVideos(),
-                    window.apiService.getCreatorEarnings()
+                    window.apiService.getCreatorVideos({ uploader_id: creatorId }),
+                    window.apiService.getCreatorEarnings({ creator_id: creatorId })
                 ]);
                 
                 // Ensure arrays are properly initialized
@@ -149,42 +164,72 @@ class CreatorManager {
     }
 
     initVideosPage() {
-        this.loadVideosTable();
+        this.loadVideosGrid();
+        this.updateVideoPageStats();
     }
 
     initEarningsPage() {
         this.loadEarningsTable();
     }
 
-    async loadVideosTable() {
-        const tbody = document.getElementById('videosTableBody');
-        if (!tbody) return;
+    async loadVideosGrid() {
+        const videosGrid = document.getElementById('videosGrid');
+        if (!videosGrid) return;
 
         if (!this.videos.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No videos found</td></tr>';
+            videosGrid.innerHTML = '<div class="col-12 text-center text-muted"><p>No videos found. Upload your first video to get started!</p></div>';
             return;
         }
 
-        tbody.innerHTML = this.videos.map(video => `
-            <tr>
-                <td>
-                    <img src="${video.youtube_thumbnail || 'https://via.placeholder.com/60x40'}" 
-                         alt="${video.title}" class="rounded" style="width: 60px; height: 40px; object-fit: cover;">
-                </td>
-                <td>${video.title}</td>
-                <td>${video.category || 'General'}</td>
-                <td>${video.views || 0}</td>
-                <td>$${video.price || '0.00'}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary edit-video-btn" data-video-id="${video.id}">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger delete-video-btn" data-video-id="${video.id}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        videosGrid.innerHTML = this.videos.map(video => {
+            const statusClass = video.status === 'published' ? 'bg-success' : 
+                               video.status === 'pending' ? 'bg-warning' : 'bg-secondary';
+            
+            return `
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card">
+                        <div class="video-thumbnail" style="background-image: url('${video.youtube_thumbnail || 'https://via.placeholder.com/300x169'}'); background-size: cover; background-position: center;">
+                            <i class="fas fa-play fa-3x text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);"></i>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">${video.title}</h6>
+                            <p class="card-text text-muted small">${(video.description || '').substring(0, 50)}...</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge ${statusClass}">${video.status}</span>
+                                <span class="text-muted small">$${video.price || '0.00'}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small class="text-muted">${video.views || 0} views</small>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary edit-video-btn" data-video-id="${video.id}">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger delete-video-btn" data-video-id="${video.id}">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    updateVideoPageStats() {
+        if (!this.videos) return;
+        
+        const totalVideos = this.videos.length;
+        const publishedVideos = this.videos.filter(v => v.status === 'published').length;
+        const pendingVideos = this.videos.filter(v => v.status === 'pending').length;
+        const totalViews = this.videos.reduce((sum, v) => sum + (parseInt(v.views) || 0), 0);
+
+        // Update stats cards on videos page
+        const totalVideosEl = document.getElementById('totalVideos');
+        const publishedVideosEl = document.getElementById('publishedVideos');
+        const pendingVideosEl = document.getElementById('pendingVideos');
+        const totalViewsEl = document.getElementById('totalViews');
+
+        if (totalVideosEl) totalVideosEl.textContent = totalVideos;
+        if (publishedVideosEl) publishedVideosEl.textContent = publishedVideos;
+        if (pendingVideosEl) pendingVideosEl.textContent = pendingVideos;
+        if (totalViewsEl) totalViewsEl.textContent = totalViews.toLocaleString();
     }
 
     async loadEarningsTable() {
@@ -236,4 +281,294 @@ class CreatorManager {
 // Initialize creator manager when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.creatorManager = new CreatorManager();
+    
+    // Initialize YouTube upload functionality if on videos page
+    if (window.location.pathname.includes('videos.html')) {
+        new YouTubeUploadManager();
+    }
 });
+
+/**
+ * YouTube Upload Manager
+ * Handles video uploads to YouTube and database sync
+ */
+class YouTubeUploadManager {
+    constructor() {
+        this.uploadModal = document.getElementById('uploadModal');
+        this.uploadForm = document.getElementById('uploadForm');
+        this.uploadBtn = document.getElementById('uploadBtn');
+        this.authStatus = document.getElementById('authStatus');
+        this.connectBtn = document.getElementById('connectYouTube');
+        this.progressDiv = document.getElementById('uploadProgress');
+        this.progressBar = document.getElementById('progressBar');
+        this.progressText = document.getElementById('progressText');
+        this.progressStatus = document.getElementById('progressStatus');
+        
+        this.init();
+    }
+    
+    async init() {
+        this.bindEvents();
+        this.setupCharacterCounters();
+        await this.checkAuthStatus();
+    }
+    
+    bindEvents() {
+        // Upload button click
+        if (this.uploadBtn) {
+            this.uploadBtn.addEventListener('click', (e) => this.handleUpload(e));
+        }
+        
+        // Connect YouTube button
+        if (this.connectBtn) {
+            this.connectBtn.addEventListener('click', (e) => this.connectYouTube(e));
+        }
+        
+        // Modal events
+        if (this.uploadModal) {
+            this.uploadModal.addEventListener('show.bs.modal', () => this.onModalShow());
+            this.uploadModal.addEventListener('hidden.bs.modal', () => this.onModalHide());
+        }
+    }
+    
+    setupCharacterCounters() {
+        // Title counter
+        const titleInput = document.getElementById('videoTitle');
+        const titleCount = document.getElementById('titleCount');
+        if (titleInput && titleCount) {
+            titleInput.addEventListener('input', (e) => {
+                titleCount.textContent = e.target.value.length;
+            });
+        }
+        
+        // Description counter  
+        const descInput = document.getElementById('videoDescription');
+        const descCount = document.getElementById('descCount');
+        if (descInput && descCount) {
+            descInput.addEventListener('input', (e) => {
+                descCount.textContent = e.target.value.length;
+            });
+        }
+    }
+    
+    async checkAuthStatus() {
+        try {
+            if (window.youtubeAPI) {
+                await window.youtubeAPI.initialize();
+                
+                if (window.youtubeAPI.isSignedIn()) {
+                    this.authStatus.style.display = 'none';
+                    this.uploadBtn.disabled = false;
+                } else {
+                    this.authStatus.style.display = 'block';
+                    this.uploadBtn.disabled = true;
+                }
+            }
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            this.authStatus.style.display = 'block';
+            this.uploadBtn.disabled = true;
+        }
+    }
+    
+    async connectYouTube(e) {
+        e.preventDefault();
+        
+        try {
+            this.connectBtn.disabled = true;
+            this.connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Connecting...';
+            
+            if (window.youtubeAPI) {
+                const success = await window.youtubeAPI.signIn();
+                
+                if (success) {
+                    await this.checkAuthStatus();
+                    this.showSuccess('YouTube account connected successfully!');
+                } else {
+                    this.showError('Failed to connect YouTube account.');
+                }
+            } else {
+                throw new Error('YouTube API not available');
+            }
+        } catch (error) {
+            console.error('Connect failed:', error);
+            this.showError('Failed to connect YouTube account.');
+        } finally {
+            this.connectBtn.disabled = false;
+            this.connectBtn.innerHTML = '<i class="fab fa-youtube me-1"></i>Connect YouTube';
+        }
+    }
+    
+    async handleUpload(e) {
+        e.preventDefault();
+        
+        try {
+            // Validate form
+            if (!this.validateForm()) {
+                return;
+            }
+            
+            // Check auth
+            if (!window.youtubeAPI || !window.youtubeAPI.isSignedIn()) {
+                this.showError('Please connect your YouTube account first.');
+                return;
+            }
+            
+            // Get form data
+            const formData = this.getFormData();
+            
+            // Show progress
+            this.showProgress();
+            
+            // Upload video
+            const result = await window.youtubeAPI.uploadVideo(
+                formData.file, 
+                formData.metadata, 
+                (progress) => this.updateProgress(progress)
+            );
+            
+            if (result.success) {
+                this.showSuccess('Video uploaded successfully!');
+                this.hideProgress();
+                this.resetForm();
+                
+                // Close modal and refresh videos
+                const modal = bootstrap.Modal.getInstance(this.uploadModal);
+                modal.hide();
+                
+                // Refresh videos list
+                window.location.reload();
+            } else {
+                throw new Error(result.error || 'Upload failed');
+            }
+            
+        } catch (error) {
+            console.error('Upload failed:', error);
+            this.showError(error.message);
+            this.hideProgress();
+        }
+    }
+    
+    validateForm() {
+        const fileInput = document.getElementById('videoFile');
+        const titleInput = document.getElementById('videoTitle');
+        
+        if (!fileInput.files || fileInput.files.length === 0) {
+            this.showError('Please select a video file.');
+            return false;
+        }
+        
+        if (!titleInput.value.trim()) {
+            this.showError('Please enter a video title.');
+            return false;
+        }
+        
+        const file = fileInput.files[0];
+        if (file.size > 2 * 1024 * 1024 * 1024) { // 2GB limit
+            this.showError('File size must be less than 2GB.');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    getFormData() {
+        const fileInput = document.getElementById('videoFile');
+        const titleInput = document.getElementById('videoTitle');
+        const descInput = document.getElementById('videoDescription');
+        const priceInput = document.getElementById('videoPrice');
+        const privacyInput = document.getElementById('videoPrivacy');
+        const tagsInput = document.getElementById('videoTags');
+        
+        const tags = tagsInput.value ? tagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+        
+        return {
+            file: fileInput.files[0],
+            metadata: {
+                title: titleInput.value.trim(),
+                description: descInput.value.trim(),
+                price: parseFloat(priceInput.value) || 0,
+                privacy: privacyInput.value,
+                tags: tags,
+                categoryId: '22' // Education category
+            }
+        };
+    }
+    
+    showProgress() {
+        this.uploadForm.style.display = 'none';
+        this.progressDiv.style.display = 'block';
+        this.uploadBtn.disabled = true;
+    }
+    
+    hideProgress() {
+        this.uploadForm.style.display = 'block';
+        this.progressDiv.style.display = 'none';
+        this.uploadBtn.disabled = false;
+    }
+    
+    updateProgress(progress) {
+        this.progressBar.style.width = progress + '%';
+        this.progressText.textContent = progress + '%';
+        
+        if (progress < 30) {
+            this.progressStatus.textContent = 'Preparing upload...';
+        } else if (progress < 75) {
+            this.progressStatus.textContent = 'Converting video...';
+        } else if (progress < 90) {
+            this.progressStatus.textContent = 'Uploading to YouTube...';
+        } else {
+            this.progressStatus.textContent = 'Finalizing...';
+        }
+    }
+    
+    resetForm() {
+        this.uploadForm.reset();
+        document.getElementById('titleCount').textContent = '0';
+        document.getElementById('descCount').textContent = '0';
+    }
+    
+    onModalShow() {
+        this.checkAuthStatus();
+    }
+    
+    onModalHide() {
+        this.resetForm();
+        this.hideProgress();
+    }
+    
+    showSuccess(message) {
+        this.showAlert(message, 'success');
+    }
+    
+    showError(message) {
+        this.showAlert(message, 'danger');
+    }
+    
+    showAlert(message, type) {
+        // Remove existing alerts
+        const existingAlert = this.uploadModal.querySelector('.alert-dismissible');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // Create new alert
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert at top of modal body
+        const modalBody = this.uploadModal.querySelector('.modal-body');
+        modalBody.insertBefore(alert, modalBody.firstChild);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+}

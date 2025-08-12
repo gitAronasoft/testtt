@@ -9,7 +9,7 @@ class Database {
     private $username;
     private $password;
     public $conn;
-    
+
     public function __construct() {
         // Use environment variables if available, fallback to original values
         $this->host = getenv('DB_HOST') ?: 'srv637.hstgr.io';
@@ -27,13 +27,13 @@ class Database {
                 $this->username,
                 $this->password
             );
-            
+
             // Set PDO error mode to exception
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            
+
             // Set default fetch mode to associative array
             $this->conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-            
+
         } catch(PDOException $exception) {
             error_log("Connection error: " . $exception->getMessage());
             throw new Exception("Database connection failed");

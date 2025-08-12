@@ -5,13 +5,7 @@
 
 class ProfileManager {
     constructor() {
-        this.currentUser = {
-            id: 1,
-            firstName: 'Admin',
-            lastName: 'User',
-            email: 'admin@videohub.com',
-            role: 'Administrator'
-        };
+        this.currentUser = {};
         this.init();
     }
 
@@ -23,17 +17,27 @@ class ProfileManager {
 
     async loadUserProfile() {
         try {
-            const result = await window.apiService.getUserProfile();
-            if (result.success) {
-                this.currentUser = result.data;
-                this.populateProfileForm();
-            } else {
-                // Use demo data
-                this.populateProfileForm();
+            // Wait for API service to be available
+            let retries = 0;
+            const maxRetries = 50;
+            
+            while (retries < maxRetries && !window.apiService) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
+
+            if (window.apiService) {
+                const result = await window.apiService.getUserProfile();
+                if (result.success) {
+                    this.currentUser = result.data;
+                    this.populateProfileForm();
+                    console.log('Profile loaded:', this.currentUser);
+                } else {
+                    console.error('Failed to load profile:', result.message);
+                }
             }
         } catch (error) {
-            console.log('API not available, using demo data');
-            this.populateProfileForm();
+            console.error('Error loading profile:', error);
         }
     }
 

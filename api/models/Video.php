@@ -10,7 +10,7 @@ class Video {
     public $id;
     public $title;
     public $description;
-    public $uploader_id;
+    public $user_id;
     public $uploader_name;
     public $price;
     public $category;
@@ -45,9 +45,9 @@ class Video {
         $conditions = [];
         $params = [];
 
-        if (isset($filters['uploader_id']) && !empty($filters['uploader_id'])) {
-            $conditions[] = "uploader_id = :uploader_id";
-            $params[':uploader_id'] = $filters['uploader_id'];
+        if (isset($filters['user_id']) && !empty($filters['user_id'])) {
+            $conditions[] = "user_id = :user_id";
+            $params[':user_id'] = $filters['user_id'];
         }
 
         if (isset($filters['category']) && !empty($filters['category'])) {
@@ -97,11 +97,11 @@ class Video {
         if ($row) {
             $this->title = $row['title'];
             $this->description = $row['description'];
-            $this->creator_id = $row['creator_id'];
-            $this->creator_name = $row['creator_name'];
+            $this->creator_id = $row['user_id'];
+            // $this->creator_name = $row['user_id'];
             $this->price = $row['price'];
             $this->category = $row['category'];
-            $this->duration = $row['duration'];
+            // $this->duration = $row['duration'];
             $this->upload_date = $row['upload_date'];
             $this->views = $row['views'];
             $this->likes = $row['likes'];
@@ -122,10 +122,9 @@ class Video {
     // Create video
     public function create() {
         $query = "INSERT INTO " . $this->table_name . " 
-                  SET title=:title, description=:description, creator_id=:creator_id, 
-                      price=:price, category=:category, duration=:duration, 
-                      thumbnail=:thumbnail, tags=:tags, file_size=:file_size, 
-                      quality=:quality, status=:status, upload_date=NOW(), 
+                  SET title=:title, description=:description, user_id=:user_id, 
+                      price=:price, category=:category,  
+                      thumbnail=:thumbnail, status=:status, upload_date=NOW(), 
                       created_at=NOW(), updated_at=NOW()";
 
         $stmt = $this->conn->prepare($query);
@@ -133,27 +132,27 @@ class Video {
         // Sanitize
         $this->title = htmlspecialchars(strip_tags($this->title));
         $this->description = htmlspecialchars(strip_tags($this->description));
-        $this->creator_id = htmlspecialchars(strip_tags($this->creator_id));
+        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
         $this->price = htmlspecialchars(strip_tags($this->price));
         $this->category = htmlspecialchars(strip_tags($this->category));
-        $this->duration = htmlspecialchars(strip_tags($this->duration));
+        // $this->duration = htmlspecialchars(strip_tags($this->duration));
         $this->thumbnail = htmlspecialchars(strip_tags($this->thumbnail));
-        $this->tags = htmlspecialchars(strip_tags($this->tags));
-        $this->file_size = htmlspecialchars(strip_tags($this->file_size));
-        $this->quality = htmlspecialchars(strip_tags($this->quality));
+        // $this->tags = htmlspecialchars(strip_tags($this->tags));
+        // $this->file_size = htmlspecialchars(strip_tags($this->file_size));
+        // $this->quality = htmlspecialchars(strip_tags($this->quality));
         $this->status = htmlspecialchars(strip_tags($this->status));
 
         // Bind values
         $stmt->bindParam(":title", $this->title);
         $stmt->bindParam(":description", $this->description);
-        $stmt->bindParam(":creator_id", $this->creator_id);
+        $stmt->bindParam(":user_id", $this->user_id);
         $stmt->bindParam(":price", $this->price);
         $stmt->bindParam(":category", $this->category);
-        $stmt->bindParam(":duration", $this->duration);
+        // $stmt->bindParam(":duration", $this->duration);
         $stmt->bindParam(":thumbnail", $this->thumbnail);
-        $stmt->bindParam(":tags", $this->tags);
-        $stmt->bindParam(":file_size", $this->file_size);
-        $stmt->bindParam(":quality", $this->quality);
+        // $stmt->bindParam(":tags", $this->tags);
+        // $stmt->bindParam(":file_size", $this->file_size);
+        // $stmt->bindParam(":quality", $this->quality);
         $stmt->bindParam(":status", $this->status);
 
         if ($stmt->execute()) {
@@ -245,10 +244,10 @@ class Video {
                     COALESCE(SUM(youtube_likes), 0) as totalLikes,
                     COALESCE(SUM(CAST(price AS DECIMAL(10,2))), 0) as totalEarnings
                   FROM " . $this->table_name . " 
-                  WHERE uploader_id = :creator_id";
+                  WHERE user_id = :creator_id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':creator_id', $creatorId);
+        $stmt->bindParam(':user_id', $creatorId);
         $stmt->execute();
         
         $stats = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -278,7 +277,7 @@ class Video {
                   ORDER BY created_at DESC";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':creator_id', $creatorId);
+        $stmt->bindParam(':user_id', $creatorId);
         $stmt->execute();
         
         $earnings = [];

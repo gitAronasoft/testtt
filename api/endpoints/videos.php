@@ -154,17 +154,17 @@ try {
                 // Create new video
                 $data = json_decode(file_get_contents("php://input"), true);
                 
-                if (!empty($data['title']) && !empty($data['creator_id'])) {
+                if (!empty($data['title']) && !empty($data['uploader_id'])) {
                     $video->title = $data['title'];
                     $video->description = $data['description'] ?? '';
-                    $video->creator_id = $data['creator_id'];
+                    $video->user_id = $data['uploader_id'];
                     $video->price = $data['price'] ?? 0;
                     $video->category = $data['category'] ?? '';
-                    $video->duration = $data['duration'] ?? '00:00';
+                    // $video->duration = $data['duration'] ?? '00:00';
                     $video->thumbnail = $data['thumbnail'] ?? '';
-                    $video->tags = is_array($data['tags']) ? json_encode($data['tags']) : $data['tags'];
-                    $video->file_size = $data['file_size'] ?? '';
-                    $video->quality = $data['quality'] ?? '720p';
+                    // $video->tags = is_array($data['tags']) ? json_encode($data['tags']) : $data['tags'];
+                    // $video->file_size = $data['file_size'] ?? '';
+                    // $video->quality = $data['quality'] ?? '720p';
                     $video->status = $data['status'] ?? 'pending';
                     
                     if ($video->create()) {
