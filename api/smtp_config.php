@@ -29,7 +29,7 @@ use PHPMailer\PHPMailer\Exception;
  */
 
 // Default SMTP settings (fallback for development)
-define('DEFAULT_SMTP_HOST', 'smtp.gmail.com');
+define('DEFAULT_SMTP_HOST', 'smtp-relay.sendinblue.com');
 define('DEFAULT_SMTP_PORT', 587);
 define('DEFAULT_SMTP_USERNAME', 'phpdevgmicro@gmail.com');
 define('DEFAULT_SMTP_PASSWORD', 'N2DFZECX67YGBHRO');

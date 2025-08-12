@@ -193,7 +193,7 @@ async function checkAuth() {
 
             // Load all required data first
             await loadAllDashboardData();
-            
+
             // Then setup dashboard with data ready
             await setupDashboard();
         } else {
@@ -262,7 +262,7 @@ async function loadAllDashboardData() {
                     if (data.earnings) dashboardData.earnings = data.earnings;
                     if (data.transactions) dashboardData.transactions = data.transactions;
                     if (data.paid_users) dashboardData.paid_users = data.paid_users;
-                    
+
                     // Debug logging to verify data loading
                     console.log('API data loaded:', {
                         hasAnalytics: !!data.analytics,
@@ -358,28 +358,34 @@ function setupUserRole() {
 }
 
 async function setupDashboard() {
+    // Hide all panels first to prevent showing wrong content
+    const panels = document.querySelectorAll(".panel");
+    panels.forEach(panel => panel.style.display = "none");
+
     const urlParams = new URLSearchParams(window.location.search);
     let defaultPanel = urlParams.get("panel");
 
+    // Set role-based default panels
     if (!defaultPanel) {
         if (currentUser.role === "viewer") {
             defaultPanel = "videos";
         } else if (currentUser.role === "editor" || currentUser.role === "creator") {
             defaultPanel = "myVideos";
         } else if (currentUser.role === "admin") {
-            defaultPanel = "videos";
+            defaultPanel = "overview";  // Admin should see overview
         } else {
             defaultPanel = "myVideos";
         }
     }
 
+    // Verify user has permission for the default panel
     if (!hasPermissionForPanel(defaultPanel)) {
         if (currentUser.role === "viewer") {
             defaultPanel = "videos";
         } else if (currentUser.role === "editor" || currentUser.role === "creator") {
             defaultPanel = "myVideos";
         } else if (currentUser.role === "admin") {
-            defaultPanel = "videos";
+            defaultPanel = "overview";
         } else {
             defaultPanel = "videos";
         }
@@ -400,7 +406,7 @@ async function showPanel(panelName) {
     if (!hasPermissionForPanel(panelName)) {
         showNotification("You do not have permission to access this section", "error");
 
-        let fallbackPanel = "overview";
+        let fallbackPanel = "videos";
         if (currentUser.role === "viewer") {
             fallbackPanel = "videos";
         } else if (currentUser.role === "editor" || currentUser.role === "creator") {
@@ -510,6 +516,9 @@ async function showPanel(panelName) {
                 if (currentUser.role === "admin" && dashboardData.analytics) {
                     renderAnalytics(dashboardData.analytics);
                 }
+                break;
+            case "profile":
+                loadAccountSettings();
                 break;
             default:
                 console.warn(`Unknown panel: ${panelName}`);
@@ -758,8 +767,8 @@ function createVideoElement(video) {
     const isFree = price === 0;
 
     col.innerHTML = `
-        <div class="card video-card h-100 shadow-sm border-0 position-relative" onclick="handleVideoClick(${video.id}, '${escapeHtml(video.title)}', '${video.youtube_id || ''}', ${isYouTube})" style="cursor: pointer;">
-            <div class="video-thumbnail position-relative overflow-hidden" style="height: 200px;">
+        <div class="card video-card h-100 shadow-sm border-0 position-relative" onclick="handleVideoClick(${video.id}, '${escapeHtml(video.title)}', '${video.youtube_id || ''}', ${isYouTube})" style="cursor: pointer; border-radius: 20px; overflow: hidden;">
+            <div class="video-thumbnail position-relative overflow-hidden" style="height: 200px; border-radius: 20px 20px 0 0;">
                 <img src="${thumbnail}" 
                      alt="${escapeHtml(video.title)}" 
                      class="card-img-top w-100 h-100" 
@@ -767,6 +776,21 @@ function createVideoElement(video) {
                      onload="this.style.opacity='1'"
                      onerror="handleThumbnailError(this, '${video.youtube_id || ''}')"
                      loading="lazy">
+                
+                <!-- Price Badge on Thumbnail -->
+                <div class="position-absolute top-0 end-0 m-2">
+                    ${!isFree ? `<span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size: 0.75rem; border-radius: 8px;">$${price.toFixed(2)}</span>` : '<span class="badge bg-success text-white fw-bold px-2 py-1" style="font-size: 0.75rem; border-radius: 8px;">FREE</span>'}
+                </div>
+                
+                <!-- Play Button Overlay -->
+                <div class="play-button-overlay position-absolute top-50 start-50 translate-middle" style="opacity: 0; transition: all 0.3s ease; transform: translate(-50%, -50%) scale(0.8);">
+                    <div class="bg-dark bg-opacity-75 text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; backdrop-filter: blur(10px); border: 2px solid rgba(255, 255, 255, 0.3);">
+                        <i class="fas fa-play ms-1" style="font-size: 20px;"></i>
+                    </div>
+                </div>
+                
+                <!-- Owned Badge -->
+                ${isPurchased ? '<div class="position-absolute top-0 start-0 m-2"><span class="badge bg-success text-white fw-bold px-2 py-1" style="font-size: 0.7rem; border-radius: 8px;"><i class="fas fa-crown me-1"></i>OWNED</span></div>' : ''}
             </div>
 
             <div class="card-body p-3 d-flex flex-column">
@@ -774,31 +798,22 @@ function createVideoElement(video) {
                     ${escapeHtml(video.title)}
                 </h6>
 
-                <p class="card-text text-muted small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; height: 2.8em; font-size: 0.85rem;">
-                    ${escapeHtml(video.description || 'No description available')}
-                </p>
-
                 <div class="video-meta mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="d-flex align-items-center text-muted">
-                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 20px; height: 20px;">
-                                <small class="text-white fw-bold" style="font-size: 10px;">${escapeHtml(video.uploader.charAt(0).toUpperCase())}</small>
-                            </div>
-                            <small class="text-truncate fw-medium" style="font-size: 0.8rem;">${escapeHtml(video.uploader)}</small>
+                    <div class="d-flex align-items-center text-muted mb-1">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 20px; height: 20px;">
+                            <small class="text-white fw-bold" style="font-size: 10px;">${escapeHtml(video.uploader.charAt(0).toUpperCase())}</small>
                         </div>
-                        ${isPurchased ? '<small class="text-success fw-bold"><i class="fas fa-crown me-1"></i>Owned</small>' : ''}
+                        <small class="text-truncate fw-medium" style="font-size: 0.8rem;">${escapeHtml(video.uploader)}</small>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted">
                             <i class="fas fa-clock me-1"></i>${formatTimeAgo(video.created_at)}
                         </small>
-                        ${!isFree ? `<span class="badge bg-warning text-dark">$${price.toFixed(2)}</span>` : '<span class="badge bg-success">FREE</span>'}
+                        <small class="text-muted">
+                            <i class="fas fa-eye me-1"></i>${video.views || 0} views
+                        </small>
                     </div>
-                </div>
-
-                <div class="mt-auto" onclick="event.stopPropagation();">
-                    ${renderEnhancedVideoActions(video, isYouTube)}
                 </div>
             </div>
         </div>
@@ -884,7 +899,7 @@ function renderEnhancedVideoActions(video, isYouTube = false) {
 function renderMyVideosFromDatabase(videos) {
     // Update metrics cards
     updateCreatorMetrics(videos);
-    
+
     const container = document.getElementById("myVideosContainer");
     if (!container) return;
 
@@ -928,7 +943,7 @@ function renderMyVideosFromDatabase(videos) {
 
 function createMyVideoElement(video) {
     const col = document.createElement("div");
-    col.className = "col-12 col-sm-6 col-md-4 col-lg-3 mb-4";
+    col.className = "col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3 mb-3";
 
     let thumbnail = "/api/placeholder/300/200";
     if (video.youtube_thumbnail) {
@@ -943,7 +958,7 @@ function createMyVideoElement(video) {
 
     col.innerHTML = `
         <div class="card video-card h-100 shadow-sm border-0 position-relative">
-            <div class="video-thumbnail position-relative overflow-hidden" style="height: 200px;">
+            <div class="video-thumbnail position-relative overflow-hidden" style="height: 180px;">
                 <img src="${thumbnail}" alt="${escapeHtml(video.title)}" 
                      class="card-img-top w-100 h-100" 
                      style="object-fit: cover; transition: transform 0.3s ease;"
@@ -952,37 +967,31 @@ function createMyVideoElement(video) {
                      onerror="this.src='/api/placeholder/300/200'">
             </div>
 
-            <div class="card-body p-3 d-flex flex-column">
-                <h6 class="card-title mb-2" title="${escapeHtml(video.title)}" style="line-height: 1.3; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-weight: 600;">
+            <div class="card-body p-2 d-flex flex-column">
+                <h6 class="card-title mb-2 small" title="${escapeHtml(video.title)}" style="line-height: 1.3; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-weight: 600; font-size: 0.85rem;">
                     ${escapeHtml(video.title)}
                 </h6>
 
-                <p class="card-text text-muted small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; height: 2.8em;">
-                    ${escapeHtml(video.description || 'No description available')}
-                </p>
-
-                <div class="video-meta mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <small class="text-muted">
+                <div class="video-meta mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted" style="font-size: 0.75rem;">
                             <i class="fas fa-clock me-1"></i>${formatTimeAgo(video.created_at)}
                         </small>
-                        ${!isFree ? `<span class="text-primary fw-bold">$${price.toFixed(2)}</span>` : '<span class="text-success fw-bold">FREE</span>'}
+                        ${!isFree ? `<span class="badge bg-primary">${price.toFixed(2)}</span>` : '<span class="badge bg-success">FREE</span>'}
                     </div>
                 </div>
 
                 <div class="mt-auto">
-                    <div class="d-grid gap-1">
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button class="btn btn-outline-primary" onclick="editVideoPrice(${video.id}, ${video.price})" title="Edit Price">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-outline-success" onclick="previewVideo('${video.youtube_id || video.id}', '${escapeHtml(video.title)}')" title="Preview">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button class="btn btn-outline-danger" onclick="deleteMyVideo(${video.id})" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                    <div class="btn-group btn-group-sm w-100" role="group">
+                        <button class="btn btn-outline-primary btn-sm" onclick="editVideoPrice(${video.id}, ${video.price})" title="Edit Price">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="previewVideo('${video.youtube_id || video.id}', '${escapeHtml(video.title)}')" title="Preview">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteMyVideo(${video.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1054,7 +1063,7 @@ function renderEarnings(earnings) {
     document.getElementById("totalEarnings").textContent = `$${earnings.total_earnings.toFixed(2)}`;
     document.getElementById("monthlyEarnings").textContent = `$${earnings.monthly_earnings.toFixed(2)}`;
     document.getElementById("pendingEarnings").textContent = `$${earnings.pending_earnings.toFixed(2)}`;
-    
+
     // Render transactions and paid users if data is available
     if (dashboardData.transactions) {
         renderTransactions(dashboardData.transactions);
@@ -1605,41 +1614,15 @@ async function handleVideoUpload(event) {
 }
 
 // Account Settings Functions
-let currentSettingsTab = 'profile';
 let accountSettingsData = {};
-
-// Main settings tab switcher
-function showSettingsTab(tabName) {
-    // Remove active class from all tabs
-    document.querySelectorAll('.nav-link').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    // Hide all tab content
-    document.querySelectorAll('.settings-tab').forEach(content => {
-        content.style.display = 'none';
-    });
-    
-    // Show selected tab
-    const selectedTab = document.getElementById(tabName + 'Tab');
-    const selectedContent = document.getElementById(tabName + 'SettingsTab');
-    
-    if (selectedTab) selectedTab.classList.add('active');
-    if (selectedContent) selectedContent.style.display = 'block';
-    
-    currentSettingsTab = tabName;
-    
-    // Load tab-specific data
-    loadSettingsTabData(tabName);
-}
 
 // Load account settings data
 async function loadAccountSettings() {
     try {
         showLoading(true);
-        
+
         const response = await makeApiCall('profile', 'api/profile.php');
-        
+
         if (response.success && response.profile) {
             accountSettingsData = response.profile;
             populateAccountSettings(response.profile);
@@ -1656,41 +1639,24 @@ async function loadAccountSettings() {
 
 // Populate form fields with user data
 function populateAccountSettings(profile) {
-    // Profile tab
+    // Profile information
     const profileName = document.getElementById('profileName');
-    const profileUsername = document.getElementById('profileUsername');
     const profileEmail = document.getElementById('profileEmail');
-    const profilePhone = document.getElementById('profilePhone');
-    const profileBio = document.getElementById('profileBio');
-    const profileLocation = document.getElementById('profileLocation');
-    const profileWebsite = document.getElementById('profileWebsite');
-    const profileDob = document.getElementById('profileDob');
-    const profileGender = document.getElementById('profileGender');
-    
+
     if (profileName) profileName.value = profile.name || '';
-    if (profileUsername) profileUsername.value = profile.email?.split('@')[0] || '';
     if (profileEmail) profileEmail.value = profile.email || '';
-    if (profilePhone) profilePhone.value = profile.phone || '';
-    if (profileBio) {
-        profileBio.value = profile.bio || '';
-        updateBioCharCount();
-    }
-    if (profileLocation) profileLocation.value = profile.location || '';
-    if (profileWebsite) profileWebsite.value = profile.website || '';
-    if (profileDob) profileDob.value = profile.date_of_birth || '';
-    if (profileGender) profileGender.value = profile.gender || '';
-    
+
     // Update avatar
     const avatarLarge = document.getElementById('profileAvatarLarge');
     if (avatarLarge) {
         avatarLarge.textContent = (profile.name || 'U').charAt(0).toUpperCase();
     }
-    
+
     // Account stats
     const memberSince = document.getElementById('memberSince');
     const lastLogin = document.getElementById('lastLogin');
     const accountType = document.getElementById('accountType');
-    const profileViews = document.getElementById('profileViews');
+    const profileEarnings = document.getElementById('profileEarnings');
     
     if (memberSince) memberSince.textContent = formatDate(profile.created_at);
     if (lastLogin) lastLogin.textContent = 'Now';
@@ -1698,72 +1664,61 @@ function populateAccountSettings(profile) {
         accountType.textContent = (profile.role || 'user').charAt(0).toUpperCase() + (profile.role || 'user').slice(1);
         accountType.className = `badge bg-${getRoleBadgeColor(profile.role)}`;
     }
-    if (profileViews) profileViews.textContent = profile.stats?.profile_views || '0';
     
-    // Show billing tab for creators and admins
-    const billingTab = document.getElementById('billingTab');
-    if (billingTab && (profile.role === 'creator' || profile.role === 'admin' || profile.role === 'editor')) {
-        billingTab.style.display = 'block';
+    // Update earnings from dashboard data if available
+    if (profileEarnings && dashboardData.earnings) {
+        profileEarnings.textContent = `$${parseFloat(dashboardData.earnings.total_earnings || 0).toFixed(2)}`;
+    } else if (profileEarnings) {
+        profileEarnings.textContent = '$0.00';
     }
 }
 
-// Load tab-specific data
-function loadSettingsTabData(tabName) {
-    switch (tabName) {
-        case 'security':
-            loadSecurityData();
-            break;
-        case 'preferences':
-            loadPreferencesData();
-            break;
-        case 'privacy':
-            loadPrivacyData();
-            break;
-        case 'billing':
-            loadBillingData();
-            break;
+// Save profile settings
+async function saveProfileSettings() {
+    const name = document.getElementById('profileName')?.value?.trim();
+
+    if (!name) {
+        showNotification('Please enter your name', 'error');
+        return;
     }
-}
 
-// Security tab functions
-function loadSecurityData() {
-    // Load recent login activity
-    loadLoginActivity();
-}
-
-async function loadLoginActivity() {
-    const container = document.getElementById('loginActivity');
-    if (!container) return;
-    
     try {
-        // Simulate loading activity data
-        setTimeout(() => {
-            container.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <div>
-                        <div class="fw-medium">Current Session</div>
-                        <small class="text-muted">Chrome on Windows • Now</small>
-                    </div>
-                    <span class="badge bg-success">Active</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <div>
-                        <div class="fw-medium">Previous Session</div>
-                        <small class="text-muted">Firefox on Mac • 2 hours ago</small>
-                    </div>
-                    <span class="badge bg-secondary">Ended</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center py-2">
-                    <div>
-                        <div class="fw-medium">Mobile Session</div>
-                        <small class="text-muted">Safari on iPhone • Yesterday</small>
-                    </div>
-                    <span class="badge bg-secondary">Ended</span>
-                </div>
-            `;
-        }, 500);
+        showLoading(true);
+
+        const response = await fetch('api/profile.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                name: name
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification('Profile updated successfully', 'success');
+
+            // Update current user data
+            currentUser.name = name;
+            localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+            // Update UI
+            document.getElementById("userName").textContent = name;
+            document.getElementById("userAvatar").textContent = name.charAt(0).toUpperCase();
+
+            // Clear cache
+            clearCache('profile');
+        } else {
+            showNotification('Failed to update profile: ' + data.message, 'error');
+        }
     } catch (error) {
-        container.innerHTML = '<div class="text-center text-muted">Failed to load activity</div>';
+        console.error('Profile update error:', error);
+        showNotification('Failed to update profile', 'error');
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -1771,7 +1726,7 @@ async function loadLoginActivity() {
 function togglePasswordVisibility(fieldId) {
     const field = document.getElementById(fieldId);
     const button = field.nextElementSibling.querySelector('i');
-    
+
     if (field.type === 'password') {
         field.type = 'text';
         button.className = 'fas fa-eye-slash';
@@ -1784,27 +1739,27 @@ function togglePasswordVisibility(fieldId) {
 function checkPasswordStrength(password) {
     let strength = 0;
     let feedback = [];
-    
+
     // Length check
     if (password.length >= 8) strength += 25;
     else feedback.push('At least 8 characters');
-    
+
     // Uppercase check
     if (/[A-Z]/.test(password)) strength += 25;
     else feedback.push('One uppercase letter');
-    
+
     // Lowercase check
     if (/[a-z]/.test(password)) strength += 25;
     else feedback.push('One lowercase letter');
-    
+
     // Number check
     if (/[0-9]/.test(password)) strength += 25;
     else feedback.push('One number');
-    
+
     // Special character check
     if (/[^A-Za-z0-9]/.test(password)) strength += 25;
     else feedback.push('One special character');
-    
+
     return { strength: Math.min(strength, 100), feedback };
 }
 
@@ -1816,13 +1771,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = checkPasswordStrength(this.value);
             const strengthBar = document.getElementById('passwordStrength');
             const strengthText = document.getElementById('passwordStrengthText');
-            
+
             if (strengthBar && strengthText) {
                 strengthBar.style.width = result.strength + '%';
-                
+
                 let colorClass = 'bg-danger';
                 let text = 'Weak';
-                
+
                 if (result.strength >= 75) {
                     colorClass = 'bg-success';
                     text = 'Strong';
@@ -1833,7 +1788,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     colorClass = 'bg-warning';
                     text = 'Fair';
                 }
-                
+
                 strengthBar.className = `progress-bar ${colorClass}`;
                 strengthText.textContent = `${text} (${result.strength}%)`;
             }
@@ -1841,105 +1796,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Bio character counter
-function updateBioCharCount() {
-    const bioField = document.getElementById('profileBio');
-    const charCount = document.getElementById('bioCharCount');
-    
-    if (bioField && charCount) {
-        charCount.textContent = bioField.value.length;
-        
-        if (bioField.value.length > 450) {
-            charCount.parentElement.classList.add('text-warning');
-        } else {
-            charCount.parentElement.classList.remove('text-warning');
-        }
+// Helper function for role badge colors
+function getRoleBadgeColor(role) {
+    switch (role) {
+        case 'admin': return 'danger';
+        case 'creator': return 'primary';
+        case 'editor': return 'warning';
+        case 'viewer': return 'success';
+        default: return 'secondary';
     }
 }
 
-// Privacy settings functions
-function loadPrivacyData() {
-    updatePrivacySummary();
-}
 
-function updatePrivacySummary() {
-    const profileVisibility = document.querySelector('input[name="profileVisibility"]:checked');
-    const analyticsOptIn = document.getElementById('analyticsOptIn');
-    const allowDirectMessages = document.getElementById('allowDirectMessages');
-    const thirdPartySharing = document.getElementById('thirdPartySharing');
-    
-    // Update privacy summary badges
-    const summaryProfile = document.getElementById('privacySummaryProfile');
-    const summaryData = document.getElementById('privacySummaryData');
-    const summaryMessages = document.getElementById('privacySummaryMessages');
-    const summarySharing = document.getElementById('privacySummarySharing');
-    
-    if (profileVisibility && summaryProfile) {
-        const visibility = profileVisibility.value;
-        summaryProfile.textContent = visibility.charAt(0).toUpperCase() + visibility.slice(1);
-        summaryProfile.className = `badge bg-${visibility === 'public' ? 'success' : visibility === 'members' ? 'warning' : 'danger'}`;
-    }
-    
-    if (analyticsOptIn && summaryData) {
-        summaryData.textContent = analyticsOptIn.checked ? 'Enabled' : 'Disabled';
-        summaryData.className = `badge bg-${analyticsOptIn.checked ? 'primary' : 'secondary'}`;
-    }
-    
-    if (allowDirectMessages && summaryMessages) {
-        summaryMessages.textContent = allowDirectMessages.checked ? 'Allowed' : 'Disabled';
-        summaryMessages.className = `badge bg-${allowDirectMessages.checked ? 'success' : 'secondary'}`;
-    }
-    
-    if (thirdPartySharing && summarySharing) {
-        summarySharing.textContent = thirdPartySharing.checked ? 'Enabled' : 'Disabled';
-        summarySharing.className = `badge bg-${thirdPartySharing.checked ? 'warning' : 'secondary'}`;
-    }
-}
-
-// Preferences functions
-function loadPreferencesData() {
-    // Load saved preferences from localStorage or API
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    const savedLanguage = localStorage.getItem('language') || 'en';
-    
-    const themeSelect = document.getElementById('themePreference');
-    const languageSelect = document.getElementById('languagePreference');
-    
-    if (themeSelect) themeSelect.value = savedTheme;
-    if (languageSelect) languageSelect.value = savedLanguage;
-}
-
-// Billing functions
-function loadBillingData() {
-    // This would typically load billing data from your payment processor
-    console.log('Loading billing data...');
-}
 
 // Action functions
 async function updatePassword() {
     const currentPassword = document.getElementById('currentPassword')?.value;
     const newPassword = document.getElementById('newPassword')?.value;
     const confirmPassword = document.getElementById('confirmPassword')?.value;
-    
+
     if (!currentPassword || !newPassword || !confirmPassword) {
         showNotification('Please fill in all password fields', 'error');
         return;
     }
-    
+
     if (newPassword !== confirmPassword) {
         showNotification('New passwords do not match', 'error');
         return;
     }
-    
+
     const strengthResult = checkPasswordStrength(newPassword);
     if (strengthResult.strength < 50) {
         showNotification('Password is too weak. Please choose a stronger password.', 'error');
         return;
     }
-    
+
     try {
         showLoading(true);
-        
+
         const response = await fetch('api/profile.php', {
             method: 'PUT',
             headers: {
@@ -1952,12 +1846,12 @@ async function updatePassword() {
                 new_password: newPassword
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             showNotification('Password updated successfully', 'success');
-            
+
             // Clear password fields
             document.getElementById('currentPassword').value = '';
             document.getElementById('newPassword').value = '';
@@ -1973,147 +1867,14 @@ async function updatePassword() {
     }
 }
 
-function setup2FA() {
-    showNotification('Two-Factor Authentication setup will be implemented', 'info');
-}
 
-function uploadAvatar() {
-    const fileInput = document.getElementById('avatarUpload');
-    const file = fileInput?.files[0];
-    
-    if (!file) {
-        showNotification('Please select a file first', 'error');
-        return;
-    }
-    
-    if (!file.type.startsWith('image/')) {
-        showNotification('Please select an image file', 'error');
-        return;
-    }
-    
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        showNotification('File size must be less than 5MB', 'error');
-        return;
-    }
-    
-    // For now, just show success message
-    showNotification('Avatar upload functionality will be implemented', 'info');
-}
-
-function previewAvatar(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const avatar = document.getElementById('profileAvatarLarge');
-            if (avatar) {
-                avatar.style.backgroundImage = `url(${e.target.result})`;
-                avatar.style.backgroundSize = 'cover';
-                avatar.style.backgroundPosition = 'center';
-                avatar.textContent = '';
-            }
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-function removeAvatar() {
-    const avatar = document.getElementById('profileAvatarLarge');
-    const fileInput = document.getElementById('avatarUpload');
-    
-    if (avatar && currentUser) {
-        avatar.style.backgroundImage = '';
-        avatar.style.backgroundColor = '';
-        avatar.textContent = currentUser.name.charAt(0).toUpperCase();
-    }
-    
-    if (fileInput) {
-        fileInput.value = '';
-    }
-    
-    showNotification('Avatar removed', 'success');
-}
-
-// Save all account settings
-async function saveAllAccountSettings() {
-    const settingsData = {
-        // Profile data
-        name: document.getElementById('profileName')?.value,
-        phone: document.getElementById('profilePhone')?.value,
-        bio: document.getElementById('profileBio')?.value,
-        location: document.getElementById('profileLocation')?.value,
-        website: document.getElementById('profileWebsite')?.value,
-        date_of_birth: document.getElementById('profileDob')?.value,
-        gender: document.getElementById('profileGender')?.value,
-        
-        // Preferences
-        theme: document.getElementById('themePreference')?.value,
-        language: document.getElementById('languagePreference')?.value,
-        timezone: document.getElementById('timezonePreference')?.value,
-        date_format: document.getElementById('dateFormat')?.value,
-        
-        // Privacy settings
-        profile_visibility: document.querySelector('input[name="profileVisibility"]:checked')?.value,
-        analytics_opt_in: document.getElementById('analyticsOptIn')?.checked,
-        allow_direct_messages: document.getElementById('allowDirectMessages')?.checked,
-        third_party_sharing: document.getElementById('thirdPartySharing')?.checked,
-        
-        // Notification preferences
-        email_notifications: {
-            new_videos: document.getElementById('emailNewVideos')?.checked,
-            purchases: document.getElementById('emailPurchases')?.checked,
-            marketing: document.getElementById('emailMarketing')?.checked,
-            security: document.getElementById('emailSecurity')?.checked
-        },
-        push_notifications: {
-            new_content: document.getElementById('pushNewContent')?.checked,
-            messages: document.getElementById('pushMessages')?.checked
-        }
-    };
-    
-    try {
-        showLoading(true);
-        
-        const response = await fetch('api/profile.php', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(settingsData)
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification('Settings saved successfully', 'success');
-            
-            // Update current user data
-            if (data.profile) {
-                currentUser.name = data.profile.name;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                updateUserProfile();
-            }
-            
-            // Save preferences to localStorage
-            if (settingsData.theme) localStorage.setItem('theme', settingsData.theme);
-            if (settingsData.language) localStorage.setItem('language', settingsData.language);
-        } else {
-            showNotification('Failed to save settings: ' + data.message, 'error');
-        }
-    } catch (error) {
-        console.error('Save settings error:', error);
-        showNotification('Failed to save settings', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
 
 function refreshAccountSettings() {
     loadAccountSettings();
     showNotification('Settings refreshed', 'info');
 }
 
-// Helper functions
+// Helper function for role badge colors
 function getRoleBadgeColor(role) {
     switch (role) {
         case 'admin': return 'danger';
@@ -2127,7 +1888,7 @@ function getRoleBadgeColor(role) {
 // Export/Delete functions
 function exportUserData() {
     showNotification('Preparing data export...', 'info');
-    
+
     // Simulate data export
     setTimeout(() => {
         const data = {
@@ -2135,7 +1896,7 @@ function exportUserData() {
             export_date: new Date().toISOString(),
             user_id: currentUser?.id
         };
-        
+
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2145,7 +1906,7 @@ function exportUserData() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         showNotification('Data exported successfully', 'success');
     }, 1000);
 }
@@ -2195,7 +1956,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bioField) {
         bioField.addEventListener('input', updateBioCharCount);
     }
-    
+
     // Privacy settings change listeners
     const privacyInputs = document.querySelectorAll('#privacySettingsTab input');
     privacyInputs.forEach(input => {
@@ -2203,15 +1964,99 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Settings tab navigation function
+function showSettingsTab(tabName) {
+    // Hide all tab content
+    const tabs = document.querySelectorAll('.settings-tab');
+    tabs.forEach(tab => {
+        tab.style.display = 'none';
+    });
+
+    // Remove active class from all tab buttons
+    const tabButtons = document.querySelectorAll('.nav-pills .nav-link');
+    tabButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab content
+    const selectedTab = document.getElementById(tabName + 'SettingsTab');
+    if (selectedTab) {
+        selectedTab.style.display = 'block';
+    }
+
+    // Add active class to selected tab button
+    const selectedButton = document.getElementById(tabName + 'Tab');
+    if (selectedButton) {
+        selectedButton.classList.add('active');
+    }
+
+    // Handle specific tab initialization
+    switch(tabName) {
+        case 'profile':
+            // Profile tab is already populated
+            break;
+        case 'security':
+            // Initialize security settings if needed
+            break;
+        case 'preferences':
+            // Initialize preferences if needed
+            break;
+        case 'privacy':
+            updatePrivacySummary();
+            break;
+        case 'billing':
+            // Initialize billing if needed (for creators/admins)
+            break;
+    }
+}
+
+// Bio character counter function
+function updateBioCharCount() {
+    const bioField = document.getElementById('profileBio');
+    const counter = document.getElementById('bioCharCount');
+    
+    if (bioField && counter) {
+        const currentLength = bioField.value.length;
+        const maxLength = bioField.getAttribute('maxlength') || 500;
+        counter.textContent = `${currentLength}/${maxLength}`;
+        
+        // Update color based on usage
+        const percentage = currentLength / maxLength;
+        if (percentage > 0.9) {
+            counter.className = 'form-text text-danger';
+        } else if (percentage > 0.7) {
+            counter.className = 'form-text text-warning';
+        } else {
+            counter.className = 'form-text text-muted';
+        }
+    }
+}
+
+// Privacy settings summary function
+function updatePrivacySummary() {
+    const summaryElement = document.getElementById('privacySummary');
+    if (!summaryElement) return;
+
+    const profileVisibility = document.querySelector('input[name="profileVisibility"]:checked')?.value || 'public';
+    const showEmail = document.getElementById('showEmail')?.checked || false;
+    const showActivity = document.getElementById('showActivity')?.checked || true;
+    
+    let summary = `Profile: ${profileVisibility.charAt(0).toUpperCase() + profileVisibility.slice(1)}`;
+    if (!showEmail) summary += ', Email hidden';
+    if (!showActivity) summary += ', Activity hidden';
+    
+    summaryElement.textContent = summary;
+}
+
 // Load account settings when profile panel is shown
 const originalShowPanel = window.showPanel;
 window.showPanel = async function(panelName) {
     await originalShowPanel(panelName);
-    
+
     if (panelName === 'profile') {
         // Load account settings data
         await loadAccountSettings();
-        
+
         // Show default profile tab
         showSettingsTab('profile');
     }
@@ -2283,21 +2128,21 @@ function closeSidebar() {
 function updateCreatorMetrics(videos) {
     const totalVideos = videos ? videos.length : 0;
     const totalViews = videos ? videos.reduce((sum, video) => sum + (parseInt(video.views) || 0), 0) : 0;
-    
+
     // Get earnings data if available - ensure we have the earnings object
     const earnings = dashboardData.earnings || { total_earnings: 0, monthly_earnings: 0 };
-    
+
     // Update metric cards with proper error checking
     const totalVideosElement = document.getElementById("creatorTotalVideos");
     const totalViewsElement = document.getElementById("creatorTotalViews");
     const totalEarningsElement = document.getElementById("creatorTotalEarnings");
     const monthlyEarningsElement = document.getElementById("creatorMonthlyEarnings");
-    
+
     if (totalVideosElement) animateCounter("creatorTotalVideos", totalVideos);
     if (totalViewsElement) animateCounter("creatorTotalViews", totalViews);
     if (totalEarningsElement) totalEarningsElement.textContent = `$${parseFloat(earnings.total_earnings || 0).toFixed(2)}`;
     if (monthlyEarningsElement) monthlyEarningsElement.textContent = `$${parseFloat(earnings.monthly_earnings || 0).toFixed(2)}`;
-    
+
     // Debug logging to check data
     console.log('Creator metrics updated:', {
         totalVideos,
@@ -2321,7 +2166,7 @@ function updateViewerMetrics() {
     const totalVideos = allVideos ? allVideos.length : 0;
     const purchasedVideos = allVideos ? allVideos.filter(video => video.purchased).length : 0;
     const freeVideos = allVideos ? allVideos.filter(video => parseFloat(video.price || 0) === 0).length : 0;
-    
+
     // Calculate total spent from purchases data - use proper field names
     let totalSpent = 0;
     if (dashboardData.purchases && Array.isArray(dashboardData.purchases)) {
@@ -2337,7 +2182,7 @@ function updateViewerMetrics() {
     const purchasedVideosElement = document.getElementById("viewerPurchasedVideos");
     const freeVideosElement = document.getElementById("viewerFreeVideos");
     const totalSpentElement = document.getElementById("viewerTotalSpent");
-    
+
     if (totalVideosElement) animateCounter("viewerTotalVideos", totalVideos);
     if (purchasedVideosElement) animateCounter("viewerPurchasedVideos", purchasedVideos);
     if (freeVideosElement) animateCounter("viewerFreeVideos", freeVideos);

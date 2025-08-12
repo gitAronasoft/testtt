@@ -17,10 +17,10 @@
                 <i class="fas fa-fire phoenix-icon"></i>
                 <span class="brand-text">phoenix</span>
             </a>
-
+            
             <!-- Spacer to push user avatar to the right -->
             <div class="flex-grow-1"></div>
-
+            
             <!-- User Avatar -->
             <div class="navbar-nav">
                 <div class="nav-item dropdown">
@@ -433,7 +433,7 @@
                         </div>
                     </div>
 
-
+                    
 
                     <!-- Videos Panel -->
                     <div id="videosPanel" class="panel" style="display: none;">
@@ -487,7 +487,7 @@
                             </div>
                         </div>
 
-
+                        
 
                         <div class="row" id="videosContainer">
                             <!-- Videos will be populated by JavaScript -->
@@ -504,73 +504,85 @@
                     <!-- My Videos Panel -->
                     <div id="myVideosPanel" class="panel" style="display: none;">
                         <!-- Creator Metrics Cards -->
-                        <div class="row mb-3 g-3">
+                        <div class="row mb-4 g-4">
                             <div class="col-xl-3 col-md-6">
                                 <div class="card border-0 shadow-sm">
-                                    <div class="card-body p-3">
+                                    <div class="card-body p-4">
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0">
-                                                <div class="bg-primary bg-gradient rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                    <i class="fas fa-video"></i>
+                                                <div class="bg-primary bg-gradient rounded-circle p-3 text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                    <i class="fas fa-video fa-lg"></i>
                                                 </div>
                                             </div>
                                             <div class="flex-grow-1 ms-3">
-                                                <h4 class="mb-1 text-dark" id="creatorTotalVideos">0</h4>
-                                                <p class="text-muted mb-0 fw-medium small">My Videos</p>
+                                                <h3 class="mb-1 text-dark" id="creatorTotalVideos">0</h3>
+                                                <p class="text-muted mb-0 fw-medium">My Videos</p>
+                                                <div class="progress mt-2" style="height: 4px;">
+                                                    <div class="progress-bar bg-primary" style="width: 75%"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <div class="col-xl-3 col-md-6">
                                 <div class="card border-0 shadow-sm">
-                                    <div class="card-body p-3">
+                                    <div class="card-body p-4">
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0">
-                                                <div class="bg-success bg-gradient rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                    <i class="fas fa-eye"></i>
+                                                <div class="bg-success bg-gradient rounded-circle p-3 text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                    <i class="fas fa-eye fa-lg"></i>
                                                 </div>
                                             </div>
                                             <div class="flex-grow-1 ms-3">
-                                                <h4 class="mb-1 text-dark" id="creatorTotalViews">0</h4>
-                                                <p class="text-muted mb-0 fw-medium small">Total Views</p>
+                                                <h3 class="mb-1 text-dark" id="creatorTotalViews">0</h3>
+                                                <p class="text-muted mb-0 fw-medium">Total Views</p>
+                                                <div class="progress mt-2" style="height: 4px;">
+                                                    <div class="progress-bar bg-success" style="width: 60%"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <div class="col-xl-3 col-md-6">
                                 <div class="card border-0 shadow-sm">
-                                    <div class="card-body p-3">
+                                    <div class="card-body p-4">
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0">
-                                                <div class="bg-warning bg-gradient rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                    <i class="fas fa-dollar-sign"></i>
+                                                <div class="bg-warning bg-gradient rounded-circle p-3 text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                    <i class="fas fa-dollar-sign fa-lg"></i>
                                                 </div>
                                             </div>
                                             <div class="flex-grow-1 ms-3">
-                                                <h4 class="mb-1 text-dark" id="creatorTotalEarnings">$0</h4>
-                                                <p class="text-muted mb-0 fw-medium small">Total Earnings</p>
+                                                <h3 class="mb-1 text-dark" id="creatorTotalEarnings">$0</h3>
+                                                <p class="text-muted mb-0 fw-medium">Total Earnings</p>
+                                                <div class="progress mt-2" style="height: 4px;">
+                                                    <div class="progress-bar bg-warning" style="width: 85%"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <div class="col-xl-3 col-md-6">
                                 <div class="card border-0 shadow-sm">
-                                    <div class="card-body p-3">
+                                    <div class="card-body p-4">
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0">
-                                                <div class="bg-info bg-gradient rounded-circle p-2 text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                    <i class="fas fa-chart-line"></i>
+                                                <div class="bg-info bg-gradient rounded-circle p-3 text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                    <i class="fas fa-chart-line fa-lg"></i>
                                                 </div>
                                             </div>
                                             <div class="flex-grow-1 ms-3">
-                                                <h4 class="mb-1 text-dark" id="creatorMonthlyEarnings">$0</h4>
-                                                <p class="text-muted mb-0 fw-medium small">This Month</p>
+                                                <h3 class="mb-1 text-dark" id="creatorMonthlyEarnings">$0</h3>
+                                                <p class="text-muted mb-0 fw-medium">This Month</p>
+                                                <div class="progress mt-2" style="height: 4px;">
+                                                    <div class="progress-bar bg-info" style="width: 45%"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -578,17 +590,17 @@
                             </div>
                         </div>
 
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
                             <div>
-                                <h3 class="mb-1">My Videos</h3>
-                                <p class="text-muted mb-0 small" id="myVideosCount">Loading videos...</p>
+                                <h2 class="mb-1">My Videos</h2>
+                                <p class="text-muted mb-0" id="myVideosCount">Loading videos...</p>
                             </div>
-                            <button class="btn btn-primary btn-sm" onclick="event.preventDefault(); showPanel('upload'); return false;">
-                                <i class="fas fa-plus me-1"></i>Upload Video
+                            <button class="btn btn-primary" onclick="event.preventDefault(); showPanel('upload'); return false;">
+                                <i class="fas fa-plus me-1"></i>Upload
                             </button>
                         </div>
 
-                        <div class="row g-3" id="myVideosContainer">
+                        <div class="row" id="myVideosContainer">
                             <!-- My videos will be populated by JavaScript -->
                         </div>
                     </div>
@@ -645,7 +657,7 @@
                                                     <div class="alert alert-info mt-3 d-flex align-items-center">
                                                         <i class="fab fa-youtube text-danger me-2 fa-lg"></i>
                                                         <div>
-                                                            <strong>YouTube Integration:</strong> Your video will be uploaded to YouTube and automatically synced to the platform database.
+                                                            <strong>YouTube Integration:</strong> Your video will be uploaded to YouTube and automatically synced to the platform database. 
                                                             <br><small class="text-muted">Manage your YouTube connection in Settings → YouTube tab.</small>
                                                         </div>
                                                     </div>
@@ -941,165 +953,265 @@
                         </div>
                     </div>
 
-                    <!-- Profile Panel -->
+                    <!-- Account Settings Panel -->
                     <div id="profilePanel" class="panel" style="display: none;">
                         <!-- Panel Header -->
-                        <div class="panel-header">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h1 class="panel-title">Profile Settings</h1>
-                                    <p class="panel-subtitle">Manage your account information and security</p>
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+                            <div>
+                                <h2 class="mb-1 fw-bold">Account Settings</h2>
+                                <p class="text-muted mb-0">Manage your profile and account preferences</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary" onclick="refreshAccountSettings()">
+                                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                                </button>
+                                <button class="btn btn-primary shadow-sm" onclick="saveAllAccountSettings()">
+                                    <i class="fas fa-save me-2"></i>Save All Changes
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Settings Navigation Tabs -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body p-3">
+                                <nav class="nav nav-pills nav-justified">
+                                    <button class="nav-link active rounded-pill" onclick="showSettingsTab('profile')" id="profileTab">
+                                        <i class="fas fa-user me-2"></i>Profile
+                                    </button>
+                                    <button class="nav-link rounded-pill" onclick="showSettingsTab('security')" id="securityTab">
+                                        <i class="fas fa-shield-alt me-2"></i>Security
+                                    </button>
+                                    <button class="nav-link rounded-pill" onclick="showSettingsTab('preferences')" id="preferencesTab">
+                                        <i class="fas fa-cog me-2"></i>Preferences
+                                    </button>
+                                    <button class="nav-link rounded-pill" onclick="showSettingsTab('privacy')" id="privacyTab">
+                                        <i class="fas fa-lock me-2"></i>Privacy
+                                    </button>
+                                    <button class="nav-link rounded-pill" onclick="showSettingsTab('billing')" id="billingTab" style="display: none;">
+                                        <i class="fas fa-credit-card me-2"></i>Billing
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+
+                        <!-- Profile Settings Tab -->
+                        <div id="profileSettingsTab" class="settings-tab">
+                            <div class="row">
+                                <!-- Profile Information -->
+                                <div class="col-lg-8">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h5 class="mb-0 fw-semibold">
+                                                <i class="fas fa-user-circle me-2 text-primary"></i>Profile Information
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="profileForm">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Full Name *</label>
+                                                        <input type="text" class="form-control" id="profileName" placeholder="Enter your full name">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Username</label>
+                                                        <input type="text" class="form-control" id="profileUsername" placeholder="Enter username" readonly>
+                                                        <small class="text-muted">Username cannot be changed</small>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Email Address *</label>
+                                                        <input type="email" class="form-control" id="profileEmail" readonly>
+                                                        <small class="text-muted">Contact support to change email</small>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Phone Number</label>
+                                                        <input type="tel" class="form-control" id="profilePhone" placeholder="+1 (555) 123-4567">
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Bio / About</label>
+                                                    <textarea class="form-control" id="profileBio" rows="4" placeholder="Tell us about yourself..." maxlength="500"></textarea>
+                                                    <div class="form-text d-flex justify-content-between">
+                                                        <span>Brief description about yourself</span>
+                                                        <span class="text-muted"><span id="bioCharCount">0</span>/500</span>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Location</label>
+                                                        <input type="text" class="form-control" id="profileLocation" placeholder="City, Country">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Website</label>
+                                                        <input type="url" class="form-control" id="profileWebsite" placeholder="https://example.com">
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Date of Birth</label>
+                                                        <input type="date" class="form-control" id="profileDob">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Gender</label>
+                                                        <select class="form-select" id="profileGender">
+                                                            <option value="">Select gender</option>
+                                                            <option value="male">Male</option>
+                                                            <option value="female">Female</option>
+                                                            <option value="other">Other</option>
+                                                            <option value="prefer_not_to_say">Prefer not to say</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="d-flex gap-3">
-                                    <button class="action-btn secondary" onclick="loadAccountSettings()">
-                                        <i class="fas fa-sync-alt"></i>Refresh
-                                    </button>
-                                    <button class="action-btn" onclick="saveProfileSettings()">
-                                        <i class="fas fa-save"></i>Save Changes
-                                    </button>
+
+                                <!-- Profile Picture & Stats -->
+                                <div class="col-lg-4">
+                                    <!-- Profile Picture -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h6 class="mb-0 fw-semibold">
+                                                <i class="fas fa-camera me-2 text-success"></i>Profile Picture
+                                            </h6>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <div class="profile-avatar-large mb-3" id="profileAvatarLarge">
+                                                A
+                                            </div>
+                                            <p class="text-muted mb-3">Upload a new profile picture</p>
+                                            <input type="file" class="form-control mb-3" id="avatarUpload" accept="image/*" onchange="previewAvatar(this)">
+                                            <button class="btn btn-success w-100 mb-2" onclick="uploadAvatar()">
+                                                <i class="fas fa-upload me-1"></i>Upload Photo
+                                            </button>
+                                            <button class="btn btn-outline-danger w-100" onclick="removeAvatar()">
+                                                <i class="fas fa-trash me-1"></i>Remove Photo
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Account Stats -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h6 class="mb-0 fw-semibold">
+                                                <i class="fas fa-chart-pie me-2 text-info"></i>Account Statistics
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Member Since:</span>
+                                                <span class="fw-semibold" id="memberSince">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Last Login:</span>
+                                                <span class="fw-semibold" id="lastLogin">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Account Type:</span>
+                                                <span class="badge bg-primary" id="accountType">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted">Profile Views:</span>
+                                                <span class="fw-semibold" id="profileViews">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row g-4">
-                            <!-- Profile Information -->
-                            <div class="col-lg-8">
-                                <!-- Personal Information -->
-                                <div class="card border-0 shadow-sm mb-4">
-                                    <div class="card-header bg-white border-0 py-4">
-                                        <h5 class="mb-0 fw-semibold">
-                                            <i class="fas fa-user-circle me-2 text-primary"></i>Personal Information
-                                        </h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <form id="profileForm">
-                                            <div class="row mb-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-semibold">Full Name *</label>
-                                                    <input type="text" class="form-control" id="profileName" placeholder="Enter your full name">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-semibold">Email Address</label>
-                                                    <input type="email" class="form-control" id="profileEmail" readonly>
-                                                    <small class="text-muted">Contact support to change email</small>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <!-- Password Management -->
-                                <div class="card border-0 shadow-sm mb-4">
-                                    <div class="card-header bg-white border-0 py-4">
-                                        <h5 class="mb-0 fw-semibold">
-                                            <i class="fas fa-lock me-2 text-warning"></i>Change Password
-                                        </h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <form id="passwordForm">
-                                            <div class="mb-3">
-                                                <label class="form-label fw-semibold">Current Password *</label>
-                                                <div class="input-group">
-                                                    <input type="password" class="form-control" id="currentPassword" placeholder="Enter current password">
-                                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword')">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-semibold">New Password *</label>
+                        <!-- Security Settings Tab -->
+                        <div id="securitySettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <!-- Password Management -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h5 class="mb-0 fw-semibold">
+                                                <i class="fas fa-key me-2 text-warning"></i>Password Management
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="passwordForm">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Current Password *</label>
                                                     <div class="input-group">
-                                                        <input type="password" class="form-control" id="newPassword" placeholder="Enter new password">
-                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword')">
+                                                        <input type="password" class="form-control" id="currentPassword" placeholder="Enter current password">
+                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword')">
                                                             <i class="fas fa-eye"></i>
                                                         </button>
                                                     </div>
-                                                    <div class="password-strength mt-2">
-                                                        <div class="progress" style="height: 5px;">
-                                                            <div class="progress-bar" role="progressbar" id="passwordStrength" style="width: 0%"></div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">New Password *</label>
+                                                        <div class="input-group">
+                                                            <input type="password" class="form-control" id="newPassword" placeholder="Enter new password">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword')">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
                                                         </div>
-                                                        <small class="text-muted" id="passwordStrengthText">Password strength</small>
+                                                        <div class="password-strength mt-2">
+                                                            <div class="progress" style="height: 5px;">
+                                                                <div class="progress-bar" role="progressbar" id="passwordStrength" style="width: 0%"></div>
+                                                            </div>
+                                                            <small class="text-muted" id="passwordStrengthText">Password strength</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Confirm New Password *</label>
+                                                        <div class="input-group">
+                                                            <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm new password">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword')">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-semibold">Confirm Password *</label>
-                                                    <div class="input-group">
-                                                        <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm new password">
-                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword')">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                    </div>
+                                                <div class="alert alert-info">
+                                                    <h6><i class="fas fa-info-circle me-2"></i>Password Requirements:</h6>
+                                                    <ul class="mb-0">
+                                                        <li>At least 8 characters long</li>
+                                                        <li>Include uppercase and lowercase letters</li>
+                                                        <li>Include at least one number</li>
+                                                        <li>Include at least one special character</li>
+                                                    </ul>
                                                 </div>
-                                            </div>
-                                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                                <button type="button" class="btn btn-primary" onclick="updatePassword()">
+                                                <button type="button" class="btn btn-warning" onclick="updatePassword()">
                                                     <i class="fas fa-key me-2"></i>Update Password
                                                 </button>
-                                            </div>
-                                        </form>
+                                            </form>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            <!-- Profile Avatar & Account Statistics -->
-                            <div class="col-lg-4">
-                                <!-- Profile Avatar -->
-                                <div class="card border-0 shadow-sm mb-4">
-                                    <div class="card-header bg-white border-0 py-4">
-                                        <h6 class="mb-0 fw-semibold">
-                                            <i class="fas fa-camera me-2 text-success"></i>Profile Picture
-                                        </h6>
-                                    </div>
-                                    <div class="card-body text-center">
-                                        <div class="profile-avatar-large mb-3" id="profileAvatarLarge">
-                                            U
+                                    <!-- Two-Factor Authentication -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h5 class="mb-0 fw-semibold">
+                                                <i class="fas fa-shield-alt me-2 text-success"></i>Two-Factor Authentication
+                                            </h5>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <!-- Account Statistics -->
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header bg-white border-0 py-4">
-                                        <h6 class="mb-0 fw-semibold">
-                                            <i class="fas fa-chart-pie me-2 text-info"></i>Account Statistics
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="stat-item mb-3">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">Member Since:</span>
-                                                <span class="fw-semibold" id="memberSince">-</span>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <div>
+                                                    <h6 class="mb-1">Two-Factor Authentication</h6>
+                                                    <p class="text-muted mb-0">Add an extra layer of security to your account</p>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="enable2FA">
+                                                    <label class="form-check-label" for="enable2FA"></label>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="stat-item mb-3">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">Last Login:</span>
-                                                <span class="fw-semibold text-success" id="lastLogin">Now</span>
-                                            </div>
-                                        </div>
-                                        <div class="stat-item mb-3">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">Account Type:</span>
-                                                <span class="badge bg-primary" id="accountType">-</span>
-                                            </div>
-                                        </div>
-                                        <div class="stat-item mb-3">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">Videos:</span>
-                                                <span class="fw-semibold" id="profileVideos">0</span>
-                                            </div>
-                                        </div>
-                                        <div class="stat-item mb-3">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">Views:</span>
-                                                <span class="fw-semibold" id="profileViews">0</span>
-                                            </div>
-                                        </div>
-                                        <div class="stat-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">Earnings:</span>
-                                                <span class="fw-semibold text-success" id="profileEarnings">$0</span>
+                                            <div id="2faSetup" style="display: none;">
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    Setting up 2FA will require you to use an authenticator app on your phone.
+                                                </div>
+                                                <button class="btn btn-success" onclick="setup2FA()">
+                                                    <i class="fas fa-qrcode me-2"></i>Setup Two-Factor Authentication
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -1393,7 +1505,7 @@
                                         <div class="card-body">
                                             <div class="alert alert-info mb-3">
                                                 <i class="fas fa-lightbulb me-2"></i>
-                                                <strong>Important:</strong> YouTube connection is required for video uploads and sync functionality.
+                                                <strong>Important:</strong> YouTube connection is required for video uploads and sync functionality. 
                                                 The system uses OAuth 2.0 for secure authentication.
                                             </div>
 
@@ -1436,6 +1548,686 @@
 
     <!-- Toast Notification -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
+                        <!-- Panel Header -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+                            <div>
+                                <h2 class="mb-1 fw-bold">Account Settings</h2>
+                                <p class="text-muted mb-0">Manage your profile and account preferences</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary" onclick="refreshAccountSettings()">
+                                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                                </button>
+                                <button class="btn btn-primary shadow-sm" onclick="saveAllAccountSettings()">
+                                    <i class="fas fa-save me-2"></i>Save All Changes
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Settings Navigation Tabs -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body p-3">
+                                <nav class="nav nav-pills nav-justified">
+                                    <button class="nav-link active rounded-pill" onclick="showSettingsTab('profile')" id="profileTab">
+                                        <i class="fas fa-user me-2"></i>Profile
+                                    </button>
+                                    <button class="nav-link rounded-pill" onclick="showSettingsTab('security')" id="securityTab">
+                                        <i class="fas fa-shield-alt me-2"></i>Security
+                                    </button>
+                                    <button class="nav-link rounded-pill" onclick="showSettingsTab('preferences')" id="preferencesTab">
+                                        <i class="fas fa-cog me-2"></i>Preferences
+                                    </button>
+                                    <button class="nav-link rounded-pill" onclick="showSettingsTab('privacy')" id="privacyTab">
+                                        <i class="fas fa-lock me-2"></i>Privacy
+                                    </button>
+                                    <button class="nav-link rounded-pill" onclick="showSettingsTab('billing')" id="billingTab" style="display: none;">
+                                        <i class="fas fa-credit-card me-2"></i>Billing
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+
+                        <!-- Profile Settings Tab -->
+                        <div id="profileSettingsTab" class="settings-tab">
+                            <div class="row">
+                                <!-- Profile Information -->
+                                <div class="col-lg-8">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h5 class="mb-0 fw-semibold">
+                                                <i class="fas fa-user-circle me-2 text-primary"></i>Profile Information
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="profileForm">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Full Name *</label>
+                                                        <input type="text" class="form-control" id="profileName" placeholder="Enter your full name">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Username</label>
+                                                        <input type="text" class="form-control" id="profileUsername" placeholder="Enter username" readonly>
+                                                        <small class="text-muted">Username cannot be changed</small>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Email Address *</label>
+                                                        <input type="email" class="form-control" id="profileEmail" readonly>
+                                                        <small class="text-muted">Contact support to change email</small>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Phone Number</label>
+                                                        <input type="tel" class="form-control" id="profilePhone" placeholder="+1 (555) 123-4567">
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Bio / About</label>
+                                                    <textarea class="form-control" id="profileBio" rows="4" placeholder="Tell us about yourself..." maxlength="500"></textarea>
+                                                    <div class="form-text d-flex justify-content-between">
+                                                        <span>Brief description about yourself</span>
+                                                        <span class="text-muted"><span id="bioCharCount">0</span>/500</span>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Location</label>
+                                                        <input type="text" class="form-control" id="profileLocation" placeholder="City, Country">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Website</label>
+                                                        <input type="url" class="form-control" id="profileWebsite" placeholder="https://example.com">
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Date of Birth</label>
+                                                        <input type="date" class="form-control" id="profileDob">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Gender</label>
+                                                        <select class="form-select" id="profileGender">
+                                                            <option value="">Select gender</option>
+                                                            <option value="male">Male</option>
+                                                            <option value="female">Female</option>
+                                                            <option value="other">Other</option>
+                                                            <option value="prefer_not_to_say">Prefer not to say</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Profile Picture & Stats -->
+                                <div class="col-lg-4">
+                                    <!-- Profile Picture -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h6 class="mb-0 fw-semibold">
+                                                <i class="fas fa-camera me-2 text-success"></i>Profile Picture
+                                            </h6>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <div class="profile-avatar-large mb-3" id="profileAvatarLarge">
+                                                A
+                                            </div>
+                                            <p class="text-muted mb-3">Upload a new profile picture</p>
+                                            <input type="file" class="form-control mb-3" id="avatarUpload" accept="image/*" onchange="previewAvatar(this)">
+                                            <button class="btn btn-success w-100 mb-2" onclick="uploadAvatar()">
+                                                <i class="fas fa-upload me-1"></i>Upload Photo
+                                            </button>
+                                            <button class="btn btn-outline-danger w-100" onclick="removeAvatar()">
+                                                <i class="fas fa-trash me-1"></i>Remove Photo
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Account Stats -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h6 class="mb-0 fw-semibold">
+                                                <i class="fas fa-chart-pie me-2 text-info"></i>Account Statistics
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Member Since:</span>
+                                                <span class="fw-semibold" id="memberSince">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Last Login:</span>
+                                                <span class="fw-semibold" id="lastLogin">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Account Type:</span>
+                                                <span class="badge bg-primary" id="accountType">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted">Profile Views:</span>
+                                                <span class="fw-semibold" id="profileViews">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Settings Tab -->
+                        <div id="securitySettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <!-- Password Management -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h5 class="mb-0 fw-semibold">
+                                                <i class="fas fa-key me-2 text-warning"></i>Password Management
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="passwordForm">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Current Password *</label>
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control" id="currentPassword" placeholder="Enter current password">
+                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword')">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">New Password *</label>
+                                                        <div class="input-group">
+                                                            <input type="password" class="form-control" id="newPassword" placeholder="Enter new password">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword')">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
+                                                        <div class="password-strength mt-2">
+                                                            <div class="progress" style="height: 5px;">
+                                                                <div class="progress-bar" role="progressbar" id="passwordStrength" style="width: 0%"></div>
+                                                            </div>
+                                                            <small class="text-muted" id="passwordStrengthText">Password strength</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Confirm New Password *</label>
+                                                        <div class="input-group">
+                                                            <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm new password">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword')">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="alert alert-info">
+                                                    <h6><i class="fas fa-info-circle me-2"></i>Password Requirements:</h6>
+                                                    <ul class="mb-0">
+                                                        <li>At least 8 characters long</li>
+                                                        <li>Include uppercase and lowercase letters</li>
+                                                        <li>Include at least one number</li>
+                                                        <li>Include at least one special character</li>
+                                                    </ul>
+                                                </div>
+                                                <button type="button" class="btn btn-warning" onclick="updatePassword()">
+                                                    <i class="fas fa-key me-2"></i>Update Password
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <!-- Two-Factor Authentication -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <h5 class="mb-0 fw-semibold">
+                                                <i class="fas fa-shield-alt me-2 text-success"></i>Two-Factor Authentication
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <div>
+                                                    <h6 class="mb-1">Two-Factor Authentication</h6>
+                                                    <p class="text-muted mb-0">Add an extra layer of security to your account</p>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="enable2FA">
+                                                    <label class="form-check-label" for="enable2FA"></label>
+                                                </div>
+                                            </div>
+                                            <div id="2faSetup" style="display: none;">
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    Setting up 2FA will require you to use an authenticator app on your phone.
+                                                </div>
+                                                <button class="btn btn-success" onclick="setup2FA()">
+                                                    <i class="fas fa-qrcode me-2"></i>Setup Two-Factor Authentication
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4">
+                                    <!-- Login Activity -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-history me-2 text-primary"></i>Recent Login Activity
+                                            </h6>
+                                        </div>
+                                        <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                                            <div id="loginActivity">
+                                                <div class="text-center text-muted">
+                                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading activity...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Security Actions -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-tools me-2 text-danger"></i>Security Actions
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <button class="btn btn-outline-primary w-100 mb-2" onclick="downloadLoginData()">
+                                                <i class="fas fa-download me-1"></i>Download Login Data
+                                            </button>
+                                            <button class="btn btn-outline-warning w-100 mb-2" onclick="logoutAllDevices()">
+                                                <i class="fas fa-sign-out-alt me-1"></i>Logout All Devices
+                                            </button>
+                                            <button class="btn btn-outline-danger w-100" onclick="deactivateAccount()">
+                                                <i class="fas fa-user-times me-1"></i>Deactivate Account
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preferences Settings Tab -->
+                        <div id="preferencesSettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <!-- Notification Preferences -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-bell me-2 text-info"></i>Notification Preferences
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Email Notifications</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="emailNewVideos" checked>
+                                                    <label class="form-check-label" for="emailNewVideos">
+                                                        New video uploads from creators you follow
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="emailPurchases" checked>
+                                                    <label class="form-check-label" for="emailPurchases">
+                                                        Purchase confirmations and receipts
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="emailMarketing">
+                                                    <label class="form-check-label" for="emailMarketing">
+                                                        Marketing and promotional emails
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="emailSecurity" checked>
+                                                    <label class="form-check-label" for="emailSecurity">
+                                                        Security alerts and account updates
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Push Notifications</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="pushNewContent" checked>
+                                                    <label class="form-check-label" for="pushNewContent">
+                                                        New content from subscribed creators
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="pushMessages">
+                                                    <label class="form-check-label" for="pushMessages">
+                                                        Direct messages and mentions
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <!-- Display & Language Settings -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-cog me-2 text-secondary"></i>Display & Language
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Theme Preference</label>
+                                                <select class="form-select" id="themePreference">
+                                                    <option value="light">Light Theme</option>
+                                                    <option value="dark">Dark Theme</option>
+                                                    <option value="auto">Auto (System)</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Language</label>
+                                                <select class="form-select" id="languagePreference">
+                                                    <option value="en">English</option>
+                                                    <option value="es">Spanish</option>
+                                                    <option value="fr">French</option>
+                                                    <option value="de">German</option>
+                                                    <option value="zh">Chinese</option>
+                                                    <option value="ja">Japanese</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Timezone</label>
+                                                <select class="form-select" id="timezonePreference">
+                                                    <option value="UTC">UTC</option>
+                                                    <option value="America/New_York">Eastern Time (ET)</option>
+                                                    <option value="America/Chicago">Central Time (CT)</option>
+                                                    <option value="America/Denver">Mountain Time (MT)</option>
+                                                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                                    <option value="Europe/London">London (GMT)</option>
+                                                    <option value="Europe/Paris">Paris (CET)</option>
+                                                    <option value="Asia/Tokyo">Tokyo (JST)</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Date Format</label>
+                                                <select class="form-select" id="dateFormat">
+                                                    <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+                                                    <option value="DD/MM/YYYY">DD/MM/YYYY (UK)</option>
+                                                    <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="showOnlineStatus" checked>
+                                                <label class="form-check-label" for="showOnlineStatus">
+                                                    Show online status to other users
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Content Preferences -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-video me-2 text-success"></i>Content Preferences
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Auto-play Videos</label>
+                                                <select class="form-select" id="autoplayPreference">
+                                                    <option value="always">Always</option>
+                                                    <option value="wifi">Only on WiFi</option>
+                                                    <option value="never">Never</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Default Video Quality</label>
+                                                <select class="form-select" id="videoQuality">
+                                                    <option value="auto">Auto</option>
+                                                    <option value="1080p">1080p</option>
+                                                    <option value="720p">720p</option>
+                                                    <option value="480p">480p</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="matureContent">
+                                                <label class="form-check-label" for="matureContent">
+                                                    Show mature content (18+)
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Settings Tab -->
+                        <div id="privacySettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-user-shield me-2 text-primary"></i>Privacy Controls
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Profile Visibility</h6>
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="radio" name="profileVisibility" id="profilePublic" value="public" checked>
+                                                    <label class="form-check-label" for="profilePublic">
+                                                        <strong>Public</strong> - Anyone can view your profile
+                                                    </label>
+                                                </div>
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="radio" name="profileVisibility" id="profileMembers" value="members">
+                                                    <label class="form-check-label" for="profileMembers">
+                                                        <strong>Members Only</strong> - Only registered users can view your profile
+                                                    </label>
+                                                </div>
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="radio" name="profileVisibility" id="profilePrivate" value="private">
+                                                    <label class="form-check-label" for="profilePrivate">
+                                                        <strong>Private</strong> - Only you can view your profile
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Data Collection</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="analyticsOptIn" checked>
+                                                    <label class="form-check-label" for="analyticsOptIn">
+                                                        Allow analytics data collection to improve our service
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="personalizedAds">
+                                                    <label class="form-check-label" for="personalizedAds">
+                                                        Allow personalized advertisements
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="thirdPartySharing">
+                                                    <label class="form-check-label" for="thirdPartySharing">
+                                                        Allow data sharing with trusted third-party services
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Communication Preferences</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="allowDirectMessages" checked>
+                                                    <label class="form-check-label" for="allowDirectMessages">
+                                                        Allow other users to send you direct messages
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="allowComments" checked>
+                                                    <label class="form-check-label" for="allowComments">
+                                                        Allow comments on your content
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Data Management -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-database me-2 text-warning"></i>Data Management
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-outline-primary w-100 mb-3" onclick="exportUserData()">
+                                                        <i class="fas fa-download me-2"></i>Download My Data
+                                                    </button>
+                                                    <p class="text-muted small">Export all your account data in JSON format</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-outline-warning w-100 mb-3" onclick="requestDataDeletion()">
+                                                        <i class="fas fa-trash me-2"></i>Request Data Deletion
+                                                    </button>
+                                                    <p class="text-muted small">Permanently delete your account and all associated data</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4">
+                                    <!-- Privacy Summary -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-eye me-2 text-info"></i>Privacy Summary
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Profile Visibility:</span>
+                                                <span class="badge bg-success" id="privacySummaryProfile">Public</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Data Collection:</span>
+                                                <span class="badge bg-primary" id="privacySummaryData">Enabled</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Direct Messages:</span>
+                                                <span class="badge bg-success" id="privacySummaryMessages">Allowed</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted">Third-party Sharing:</span>
+                                                <span class="badge bg-secondary" id="privacySummarySharing">Disabled</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Privacy Tips -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-lightbulb me-2 text-warning"></i>Privacy Tips
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="alert alert-info">
+                                                <small>
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    <strong>Tip:</strong> Keep your profile private if you prefer not to be discoverable by other users.
+                                                </small>
+                                            </div>
+                                            <div class="alert alert-warning">
+                                                <small>
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    <strong>Note:</strong> Some features may not work properly with strict privacy settings.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Billing Settings Tab (for creators/admins) -->
+                        <div id="billingSettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-credit-card me-2 text-success"></i>Payment Methods
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="paymentMethods">
+                                                <div class="text-center text-muted py-4">
+                                                    <i class="fas fa-credit-card fa-3x mb-3"></i>
+                                                    <p>No payment methods added yet</p>
+                                                    <button class="btn btn-primary" onclick="addPaymentMethod()">
+                                                        <i class="fas fa-plus me-2"></i>Add Payment Method
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-file-invoice me-2 text-primary"></i>Billing History
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="text-center text-muted py-4">
+                                                <i class="fas fa-receipt fa-3x mb-3"></i>
+                                                <p>No billing history available</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-wallet me-2 text-info"></i>Billing Information
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Current Balance:</span>
+                                                <span class="fw-bold text-success">$0.00</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Total Spent:</span>
+                                                <span class="fw-semibold">$0.00</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted">Total Earned:</span>
+                                                <span class="fw-semibold">$0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
         <div id="notificationToast" class="toast" role="alert">
             <div class="toast-header">
                 <strong class="me-auto">Notification</strong>
@@ -1467,7 +2259,7 @@
         // Initialize Phoenix features
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
-
+            
             // Handle active navigation states
             const navLinks = document.querySelectorAll('.phoenix-nav-link');
             navLinks.forEach(link => {
