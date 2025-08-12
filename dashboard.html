@@ -8,24 +8,37 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary global-navbar">
+<body class="phoenix-admin">
+    <!-- Phoenix Header -->
+    <nav class="navbar navbar-expand-lg phoenix-navbar fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
-                <i class="fas fa-video me-2"></i>Video Platform
+            <!-- Logo -->
+            <a class="navbar-brand phoenix-brand" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
+                <i class="fas fa-fire phoenix-icon"></i>
+                <span class="brand-text">phoenix</span>
             </a>
-            <div class="navbar-nav ms-auto d-flex align-items-center">
-                <div class="d-flex align-items-center me-3">
-                    <div class="user-avatar me-2" id="userAvatar">A</div>
-                    <div>
-                        <div class="user-name" id="userName">Admin User</div>
-                        <div class="user-role" id="userRole">Admin</div>
-                    </div>
+            
+            <!-- Spacer to push user avatar to the right -->
+            <div class="flex-grow-1"></div>
+            
+            <!-- User Avatar -->
+            <div class="navbar-nav">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                        <div class="phoenix-user-avatar me-2" id="userAvatar">A</div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end phoenix-dropdown">
+                        <li class="dropdown-header">
+                            <div class="fw-bold" id="userName">Admin User</div>
+                            <div class="text-muted small" id="userRole">Administrator</div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
                 </div>
-                <button class="btn btn-outline-light" onclick="logout()">
-                    <i class="fas fa-sign-out-alt me-1"></i>Logout
-                </button>
             </div>
         </div>
     </nav>
@@ -39,95 +52,181 @@
         </div>
     </div>
 
-    <!-- Mobile Sidebar Toggle -->
-    <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
-        <i class="fas fa-bars"></i>
-    </button>
-
     <!-- Sidebar Backdrop -->
     <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
 
-    <div class="container-fluid">
-        <div class="dashboard-grid">
-            <!-- Enhanced Sidebar -->
-            <div class="sidebar-container" id="sidebar">
-                <div class="user-profile-section">
-                    <div class="user-profile-header">
-                        <div class="user-profile-avatar" id="userProfileAvatar">A</div>
-                        <div class="user-profile-info">
-                            <h6 id="userProfileName">Admin User</h6>
-                            <div class="user-profile-role" id="userProfileRole">Admin</div>
-                        </div>
-                    </div>
-
-                    <div class="user-profile-stats" id="userProfileStats">
-                        <div class="user-stat">
-                            <span class="user-stat-value" id="userStatVideos">0</span>
-                            <span class="user-stat-label">Videos</span>
-                        </div>
-                        <div class="user-stat">
-                            <span class="user-stat-value" id="userStatViews">0</span>
-                            <span class="user-stat-label">Views</span>
-                        </div>
-                    </div>
-
-                    <div class="user-profile-actions">
-                        <button class="btn btn-outline-primary btn-sm" onclick="showEditProfileModal()">
-                            <i class="fas fa-edit me-1"></i>Edit
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="showUserSettings()">
-                            <i class="fas fa-cog me-1"></i>Settings
-                        </button>
-                    </div>
-                </div>
-
-
-
-                        <nav class="nav flex-column">
-                    <a class="nav-link active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
-                        <i class="fas fa-chart-bar me-2"></i>Overview
-                    </a>
-
+    <div class="phoenix-layout">
+        <!-- Phoenix Sidebar -->
+        <div class="phoenix-sidebar" id="sidebar">
+            <div class="phoenix-sidebar-content">
+                <!-- Main Navigation -->
+                <nav class="phoenix-nav">
                     <!-- Viewer Sidebar -->
                     <div id="viewerSidebar" style="display: none;">
-                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
-                            <i class="fas fa-video me-2"></i>Browse Videos
-                        </a>
-                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('purchases'); return false;">
-                            <i class="fas fa-shopping-cart me-2"></i>My Purchases
-                        </a>
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Home</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
+                                        <i class="fas fa-home phoenix-nav-icon"></i>
+                                        <span>Browse Videos</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Library</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('purchases'); return false;">
+                                        <i class="fas fa-video phoenix-nav-icon"></i>
+                                        <span>My Library</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Account</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('profile'); return false;">
+                                        <i class="fas fa-user-cog phoenix-nav-icon"></i>
+                                        <span>Settings</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
                     <!-- Creator Sidebar -->
                     <div id="creatorSidebar" style="display: none;">
-                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('myVideos'); return false;">
-                            <i class="fas fa-film me-2"></i>My Videos
-                        </a>
-                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('upload'); return false;">
-                            <i class="fas fa-upload me-2"></i>Upload Video
-                        </a>
-                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('earnings'); return false;">
-                            <i class="fas fa-dollar-sign me-2"></i>Earnings
-                        </a>
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Home</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
+                                        <i class="fas fa-home phoenix-nav-icon"></i>
+                                        <span>Dashboard</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Content Management</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('myVideos'); return false;">
+                                        <i class="fas fa-film phoenix-nav-icon"></i>
+                                        <span>My Videos</span>
+                                    </a>
+                                </li>
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('upload'); return false;">
+                                        <i class="fas fa-upload phoenix-nav-icon"></i>
+                                        <span>Upload</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Analytics</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('earnings'); return false;">
+                                        <i class="fas fa-chart-pie phoenix-nav-icon"></i>
+                                        <span>Earnings</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Settings</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('profile'); return false;">
+                                        <i class="fas fa-user-cog phoenix-nav-icon"></i>
+                                        <span>Profile</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
                     <!-- Admin Sidebar -->
                     <div id="adminSidebar" style="display: none;">
-                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
-                            <i class="fas fa-video me-2"></i>All Videos
-                        </a>
-                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('users'); return false;">
-                            <i class="fas fa-users me-2"></i>User Management
-                        </a>
-                        <a class="nav-link" href="#" onclick="event.preventDefault(); showPanel('analytics'); return false;">
-                            <i class="fas fa-chart-line me-2"></i>Analytics
-                        </a>
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Home</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link active" href="#" onclick="event.preventDefault(); showPanel('overview'); return false;">
+                                        <i class="fas fa-home phoenix-nav-icon"></i>
+                                        <span>Dashboard</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Management</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('videos'); return false;">
+                                        <i class="fas fa-video phoenix-nav-icon"></i>
+                                        <span>Videos</span>
+                                    </a>
+                                </li>
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('users'); return false;">
+                                        <i class="fas fa-users phoenix-nav-icon"></i>
+                                        <span>Users</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">Analytics</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('analytics'); return false;">
+                                        <i class="fas fa-chart-bar phoenix-nav-icon"></i>
+                                        <span>Reports</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="phoenix-nav-section">
+                            <div class="phoenix-nav-title">System</div>
+                            <ul class="phoenix-nav-list">
+                                <li class="phoenix-nav-item">
+                                    <a class="phoenix-nav-link" href="#" onclick="event.preventDefault(); showPanel('settings'); return false;">
+                                        <i class="fas fa-cogs phoenix-nav-icon"></i>
+                                        <span>Settings</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </nav>
-            </div>
 
-            <!-- Main Content -->
-            <div class="main-content">
+                <!-- Collapsed View Toggle -->
+                <div class="phoenix-sidebar-footer">
+                    <button class="phoenix-collapse-btn" onclick="toggleSidebarCollapse()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phoenix Main Content -->
+        <div class="phoenix-main-content">
+            <div class="phoenix-content-wrapper">
                     <!-- Loading Spinner -->
                     <div id="loadingSpinner" class="text-center py-5" style="display: none;">
                         <div class="spinner-border text-primary" role="status">
@@ -135,96 +234,157 @@
                         </div>
                     </div>
 
-                    <!-- Overview Panel -->
-                    <div id="overviewPanel" class="panel">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>Dashboard Overview</h2>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-md-3">
-                                <div class="card bg-primary text-white">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between">
-                                            <div>
-                                                <h5 class="card-title" id="totalVideosLabel">Total Videos</h5>
-                                                <h3 id="totalVideos">0</h3>
-                                            </div>
-                                            <i class="fas fa-video fa-2x"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-success text-white">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between">
-                                            <div>
-                                                <h5 class="card-title" id="activeUsersLabel">Active Users</h5>
-                                                <h3 id="activeUsers">0</h3>
-                                            </div>
-                                            <i class="fas fa-users fa-2x"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-warning text-white">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between">
-                                            <div>
-                                                <h5 class="card-title" id="totalRevenueLabel">Total Revenue</h5>
-                                                <h3 id="totalRevenue">0</h3>
-                                            </div>
-                                            <i class="fas fa-dollar-sign fa-2x"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-info text-white">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between">
-                                            <div>
-                                                <h5 class="card-title" id="totalViewsLabel">Total Views</h5>
-                                                <h3 id="totalViews">0</h3>
-                                            </div>
-                                            <i class="fas fa-eye fa-2x"></i>
-                                        </div>
-                                    </div>
+                    <!-- Phoenix Overview Panel -->
+                    <div id="overviewPanel" class="panel" style="display: block;">
+                        <!-- Page Header -->
+                        <div class="phoenix-page-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h1 class="phoenix-page-title">Projects Dashboard</h1>
+                                    <p class="phoenix-page-subtitle">Here's what's going on at your business right now</p>
+                                    <small class="phoenix-page-date">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        <span id="currentDate">Mar 1, 2025</span>
+                                    </small>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>Recent Activity</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="recentActivityContainer">
-                                            <div class="list-group-item text-center text-muted">
-                                                <div class="d-flex align-items-center justify-content-center">
-                                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
-                                                        <span class="visually-hidden">Loading...</span>
+                        <!-- Phoenix Stats Cards -->
+                        <div class="phoenix-stats-grid mb-5">
+                            <div class="phoenix-stat-card">
+                                <div class="phoenix-stat-icon phoenix-stat-primary">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div class="phoenix-stat-content">
+                                    <div class="phoenix-stat-number" id="totalVideosCount">32</div>
+                                    <div class="phoenix-stat-label">Videos</div>
+                                    <div class="phoenix-stat-description">Awaiting processing</div>
+                                </div>
+                            </div>
+
+                            <div class="phoenix-stat-card">
+                                <div class="phoenix-stat-icon phoenix-stat-success">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="phoenix-stat-content">
+                                    <div class="phoenix-stat-number" id="totalUsersCount">94</div>
+                                    <div class="phoenix-stat-label">Members</div>
+                                    <div class="phoenix-stat-description">Working hard</div>
+                                </div>
+                            </div>
+
+                            <div class="phoenix-stat-card">
+                                <div class="phoenix-stat-icon phoenix-stat-warning">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="phoenix-stat-content">
+                                    <div class="phoenix-stat-number" id="totalEarningsCount">23</div>
+                                    <div class="phoenix-stat-label">Earnings</div>
+                                    <div class="phoenix-stat-description">Soon to be cleared</div>
+                                </div>
+                            </div>
+
+                            <div class="phoenix-stat-card">
+                                <div class="phoenix-stat-icon phoenix-stat-danger">
+                                    <i class="fas fa-undo"></i>
+                                </div>
+                                <div class="phoenix-stat-content">
+                                    <div class="phoenix-stat-number" id="refundsCount">3</div>
+                                    <div class="phoenix-stat-label">Refunds</div>
+                                    <div class="phoenix-stat-description">Fresh start</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project Progress Section -->
+                        <div class="phoenix-project-section">
+                            <div class="row">
+                                <div class="col-xl-8">
+                                    <div class="phoenix-card">
+                                        <div class="phoenix-card-header">
+                                            <h3 class="phoenix-card-title">Project: zero Roadmap</h3>
+                                            <span class="phoenix-project-status">Phase 2 is now ongoing</span>
+                                            <span class="phoenix-coming-soon">COMING SOON 8</span>
+                                        </div>
+                                        <div class="phoenix-card-body">
+                                            <!-- Progress Controls -->
+                                            <div class="phoenix-progress-controls mb-4">
+                                                <div class="phoenix-toggle-group">
+                                                    <label class="phoenix-toggle">
+                                                        <input type="checkbox" checked>
+                                                        <span class="phoenix-toggle-slider"></span>
+                                                        <span class="phoenix-toggle-label">Progress</span>
+                                                    </label>
+                                                    <label class="phoenix-toggle">
+                                                        <input type="checkbox" checked>
+                                                        <span class="phoenix-toggle-slider"></span>
+                                                        <span class="phoenix-toggle-label">Links</span>
+                                                    </label>
+                                                </div>
+                                                <div class="phoenix-time-filters">
+                                                    <button class="phoenix-time-btn">Week</button>
+                                                    <button class="phoenix-time-btn active">Month</button>
+                                                    <button class="phoenix-time-btn">Year</button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Progress Timeline -->
+                                            <div class="phoenix-progress-timeline">
+                                                <div class="phoenix-progress-item">
+                                                    <div class="phoenix-progress-label">Planning</div>
+                                                    <div class="phoenix-progress-bar">
+                                                        <div class="phoenix-progress-fill" style="width: 100%"></div>
                                                     </div>
-                                                    <span>Loading recent activity...</span>
+                                                </div>
+                                                <div class="phoenix-progress-item">
+                                                    <div class="phoenix-progress-label">Research</div>
+                                                    <div class="phoenix-progress-bar">
+                                                        <div class="phoenix-progress-fill" style="width: 80%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="phoenix-progress-item">
+                                                    <div class="phoenix-progress-label">Design</div>
+                                                    <div class="phoenix-progress-bar">
+                                                        <div class="phoenix-progress-fill phoenix-progress-active" style="width: 65%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="phoenix-progress-item">
+                                                    <div class="phoenix-progress-label">Review</div>
+                                                    <div class="phoenix-progress-bar">
+                                                        <div class="phoenix-progress-fill" style="width: 40%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="phoenix-progress-item">
+                                                    <div class="phoenix-progress-label">Develop</div>
+                                                    <div class="phoenix-progress-bar">
+                                                        <div class="phoenix-progress-fill" style="width: 25%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="phoenix-progress-item">
+                                                    <div class="phoenix-progress-label">Review II</div>
+                                                    <div class="phoenix-progress-bar">
+                                                        <div class="phoenix-progress-fill" style="width: 15%"></div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>Popular Videos</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="popularVideosContainer">
-                                            <div class="list-group-item text-center text-muted">
-                                                <i class="fas fa-spinner fa-spin me-2"></i>Loading...
+                                <div class="col-xl-4">
+                                    <div class="phoenix-card phoenix-early-bird">
+                                        <div class="phoenix-card-body">
+                                            <h4 class="phoenix-early-bird-title">Early bird gets the warm leads!</h4>
+                                            <p class="phoenix-early-bird-text">
+                                                Phoenix CRM Dashboard is coming to market soon for fulfilling your every CRM related needs.
+                                            </p>
+                                            <div class="phoenix-early-bird-footer">
+                                                Follow <a href="#" class="phoenix-link">ThemeWagon</a> at Bootstrap Marketplace
+                                                <div class="phoenix-chat-demo">
+                                                    <i class="fas fa-comment-dots"></i>
+                                                    <span>Chat demo</span>
+                                                    <div class="phoenix-online-indicator"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -233,60 +393,61 @@
                         </div>
                     </div>
 
+                    
+
                     <!-- Videos Panel -->
                     <div id="videosPanel" class="panel" style="display: none;">
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-                            <div>
-                                <h2 class="mb-1">All Videos</h2>
-                                <p class="text-muted mb-0" id="videosCount">Loading videos...</p>
-                            </div>
-                            <div class="btn-toolbar" role="toolbar">
-                                <div class="btn-group me-2" role="group" aria-label="Video filters">
-                                    <button class="btn btn-outline-primary active" onclick="filterVideos('all')" data-filter="all">
-                                        <i class="fas fa-th me-1"></i>All
-                                    </button>
-                                    <button class="btn btn-outline-success" onclick="filterVideos('free')" data-filter="free">
-                                        <i class="fas fa-gift me-1"></i>Free
-                                    </button>
-                                    <button class="btn btn-outline-warning" onclick="filterVideos('paid')" data-filter="paid">
-                                        <i class="fas fa-dollar-sign me-1"></i>Paid
-                                    </button>
-                                    <button class="btn btn-outline-info" onclick="filterVideos('purchased')" data-filter="purchased">
-                                        <i class="fas fa-check me-1"></i>Purchased
-                                    </button>
+                        <!-- Enhanced Metrics Cards for Viewers -->
+                        <div class="quick-stats" id="viewerMetrics" style="display: none;">
+                            <div class="quick-stat-card">
+                                <div class="quick-stat-icon">
+                                    <i class="fas fa-video"></i>
                                 </div>
-                                <div class="btn-group" role="group" aria-label="View options">
-                                    <button class="btn btn-outline-secondary" onclick="toggleViewMode('grid')" id="gridViewBtn">
-                                        <i class="fas fa-th-large"></i>
+                                <div class="quick-stat-value" id="viewerTotalVideos">0</div>
+                                <div class="quick-stat-label">Total Videos</div>
+                            </div>
+                            <div class="quick-stat-card">
+                                <div class="quick-stat-icon" style="background: var(--gradient-success);">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="quick-stat-value" id="viewerPurchasedVideos">0</div>
+                                <div class="quick-stat-label">Purchased</div>
+                            </div>
+                            <div class="quick-stat-card">
+                                <div class="quick-stat-icon" style="background: var(--gradient-warning);">
+                                    <i class="fas fa-gift"></i>
+                                </div>
+                                <div class="quick-stat-value" id="viewerFreeVideos">0</div>
+                                <div class="quick-stat-label">Free Videos</div>
+                            </div>
+                            <div class="quick-stat-card">
+                                <div class="quick-stat-icon" style="background: var(--gradient-danger);">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="quick-stat-value" id="viewerTotalSpent">$0</div>
+                                <div class="quick-stat-label">Total Spent</div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Header -->
+                        <div class="panel-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h1 class="panel-title">Video Library</h1>
+                                    <p class="panel-subtitle" id="videosCount">Loading premium content...</p>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <button class="action-btn secondary" onclick="refreshVideos()">
+                                        <i class="fas fa-sync-alt"></i>Refresh
                                     </button>
-                                    <button class="btn btn-outline-secondary" onclick="toggleViewMode('list')" id="listViewBtn">
-                                        <i class="fas fa-list"></i>
+                                    <button class="action-btn" onclick="showUploadModal()">
+                                        <i class="fas fa-plus"></i>Add Video
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Search and Sort -->
-                        <div class="row mb-4">
-                            <div class="col-md-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-search"></i>
-                                    </span>
-                                    <input type="text" class="form-control" placeholder="Search videos..." id="videoSearchInput" onkeyup="searchVideos()">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <select class="form-select" id="videoSortSelect" onchange="sortVideos()">
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                    <option value="price-low">Price: Low to High</option>
-                                    <option value="price-high">Price: High to Low</option>
-                                    <option value="title">Title A-Z</option>
-                                    <option value="views">Most Viewed</option>
-                                </select>
-                            </div>
-                        </div>
+                        
 
                         <div class="row" id="videosContainer">
                             <!-- Videos will be populated by JavaScript -->
@@ -302,52 +463,70 @@
 
                     <!-- My Videos Panel -->
                     <div id="myVideosPanel" class="panel" style="display: none;">
+                        <!-- Metrics Cards -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h5 class="card-title">My Videos</h5>
+                                                <h3 id="creatorTotalVideos">0</h3>
+                                            </div>
+                                            <i class="fas fa-video fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h5 class="card-title">Total Views</h5>
+                                                <h3 id="creatorTotalViews">0</h3>
+                                            </div>
+                                            <i class="fas fa-eye fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h5 class="card-title">Total Earnings</h5>
+                                                <h3 id="creatorTotalEarnings">$0</h3>
+                                            </div>
+                                            <i class="fas fa-dollar-sign fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h5 class="card-title">Monthly Earnings</h5>
+                                                <h3 id="creatorMonthlyEarnings">$0</h3>
+                                            </div>
+                                            <i class="fas fa-chart-line fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
                             <div>
                                 <h2 class="mb-1">My Videos</h2>
                                 <p class="text-muted mb-0" id="myVideosCount">Loading videos...</p>
                             </div>
-                            <div class="btn-toolbar" role="toolbar">
-                                <div class="btn-group me-2" role="group" aria-label="My video filters">
-                                    <button class="btn btn-outline-primary active" onclick="filterMyVideos('all')" data-filter="all">
-                                        <i class="fas fa-th me-1"></i>All
-                                    </button>
-                                    <button class="btn btn-outline-success" onclick="filterMyVideos('free')" data-filter="free">
-                                        <i class="fas fa-gift me-1"></i>Free
-                                    </button>
-                                    <button class="btn btn-outline-warning" onclick="filterMyVideos('paid')" data-filter="paid">
-                                        <i class="fas fa-dollar-sign me-1"></i>Paid
-                                    </button>
-                                    <button class="btn btn-outline-danger" onclick="filterMyVideos('youtube')" data-filter="youtube">
-                                        <i class="fab fa-youtube me-1"></i>YouTube
-                                    </button>
-                                </div>
-                                <button class="btn btn-primary" onclick="event.preventDefault(); showPanel('upload'); return false;">
-                                    <i class="fas fa-plus me-1"></i>Upload
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Search and Sort -->
-                        <div class="row mb-4">
-                            <div class="col-md-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-search"></i>
-                                    </span>
-                                    <input type="text" class="form-control" placeholder="Search my videos..." id="myVideoSearchInput" onkeyup="searchMyVideos()">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <select class="form-select" id="myVideoSortSelect" onchange="sortMyVideos()">
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                    <option value="price-low">Price: Low to High</option>
-                                    <option value="price-high">Price: High to Low</option>
-                                    <option value="title">Title A-Z</option>
-                                    <option value="views">Most Viewed</option>
-                                </select>
-                            </div>
+                            <button class="btn btn-primary" onclick="event.preventDefault(); showPanel('upload'); return false;">
+                                <i class="fas fa-plus me-1"></i>Upload
+                            </button>
                         </div>
 
                         <div class="row" id="myVideosContainer">
@@ -889,6 +1068,692 @@
         </div>
     </div>
 
+                    <!-- Account Settings Panel -->
+                    <div id="profilePanel" class="panel" style="display: none;">
+                        <!-- Panel Header -->
+                        <div class="panel-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h1 class="panel-title">Account Settings</h1>
+                                    <p class="panel-subtitle">Manage your profile and account preferences</p>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <button class="action-btn secondary" onclick="refreshAccountSettings()">
+                                        <i class="fas fa-sync-alt"></i>Refresh
+                                    </button>
+                                    <button class="action-btn" onclick="saveAllAccountSettings()">
+                                        <i class="fas fa-save"></i>Save All Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Navigation Tabs -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body p-0">
+                                        <nav class="nav nav-pills nav-fill">
+                                            <button class="nav-link active" onclick="showSettingsTab('profile')" id="profileTab">
+                                                <i class="fas fa-user me-2"></i>Profile
+                                            </button>
+                                            <button class="nav-link" onclick="showSettingsTab('security')" id="securityTab">
+                                                <i class="fas fa-shield-alt me-2"></i>Security
+                                            </button>
+                                            <button class="nav-link" onclick="showSettingsTab('preferences')" id="preferencesTab">
+                                                <i class="fas fa-cog me-2"></i>Preferences
+                                            </button>
+                                            <button class="nav-link" onclick="showSettingsTab('privacy')" id="privacyTab">
+                                                <i class="fas fa-lock me-2"></i>Privacy
+                                            </button>
+                                            <button class="nav-link" onclick="showSettingsTab('billing')" id="billingTab" style="display: none;">
+                                                <i class="fas fa-credit-card me-2"></i>Billing
+                                            </button>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Profile Settings Tab -->
+                        <div id="profileSettingsTab" class="settings-tab">
+                            <div class="row">
+                                <!-- Profile Information -->
+                                <div class="col-lg-8">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-user-circle me-2 text-primary"></i>Profile Information
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="profileForm">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Full Name *</label>
+                                                        <input type="text" class="form-control" id="profileName" placeholder="Enter your full name">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Username</label>
+                                                        <input type="text" class="form-control" id="profileUsername" placeholder="Enter username" readonly>
+                                                        <small class="text-muted">Username cannot be changed</small>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Email Address *</label>
+                                                        <input type="email" class="form-control" id="profileEmail" readonly>
+                                                        <small class="text-muted">Contact support to change email</small>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Phone Number</label>
+                                                        <input type="tel" class="form-control" id="profilePhone" placeholder="+1 (555) 123-4567">
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Bio / About</label>
+                                                    <textarea class="form-control" id="profileBio" rows="4" placeholder="Tell us about yourself..." maxlength="500"></textarea>
+                                                    <div class="form-text d-flex justify-content-between">
+                                                        <span>Brief description about yourself</span>
+                                                        <span class="text-muted"><span id="bioCharCount">0</span>/500</span>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Location</label>
+                                                        <input type="text" class="form-control" id="profileLocation" placeholder="City, Country">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Website</label>
+                                                        <input type="url" class="form-control" id="profileWebsite" placeholder="https://example.com">
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Date of Birth</label>
+                                                        <input type="date" class="form-control" id="profileDob">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Gender</label>
+                                                        <select class="form-select" id="profileGender">
+                                                            <option value="">Select gender</option>
+                                                            <option value="male">Male</option>
+                                                            <option value="female">Female</option>
+                                                            <option value="other">Other</option>
+                                                            <option value="prefer_not_to_say">Prefer not to say</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Profile Picture & Stats -->
+                                <div class="col-lg-4">
+                                    <!-- Profile Picture -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-camera me-2 text-success"></i>Profile Picture
+                                            </h6>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <div class="profile-avatar-large mb-3" id="profileAvatarLarge">
+                                                A
+                                            </div>
+                                            <p class="text-muted mb-3">Upload a new profile picture</p>
+                                            <input type="file" class="form-control mb-3" id="avatarUpload" accept="image/*" onchange="previewAvatar(this)">
+                                            <button class="btn btn-success w-100 mb-2" onclick="uploadAvatar()">
+                                                <i class="fas fa-upload me-1"></i>Upload Photo
+                                            </button>
+                                            <button class="btn btn-outline-danger w-100" onclick="removeAvatar()">
+                                                <i class="fas fa-trash me-1"></i>Remove Photo
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Account Stats -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-chart-pie me-2 text-info"></i>Account Statistics
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Member Since:</span>
+                                                <span class="fw-semibold" id="memberSince">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Last Login:</span>
+                                                <span class="fw-semibold" id="lastLogin">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Account Type:</span>
+                                                <span class="badge bg-primary" id="accountType">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted">Profile Views:</span>
+                                                <span class="fw-semibold" id="profileViews">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Settings Tab -->
+                        <div id="securitySettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <!-- Password Management -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-key me-2 text-warning"></i>Password Management
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="passwordForm">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">Current Password *</label>
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control" id="currentPassword" placeholder="Enter current password">
+                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword')">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">New Password *</label>
+                                                        <div class="input-group">
+                                                            <input type="password" class="form-control" id="newPassword" placeholder="Enter new password">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword')">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
+                                                        <div class="password-strength mt-2">
+                                                            <div class="progress" style="height: 5px;">
+                                                                <div class="progress-bar" role="progressbar" id="passwordStrength" style="width: 0%"></div>
+                                                            </div>
+                                                            <small class="text-muted" id="passwordStrengthText">Password strength</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">Confirm New Password *</label>
+                                                        <div class="input-group">
+                                                            <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm new password">
+                                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword')">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="alert alert-info">
+                                                    <h6><i class="fas fa-info-circle me-2"></i>Password Requirements:</h6>
+                                                    <ul class="mb-0">
+                                                        <li>At least 8 characters long</li>
+                                                        <li>Include uppercase and lowercase letters</li>
+                                                        <li>Include at least one number</li>
+                                                        <li>Include at least one special character</li>
+                                                    </ul>
+                                                </div>
+                                                <button type="button" class="btn btn-warning" onclick="updatePassword()">
+                                                    <i class="fas fa-key me-2"></i>Update Password
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <!-- Two-Factor Authentication -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-shield-alt me-2 text-success"></i>Two-Factor Authentication
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <div>
+                                                    <h6 class="mb-1">Two-Factor Authentication</h6>
+                                                    <p class="text-muted mb-0">Add an extra layer of security to your account</p>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="enable2FA">
+                                                    <label class="form-check-label" for="enable2FA"></label>
+                                                </div>
+                                            </div>
+                                            <div id="2faSetup" style="display: none;">
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    Setting up 2FA will require you to use an authenticator app on your phone.
+                                                </div>
+                                                <button class="btn btn-success" onclick="setup2FA()">
+                                                    <i class="fas fa-qrcode me-2"></i>Setup Two-Factor Authentication
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4">
+                                    <!-- Login Activity -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-history me-2 text-primary"></i>Recent Login Activity
+                                            </h6>
+                                        </div>
+                                        <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                                            <div id="loginActivity">
+                                                <div class="text-center text-muted">
+                                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading activity...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Security Actions -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-tools me-2 text-danger"></i>Security Actions
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <button class="btn btn-outline-primary w-100 mb-2" onclick="downloadLoginData()">
+                                                <i class="fas fa-download me-1"></i>Download Login Data
+                                            </button>
+                                            <button class="btn btn-outline-warning w-100 mb-2" onclick="logoutAllDevices()">
+                                                <i class="fas fa-sign-out-alt me-1"></i>Logout All Devices
+                                            </button>
+                                            <button class="btn btn-outline-danger w-100" onclick="deactivateAccount()">
+                                                <i class="fas fa-user-times me-1"></i>Deactivate Account
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preferences Settings Tab -->
+                        <div id="preferencesSettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <!-- Notification Preferences -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-bell me-2 text-info"></i>Notification Preferences
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Email Notifications</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="emailNewVideos" checked>
+                                                    <label class="form-check-label" for="emailNewVideos">
+                                                        New video uploads from creators you follow
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="emailPurchases" checked>
+                                                    <label class="form-check-label" for="emailPurchases">
+                                                        Purchase confirmations and receipts
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="emailMarketing">
+                                                    <label class="form-check-label" for="emailMarketing">
+                                                        Marketing and promotional emails
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="emailSecurity" checked>
+                                                    <label class="form-check-label" for="emailSecurity">
+                                                        Security alerts and account updates
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Push Notifications</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="pushNewContent" checked>
+                                                    <label class="form-check-label" for="pushNewContent">
+                                                        New content from subscribed creators
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="pushMessages">
+                                                    <label class="form-check-label" for="pushMessages">
+                                                        Direct messages and mentions
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <!-- Display & Language Settings -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-cog me-2 text-secondary"></i>Display & Language
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Theme Preference</label>
+                                                <select class="form-select" id="themePreference">
+                                                    <option value="light">Light Theme</option>
+                                                    <option value="dark">Dark Theme</option>
+                                                    <option value="auto">Auto (System)</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Language</label>
+                                                <select class="form-select" id="languagePreference">
+                                                    <option value="en">English</option>
+                                                    <option value="es">Spanish</option>
+                                                    <option value="fr">French</option>
+                                                    <option value="de">German</option>
+                                                    <option value="zh">Chinese</option>
+                                                    <option value="ja">Japanese</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Timezone</label>
+                                                <select class="form-select" id="timezonePreference">
+                                                    <option value="UTC">UTC</option>
+                                                    <option value="America/New_York">Eastern Time (ET)</option>
+                                                    <option value="America/Chicago">Central Time (CT)</option>
+                                                    <option value="America/Denver">Mountain Time (MT)</option>
+                                                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                                    <option value="Europe/London">London (GMT)</option>
+                                                    <option value="Europe/Paris">Paris (CET)</option>
+                                                    <option value="Asia/Tokyo">Tokyo (JST)</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Date Format</label>
+                                                <select class="form-select" id="dateFormat">
+                                                    <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+                                                    <option value="DD/MM/YYYY">DD/MM/YYYY (UK)</option>
+                                                    <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="showOnlineStatus" checked>
+                                                <label class="form-check-label" for="showOnlineStatus">
+                                                    Show online status to other users
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Content Preferences -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-video me-2 text-success"></i>Content Preferences
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Auto-play Videos</label>
+                                                <select class="form-select" id="autoplayPreference">
+                                                    <option value="always">Always</option>
+                                                    <option value="wifi">Only on WiFi</option>
+                                                    <option value="never">Never</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold">Default Video Quality</label>
+                                                <select class="form-select" id="videoQuality">
+                                                    <option value="auto">Auto</option>
+                                                    <option value="1080p">1080p</option>
+                                                    <option value="720p">720p</option>
+                                                    <option value="480p">480p</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="matureContent">
+                                                <label class="form-check-label" for="matureContent">
+                                                    Show mature content (18+)
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Settings Tab -->
+                        <div id="privacySettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-user-shield me-2 text-primary"></i>Privacy Controls
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Profile Visibility</h6>
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="radio" name="profileVisibility" id="profilePublic" value="public" checked>
+                                                    <label class="form-check-label" for="profilePublic">
+                                                        <strong>Public</strong> - Anyone can view your profile
+                                                    </label>
+                                                </div>
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="radio" name="profileVisibility" id="profileMembers" value="members">
+                                                    <label class="form-check-label" for="profileMembers">
+                                                        <strong>Members Only</strong> - Only registered users can view your profile
+                                                    </label>
+                                                </div>
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="radio" name="profileVisibility" id="profilePrivate" value="private">
+                                                    <label class="form-check-label" for="profilePrivate">
+                                                        <strong>Private</strong> - Only you can view your profile
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Data Collection</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="analyticsOptIn" checked>
+                                                    <label class="form-check-label" for="analyticsOptIn">
+                                                        Allow analytics data collection to improve our service
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="personalizedAds">
+                                                    <label class="form-check-label" for="personalizedAds">
+                                                        Allow personalized advertisements
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="thirdPartySharing">
+                                                    <label class="form-check-label" for="thirdPartySharing">
+                                                        Allow data sharing with trusted third-party services
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <h6 class="fw-semibold mb-3">Communication Preferences</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="allowDirectMessages" checked>
+                                                    <label class="form-check-label" for="allowDirectMessages">
+                                                        Allow other users to send you direct messages
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="allowComments" checked>
+                                                    <label class="form-check-label" for="allowComments">
+                                                        Allow comments on your content
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Data Management -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-database me-2 text-warning"></i>Data Management
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-outline-primary w-100 mb-3" onclick="exportUserData()">
+                                                        <i class="fas fa-download me-2"></i>Download My Data
+                                                    </button>
+                                                    <p class="text-muted small">Export all your account data in JSON format</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-outline-warning w-100 mb-3" onclick="requestDataDeletion()">
+                                                        <i class="fas fa-trash me-2"></i>Request Data Deletion
+                                                    </button>
+                                                    <p class="text-muted small">Permanently delete your account and all associated data</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4">
+                                    <!-- Privacy Summary -->
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-eye me-2 text-info"></i>Privacy Summary
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Profile Visibility:</span>
+                                                <span class="badge bg-success" id="privacySummaryProfile">Public</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Data Collection:</span>
+                                                <span class="badge bg-primary" id="privacySummaryData">Enabled</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Direct Messages:</span>
+                                                <span class="badge bg-success" id="privacySummaryMessages">Allowed</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted">Third-party Sharing:</span>
+                                                <span class="badge bg-secondary" id="privacySummarySharing">Disabled</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Privacy Tips -->
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-lightbulb me-2 text-warning"></i>Privacy Tips
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="alert alert-info">
+                                                <small>
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    <strong>Tip:</strong> Keep your profile private if you prefer not to be discoverable by other users.
+                                                </small>
+                                            </div>
+                                            <div class="alert alert-warning">
+                                                <small>
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    <strong>Note:</strong> Some features may not work properly with strict privacy settings.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Billing Settings Tab (for creators/admins) -->
+                        <div id="billingSettingsTab" class="settings-tab" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <div class="card border-0 shadow-sm mb-4">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-credit-card me-2 text-success"></i>Payment Methods
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="paymentMethods">
+                                                <div class="text-center text-muted py-4">
+                                                    <i class="fas fa-credit-card fa-3x mb-3"></i>
+                                                    <p>No payment methods added yet</p>
+                                                    <button class="btn btn-primary" onclick="addPaymentMethod()">
+                                                        <i class="fas fa-plus me-2"></i>Add Payment Method
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-file-invoice me-2 text-primary"></i>Billing History
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="text-center text-muted py-4">
+                                                <i class="fas fa-receipt fa-3x mb-3"></i>
+                                                <p>No billing history available</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-wallet me-2 text-info"></i>Billing Information
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Current Balance:</span>
+                                                <span class="fw-bold text-success">$0.00</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted">Total Spent:</span>
+                                                <span class="fw-semibold">$0.00</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted">Total Earned:</span>
+                                                <span class="fw-semibold">$0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
     <!-- Toast Notification -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
         <div id="notificationToast" class="toast" role="alert">
@@ -903,6 +1768,36 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/youtube-api-client.js"></script>
     <script src="assets/js/dashboard.js"></script>
+    <script>
+        // Phoenix Admin Panel JavaScript
+        function toggleSidebarCollapse() {
+            const sidebar = document.querySelector('.phoenix-sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function updateCurrentDate() {
+            const dateElement = document.getElementById('currentDate');
+            if (dateElement) {
+                const now = new Date();
+                const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                dateElement.textContent = now.toLocaleDateString('en-US', options);
+            }
+        }
+
+        // Initialize Phoenix features
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCurrentDate();
+            
+            // Handle active navigation states
+            const navLinks = document.querySelectorAll('.phoenix-nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        });
+    </script>
 
 
 </body>

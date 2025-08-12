@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require_once 'config.php';
@@ -44,7 +43,7 @@ function handleGetProfile() {
     $conn = getConnection();
     
     try {
-        $stmt = $conn->prepare("SELECT id, name, email, role, bio, website, profile_picture, created_at FROM users WHERE id = ?");
+        $stmt = $conn->prepare("SELECT id, name, email, role, bio, website,  created_at, updated_at FROM users WHERE id = ?");
         $stmt->bind_param("s", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -52,9 +51,17 @@ function handleGetProfile() {
         if ($result->num_rows === 1) {
             $profile = $result->fetch_assoc();
             
+            // Parse JSON fields
+
+
+            
             // Get user statistics based on role
             $stats = getUserStats($user_id, $profile['role']);
             $profile['stats'] = $stats;
+            
+            // Add computed fields
+            $profile['member_since_formatted'] = formatDate($profile['created_at']);
+            $profile['profile_completion'] = calculateProfileCompletion($profile);
             
             echo json_encode([
                 'success' => true,
@@ -72,6 +79,26 @@ function handleGetProfile() {
     }
 }
 
+function calculateProfileCompletion($profile) {
+    $fields = ['name', 'email', 'bio', 'location', 'phone'];
+    $completed = 0;
+    
+    foreach ($fields as $field) {
+        if (!empty($profile[$field])) {
+            $completed++;
+        }
+    }
+    
+    return round(($completed / count($fields)) * 100);
+}
+
+function formatDate($dateString) {
+    if (!$dateString) return 'Unknown';
+    
+    $date = new DateTime($dateString);
+    return $date->format('M j, Y');
+}
+
 function handleUpdateProfile($input) {
     global $user_id;
     
@@ -84,10 +111,20 @@ function handleUpdateProfile($input) {
     $conn = getConnection();
     
     try {
+        // Handle password update
+        if (isset($input['action']) && $input['action'] === 'update_password') {
+            handlePasswordUpdate($input, $user_id, $conn);
+            return;
+        }
+        
         // Validate and sanitize input
         $name = isset($input['name']) ? trim($input['name']) : '';
+        $phone = isset($input['phone']) ? trim($input['phone']) : '';
         $bio = isset($input['bio']) ? trim($input['bio']) : '';
         $website = isset($input['website']) ? trim($input['website']) : '';
+        $location = isset($input['location']) ? trim($input['location']) : '';
+        $date_of_birth = isset($input['date_of_birth']) ? $input['date_of_birth'] : null;
+        $gender = isset($input['gender']) ? $input['gender'] : '';
         
         if (empty($name)) {
             http_response_code(400);
@@ -102,20 +139,69 @@ function handleUpdateProfile($input) {
             return;
         }
         
+        // Validate bio length
+        if (strlen($bio) > 500) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Bio must be less than 500 characters']);
+            return;
+        }
+        
+        // Update user profile - First check if columns exist, add if they don't
+        $columns_to_add = [
+            'phone' => 'VARCHAR(20)',
+            'location' => 'VARCHAR(100)',
+            'date_of_birth' => 'DATE',
+            'gender' => 'ENUM("male", "female", "other", "prefer_not_to_say")',
+            'preferences' => 'JSON',
+            'privacy_settings' => 'JSON'
+        ];
+        
+        foreach ($columns_to_add as $column => $type) {
+            $check_column = $conn->query("SHOW COLUMNS FROM users LIKE '$column'");
+            if ($check_column->num_rows == 0) {
+                $conn->query("ALTER TABLE users ADD COLUMN $column $type");
+            }
+        }
+        
+        // Prepare preferences and privacy settings JSON
+        $preferences = json_encode([
+            'theme' => $input['theme'] ?? 'light',
+            'language' => $input['language'] ?? 'en',
+            'timezone' => $input['timezone'] ?? 'UTC',
+            'date_format' => $input['date_format'] ?? 'MM/DD/YYYY',
+            'email_notifications' => $input['email_notifications'] ?? [],
+            'push_notifications' => $input['push_notifications'] ?? []
+        ]);
+        
+        $privacy_settings = json_encode([
+            'profile_visibility' => $input['profile_visibility'] ?? 'public',
+            'analytics_opt_in' => $input['analytics_opt_in'] ?? true,
+            'allow_direct_messages' => $input['allow_direct_messages'] ?? true,
+            'third_party_sharing' => $input['third_party_sharing'] ?? false
+        ]);
+        
         // Update user profile
-        $stmt = $conn->prepare("UPDATE users SET name = ?, bio = ?, website = ? WHERE id = ?");
-        $stmt->bind_param("ssss", $name, $bio, $website, $user_id);
+        $stmt = $conn->prepare("UPDATE users SET name = ?, phone = ?, bio = ?, website = ?, location = ?, date_of_birth = ?, gender = ?, preferences = ?, privacy_settings = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("ssssssssss", $name, $phone, $bio, $website, $location, $date_of_birth, $gender, $preferences, $privacy_settings, $user_id);
         
         if ($stmt->execute()) {
             // Update session data
             $_SESSION['user']['name'] = $name;
             
             // Get updated profile
-            $stmt = $conn->prepare("SELECT id, name, email, role, bio, website, profile_picture, created_at FROM users WHERE id = ?");
+            $stmt = $conn->prepare("SELECT id, name, email, role, phone, bio, website, location, date_of_birth, gender, preferences, privacy_settings, profile_picture, created_at, updated_at FROM users WHERE id = ?");
             $stmt->bind_param("s", $user_id);
             $stmt->execute();
             $result = $stmt->get_result();
             $profile = $result->fetch_assoc();
+            
+            // Parse JSON fields
+            if ($profile['preferences']) {
+                $profile['preferences'] = json_decode($profile['preferences'], true);
+            }
+            if ($profile['privacy_settings']) {
+                $profile['privacy_settings'] = json_decode($profile['privacy_settings'], true);
+            }
             
             echo json_encode([
                 'success' => true,
@@ -131,6 +217,67 @@ function handleUpdateProfile($input) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     } finally {
         $conn->close();
+    }
+}
+
+function handlePasswordUpdate($input, $user_id, $conn) {
+    $current_password = $input['current_password'] ?? '';
+    $new_password = $input['new_password'] ?? '';
+    
+    if (empty($current_password) || empty($new_password)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Current password and new password are required']);
+        return;
+    }
+    
+    // Validate new password strength
+    if (strlen($new_password) < 8) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'New password must be at least 8 characters long']);
+        return;
+    }
+    
+    try {
+        // Get current password hash
+        $stmt = $conn->prepare("SELECT password FROM users WHERE id = ?");
+        $stmt->bind_param("s", $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows !== 1) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'User not found']);
+            return;
+        }
+        
+        $user = $result->fetch_assoc();
+        
+        // Verify current password
+        if (!password_verify($current_password, $user['password'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+            return;
+        }
+        
+        // Hash new password
+        $new_password_hash = password_hash($new_password, PASSWORD_DEFAULT);
+        
+        // Update password
+        $stmt = $conn->prepare("UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("ss", $new_password_hash, $user_id);
+        
+        if ($stmt->execute()) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Password updated successfully'
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to update password']);
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     }
 }
 

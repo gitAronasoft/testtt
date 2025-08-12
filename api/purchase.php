@@ -60,7 +60,8 @@ function handleGetPurchases($user_id) {
             'video_id' => $row['video_id'],
             'title' => $row['title'],
             'description' => $row['description'],
-            'price' => (float)$row['price'],
+            'price' => (float)$row['amount'], // Use amount field for accurate spending calculation
+            'video_price' => (float)$row['price'], // Original video price
             'category' => $row['category'],
             'uploader' => $row['uploader'],
             'purchased_at' => $row['created_at']

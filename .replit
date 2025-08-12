@@ -1,5 +1,5 @@
 run = "php -S 0.0.0.0:8000 -t ."
-modules = ["web", "nodejs-20", "php-8.2", "nix", "python-3.11"]
+modules = ["web", "php-8.2", "nodejs-20", "python-3.11"]
 
 [nix]
 channel = "stable-25_05"
@@ -70,3 +70,6 @@ waitForPort = 8000
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[agent]
+expertMode = true

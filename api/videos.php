@@ -346,115 +346,78 @@ function handleUploadVideo() {
 }
 
 function handleUpdateVideo() {
-    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    parse_str(file_get_contents('php://input'), $input);
 
-    if (strpos($contentType, 'application/json') !== false) {
-        $input = json_decode(file_get_contents('php://input'), true);
-    } else {
-        parse_str(file_get_contents("php://input"), $input);
-    }
-
-    $video_id = $input['id'] ?? null;
-    $youtube_id = $input['youtube_id'] ?? null; // Added for YouTube ID based updates
-
-    // For price updates by YouTube ID, we don't need a regular video ID
-    if (!$video_id && !$youtube_id) {
+    if (!isset($input['action'])) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Video ID or YouTube ID is required']);
+        echo json_encode(['success' => false, 'message' => 'Missing action parameter']);
         return;
     }
 
+    $action = $input['action'];
     $conn = getConnection();
 
-    // For YouTube ID updates, handle differently
-    if (isset($input['action']) && $input['action'] === 'update_price' && $youtube_id && !$video_id) {
-        // Direct price update by YouTube ID - skip ownership check here, handle in the action
-        $video = ['uploader_id' => $_SESSION['user']['id']]; // Assume ownership for YouTube uploads
-    } else {
-        // Check if user owns the video or is admin for regular video ID updates
-        if (!$video_id) {
-            echo json_encode(['success' => false, 'message' => 'Video ID is required for this operation']);
-            $conn->close();
+    if ($action === 'increment_views') {
+        if (!isset($input['id'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing video ID']);
             return;
         }
 
-        $check_owner = $conn->prepare("SELECT uploader_id FROM videos WHERE id = ?");
-        $check_owner->bind_param("i", $video_id);
-        $check_owner->execute();
-        $result = $check_owner->get_result();
+        $video_id = intval($input['id']);
+        $sql = "UPDATE videos SET views = views + 1 WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $video_id);
 
-        if ($result->num_rows === 0) {
-            echo json_encode(['success' => false, 'message' => 'Video not found']);
-            $conn->close();
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Views incremented']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to increment views']);
+        }
+
+        $stmt->close();
+    } else if ($action === 'update_price') {
+        if (!isset($input['youtube_id']) || !isset($input['price'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing youtube_id or price']);
             return;
         }
 
-        $video = $result->fetch_assoc();
-    }
-
-    // Allow view increment for all authenticated users, other actions require ownership/admin
-    $is_view_increment = isset($input['action']) && $input['action'] === 'increment_views';
-
-    if (!$is_view_increment && $video['uploader_id'] !== $_SESSION['user']['id'] && $_SESSION['user']['role'] !== 'admin') {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Not authorized to edit this video']);
-        $conn->close();
-        return;
-    }
-
-    // Handle different update actions
-    if (isset($input['action']) && $input['action'] === 'increment_views') {
-        // Allow any authenticated user to increment view count
-        $update_views = $conn->prepare("UPDATE videos SET views = views + 1 WHERE id = ?");
-        $update_views->bind_param("i", $video_id);
-        $update_views->execute();
-
-        echo json_encode(['success' => true, 'message' => 'View count updated']);
-    } else if (isset($input['action']) && $input['action'] === 'update_price' && isset($input['youtube_id'])) {
-        // Update video price by YouTube ID
         $youtube_id = $input['youtube_id'];
         $price = floatval($input['price']);
 
-        if ($price < 0) {
-            echo json_encode(['success' => false, 'message' => 'Price cannot be negative']);
+        // Check if user owns this video
+        $check_sql = "SELECT id FROM videos WHERE youtube_id = ? AND uploader_id = ?";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("si", $youtube_id, $_SESSION['user']['id']);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+
+        if ($check_result->num_rows === 0) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Video not found or access denied']);
+            $check_stmt->close();
             $conn->close();
             return;
         }
 
-        $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE youtube_id = ? AND uploader_id = ?");
-        $update_price->bind_param("dsi", $price, $youtube_id, $_SESSION['user']['id']);
+        $check_stmt->close();
 
-        if ($update_price->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Video price updated']);
+        // Update price
+        $update_sql = "UPDATE videos SET price = ? WHERE youtube_id = ? AND uploader_id = ?";
+        $update_stmt = $conn->prepare($update_sql);
+        $update_stmt->bind_param("dsi", $price, $youtube_id, $_SESSION['user']['id']);
+
+        if ($update_stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Price updated successfully']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to update price']);
         }
-    } else if (isset($input['price']) || isset($input['action']) && $input['action'] === 'update_price') {
-        // Update video price by video ID or YouTube ID
-        $price = floatval($input['price'] ?? 0);
-        if ($price < 0) {
-            echo json_encode(['success' => false, 'message' => 'Price cannot be negative']);
-            $conn->close();
-            return;
-        }
 
-        // Check if updating by YouTube ID
-        if (isset($input['youtube_id'])) {
-            $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE youtube_id = ? AND uploader_id = ?");
-            $update_price->bind_param("dsi", $price, $input['youtube_id'], $_SESSION['user']['id']);
-        } else {
-            // Update by video ID
-            $update_price = $conn->prepare("UPDATE videos SET price = ? WHERE id = ? AND uploader_id = ?");
-            $update_price->bind_param("dii", $price, $video_id, $_SESSION['user']['id']);
-        }
-
-        if ($update_price->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Video price updated successfully']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to update price']);
-        }
+        $update_stmt->close();
     } else {
-        echo json_encode(['success' => false, 'message' => 'No valid update action specified']);
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid action']);
     }
 
     $conn->close();

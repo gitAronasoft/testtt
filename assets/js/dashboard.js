@@ -190,10 +190,12 @@ async function checkAuth() {
             currentUser = data.user;
             localStorage.setItem("currentUser", JSON.stringify(data.user));
             setupUserRole();
-            setupDashboard();
 
-            // Load all required data once
+            // Load all required data first
             await loadAllDashboardData();
+            
+            // Then setup dashboard with data ready
+            await setupDashboard();
         } else {
             localStorage.removeItem("currentUser");
             window.location.href = "login.html";
@@ -232,6 +234,7 @@ async function loadAllDashboardData() {
         } else if (currentUser.role === 'creator' || currentUser.role === 'editor') {
             loadPromises.push(
                 makeApiCall('my_videos', 'api/videos.php?filter=my_videos'),
+                makeApiCall('videos', 'api/videos.php'), // Load all videos for creator context
                 makeApiCall('earnings', 'api/earnings.php?action=earnings'),
                 makeApiCall('transactions', 'api/earnings.php?action=transactions'),
                 makeApiCall('paid_users', 'api/earnings.php?action=paid_users')
@@ -250,8 +253,8 @@ async function loadAllDashboardData() {
         results.forEach((result, index) => {
             if (result.status === 'fulfilled') {
                 const data = result.value;
-                if (data.success) {
-                    // Store data based on the API endpoint
+                if (data && data.success) {
+                    // Store data based on the API endpoint response structure
                     if (data.analytics) dashboardData.analytics = data.analytics;
                     if (data.users) dashboardData.users = data.users;
                     if (data.videos) dashboardData.videos = data.videos;
@@ -259,6 +262,17 @@ async function loadAllDashboardData() {
                     if (data.earnings) dashboardData.earnings = data.earnings;
                     if (data.transactions) dashboardData.transactions = data.transactions;
                     if (data.paid_users) dashboardData.paid_users = data.paid_users;
+                    
+                    // Debug logging to verify data loading
+                    console.log('API data loaded:', {
+                        hasAnalytics: !!data.analytics,
+                        hasUsers: !!data.users,
+                        hasVideos: !!data.videos,
+                        hasPurchases: !!data.purchases,
+                        hasEarnings: !!data.earnings,
+                        hasTransactions: !!data.transactions,
+                        hasPaidUsers: !!data.paid_users
+                    });
                 }
             } else {
                 console.warn('API call failed:', result.reason);
@@ -343,7 +357,7 @@ function setupUserRole() {
     document.body.className = `bg-light role-${currentUser.role}`;
 }
 
-function setupDashboard() {
+async function setupDashboard() {
     const urlParams = new URLSearchParams(window.location.search);
     let defaultPanel = urlParams.get("panel");
 
@@ -353,9 +367,9 @@ function setupDashboard() {
         } else if (currentUser.role === "editor" || currentUser.role === "creator") {
             defaultPanel = "myVideos";
         } else if (currentUser.role === "admin") {
-            defaultPanel = "overview";
+            defaultPanel = "videos";
         } else {
-            defaultPanel = "overview";
+            defaultPanel = "myVideos";
         }
     }
 
@@ -365,13 +379,14 @@ function setupDashboard() {
         } else if (currentUser.role === "editor" || currentUser.role === "creator") {
             defaultPanel = "myVideos";
         } else if (currentUser.role === "admin") {
-            defaultPanel = "overview";
+            defaultPanel = "videos";
         } else {
-            defaultPanel = "overview";
+            defaultPanel = "videos";
         }
     }
 
-    showPanel(defaultPanel);
+    // Ensure data is loaded before showing the default panel
+    await showPanel(defaultPanel);
 
     const uploadForm = document.getElementById("uploadForm");
     if (uploadForm) {
@@ -404,6 +419,19 @@ async function showPanel(panelName) {
         return;
     }
 
+    // Show loading while ensuring data is loaded
+    showLoading(true);
+
+    // Ensure all data is loaded before rendering
+    if (apiCallsInProgress.has('loadAllData') || dataLoadingPromises.size > 0) {
+        // Wait for data loading to complete
+        try {
+            await Promise.all(Array.from(dataLoadingPromises.values()));
+        } catch (error) {
+            console.warn('Some data loading promises failed:', error);
+        }
+    }
+
     // Hide all panels and show selected one
     requestAnimationFrame(() => {
         const panels = document.querySelectorAll(".panel");
@@ -416,6 +444,7 @@ async function showPanel(panelName) {
             selectedPanel.style.display = "block";
         } else {
             console.error(`Panel not found: ${panelName}Panel`);
+            showLoading(false);
             return;
         }
 
@@ -433,49 +462,64 @@ async function showPanel(panelName) {
 
     window.currentPanelName = panelName;
 
-    // Render data for the specific panel using already loaded data
-    switch (panelName) {
-        case "overview":
-            renderOverviewStats();
-            break;
-        case "videos":
-            renderVideos(allVideos);
-            break;
-        case "users":
-            if (currentUser.role === "admin" && dashboardData.users) {
-                renderUsers(dashboardData.users);
-            }
-            break;
-        case "myVideos":
-            if (dashboardData.videos) {
-                const myVideos = dashboardData.videos.filter(video => 
-                    video.uploader_id == currentUser.id
-                );
-                renderMyVideosFromDatabase(myVideos);
-            }
-            break;
-        case "upload":
-            document.getElementById('uploadPanel').style.display = 'block';
-            updateUploadPanelStatus();
-            break;
-        case "purchases":
-            if (currentUser.role === "viewer" && dashboardData.purchases) {
-                renderPurchases(dashboardData.purchases);
-            }
-            break;
-        case "earnings":
-            if ((currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator") && dashboardData.earnings) {
-                renderEarnings(dashboardData.earnings);
-            }
-            break;
-        case "analytics":
-            if (currentUser.role === "admin" && dashboardData.analytics) {
-                renderAnalytics(dashboardData.analytics);
-            }
-            break;
-        default:
-            console.warn(`Unknown panel: ${panelName}`);
-            break;
+    // Render data for the specific panel using loaded data
+    try {
+        switch (panelName) {
+            case "videos":
+                if (currentUser.role === "viewer") {
+                    updateViewerMetrics();
+                }
+                renderVideos(allVideos || []);
+                break;
+            case "users":
+                if (currentUser.role === "admin" && dashboardData.users) {
+                    renderUsers(dashboardData.users);
+                }
+                break;
+            case "myVideos":
+                if (dashboardData.videos) {
+                    const myVideos = dashboardData.videos.filter(video => 
+                        video.uploader_id == currentUser.id
+                    );
+                    updateCreatorMetrics(myVideos);
+                    renderMyVideosFromDatabase(myVideos);
+                } else {
+                    // Render empty state if no data
+                    updateCreatorMetrics([]);
+                    renderMyVideosFromDatabase([]);
+                }
+                break;
+            case "upload":
+                const uploadPanel = document.getElementById('uploadPanel');
+                if (uploadPanel) {
+                    uploadPanel.style.display = 'block';
+                }
+                updateUploadPanelStatus();
+                break;
+            case "purchases":
+                if (currentUser.role === "viewer") {
+                    renderPurchases(dashboardData.purchases || []);
+                }
+                break;
+            case "earnings":
+                if ((currentUser.role === "editor" || currentUser.role === "admin" || currentUser.role === "creator")) {
+                    renderEarnings(dashboardData.earnings || { total_earnings: 0, monthly_earnings: 0, pending_earnings: 0 });
+                }
+                break;
+            case "analytics":
+                if (currentUser.role === "admin" && dashboardData.analytics) {
+                    renderAnalytics(dashboardData.analytics);
+                }
+                break;
+            default:
+                console.warn(`Unknown panel: ${panelName}`);
+                break;
+        }
+    } catch (error) {
+        console.error('Error rendering panel:', error);
+        showNotification('Error loading panel data', 'error');
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -484,10 +528,10 @@ function hasPermissionForPanel(panelName) {
 
     const role = currentUser.role;
     const permissions = {
-        viewer: ["overview", "videos", "purchases"],
-        editor: ["overview", "myVideos", "upload", "earnings"],
-        creator: ["overview", "myVideos", "upload", "earnings"],
-        admin: ["overview", "videos", "myVideos", "upload", "earnings", "users", "analytics", "purchases"],
+        viewer: ["videos", "purchases", "profile"],
+        editor: ["myVideos", "upload", "earnings", "profile"],
+        creator: ["myVideos", "upload", "earnings", "profile"],
+        admin: ["videos", "myVideos", "upload", "earnings", "users", "analytics", "purchases", "profile"],
     };
 
     return permissions[role] && permissions[role].includes(panelName);
@@ -838,6 +882,9 @@ function renderEnhancedVideoActions(video, isYouTube = false) {
 }
 
 function renderMyVideosFromDatabase(videos) {
+    // Update metrics cards
+    updateCreatorMetrics(videos);
+    
     const container = document.getElementById("myVideosContainer");
     if (!container) return;
 
@@ -1376,15 +1423,757 @@ async function confirmPurchase() {
 // Upload functionality
 async function handleVideoUpload(event) {
     event.preventDefault();
-    // Upload implementation here - keeping existing logic
-    showNotification("Upload functionality maintained from original code", "info");
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    // Get form values
+    const title = form.videoTitle.value.trim();
+    const description = form.videoDescription.value.trim();
+    const price = parseFloat(form.videoPrice.value) || 0;
+    const category = form.videoCategory.value;
+    const file = form.videoFile.files[0];
+
+    // Validate
+    if (!title || !description) {
+        showNotification("❌ Please fill in title and description", "error");
+        return;
+    }
+
+    if (!file) {
+        showNotification("❌ Please select a video file", "error");
+        return;
+    }
+
+    // Validate file size (YouTube supports up to 256GB, but we'll set a reasonable limit)
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB for practical purposes
+    if (file.size > maxSize) {
+        showNotification("❌ File size must be less than 2GB", "error");
+        return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+        "video/mp4",
+        "video/webm",
+        "video/ogg",
+        "video/avi",
+        "video/mov",
+        "video/mkv",
+        "video/flv",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+        showNotification("❌ Please select a valid video file", "error");
+        return;
+    }
+
+    // Check if YouTube is connected for creators
+    if (
+        !window.youtubeAPI ||
+        !window.youtubeAPI.isInitialized ||
+        !window.youtubeAPI.isSignedIn()
+    ) {
+        showNotification(
+            "❌ Please connect to YouTube first to upload videos",
+            "error",
+        );
+        return;
+    }
+
+    // Show progress
+    const progressContainer = document.getElementById('uploadProgress');
+    const progressBar = progressContainer?.querySelector('.progress-bar');
+    const progressText = document.getElementById('uploadProgressText');
+    const loader = document.getElementById("loader");
+
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (loader) loader.style.display = 'block';
+
+    // Disable form inputs during upload
+    const formInputs = form.querySelectorAll("input, textarea, select, button");
+    formInputs.forEach((input) => (input.disabled = true));
+
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading to YouTube...';
+
+    try {
+        // Create progress update function
+        function updateProgress(progress) {
+            if (progressBar) {
+                progressBar.style.width = progress + '%';
+                progressBar.textContent = progress + '%';
+            }
+            if (progressText) {
+                progressText.textContent = `Uploading to YouTube: ${progress}%`;
+            }
+            submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Uploading: ${progress}%`;
+        }
+
+        // Upload video using the YouTube API client
+        const uploadResult = await window.youtubeAPI.uploadVideo(
+            file,
+            {
+                title: title,
+                description: description,
+                tags: [category],
+                categoryId: "22",
+                privacy: "unlisted",
+                price: price // Pass price to the upload function
+            },
+            (progress) => {
+                const mappedProgress = 40 + Math.round((progress / 100) * 50);
+                updateProgress(mappedProgress);
+            }
+        );
+
+        if (uploadResult.success) {
+            // Update price in database using proper PUT format
+            try {
+                const priceUpdateData = `action=update_price&youtube_id=${encodeURIComponent(uploadResult.video.id)}&price=${price}`;
+
+                const priceUpdateResponse = await fetch('api/videos.php', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    credentials: 'include',
+                    body: priceUpdateData
+                });
+
+                const priceResult = await priceUpdateResponse.json();
+                if (!priceResult.success) {
+                    console.warn('Failed to update price:', priceResult.message);
+                }
+            } catch (error) {
+                console.warn('Price update error:', error);
+            }
+
+            // Complete progress
+            if (progressBar) {
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+                progressBar.className = progressBar.className.replace('bg-primary', 'bg-success');
+            }
+            if (progressText) {
+                progressText.textContent = 'Upload completed successfully!';
+            }
+
+            showNotification(
+                "✅ Video uploaded to YouTube and synced to database successfully!",
+                "success",
+            );
+            form.reset();
+
+            // Hide progress after delay
+            setTimeout(() => {
+                if (progressContainer) progressContainer.style.display = 'none';
+                if (loader) loader.style.display = 'none';
+            }, 2000);
+
+            // Clear cache to force fresh data on next load
+            clearCache('my_videos');
+            clearCache('videos');
+
+            // Reload dashboard data
+            await loadAllDashboardData();
+
+            // Only refresh if user is currently viewing myVideos panel
+            if (window.currentPanelName === 'myVideos') {
+                // Add a small delay to ensure database is updated
+                setTimeout(() => {
+                    const myVideos = dashboardData.videos ? dashboardData.videos.filter(video => 
+                        video.uploader_id == currentUser.id
+                    ) : [];
+                    updateCreatorMetrics(myVideos);
+                    renderMyVideosFromDatabase(myVideos);
+                }, 1000);
+            }
+        } else {
+            throw new Error(uploadResult.error || "Upload failed");
+        }
+    } catch (error) {
+        console.error("Upload failed:", error);
+        showNotification("❌ Upload failed: " + error.message, "error");
+
+        // Hide progress
+        if (progressContainer) progressContainer.style.display = 'none';
+        if (loader) loader.style.display = 'none';
+    } finally {
+        // Re-enable form inputs
+        formInputs.forEach((input) => (input.disabled = false));
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+// Account Settings Functions
+let currentSettingsTab = 'profile';
+let accountSettingsData = {};
+
+// Main settings tab switcher
+function showSettingsTab(tabName) {
+    // Remove active class from all tabs
+    document.querySelectorAll('.nav-link').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Hide all tab content
+    document.querySelectorAll('.settings-tab').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName + 'Tab');
+    const selectedContent = document.getElementById(tabName + 'SettingsTab');
+    
+    if (selectedTab) selectedTab.classList.add('active');
+    if (selectedContent) selectedContent.style.display = 'block';
+    
+    currentSettingsTab = tabName;
+    
+    // Load tab-specific data
+    loadSettingsTabData(tabName);
+}
+
+// Load account settings data
+async function loadAccountSettings() {
+    try {
+        showLoading(true);
+        
+        const response = await makeApiCall('profile', 'api/profile.php');
+        
+        if (response.success && response.profile) {
+            accountSettingsData = response.profile;
+            populateAccountSettings(response.profile);
+        } else {
+            showNotification('Failed to load account settings', 'error');
+        }
+    } catch (error) {
+        console.error('Failed to load account settings:', error);
+        showNotification('Failed to load account settings', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Populate form fields with user data
+function populateAccountSettings(profile) {
+    // Profile tab
+    const profileName = document.getElementById('profileName');
+    const profileUsername = document.getElementById('profileUsername');
+    const profileEmail = document.getElementById('profileEmail');
+    const profilePhone = document.getElementById('profilePhone');
+    const profileBio = document.getElementById('profileBio');
+    const profileLocation = document.getElementById('profileLocation');
+    const profileWebsite = document.getElementById('profileWebsite');
+    const profileDob = document.getElementById('profileDob');
+    const profileGender = document.getElementById('profileGender');
+    
+    if (profileName) profileName.value = profile.name || '';
+    if (profileUsername) profileUsername.value = profile.email?.split('@')[0] || '';
+    if (profileEmail) profileEmail.value = profile.email || '';
+    if (profilePhone) profilePhone.value = profile.phone || '';
+    if (profileBio) {
+        profileBio.value = profile.bio || '';
+        updateBioCharCount();
+    }
+    if (profileLocation) profileLocation.value = profile.location || '';
+    if (profileWebsite) profileWebsite.value = profile.website || '';
+    if (profileDob) profileDob.value = profile.date_of_birth || '';
+    if (profileGender) profileGender.value = profile.gender || '';
+    
+    // Update avatar
+    const avatarLarge = document.getElementById('profileAvatarLarge');
+    if (avatarLarge) {
+        avatarLarge.textContent = (profile.name || 'U').charAt(0).toUpperCase();
+    }
+    
+    // Account stats
+    const memberSince = document.getElementById('memberSince');
+    const lastLogin = document.getElementById('lastLogin');
+    const accountType = document.getElementById('accountType');
+    const profileViews = document.getElementById('profileViews');
+    
+    if (memberSince) memberSince.textContent = formatDate(profile.created_at);
+    if (lastLogin) lastLogin.textContent = 'Now';
+    if (accountType) {
+        accountType.textContent = (profile.role || 'user').charAt(0).toUpperCase() + (profile.role || 'user').slice(1);
+        accountType.className = `badge bg-${getRoleBadgeColor(profile.role)}`;
+    }
+    if (profileViews) profileViews.textContent = profile.stats?.profile_views || '0';
+    
+    // Show billing tab for creators and admins
+    const billingTab = document.getElementById('billingTab');
+    if (billingTab && (profile.role === 'creator' || profile.role === 'admin' || profile.role === 'editor')) {
+        billingTab.style.display = 'block';
+    }
+}
+
+// Load tab-specific data
+function loadSettingsTabData(tabName) {
+    switch (tabName) {
+        case 'security':
+            loadSecurityData();
+            break;
+        case 'preferences':
+            loadPreferencesData();
+            break;
+        case 'privacy':
+            loadPrivacyData();
+            break;
+        case 'billing':
+            loadBillingData();
+            break;
+    }
+}
+
+// Security tab functions
+function loadSecurityData() {
+    // Load recent login activity
+    loadLoginActivity();
+}
+
+async function loadLoginActivity() {
+    const container = document.getElementById('loginActivity');
+    if (!container) return;
+    
+    try {
+        // Simulate loading activity data
+        setTimeout(() => {
+            container.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div>
+                        <div class="fw-medium">Current Session</div>
+                        <small class="text-muted">Chrome on Windows • Now</small>
+                    </div>
+                    <span class="badge bg-success">Active</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div>
+                        <div class="fw-medium">Previous Session</div>
+                        <small class="text-muted">Firefox on Mac • 2 hours ago</small>
+                    </div>
+                    <span class="badge bg-secondary">Ended</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <div>
+                        <div class="fw-medium">Mobile Session</div>
+                        <small class="text-muted">Safari on iPhone • Yesterday</small>
+                    </div>
+                    <span class="badge bg-secondary">Ended</span>
+                </div>
+            `;
+        }, 500);
+    } catch (error) {
+        container.innerHTML = '<div class="text-center text-muted">Failed to load activity</div>';
+    }
+}
+
+// Password management functions
+function togglePasswordVisibility(fieldId) {
+    const field = document.getElementById(fieldId);
+    const button = field.nextElementSibling.querySelector('i');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        button.className = 'fas fa-eye-slash';
+    } else {
+        field.type = 'password';
+        button.className = 'fas fa-eye';
+    }
+}
+
+function checkPasswordStrength(password) {
+    let strength = 0;
+    let feedback = [];
+    
+    // Length check
+    if (password.length >= 8) strength += 25;
+    else feedback.push('At least 8 characters');
+    
+    // Uppercase check
+    if (/[A-Z]/.test(password)) strength += 25;
+    else feedback.push('One uppercase letter');
+    
+    // Lowercase check
+    if (/[a-z]/.test(password)) strength += 25;
+    else feedback.push('One lowercase letter');
+    
+    // Number check
+    if (/[0-9]/.test(password)) strength += 25;
+    else feedback.push('One number');
+    
+    // Special character check
+    if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+    else feedback.push('One special character');
+    
+    return { strength: Math.min(strength, 100), feedback };
+}
+
+// Event listeners for password strength
+document.addEventListener('DOMContentLoaded', function() {
+    const newPasswordField = document.getElementById('newPassword');
+    if (newPasswordField) {
+        newPasswordField.addEventListener('input', function() {
+            const result = checkPasswordStrength(this.value);
+            const strengthBar = document.getElementById('passwordStrength');
+            const strengthText = document.getElementById('passwordStrengthText');
+            
+            if (strengthBar && strengthText) {
+                strengthBar.style.width = result.strength + '%';
+                
+                let colorClass = 'bg-danger';
+                let text = 'Weak';
+                
+                if (result.strength >= 75) {
+                    colorClass = 'bg-success';
+                    text = 'Strong';
+                } else if (result.strength >= 50) {
+                    colorClass = 'bg-warning';
+                    text = 'Medium';
+                } else if (result.strength >= 25) {
+                    colorClass = 'bg-warning';
+                    text = 'Fair';
+                }
+                
+                strengthBar.className = `progress-bar ${colorClass}`;
+                strengthText.textContent = `${text} (${result.strength}%)`;
+            }
+        });
+    }
+});
+
+// Bio character counter
+function updateBioCharCount() {
+    const bioField = document.getElementById('profileBio');
+    const charCount = document.getElementById('bioCharCount');
+    
+    if (bioField && charCount) {
+        charCount.textContent = bioField.value.length;
+        
+        if (bioField.value.length > 450) {
+            charCount.parentElement.classList.add('text-warning');
+        } else {
+            charCount.parentElement.classList.remove('text-warning');
+        }
+    }
+}
+
+// Privacy settings functions
+function loadPrivacyData() {
+    updatePrivacySummary();
+}
+
+function updatePrivacySummary() {
+    const profileVisibility = document.querySelector('input[name="profileVisibility"]:checked');
+    const analyticsOptIn = document.getElementById('analyticsOptIn');
+    const allowDirectMessages = document.getElementById('allowDirectMessages');
+    const thirdPartySharing = document.getElementById('thirdPartySharing');
+    
+    // Update privacy summary badges
+    const summaryProfile = document.getElementById('privacySummaryProfile');
+    const summaryData = document.getElementById('privacySummaryData');
+    const summaryMessages = document.getElementById('privacySummaryMessages');
+    const summarySharing = document.getElementById('privacySummarySharing');
+    
+    if (profileVisibility && summaryProfile) {
+        const visibility = profileVisibility.value;
+        summaryProfile.textContent = visibility.charAt(0).toUpperCase() + visibility.slice(1);
+        summaryProfile.className = `badge bg-${visibility === 'public' ? 'success' : visibility === 'members' ? 'warning' : 'danger'}`;
+    }
+    
+    if (analyticsOptIn && summaryData) {
+        summaryData.textContent = analyticsOptIn.checked ? 'Enabled' : 'Disabled';
+        summaryData.className = `badge bg-${analyticsOptIn.checked ? 'primary' : 'secondary'}`;
+    }
+    
+    if (allowDirectMessages && summaryMessages) {
+        summaryMessages.textContent = allowDirectMessages.checked ? 'Allowed' : 'Disabled';
+        summaryMessages.className = `badge bg-${allowDirectMessages.checked ? 'success' : 'secondary'}`;
+    }
+    
+    if (thirdPartySharing && summarySharing) {
+        summarySharing.textContent = thirdPartySharing.checked ? 'Enabled' : 'Disabled';
+        summarySharing.className = `badge bg-${thirdPartySharing.checked ? 'warning' : 'secondary'}`;
+    }
+}
+
+// Preferences functions
+function loadPreferencesData() {
+    // Load saved preferences from localStorage or API
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    
+    const themeSelect = document.getElementById('themePreference');
+    const languageSelect = document.getElementById('languagePreference');
+    
+    if (themeSelect) themeSelect.value = savedTheme;
+    if (languageSelect) languageSelect.value = savedLanguage;
+}
+
+// Billing functions
+function loadBillingData() {
+    // This would typically load billing data from your payment processor
+    console.log('Loading billing data...');
+}
+
+// Action functions
+async function updatePassword() {
+    const currentPassword = document.getElementById('currentPassword')?.value;
+    const newPassword = document.getElementById('newPassword')?.value;
+    const confirmPassword = document.getElementById('confirmPassword')?.value;
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showNotification('Please fill in all password fields', 'error');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showNotification('New passwords do not match', 'error');
+        return;
+    }
+    
+    const strengthResult = checkPasswordStrength(newPassword);
+    if (strengthResult.strength < 50) {
+        showNotification('Password is too weak. Please choose a stronger password.', 'error');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        
+        const response = await fetch('api/profile.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                action: 'update_password',
+                current_password: currentPassword,
+                new_password: newPassword
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Password updated successfully', 'success');
+            
+            // Clear password fields
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        } else {
+            showNotification('Failed to update password: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Password update error:', error);
+        showNotification('Failed to update password', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function setup2FA() {
+    showNotification('Two-Factor Authentication setup will be implemented', 'info');
+}
+
+function uploadAvatar() {
+    const fileInput = document.getElementById('avatarUpload');
+    const file = fileInput?.files[0];
+    
+    if (!file) {
+        showNotification('Please select a file first', 'error');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        showNotification('Please select an image file', 'error');
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        showNotification('File size must be less than 5MB', 'error');
+        return;
+    }
+    
+    // For now, just show success message
+    showNotification('Avatar upload functionality will be implemented', 'info');
+}
+
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const avatar = document.getElementById('profileAvatarLarge');
+            if (avatar) {
+                avatar.style.backgroundImage = `url(${e.target.result})`;
+                avatar.style.backgroundSize = 'cover';
+                avatar.style.backgroundPosition = 'center';
+                avatar.textContent = '';
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removeAvatar() {
+    const avatar = document.getElementById('profileAvatarLarge');
+    const fileInput = document.getElementById('avatarUpload');
+    
+    if (avatar && currentUser) {
+        avatar.style.backgroundImage = '';
+        avatar.style.backgroundColor = '';
+        avatar.textContent = currentUser.name.charAt(0).toUpperCase();
+    }
+    
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    
+    showNotification('Avatar removed', 'success');
+}
+
+// Save all account settings
+async function saveAllAccountSettings() {
+    const settingsData = {
+        // Profile data
+        name: document.getElementById('profileName')?.value,
+        phone: document.getElementById('profilePhone')?.value,
+        bio: document.getElementById('profileBio')?.value,
+        location: document.getElementById('profileLocation')?.value,
+        website: document.getElementById('profileWebsite')?.value,
+        date_of_birth: document.getElementById('profileDob')?.value,
+        gender: document.getElementById('profileGender')?.value,
+        
+        // Preferences
+        theme: document.getElementById('themePreference')?.value,
+        language: document.getElementById('languagePreference')?.value,
+        timezone: document.getElementById('timezonePreference')?.value,
+        date_format: document.getElementById('dateFormat')?.value,
+        
+        // Privacy settings
+        profile_visibility: document.querySelector('input[name="profileVisibility"]:checked')?.value,
+        analytics_opt_in: document.getElementById('analyticsOptIn')?.checked,
+        allow_direct_messages: document.getElementById('allowDirectMessages')?.checked,
+        third_party_sharing: document.getElementById('thirdPartySharing')?.checked,
+        
+        // Notification preferences
+        email_notifications: {
+            new_videos: document.getElementById('emailNewVideos')?.checked,
+            purchases: document.getElementById('emailPurchases')?.checked,
+            marketing: document.getElementById('emailMarketing')?.checked,
+            security: document.getElementById('emailSecurity')?.checked
+        },
+        push_notifications: {
+            new_content: document.getElementById('pushNewContent')?.checked,
+            messages: document.getElementById('pushMessages')?.checked
+        }
+    };
+    
+    try {
+        showLoading(true);
+        
+        const response = await fetch('api/profile.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(settingsData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Settings saved successfully', 'success');
+            
+            // Update current user data
+            if (data.profile) {
+                currentUser.name = data.profile.name;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                updateUserProfile();
+            }
+            
+            // Save preferences to localStorage
+            if (settingsData.theme) localStorage.setItem('theme', settingsData.theme);
+            if (settingsData.language) localStorage.setItem('language', settingsData.language);
+        } else {
+            showNotification('Failed to save settings: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Save settings error:', error);
+        showNotification('Failed to save settings', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function refreshAccountSettings() {
+    loadAccountSettings();
+    showNotification('Settings refreshed', 'info');
+}
+
+// Helper functions
+function getRoleBadgeColor(role) {
+    switch (role) {
+        case 'admin': return 'danger';
+        case 'creator': return 'primary';
+        case 'editor': return 'warning';
+        case 'viewer': return 'success';
+        default: return 'secondary';
+    }
+}
+
+// Export/Delete functions
+function exportUserData() {
+    showNotification('Preparing data export...', 'info');
+    
+    // Simulate data export
+    setTimeout(() => {
+        const data = {
+            profile: accountSettingsData,
+            export_date: new Date().toISOString(),
+            user_id: currentUser?.id
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `user-data-${currentUser?.id || 'unknown'}-${new Date().getTime()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showNotification('Data exported successfully', 'success');
+    }, 1000);
+}
+
+function requestDataDeletion() {
+    if (confirm('Are you sure you want to permanently delete your account and all data? This action cannot be undone.')) {
+        showNotification('Data deletion request will be processed within 30 days', 'warning');
+    }
+}
+
+function logoutAllDevices() {
+    if (confirm('This will log you out of all devices. Continue?')) {
+        showNotification('Logged out of all devices', 'success');
+        setTimeout(() => logout(), 1000);
+    }
+}
+
+function deactivateAccount() {
+    if (confirm('Are you sure you want to deactivate your account? You can reactivate it by logging in again.')) {
+        showNotification('Account deactivation functionality will be implemented', 'info');
+    }
 }
 
 // User profile and settings functions
 function updateUserProfile() {
     if (!currentUser) return;
 
-    const avatarElements = document.querySelectorAll('#userProfileAvatar, #editProfileAvatar');
+    const avatarElements = document.querySelectorAll('#userProfileAvatar, #editProfileAvatar, #profileAvatarLarge');
     avatarElements.forEach(el => {
         if (el) el.textContent = currentUser.name.charAt(0).toUpperCase();
     });
@@ -1398,6 +2187,35 @@ function updateUserProfile() {
         roleElement.className = `user-profile-role role-${currentUser.role}`;
     }
 }
+
+// Add event listeners when showing profile panel
+document.addEventListener('DOMContentLoaded', function() {
+    // Bio character counter
+    const bioField = document.getElementById('profileBio');
+    if (bioField) {
+        bioField.addEventListener('input', updateBioCharCount);
+    }
+    
+    // Privacy settings change listeners
+    const privacyInputs = document.querySelectorAll('#privacySettingsTab input');
+    privacyInputs.forEach(input => {
+        input.addEventListener('change', updatePrivacySummary);
+    });
+});
+
+// Load account settings when profile panel is shown
+const originalShowPanel = window.showPanel;
+window.showPanel = async function(panelName) {
+    await originalShowPanel(panelName);
+    
+    if (panelName === 'profile') {
+        // Load account settings data
+        await loadAccountSettings();
+        
+        // Show default profile tab
+        showSettingsTab('profile');
+    }
+};
 
 // Logout function
 async function logout() {
@@ -1459,6 +2277,71 @@ function closeSidebar() {
         backdrop.classList.remove('show');
         document.body.style.overflow = '';
     }
+}
+
+// Update creator metrics in My Videos panel
+function updateCreatorMetrics(videos) {
+    const totalVideos = videos ? videos.length : 0;
+    const totalViews = videos ? videos.reduce((sum, video) => sum + (parseInt(video.views) || 0), 0) : 0;
+    
+    // Get earnings data if available - ensure we have the earnings object
+    const earnings = dashboardData.earnings || { total_earnings: 0, monthly_earnings: 0 };
+    
+    // Update metric cards with proper error checking
+    const totalVideosElement = document.getElementById("creatorTotalVideos");
+    const totalViewsElement = document.getElementById("creatorTotalViews");
+    const totalEarningsElement = document.getElementById("creatorTotalEarnings");
+    const monthlyEarningsElement = document.getElementById("creatorMonthlyEarnings");
+    
+    if (totalVideosElement) animateCounter("creatorTotalVideos", totalVideos);
+    if (totalViewsElement) animateCounter("creatorTotalViews", totalViews);
+    if (totalEarningsElement) totalEarningsElement.textContent = `$${parseFloat(earnings.total_earnings || 0).toFixed(2)}`;
+    if (monthlyEarningsElement) monthlyEarningsElement.textContent = `$${parseFloat(earnings.monthly_earnings || 0).toFixed(2)}`;
+    
+    // Debug logging to check data
+    console.log('Creator metrics updated:', {
+        totalVideos,
+        totalViews,
+        earnings: earnings,
+        dashboardData: dashboardData
+    });
+}
+
+// Update viewer metrics in Videos panel
+function updateViewerMetrics() {
+    if (currentUser.role !== "viewer") return;
+
+    // Show metrics section for viewers
+    const viewerMetrics = document.getElementById("viewerMetrics");
+    if (viewerMetrics) {
+        viewerMetrics.style.display = "flex";
+    }
+
+    // Calculate metrics from loaded data
+    const totalVideos = allVideos ? allVideos.length : 0;
+    const purchasedVideos = allVideos ? allVideos.filter(video => video.purchased).length : 0;
+    const freeVideos = allVideos ? allVideos.filter(video => parseFloat(video.price || 0) === 0).length : 0;
+    
+    // Calculate total spent from purchases data - use proper field names
+    let totalSpent = 0;
+    if (dashboardData.purchases && Array.isArray(dashboardData.purchases)) {
+        totalSpent = dashboardData.purchases.reduce((sum, purchase) => {
+            // Try different possible field names for price/amount
+            const amount = parseFloat(purchase.price || purchase.amount || purchase.video_price || 0);
+            return sum + amount;
+        }, 0);
+    }
+
+    // Update metric cards with animation
+    const totalVideosElement = document.getElementById("viewerTotalVideos");
+    const purchasedVideosElement = document.getElementById("viewerPurchasedVideos");
+    const freeVideosElement = document.getElementById("viewerFreeVideos");
+    const totalSpentElement = document.getElementById("viewerTotalSpent");
+    
+    if (totalVideosElement) animateCounter("viewerTotalVideos", totalVideos);
+    if (purchasedVideosElement) animateCounter("viewerPurchasedVideos", purchasedVideos);
+    if (freeVideosElement) animateCounter("viewerFreeVideos", freeVideos);
+    if (totalSpentElement) totalSpentElement.textContent = `$${totalSpent.toFixed(2)}`;
 }
 
 // Additional helper functions for video management
