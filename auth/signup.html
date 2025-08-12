@@ -8,118 +8,203 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
+    <style>
+        .auth-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .auth-card {
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-modern {
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .feature-card {
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
 </head>
 <body class="auth-bg">
     <div class="container-fluid vh-100">
-        <div class="row h-100">
-            <!-- Left Side - Branding -->
-            <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center bg-primary text-white">
+        <div class="row h-100 align-items-center">
+            <!-- Left Side - Enhanced Branding -->
+            <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center text-white">
                 <div class="text-center">
-                    <i class="fas fa-users display-1 mb-4"></i>
-                    <h2 class="fw-bold">Join VideoHub Today</h2>
-                    <p class="lead">Create your account and start managing your video content</p>
+                    <div class="glass-effect rounded-circle p-4 d-inline-flex mb-4">
+                        <i class="fas fa-users display-1 text-white"></i>
+                    </div>
+                    <h1 class="fw-bold mb-3 display-5">Join VideoHub Today</h1>
+                    <p class="lead opacity-75 mb-5">Create your account and start managing your video content</p>
+                    
+                    <!-- Benefits -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="glass-effect rounded-3 p-4 feature-card">
+                                <i class="fas fa-upload fa-3x mb-3"></i>
+                                <h5 class="fw-bold">Upload Content</h5>
+                                <p class="small mb-0 opacity-75">Share your videos with the world</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="glass-effect rounded-3 p-4 feature-card">
+                                <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                                <h5 class="fw-bold">Track Performance</h5>
+                                <p class="small mb-0 opacity-75">Monitor your content analytics</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="glass-effect rounded-3 p-4 feature-card">
+                                <i class="fas fa-dollar-sign fa-3x mb-3"></i>
+                                <h5 class="fw-bold">Monetize</h5>
+                                <p class="small mb-0 opacity-75">Earn from your content</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="glass-effect rounded-3 p-4 feature-card">
+                                <i class="fas fa-users fa-3x mb-3"></i>
+                                <h5 class="fw-bold">Build Audience</h5>
+                                <p class="small mb-0 opacity-75">Connect with viewers worldwide</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Right Side - Signup Form -->
+            <!-- Right Side - Enhanced Signup Form -->
             <div class="col-lg-6 d-flex flex-column justify-content-center">
                 <div class="container">
                     <div class="row justify-content-center">
-                        <div class="col-md-8 col-lg-10 col-xl-8">
+                        <div class="col-md-10 col-lg-11 col-xl-9">
+                            <!-- Mobile Logo -->
                             <div class="text-center mb-4 d-lg-none">
-                                <h2 class="text-primary"><i class="fas fa-play-circle me-2"></i>VideoHub</h2>
+                                <div class="glass-effect rounded-circle p-3 d-inline-flex mb-3">
+                                    <i class="fas fa-play-circle fa-3x text-white"></i>
+                                </div>
+                                <h2 class="text-white fw-bold">VideoHub</h2>
                             </div>
                             
-                            <div class="card border-0 shadow-lg">
-                                <div class="card-body p-4">
-                                    <div class="text-center mb-4">
-                                        <h3 class="fw-bold text-dark mb-2">Join VideoHub</h3>
-                                        <p class="text-muted mb-0">Create your account to get started</p>
+                            <div class="card auth-card border-0">
+                                <div class="card-body p-5">
+                                    <div class="text-center mb-5">
+                                        <h3 class="fw-bold text-dark mb-2 display-6">Join VideoHub</h3>
+                                        <p class="text-muted mb-0">Create your account and start your journey</p>
                                     </div>
                                     
                                     <form id="signupForm" class="space-y-3">
                                         <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label for="firstName" class="form-label fw-medium text-dark">First Name</label>
-                                                <input type="text" class="form-control form-control-modern" id="firstName" placeholder="Enter first name" required>
+                                            <div class="col-md-6 mb-4">
+                                                <label for="firstName" class="form-label fw-semibold text-dark mb-2">First Name</label>
+                                                <div class="position-relative">
+                                                    <i class="fas fa-user position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                                    <input type="text" class="form-control ps-5" id="firstName" placeholder="Enter first name" required>
+                                                </div>
                                             </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label for="lastName" class="form-label fw-medium text-dark">Last Name</label>
-                                                <input type="text" class="form-control form-control-modern" id="lastName" placeholder="Enter last name" required>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="email" class="form-label fw-medium text-dark">Email Address</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-light border-end-0">
-                                                    <i class="fas fa-envelope text-muted"></i>
-                                                </span>
-                                                <input type="email" class="form-control form-control-modern border-start-0 ps-0" id="email" placeholder="Enter your email" required>
+                                            <div class="col-md-6 mb-4">
+                                                <label for="lastName" class="form-label fw-semibold text-dark mb-2">Last Name</label>
+                                                <div class="position-relative">
+                                                    <i class="fas fa-user position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                                    <input type="text" class="form-control ps-5" id="lastName" placeholder="Enter last name" required>
+                                                </div>
                                             </div>
                                         </div>
                                         
-                                        <div class="mb-3">
-                                            <label for="userType" class="form-label fw-medium text-dark">Account Type</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-light border-end-0">
-                                                    <i class="fas fa-user-tag text-muted"></i>
-                                                </span>
-                                                <select class="form-select form-control-modern border-start-0" id="userType" required>
+                                        <div class="mb-4">
+                                            <label for="email" class="form-label fw-semibold text-dark mb-2">Email Address</label>
+                                            <div class="position-relative">
+                                                <i class="fas fa-envelope position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                                <input type="email" class="form-control ps-5" id="email" placeholder="Enter your email address" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <label for="userType" class="form-label fw-semibold text-dark mb-2">Account Type</label>
+                                            <div class="position-relative">
+                                                <i class="fas fa-user-tag position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="z-index: 5;"></i>
+                                                <select class="form-select ps-5" id="userType" required>
                                                     <option value="">Choose your role</option>
-                                                    <option value="viewer">Viewer - Watch and purchase videos</option>
-                                                    <option value="creator">Creator - Upload and monetize content</option>
+                                                    <option value="viewer">🎬 Viewer - Watch and purchase videos</option>
+                                                    <option value="creator">📹 Creator - Upload and monetize content</option>
                                                 </select>
                                             </div>
                                         </div>
                                         
-                                        <div class="mb-3">
-                                            <label for="password" class="form-label fw-medium text-dark">Password</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-light border-end-0">
-                                                    <i class="fas fa-lock text-muted"></i>
-                                                </span>
-                                                <input type="password" class="form-control form-control-modern border-start-0 ps-0" id="password" placeholder="Create a strong password" required>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-4">
+                                                <label for="password" class="form-label fw-semibold text-dark mb-2">Password</label>
+                                                <div class="position-relative">
+                                                    <i class="fas fa-lock position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                                    <input type="password" class="form-control ps-5" id="password" placeholder="Create password" required>
+                                                </div>
+                                                <div class="form-text small text-muted mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>Minimum 8 characters with letters and numbers
+                                                </div>
                                             </div>
-                                            <div class="form-text small text-muted">
-                                                <i class="fas fa-info-circle me-1"></i>Minimum 8 characters with letters and numbers
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="confirmPassword" class="form-label fw-medium text-dark">Confirm Password</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-light border-end-0">
-                                                    <i class="fas fa-check-circle text-muted"></i>
-                                                </span>
-                                                <input type="password" class="form-control form-control-modern border-start-0 ps-0" id="confirmPassword" placeholder="Confirm your password" required>
+                                            <div class="col-md-6 mb-4">
+                                                <label for="confirmPassword" class="form-label fw-semibold text-dark mb-2">Confirm Password</label>
+                                                <div class="position-relative">
+                                                    <i class="fas fa-check-circle position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                                    <input type="password" class="form-control ps-5" id="confirmPassword" placeholder="Confirm password" required>
+                                                </div>
                                             </div>
                                         </div>
                                         
-                                        <div class="mb-3 form-check">
-                                            <input type="checkbox" class="form-check-input" id="agreeTerms" required>
-                                            <label class="form-check-label" for="agreeTerms">
-                                                I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
-                                            </label>
+                                        <div class="mb-4">
+                                            <div class="form-check d-flex align-items-start">
+                                                <input type="checkbox" class="form-check-input mt-1" id="agreeTerms" required>
+                                                <label class="form-check-label ms-2 small" for="agreeTerms">
+                                                    I agree to the <a href="#" class="text-decoration-none fw-bold" style="color: #667eea;">Terms of Service</a> and <a href="#" class="text-decoration-none fw-bold" style="color: #667eea;">Privacy Policy</a>
+                                                </label>
+                                            </div>
                                         </div>
                                         
-                                        <button type="submit" class="btn btn-primary w-100 mb-3">
-                                            <i class="fas fa-user-plus me-2"></i>Create Account
+                                        <button type="submit" class="btn btn-modern w-100 py-3 mb-3 fw-bold" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white;">
+                                            <i class="fas fa-user-plus me-2"></i>Create Your Account
                                         </button>
                                     </form>
                                     
-                                    <hr class="my-4">
+                                    <div class="position-relative my-4">
+                                        <hr class="border-0" style="height: 1px; background: linear-gradient(90deg, transparent, #dee2e6, transparent);">
+                                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">OR</span>
+                                    </div>
                                     
                                     <div class="text-center">
-                                        <p class="mb-0">Already have an account? 
-                                            <a href="login.html" class="text-decoration-none">Sign in here</a>
+                                        <p class="mb-0 text-muted">Already have an account? 
+                                            <a href="login.html" class="text-decoration-none fw-bold" style="color: #667eea;">Sign In</a>
                                         </p>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="text-center mt-3">
-                                <a href="../index.html" class="btn btn-link">
+                            <div class="text-center mt-4">
+                                <a href="../index.html" class="btn btn-outline-light btn-modern text-white border-2">
                                     <i class="fas fa-arrow-left me-2"></i>Back to Home
                                 </a>
                             </div>

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,130 +6,497 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics - VideoHub Creator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .analytics-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            margin: 20px;
+            min-height: calc(100vh - 40px);
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .creator-navbar {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            padding: 1rem 2rem;
+            border-radius: 25px 25px 0 0;
+            box-shadow: 0 4px 20px rgba(40, 167, 69, 0.2);
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fffe 100%);
+            border-right: 2px solid rgba(40, 167, 69, 0.1);
+            min-height: calc(100vh - 120px);
+        }
+        
+        .nav-link {
+            border-radius: 15px;
+            margin: 8px 12px;
+            padding: 15px 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            color: #495057;
+            border: 2px solid transparent;
+        }
+        
+        .nav-link:hover {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
+            transform: translateX(8px) scale(1.02);
+            border-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .nav-link.active {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white !important;
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+            transform: translateX(8px) scale(1.05);
+        }
+        
+        .analytics-card {
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .analytics-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
+            border-color: rgba(40, 167, 69, 0.2);
+        }
+        
+        .metric-card {
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .metric-card.primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+        }
+        
+        .metric-card.info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(135deg, #17a2b8, #138496);
+        }
+        
+        .metric-card.success::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+        
+        .metric-card.warning::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .metric-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-icon::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+            opacity: 0;
+        }
+        
+        .metric-card:hover .metric-icon::before {
+            opacity: 1;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .btn-modern {
+            border-radius: 18px;
+            font-weight: 700;
+            padding: 12px 24px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            padding: 20px;
+        }
+        
+        .table-hover tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        .table-hover tbody tr:hover {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(32, 201, 151, 0.05) 100%);
+            transform: scale(1.01);
+        }
+        
+        .badge {
+            border-radius: 15px;
+            font-weight: 700;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .list-group-item {
+            border: none;
+            border-radius: 18px;
+            margin-bottom: 12px;
+            background: linear-gradient(145deg, rgba(248, 249, 250, 0.9) 0%, rgba(255, 255, 255, 0.9) 100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid rgba(0, 0, 0, 0.05);
+            padding: 20px;
+        }
+        
+        .list-group-item:hover {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(248, 249, 250, 1) 100%);
+            transform: translateX(8px) scale(1.02);
+            border-color: rgba(40, 167, 69, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress {
+            border-radius: 15px;
+            height: 12px;
+            background-color: rgba(233, 236, 239, 0.5);
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: progress-shimmer 2s infinite;
+        }
+        
+        @keyframes progress-shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .engagement-stats {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.08) 0%, rgba(32, 201, 151, 0.08) 100%);
+            border-radius: 25px;
+            padding: 2.5rem;
+            border: 2px solid rgba(40, 167, 69, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .engagement-stats::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.1), transparent);
+            transition: left 0.8s;
+        }
+        
+        .engagement-stats:hover::before {
+            left: 100%;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(32, 201, 151, 0.05) 100%) !important;
+            border-bottom: 2px solid rgba(40, 167, 69, 0.1) !important;
+            border-radius: 25px 25px 0 0 !important;
+            padding: 2rem;
+        }
+        
+        @media (max-width: 991.98px) {
+            .analytics-container {
+                margin: 10px;
+                border-radius: 20px;
+            }
+            
+            .creator-navbar {
+                border-radius: 20px 20px 0 0;
+                padding: 1rem;
+            }
+            
+            .chart-container {
+                height: 300px;
+                padding: 15px;
+            }
+        }
+        
+        @media (max-width: 767.98px) {
+            .analytics-container {
+                margin: 5px;
+                border-radius: 15px;
+            }
+            
+            .creator-navbar {
+                border-radius: 15px 15px 0 0;
+            }
+            
+            .analytics-card {
+                margin: 0.5rem;
+                border-radius: 20px;
+            }
+            
+            .metric-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="dashboard.html">
-                <i class="fas fa-video me-2"></i>VideoHub Creator
-            </a>
-            
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i>Creator
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
+    <div class="analytics-container">
+        <!-- Enhanced Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark creator-navbar">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold d-flex align-items-center" href="dashboard.html">
+                    <div class="bg-white bg-opacity-20 rounded-circle p-3 me-3">
+                        <i class="fas fa-video text-white fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold">VideoHub Creator</div>
+                        <small class="opacity-75">Analytics Dashboard</small>
+                    </div>
+                </a>
+                
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <div class="navbar-nav ms-auto">
+                        <div class="nav-item dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center border-2 rounded-pill px-4" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-2 fs-5"></i>
+                                <div class="text-start d-none d-md-block">
+                                    <div class="fw-bold">Creator</div>
+                                    <small class="opacity-75">John Smith</small>
+                                </div>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
+                                <li><a class="dropdown-item rounded-2 py-3" href="profile.html"><i class="fas fa-user me-3 text-primary"></i>Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger rounded-2 py-3" href="../auth/login.html"><i class="fas fa-sign-out-alt me-3"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </nav>
+        </nav>
 
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
-                <div class="position-sticky pt-3">
+        <div class="row g-0">
+            <!-- Enhanced Sidebar -->
+            <nav class="col-md-3 col-lg-2 sidebar">
+                <div class="position-sticky pt-4">
+                    <div class="px-3 mb-4">
+                        <h6 class="text-muted fw-bold text-uppercase letter-spacing-1 mb-3">Navigation</h6>
+                    </div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="dashboard.html">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            <a class="nav-link d-flex align-items-center" href="dashboard.html">
+                                <i class="fas fa-tachometer-alt me-3"></i>
+                                <span class="fw-semibold">Dashboard</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="videos.html">
-                                <i class="fas fa-video me-2"></i>My Videos
+                            <a class="nav-link d-flex align-items-center" href="videos.html">
+                                <i class="fas fa-video me-3"></i>
+                                <span class="fw-semibold">My Videos</span>
+                                <span class="badge bg-primary ms-auto">12</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link active" href="analytics.html">
-                                <i class="fas fa-chart-bar me-2"></i>Analytics
+                            <a class="nav-link active d-flex align-items-center" href="analytics.html">
+                                <i class="fas fa-chart-bar me-3"></i>
+                                <span class="fw-semibold">Analytics</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="earnings.html">
-                                <i class="fas fa-dollar-sign me-2"></i>Earnings
+                            <a class="nav-link d-flex align-items-center" href="earnings.html">
+                                <i class="fas fa-dollar-sign me-3"></i>
+                                <span class="fw-semibold">Earnings</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="profile.html">
-                                <i class="fas fa-cog me-2"></i>Settings
+                            <a class="nav-link d-flex align-items-center" href="profile.html">
+                                <i class="fas fa-cog me-3"></i>
+                                <span class="fw-semibold">Settings</span>
                             </a>
                         </li>
                     </ul>
                 </div>
             </nav>
 
-            <!-- Main Content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">Content Analytics</h1>
-                    <div class="btn-toolbar mb-2 mb-md-0">
-                        <div class="btn-group me-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="dateRangeBtn">
-                                <i class="fas fa-calendar me-2"></i>Last 30 Days
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-download me-2"></i>Export Report
-                            </button>
-                        </div>
+            <!-- Enhanced Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <!-- Enhanced Header -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5">
+                    <div class="mb-3 mb-md-0">
+                        <h1 class="display-5 fw-bold text-dark mb-2">Content Analytics</h1>
+                        <p class="lead text-muted mb-0">Track your video performance and audience insights</p>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <button type="button" class="btn btn-outline-primary btn-modern" id="dateRangeBtn">
+                            <i class="fas fa-calendar me-2"></i>Last 30 Days
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-modern">
+                            <i class="fas fa-download me-2"></i>Export Report
+                        </button>
                     </div>
                 </div>
 
-                <!-- Key Metrics -->
-                <div class="row mb-4">
-                    <div class="col-lg-3 col-md-6 mb-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-eye fa-2x text-primary mb-2"></i>
-                                <h3>12,450</h3>
-                                <p class="card-text">Total Views</p>
-                                <small class="text-success">
+                <!-- Enhanced Key Metrics -->
+                <div class="row g-4 mb-5">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card metric-card primary h-100 text-center">
+                            <div class="card-body p-4">
+                                <div class="metric-icon bg-primary bg-opacity-10 text-primary mx-auto">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <h2 class="fw-bold text-dark mb-2">12,450</h2>
+                                <p class="text-muted mb-3 fw-semibold text-uppercase">Total Views</p>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-primary" style="width: 85%"></div>
+                                </div>
+                                <small class="text-success fw-bold">
                                     <i class="fas fa-arrow-up"></i> +15% from last period
                                 </small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-clock fa-2x text-info mb-2"></i>
-                                <h3>4.2 min</h3>
-                                <p class="card-text">Avg. Watch Time</p>
-                                <small class="text-success">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card metric-card info h-100 text-center">
+                            <div class="card-body p-4">
+                                <div class="metric-icon bg-info bg-opacity-10 text-info mx-auto">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <h2 class="fw-bold text-dark mb-2">4.2 min</h2>
+                                <p class="text-muted mb-3 fw-semibold text-uppercase">Avg. Watch Time</p>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-info" style="width: 70%"></div>
+                                </div>
+                                <small class="text-success fw-bold">
                                     <i class="fas fa-arrow-up"></i> +8% from last period
                                 </small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-percentage fa-2x text-success mb-2"></i>
-                                <h3>73%</h3>
-                                <p class="card-text">Retention Rate</p>
-                                <small class="text-danger">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card metric-card success h-100 text-center">
+                            <div class="card-body p-4">
+                                <div class="metric-icon bg-success bg-opacity-10 text-success mx-auto">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                                <h2 class="fw-bold text-dark mb-2">73%</h2>
+                                <p class="text-muted mb-3 fw-semibold text-uppercase">Retention Rate</p>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-success" style="width: 73%"></div>
+                                </div>
+                                <small class="text-danger fw-bold">
                                     <i class="fas fa-arrow-down"></i> -2% from last period
                                 </small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-thumbs-up fa-2x text-warning mb-2"></i>
-                                <h3>892</h3>
-                                <p class="card-text">Likes</p>
-                                <small class="text-success">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card metric-card warning h-100 text-center">
+                            <div class="card-body p-4">
+                                <div class="metric-icon bg-warning bg-opacity-10 text-warning mx-auto">
+                                    <i class="fas fa-thumbs-up"></i>
+                                </div>
+                                <h2 class="fw-bold text-dark mb-2">892</h2>
+                                <p class="text-muted mb-3 fw-semibold text-uppercase">Likes</p>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-warning" style="width: 90%"></div>
+                                </div>
+                                <small class="text-success fw-bold">
                                     <i class="fas fa-arrow-up"></i> +23% from last period
                                 </small>
                             </div>
@@ -136,77 +504,162 @@
                     </div>
                 </div>
 
-                <!-- Charts Row 1 -->
-                <div class="row mb-4">
+                <!-- Enhanced Charts Row 1 -->
+                <div class="row g-4 mb-5">
                     <div class="col-lg-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Views Over Time</h5>
+                        <div class="card analytics-card">
+                            <div class="card-header bg-transparent border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+                                        <i class="fas fa-chart-line fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="card-title fw-bold mb-1">Views Over Time</h4>
+                                        <p class="text-muted mb-0">Daily video views for the past 30 days</p>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body">
-                                <canvas id="viewsOverTimeChart"></canvas>
+                                <div class="chart-container">
+                                    <canvas id="viewsOverTimeChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Traffic Sources</h5>
+                        <div class="card analytics-card">
+                            <div class="card-header bg-transparent border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
+                                        <i class="fas fa-chart-pie fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="card-title fw-bold mb-1">Traffic Sources</h4>
+                                        <p class="text-muted mb-0">Where your viewers come from</p>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body">
-                                <canvas id="trafficSourcesChart"></canvas>
+                                <div class="chart-container">
+                                    <canvas id="trafficSourcesChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Charts Row 2 -->
-                <div class="row mb-4">
+                <!-- Enhanced Charts Row 2 -->
+                <div class="row g-4 mb-5">
                     <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Audience Demographics</h5>
+                        <div class="card analytics-card">
+                            <div class="card-header bg-transparent border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 me-3">
+                                        <i class="fas fa-users fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="card-title fw-bold mb-1">Audience Demographics</h4>
+                                        <p class="text-muted mb-0">Age and gender breakdown</p>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body">
-                                <canvas id="demographicsChart"></canvas>
+                                <div class="chart-container">
+                                    <canvas id="demographicsChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Watch Time by Device</h5>
+                        <div class="card analytics-card">
+                            <div class="card-header bg-transparent border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 me-3">
+                                        <i class="fas fa-mobile-alt fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="card-title fw-bold mb-1">Watch Time by Device</h4>
+                                        <p class="text-muted mb-0">Device usage statistics</p>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body">
-                                <canvas id="deviceChart"></canvas>
+                                <div class="chart-container">
+                                    <canvas id="deviceChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Top Performing Videos -->
-                <div class="row mb-4">
+                <!-- Enhanced Top Performing Videos -->
+                <div class="row g-4 mb-5">
                     <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Top Performing Videos</h5>
+                        <div class="card analytics-card">
+                            <div class="card-header bg-transparent border-bottom">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
+                                            <i class="fas fa-trophy fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="card-title fw-bold mb-1">Top Performing Videos</h4>
+                                            <p class="text-muted mb-0">Your most successful content</p>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-modern">
+                                        <i class="fas fa-download me-2"></i>Export Data
+                                    </button>
+                                </div>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-0">
                                 <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
                                             <tr>
-                                                <th>Video Title</th>
-                                                <th>Views</th>
-                                                <th>Watch Time</th>
-                                                <th>Retention</th>
-                                                <th>Likes</th>
-                                                <th>Revenue</th>
-                                                <th>Published</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Video Title</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Views</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Watch Time</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Retention</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Likes</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Revenue</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Published</th>
                                             </tr>
                                         </thead>
                                         <tbody id="topVideosTable">
-                                            <!-- Populated by JavaScript -->
+                                            <tr>
+                                                <td class="px-4 py-3 fw-semibold">JavaScript Advanced Concepts</td>
+                                                <td class="px-4 py-3">5,234</td>
+                                                <td class="px-4 py-3">4.8 min</td>
+                                                <td class="px-4 py-3">
+                                                    <span class="badge bg-success">78%</span>
+                                                </td>
+                                                <td class="px-4 py-3">342</td>
+                                                <td class="px-4 py-3 text-success fw-bold">$1,245</td>
+                                                <td class="px-4 py-3 text-muted">Mar 10, 2024</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="px-4 py-3 fw-semibold">React Best Practices</td>
+                                                <td class="px-4 py-3">4,123</td>
+                                                <td class="px-4 py-3">5.2 min</td>
+                                                <td class="px-4 py-3">
+                                                    <span class="badge bg-info">85%</span>
+                                                </td>
+                                                <td class="px-4 py-3">298</td>
+                                                <td class="px-4 py-3 text-success fw-bold">$987</td>
+                                                <td class="px-4 py-3 text-muted">Mar 12, 2024</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="px-4 py-3 fw-semibold">Node.js Fundamentals</td>
+                                                <td class="px-4 py-3">3,456</td>
+                                                <td class="px-4 py-3">3.9 min</td>
+                                                <td class="px-4 py-3">
+                                                    <span class="badge bg-warning">72%</span>
+                                                </td>
+                                                <td class="px-4 py-3">234</td>
+                                                <td class="px-4 py-3 text-success fw-bold">$756</td>
+                                                <td class="px-4 py-3 text-muted">Mar 8, 2024</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -215,48 +668,61 @@
                     </div>
                 </div>
 
-                <!-- Audience Insights -->
-                <div class="row">
+                <!-- Enhanced Audience Insights -->
+                <div class="row g-4">
                     <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Geographic Distribution</h5>
+                        <div class="card analytics-card">
+                            <div class="card-header bg-transparent border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+                                        <i class="fas fa-globe fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="card-title fw-bold mb-1">Geographic Distribution</h4>
+                                        <p class="text-muted mb-0">Top countries by views</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
                                 <div class="list-group">
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        United States
-                                        <div>
-                                            <span class="badge bg-primary rounded-pill me-2">4,234 views</span>
-                                            <small class="text-muted">34%</small>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-flag-usa text-primary me-3 fs-5"></i>
+                                            <span class="fw-bold">United States</span>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fw-bold text-primary fs-5">4,234</div>
+                                            <small class="text-muted fw-semibold">34% of total</small>
                                         </div>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        Canada
-                                        <div>
-                                            <span class="badge bg-primary rounded-pill me-2">2,156 views</span>
-                                            <small class="text-muted">17%</small>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-maple-leaf text-danger me-3 fs-5"></i>
+                                            <span class="fw-bold">Canada</span>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fw-bold text-danger fs-5">2,156</div>
+                                            <small class="text-muted fw-semibold">17% of total</small>
                                         </div>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        United Kingdom
-                                        <div>
-                                            <span class="badge bg-primary rounded-pill me-2">1,890 views</span>
-                                            <small class="text-muted">15%</small>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-crown text-warning me-3 fs-5"></i>
+                                            <span class="fw-bold">United Kingdom</span>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fw-bold text-warning fs-5">1,890</div>
+                                            <small class="text-muted fw-semibold">15% of total</small>
                                         </div>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        Australia
-                                        <div>
-                                            <span class="badge bg-primary rounded-pill me-2">1,234 views</span>
-                                            <small class="text-muted">10%</small>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-sun text-info me-3 fs-5"></i>
+                                            <span class="fw-bold">Australia</span>
                                         </div>
-                                    </div>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        Germany
-                                        <div>
-                                            <span class="badge bg-primary rounded-pill me-2">987 views</span>
-                                            <small class="text-muted">8%</small>
+                                        <div class="text-end">
+                                            <div class="fw-bold text-info fs-5">1,234</div>
+                                            <small class="text-muted fw-semibold">10% of total</small>
                                         </div>
                                     </div>
                                 </div>
@@ -265,49 +731,81 @@
                     </div>
                     
                     <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Engagement Metrics</h5>
+                        <div class="card analytics-card">
+                            <div class="card-header bg-transparent border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
+                                        <i class="fas fa-heart fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="card-title fw-bold mb-1">Engagement Metrics</h4>
+                                        <p class="text-muted mb-0">Audience interaction statistics</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <div class="row text-center">
-                                    <div class="col-4">
-                                        <h4 class="text-success">892</h4>
-                                        <p class="text-muted">Likes</p>
+                            <div class="card-body p-4">
+                                <div class="engagement-stats">
+                                    <div class="row text-center mb-4">
+                                        <div class="col-4">
+                                            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 mx-auto mb-2" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-thumbs-up fs-4"></i>
+                                            </div>
+                                            <h3 class="text-success fw-bold mb-1">892</h3>
+                                            <p class="text-muted mb-0 fw-semibold">Likes</p>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 mx-auto mb-2" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-comments fs-4"></i>
+                                            </div>
+                                            <h3 class="text-info fw-bold mb-1">234</h3>
+                                            <p class="text-muted mb-0 fw-semibold">Comments</p>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 mx-auto mb-2" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-share fs-4"></i>
+                                            </div>
+                                            <h3 class="text-warning fw-bold mb-1">156</h3>
+                                            <p class="text-muted mb-0 fw-semibold">Shares</p>
+                                        </div>
                                     </div>
-                                    <div class="col-4">
-                                        <h4 class="text-info">234</h4>
-                                        <p class="text-muted">Comments</p>
+                                    <hr class="my-4">
+                                    <h5 class="fw-bold mb-4 text-uppercase letter-spacing-1">Engagement Rate by Category</h5>
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="fw-bold">Technology</span>
+                                            <span class="fw-bold text-success">85%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-success" style="width: 85%"></div>
+                                        </div>
                                     </div>
-                                    <div class="col-4">
-                                        <h4 class="text-warning">156</h4>
-                                        <p class="text-muted">Shares</p>
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="fw-bold">Education</span>
+                                            <span class="fw-bold text-info">72%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-info" style="width: 72%"></div>
+                                        </div>
                                     </div>
-                                </div>
-                                <hr>
-                                <div class="row text-center">
-                                    <div class="col-6">
-                                        <h4 class="text-primary">456</h4>
-                                        <p class="text-muted">Subscribers Gained</p>
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="fw-bold">Business</span>
+                                            <span class="fw-bold text-warning">68%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-warning" style="width: 68%"></div>
+                                        </div>
                                     </div>
-                                    <div class="col-6">
-                                        <h4 class="text-danger">23</h4>
-                                        <p class="text-muted">Subscribers Lost</p>
+                                    <div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="fw-bold">Design</span>
+                                            <span class="fw-bold text-primary">45%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-primary" style="width: 45%"></div>
+                                        </div>
                                     </div>
-                                </div>
-                                <hr>
-                                <h6>Engagement Rate by Video Category</h6>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-success" style="width: 85%">Technology (85%)</div>
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-info" style="width: 72%">Education (72%)</div>
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-warning" style="width: 68%">Business (68%)</div>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-primary" style="width: 45%">Design (45%)</div>
                                 </div>
                             </div>
                         </div>

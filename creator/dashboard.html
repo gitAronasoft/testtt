@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,174 +6,592 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Creator Dashboard - VideoHub Creator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="bg-gray-50">
-    <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="dashboard.html">
-                <i class="fas fa-video me-2 text-white"></i>VideoHub Creator
-            </a>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            margin: 20px;
+            min-height: calc(100vh - 40px);
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .creator-navbar {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            padding: 1rem 2rem;
+            border-radius: 25px 25px 0 0;
+            box-shadow: 0 4px 20px rgba(40, 167, 69, 0.2);
+        }
+        
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: white !important;
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fffe 100%);
+            border-right: 2px solid rgba(40, 167, 69, 0.1);
+            min-height: calc(100vh - 120px);
+        }
+        
+        .nav-link {
+            border-radius: 15px;
+            margin: 8px 12px;
+            padding: 15px 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            color: #495057;
+            border: 2px solid transparent;
+        }
+        
+        .nav-link:hover {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
+            transform: translateX(8px) scale(1.02);
+            border-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .nav-link.active {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white !important;
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+            transform: translateX(8px) scale(1.05);
+        }
+        
+        .nav-link i {
+            width: 24px;
+            font-size: 1.2rem;
+        }
+        
+        .stat-card {
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            border-color: rgba(40, 167, 69, 0.3);
+        }
+        
+        .stat-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-icon::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+            opacity: 0;
+        }
+        
+        .stat-card:hover .stat-icon::before {
+            opacity: 1;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .welcome-alert {
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.05) 100%);
+            border: 2px solid rgba(40, 167, 69, 0.2);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .welcome-alert::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.8s;
+        }
+        
+        .welcome-alert:hover::before {
+            left: 100%;
+        }
+        
+        .content-card {
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
+            border-color: rgba(40, 167, 69, 0.2);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(32, 201, 151, 0.05) 100%) !important;
+            border-bottom: 2px solid rgba(40, 167, 69, 0.1) !important;
+            border-radius: 25px 25px 0 0 !important;
+            padding: 2rem;
+        }
+        
+        .avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .btn-modern {
+            border-radius: 18px;
+            font-weight: 700;
+            padding: 15px 30px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s;
+        }
+        
+        .btn-modern:hover::before {
+            left: 100%;
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-success.btn-modern {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-outline-success.btn-modern {
+            border-color: #28a745;
+            color: #28a745;
+            background: transparent;
+        }
+        
+        .btn-outline-success.btn-modern:hover {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .table-hover tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        .table-hover tbody tr:hover {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(32, 201, 151, 0.05) 100%);
+            transform: scale(1.01);
+        }
+        
+        .badge {
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .video-item {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+            border-radius: 18px;
+            padding: 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid rgba(40, 167, 69, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .video-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.1), transparent);
+            transition: left 0.6s;
+        }
+        
+        .video-item:hover::before {
+            left: 100%;
+        }
+        
+        .video-item:hover {
+            transform: translateX(10px) scale(1.02);
+            border-color: rgba(40, 167, 69, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-content {
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .modal-header {
+            border-radius: 25px 25px 0 0;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(32, 201, 151, 0.05) 100%);
+            padding: 2rem;
+        }
+        
+        .form-control {
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            padding: 15px 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+        }
+        
+        .form-control:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .form-select {
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            padding: 15px 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+        }
+        
+        .form-select:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .form-label {
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        @media (max-width: 991.98px) {
+            .dashboard-container {
+                margin: 10px;
+                border-radius: 20px;
+            }
             
-            <div class="d-flex align-items-center">
-                <!-- User Profile -->
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i>Creator
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
+            .creator-navbar {
+                border-radius: 20px 20px 0 0;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                background: rgba(255, 255, 255, 0.98);
+            }
+        }
+        
+        @media (max-width: 767.98px) {
+            .dashboard-container {
+                margin: 5px;
+                border-radius: 15px;
+            }
+            
+            .creator-navbar {
+                border-radius: 15px 15px 0 0;
+            }
+            
+            .stat-card {
+                border-radius: 20px;
+                margin-bottom: 1.5rem;
+            }
+            
+            .content-card {
+                border-radius: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Enhanced Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark creator-navbar">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center" href="dashboard.html">
+                    <div class="bg-white bg-opacity-20 rounded-circle p-3 me-3">
+                        <i class="fas fa-video text-white fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-bold">VideoHub Creator</div>
+                        <small class="opacity-75">Professional Studio</small>
+                    </div>
+                </a>
+                
+                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <div class="navbar-nav ms-auto">
+                        <div class="nav-item dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center border-2 rounded-pill px-4" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-2 fs-5"></i>
+                                <div class="text-start d-none d-md-block">
+                                    <div class="fw-bold">Creator</div>
+                                    <small class="opacity-75">John Smith</small>
+                                </div>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
+                                <li><a class="dropdown-item rounded-2 py-3" href="profile.html"><i class="fas fa-user me-3 text-primary"></i>Profile Settings</a></li>
+                                <li><a class="dropdown-item rounded-2 py-3" href="analytics.html"><i class="fas fa-chart-line me-3 text-success"></i>Analytics</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger rounded-2 py-3" href="../auth/login.html"><i class="fas fa-sign-out-alt me-3"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </nav>
+        </nav>
 
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Modern Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar bg-white shadow-sm" style="min-height: calc(100vh - 56px);">
+        <div class="row g-0">
+            <!-- Enhanced Sidebar -->
+            <nav class="col-md-3 col-lg-2 sidebar">
                 <div class="position-sticky pt-4">
+                    <div class="px-3 mb-4">
+                        <h6 class="text-muted fw-bold text-uppercase letter-spacing-1 mb-3">Navigation</h6>
+                    </div>
                     <ul class="nav flex-column">
-                        <li class="nav-item mb-1">
-                            <a class="nav-link active d-flex align-items-center py-2 px-3 rounded" href="dashboard.html">
-                                <i class="fas fa-tachometer-alt me-3 text-primary"></i>
-                                <span>Dashboard</span>
+                        <li class="nav-item">
+                            <a class="nav-link active d-flex align-items-center" href="dashboard.html">
+                                <i class="fas fa-tachometer-alt me-3"></i>
+                                <span class="fw-semibold">Dashboard</span>
+                                <i class="fas fa-chevron-right ms-auto opacity-50"></i>
                             </a>
                         </li>
-                        <li class="nav-item mb-1">
-                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="videos.html">
-                                <i class="fas fa-video me-3 text-success"></i>
-                                <span>My Videos</span>
-                                <span class="badge bg-light text-dark ms-auto">12</span>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="videos.html">
+                                <i class="fas fa-video me-3"></i>
+                                <span class="fw-semibold">My Videos</span>
+                                <span class="badge bg-primary ms-auto">12</span>
                             </a>
                         </li>
-                        <li class="nav-item mb-1">
-                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="profile.html">
-                                <i class="fas fa-cog me-3 text-secondary"></i>
-                                <span>Settings</span>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="analytics.html">
+                                <i class="fas fa-chart-bar me-3"></i>
+                                <span class="fw-semibold">Analytics</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="earnings.html">
+                                <i class="fas fa-dollar-sign me-3"></i>
+                                <span class="fw-semibold">Earnings</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" href="profile.html">
+                                <i class="fas fa-cog me-3"></i>
+                                <span class="fw-semibold">Settings</span>
                             </a>
                         </li>
                     </ul>
                 </div>
             </nav>
 
-            <!-- Main Content -->
+            <!-- Enhanced Main Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h1 class="h3 mb-1 fw-bold">Creator Dashboard</h1>
-                        <p class="text-muted mb-0">Welcome back! Track your content performance and earnings</p>
+                <!-- Enhanced Header -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5">
+                    <div class="mb-3 mb-md-0">
+                        <h1 class="display-5 fw-bold text-dark mb-2">Creator Dashboard</h1>
+                        <p class="lead text-muted mb-0">Welcome back! Track your content performance and earnings</p>
                     </div>
-                    <button type="button" class="btn btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#uploadVideoModal">
-                        <i class="fas fa-upload me-2"></i>Upload Video
-                    </button>
-                </div>
-
-                <!-- Welcome Alert -->
-                <div class="alert alert-success bg-success bg-opacity-10 border-success" role="alert">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar bg-success bg-opacity-20 text-success me-3">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div>
-                            <h5 class="alert-heading mb-1">Welcome back, John!</h5>
-                            <p class="mb-0">Your content has earned <strong>$45.99</strong> this month with <strong>324 new views</strong> across your videos.</p>
-                        </div>
+                    <div class="d-flex gap-3">
+                        <button type="button" class="btn btn-outline-success btn-modern">
+                            <i class="fas fa-chart-line me-2"></i>View Analytics
+                        </button>
+                        <button type="button" class="btn btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#uploadVideoModal">
+                            <i class="fas fa-upload me-2"></i>Upload Video
+                        </button>
                     </div>
                 </div>
 
-                <!-- Stats Cards -->
-                <div class="row g-4 mb-4">
+                <!-- Enhanced Welcome Alert -->
+                <div class="alert welcome-alert d-flex align-items-center mb-5" role="alert">
+                    <div class="avatar bg-success bg-opacity-20 text-success me-4">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h4 class="alert-heading mb-2 fw-bold">Welcome back, John!</h4>
+                        <p class="mb-0 fs-5">Your content has earned <strong class="text-success fs-4">$45.99</strong> this month with <strong class="text-primary fs-4">324 new views</strong> across your videos.</p>
+                    </div>
+                    <div class="d-none d-lg-block">
+                        <i class="fas fa-trophy text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
+
+                <!-- Enhanced Stats Cards -->
+                <div class="row g-4 mb-5">
                     <div class="col-xl-3 col-md-6">
-                        <div class="card card-modern border-0 shadow-sm">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
-                                        <i class="fas fa-video"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="text-muted text-sm mb-1">TOTAL VIDEOS</div>
-                                        <div class="h4 mb-0 fw-bold" id="totalVideos">24</div>
-                                    </div>
+                        <div class="card stat-card h-100">
+                            <div class="card-body p-4 text-center">
+                                <div class="stat-icon bg-primary bg-opacity-10 text-primary mx-auto">
+                                    <i class="fas fa-video"></i>
                                 </div>
+                                <h2 class="fw-bold text-dark mb-2" id="totalVideos">24</h2>
+                                <p class="text-muted fw-semibold mb-2 text-uppercase letter-spacing-1">Total Videos</p>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-primary" style="width: 75%"></div>
+                                </div>
+                                <small class="text-success fw-bold mt-2 d-block">
+                                    <i class="fas fa-arrow-up"></i> +3 this week
+                                </small>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-xl-3 col-md-6">
-                        <div class="card card-modern border-0 shadow-sm">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
-                                        <i class="fas fa-eye"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="text-muted text-sm mb-1">TOTAL VIEWS</div>
-                                        <div class="h4 mb-0 fw-bold" id="totalViews">12,450</div>
-                                    </div>
+                        <div class="card stat-card h-100">
+                            <div class="card-body p-4 text-center">
+                                <div class="stat-icon bg-success bg-opacity-10 text-success mx-auto">
+                                    <i class="fas fa-eye"></i>
                                 </div>
+                                <h2 class="fw-bold text-dark mb-2" id="totalViews">12,450</h2>
+                                <p class="text-muted fw-semibold mb-2 text-uppercase letter-spacing-1">Total Views</p>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width: 85%"></div>
+                                </div>
+                                <small class="text-success fw-bold mt-2 d-block">
+                                    <i class="fas fa-arrow-up"></i> +15% this month
+                                </small>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-xl-3 col-md-6">
-                        <div class="card card-modern border-0 shadow-sm">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
-                                        <i class="fas fa-dollar-sign"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="text-muted text-sm mb-1">TOTAL EARNINGS</div>
-                                        <div class="h4 mb-0 fw-bold" id="totalEarnings">$2,340</div>
-                                    </div>
+                        <div class="card stat-card h-100">
+                            <div class="card-body p-4 text-center">
+                                <div class="stat-icon bg-info bg-opacity-10 text-info mx-auto">
+                                    <i class="fas fa-dollar-sign"></i>
                                 </div>
+                                <h2 class="fw-bold text-dark mb-2" id="totalEarnings">$2,340</h2>
+                                <p class="text-muted fw-semibold mb-2 text-uppercase letter-spacing-1">Total Earnings</p>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-info" style="width: 65%"></div>
+                                </div>
+                                <small class="text-success fw-bold mt-2 d-block">
+                                    <i class="fas fa-arrow-up"></i> +$245 this week
+                                </small>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-xl-3 col-md-6">
-                        <div class="card card-modern border-0 shadow-sm">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
-                                        <i class="fas fa-users"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="text-muted text-sm mb-1">SUBSCRIBERS</div>
-                                        <div class="h4 mb-0 fw-bold" id="subscribers">456</div>
-                                    </div>
+                        <div class="card stat-card h-100">
+                            <div class="card-body p-4 text-center">
+                                <div class="stat-icon bg-warning bg-opacity-10 text-warning mx-auto">
+                                    <i class="fas fa-users"></i>
                                 </div>
+                                <h2 class="fw-bold text-dark mb-2" id="subscribers">456</h2>
+                                <p class="text-muted fw-semibold mb-2 text-uppercase letter-spacing-1">Subscribers</p>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-warning" style="width: 55%"></div>
+                                </div>
+                                <small class="text-success fw-bold mt-2 d-block">
+                                    <i class="fas fa-arrow-up"></i> +23 this week
+                                </small>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="row g-4">
-                    <!-- Earnings Table -->
+                    <!-- Enhanced Earnings Table -->
                     <div class="col-lg-8">
-                        <div class="card card-modern">
+                        <div class="card content-card">
                             <div class="card-header bg-transparent border-bottom">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center">
+                                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
+                                    <div class="d-flex align-items-center mb-2 mb-md-0">
                                         <div class="avatar bg-success bg-opacity-10 text-success me-3">
                                             <i class="fas fa-dollar-sign"></i>
                                         </div>
                                         <div>
-                                            <h5 class="card-title mb-0 fw-semibold">Recent Earnings</h5>
-                                            <p class="text-muted text-sm mb-0">Viewer purchases and video sales</p>
+                                            <h4 class="card-title mb-1 fw-bold">Recent Earnings</h4>
+                                            <p class="text-muted mb-0">Viewer purchases and video sales</p>
                                         </div>
                                     </div>
-                                    <button class="btn btn-sm btn-outline-success" onclick="exportEarnings()">
-                                        <i class="fas fa-download me-1"></i>Export
+                                    <button class="btn btn-outline-success btn-modern" onclick="exportEarnings()">
+                                        <i class="fas fa-download me-2"></i>Export Data
                                     </button>
                                 </div>
                             </div>
@@ -181,11 +600,11 @@
                                     <table class="table table-hover mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th class="px-4 py-3 fw-semibold">Video</th>
-                                                <th class="px-4 py-3 fw-semibold">Viewer</th>
-                                                <th class="px-4 py-3 fw-semibold">Purchase Date</th>
-                                                <th class="px-4 py-3 fw-semibold">Price</th>
-                                                <th class="px-4 py-3 fw-semibold">Status</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Video</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Viewer</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Date</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Price</th>
+                                                <th class="px-4 py-4 fw-bold border-0 text-uppercase">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody id="earningsTableBody">
@@ -193,11 +612,11 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="p-3 border-top">
-                                    <div class="d-flex justify-content-between align-items-center text-sm">
-                                        <span class="text-muted">Showing 1-10 of 45 transactions</span>
+                                <div class="p-4 border-top bg-light bg-opacity-50">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted fw-semibold">Showing 1-10 of 45 transactions</span>
                                         <div>
-                                            <button class="btn btn-sm btn-outline-secondary me-1" disabled>Previous</button>
+                                            <button class="btn btn-sm btn-outline-secondary me-2" disabled>Previous</button>
                                             <button class="btn btn-sm btn-outline-secondary">Next</button>
                                         </div>
                                     </div>
@@ -206,9 +625,9 @@
                         </div>
                     </div>
 
-                    <!-- Recent Videos -->
+                    <!-- Enhanced Recent Videos -->
                     <div class="col-lg-4">
-                        <div class="card card-modern">
+                        <div class="card content-card">
                             <div class="card-header bg-transparent border-bottom">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="d-flex align-items-center">
@@ -216,14 +635,15 @@
                                             <i class="fas fa-video"></i>
                                         </div>
                                         <div>
-                                            <h5 class="card-title mb-0 fw-semibold">Recent Videos</h5>
+                                            <h4 class="card-title mb-1 fw-bold">Recent Videos</h4>
+                                            <p class="text-muted mb-0">Latest uploads</p>
                                         </div>
                                     </div>
-                                    <a href="videos.html" class="btn btn-sm btn-outline-primary">View All</a>
+                                    <a href="videos.html" class="btn btn-outline-primary btn-modern">View All</a>
                                 </div>
                             </div>
                             <div class="card-body p-4">
-                                <div class="d-grid gap-3" id="recentVideos">
+                                <div class="d-grid gap-4" id="recentVideos">
                                     <!-- Dynamic content will be loaded here -->
                                 </div>
                             </div>
@@ -234,22 +654,22 @@
         </div>
     </div>
 
-    <!-- Upload Video Modal -->
+    <!-- Enhanced Upload Video Modal -->
     <div class="modal fade" id="uploadVideoModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-bottom">
-                    <h5 class="modal-title fw-bold">
-                        <i class="fas fa-upload text-success me-2"></i>
+                    <h4 class="modal-title fw-bold">
+                        <i class="fas fa-upload text-success me-3"></i>
                         Upload New Video
-                    </h5>
+                    </h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <form id="uploadVideoForm">
-                        <div class="row g-3">
+                        <div class="row g-4">
                             <div class="col-12">
-                                <label for="videoTitle" class="form-label fw-semibold">Video Title</label>
+                                <label for="videoTitle" class="form-label">Video Title</label>
                                 <input type="text" class="form-control" id="videoTitle" placeholder="Enter your video title..." required>
                                 <div class="invalid-feedback">
                                     Please provide a video title.
@@ -257,21 +677,21 @@
                             </div>
 
                             <div class="col-12">
-                                <label for="videoDescription" class="form-label fw-semibold">Description</label>
-                                <textarea class="form-control" id="videoDescription" rows="3" placeholder="Describe your video content..."></textarea>
+                                <label for="videoDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="videoDescription" rows="4" placeholder="Describe your video content..."></textarea>
                             </div>
 
                             <div class="col-md-6">
-                                <label for="videoPrice" class="form-label fw-semibold">Price ($)</label>
+                                <label for="videoPrice" class="form-label">Price ($)</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="videoPrice" step="0.01" min="0" value="9.99" required>
+                                    <span class="input-group-text bg-success text-white border-success fw-bold">$</span>
+                                    <input type="number" class="form-control border-start-0" id="videoPrice" step="0.01" min="0" value="9.99" required>
                                 </div>
                                 <div class="form-text">Set your video price for viewers to purchase</div>
                             </div>
 
                             <div class="col-md-6">
-                                <label for="videoCategory" class="form-label fw-semibold">Category</label>
+                                <label for="videoCategory" class="form-label">Category</label>
                                 <select class="form-select" id="videoCategory" required>
                                     <option value="">Select category...</option>
                                     <option value="education">Education</option>
@@ -284,17 +704,17 @@
                             </div>
 
                             <div class="col-12">
-                                <label for="videoFile" class="form-label fw-semibold">Video File</label>
+                                <label for="videoFile" class="form-label">Video File</label>
                                 <input type="file" class="form-control" id="videoFile" accept="video/*" required>
                                 <div class="form-text">Maximum file size: 500MB. Supported formats: MP4, MOV, AVI</div>
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <div class="modal-footer border-top p-4">
+                    <button type="button" class="btn btn-outline-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" form="uploadVideoForm" class="btn btn-success btn-modern">
-                        <i class="fas fa-upload me-1"></i>Upload Video
+                        <i class="fas fa-upload me-2"></i>Upload Video
                     </button>
                 </div>
             </div>

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,101 +9,442 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
+    <style>
+        .auth-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Floating background elements */
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .floating-shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .floating-shape:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .floating-shape:nth-child(2) {
+            top: 20%;
+            right: 15%;
+            animation-delay: 5s;
+        }
+        
+        .floating-shape:nth-child(3) {
+            bottom: 30%;
+            left: 20%;
+            animation-delay: 10s;
+        }
+        
+        .floating-shape:nth-child(4) {
+            bottom: 15%;
+            right: 10%;
+            animation-delay: 15s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(90deg); }
+            50% { transform: translateY(-40px) rotate(180deg); }
+            75% { transform: translateY(-20px) rotate(270deg); }
+        }
+        
+        .auth-container {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .auth-card {
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.95);
+        }
+        
+        .brand-section {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 20px 0 0 20px;
+        }
+        
+        .form-control {
+            border-radius: 12px;
+            padding: 14px 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            transform: translateY(-1px);
+        }
+        
+        .btn-modern {
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-modern:hover::before {
+            left: 100%;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+        }
+        
+        .demo-card {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border-radius: 15px;
+            border: none;
+        }
+        
+        .demo-account {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .demo-account:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+            border-color: #667eea;
+        }
+        
+        .feature-highlight {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-highlight:hover {
+            transform: translateY(-5px);
+        }
+        
+        .icon-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Mobile responsive improvements */
+        @media (max-width: 991.98px) {
+            .brand-section {
+                border-radius: 20px 20px 0 0;
+                padding: 2rem 1rem !important;
+            }
+            
+            .auth-card {
+                margin: 1rem;
+                border-radius: 20px;
+            }
+            
+            .floating-shapes {
+                display: none;
+            }
+            
+            .feature-highlights {
+                flex-direction: column !important;
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 767.98px) {
+            .form-control {
+                padding: 12px 16px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            .btn-modern {
+                padding: 12px 20px;
+            }
+            
+            .auth-card {
+                margin: 0.5rem;
+            }
+            
+            .demo-accounts {
+                flex-direction: column !important;
+            }
+            
+            .demo-account {
+                margin-bottom: 0.5rem;
+            }
+        }
+        
+        @media (max-width: 575.98px) {
+            .container-fluid {
+                padding: 0;
+            }
+            
+            .auth-card {
+                border-radius: 0;
+                margin: 0;
+                min-height: 100vh;
+            }
+            
+            .brand-section {
+                border-radius: 0;
+                padding: 1.5rem 1rem !important;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .auth-card {
+                background: rgba(33, 37, 41, 0.95);
+                color: white;
+            }
+            
+            .form-control {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-color: rgba(255, 255, 255, 0.2);
+                color: white;
+            }
+            
+            .form-control::placeholder {
+                color: rgba(255, 255, 255, 0.6);
+            }
+        }
+        
+        /* Input icons positioning */
+        .input-group-text {
+            background: transparent;
+            border: none;
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            padding-left: 16px;
+        }
+        
+        .input-with-icon {
+            position: relative;
+        }
+        
+        .input-with-icon .form-control {
+            padding-left: 50px;
+        }
+    </style>
 </head>
 <body class="auth-bg">
-    <div class="container-fluid vh-100">
-        <div class="row h-100">
-            <!-- Left Side - Branding -->
-            <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center bg-primary text-white">
-                <div class="text-center">
-                    <i class="fas fa-play-circle display-1 mb-4"></i>
-                    <h2 class="fw-bold">Welcome Back to VideoHub</h2>
-                    <p class="lead">Sign in to access your dashboard and manage your content</p>
-                </div>
-            </div>
-            
-            <!-- Right Side - Login Form -->
-            <div class="col-lg-6 d-flex flex-column justify-content-center">
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-md-6 col-lg-8 col-xl-6">
-                            <div class="text-center mb-4 d-lg-none">
-                                <h2 class="text-primary"><i class="fas fa-play-circle me-2"></i>VideoHub</h2>
+    <!-- Floating Background Shapes -->
+    <div class="floating-shapes">
+        <div class="floating-shape">
+            <i class="fas fa-video fa-4x text-white"></i>
+        </div>
+        <div class="floating-shape">
+            <i class="fas fa-play-circle fa-5x text-white"></i>
+        </div>
+        <div class="floating-shape">
+            <i class="fas fa-users fa-3x text-white"></i>
+        </div>
+        <div class="floating-shape">
+            <i class="fas fa-chart-line fa-4x text-white"></i>
+        </div>
+    </div>
+
+    <div class="container-fluid vh-100 d-flex align-items-center auth-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-xl-10 col-xxl-8">
+                    <div class="card auth-card border-0 overflow-hidden">
+                        <div class="row g-0 min-vh-50">
+                            <!-- Left Side - Brand Section -->
+                            <div class="col-lg-6 brand-section d-flex flex-column justify-content-center align-items-center text-white p-4 p-lg-5">
+                                <div class="text-center w-100">
+                                    <!-- Logo and Title -->
+                                    <div class="mb-4">
+                                        <div class="glass-effect rounded-circle p-3 d-inline-flex mb-3">
+                                            <i class="fas fa-play-circle fa-3x text-white"></i>
+                                        </div>
+                                        <h1 class="fw-bold mb-2 display-6">Welcome Back</h1>
+                                        <p class="lead opacity-75 mb-0">Sign in to VideoHub and continue your journey</p>
+                                    </div>
+                                    
+                                    <!-- Feature Highlights -->
+                                    <div class="row g-3 feature-highlights d-none d-lg-flex">
+                                        <div class="col-4">
+                                            <div class="feature-highlight p-3 text-center">
+                                                <i class="fas fa-upload fa-2x mb-2 icon-gradient"></i>
+                                                <div class="small fw-semibold">Upload</div>
+                                                <div class="small opacity-75">Your Content</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="feature-highlight p-3 text-center">
+                                                <i class="fas fa-chart-line fa-2x mb-2 icon-gradient"></i>
+                                                <div class="small fw-semibold">Track</div>
+                                                <div class="small opacity-75">Analytics</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="feature-highlight p-3 text-center">
+                                                <i class="fas fa-dollar-sign fa-2x mb-2 icon-gradient"></i>
+                                                <div class="small fw-semibold">Earn</div>
+                                                <div class="small opacity-75">Revenue</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="card border-0 shadow-lg">
-                                <div class="card-body p-4">
-                                    <div class="text-center mb-4">
-                                        <h3 class="fw-bold text-dark mb-2">Welcome Back</h3>
-                                        <p class="text-muted mb-0">Sign in to your account</p>
+                            <!-- Right Side - Login Form -->
+                            <div class="col-lg-6 d-flex flex-column justify-content-center">
+                                <div class="p-4 p-lg-5">
+                                    <!-- Mobile Header -->
+                                    <div class="text-center mb-4 d-lg-none">
+                                        <div class="glass-effect rounded-circle p-2 d-inline-flex mb-2">
+                                            <i class="fas fa-play-circle fa-2x" style="color: #667eea;"></i>
+                                        </div>
+                                        <h2 class="fw-bold" style="color: #667eea;">VideoHub</h2>
                                     </div>
                                     
-                                    <!-- Demo Login Options -->
-                                    <div class="alert alert-light border border-info">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-info-circle text-info me-2"></i>
+                                    <div class="text-center mb-4">
+                                        <h3 class="fw-bold text-dark mb-2">Sign In</h3>
+                                        <p class="text-muted mb-0">Welcome back! Please sign in to your account.</p>
+                                    </div>
+                                    
+                                    <!-- Demo Accounts -->
+                                    <div class="demo-card p-3 mb-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-info bg-opacity-10 rounded-circle p-2 me-2">
+                                                <i class="fas fa-info-circle text-info"></i>
+                                            </div>
                                             <strong class="text-info">Demo Accounts</strong>
                                         </div>
-                                        <div class="small text-muted">
-                                            <div class="row">
-                                                <div class="col-sm-4 mb-1">Admin: admin@videohub.com</div>
-                                                <div class="col-sm-4 mb-1">Creator: creator@videohub.com</div>
-                                                <div class="col-sm-4 mb-1">Viewer: viewer@videohub.com</div>
+                                        <div class="row g-2 demo-accounts">
+                                            <div class="col-lg-4 col-md-4">
+                                                <div class="demo-account p-2 text-center">
+                                                    <i class="fas fa-user-shield text-danger mb-1"></i>
+                                                    <div class="fw-bold small">Admin</div>
+                                                    <div class="small text-muted">admin@videohub.com</div>
+                                                    <div class="small text-muted">admin123</div>
+                                                </div>
                                             </div>
-                                            <div class="text-center mt-2"><em>Password: admin123 / creator123 / viewer123</em></div>
+                                            <div class="col-lg-4 col-md-4">
+                                                <div class="demo-account p-2 text-center">
+                                                    <i class="fas fa-video text-success mb-1"></i>
+                                                    <div class="fw-bold small">Creator</div>
+                                                    <div class="small text-muted">creator@videohub.com</div>
+                                                    <div class="small text-muted">creator123</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-4">
+                                                <div class="demo-account p-2 text-center">
+                                                    <i class="fas fa-play-circle text-primary mb-1"></i>
+                                                    <div class="fw-bold small">Viewer</div>
+                                                    <div class="small text-muted">viewer@videohub.com</div>
+                                                    <div class="small text-muted">viewer123</div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <form id="loginForm" class="space-y-3">
+                                    <!-- Login Form -->
+                                    <form id="loginForm">
                                         <div class="mb-3">
-                                            <label for="email" class="form-label fw-medium text-dark">Email Address</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-light border-end-0">
+                                            <label for="email" class="form-label fw-semibold">Email Address</label>
+                                            <div class="input-with-icon">
+                                                <div class="input-group-text">
                                                     <i class="fas fa-envelope text-muted"></i>
-                                                </span>
-                                                <input type="email" class="form-control form-control-modern border-start-0 ps-0" id="email" placeholder="Enter your email" required>
+                                                </div>
+                                                <input type="email" class="form-control" id="email" placeholder="Enter your email address" required>
                                             </div>
                                         </div>
                                         
                                         <div class="mb-3">
-                                            <label for="password" class="form-label fw-medium text-dark">Password</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-light border-end-0">
+                                            <label for="password" class="form-label fw-semibold">Password</label>
+                                            <div class="input-with-icon">
+                                                <div class="input-group-text">
                                                     <i class="fas fa-lock text-muted"></i>
-                                                </span>
-                                                <input type="password" class="form-control form-control-modern border-start-0 ps-0" id="password" placeholder="Enter your password" required>
+                                                </div>
+                                                <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
                                             </div>
                                         </div>
                                         
-                                        <div class="d-flex justify-content-between align-items-center mb-4">
-                                            <div class="form-check">
+                                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+                                            <div class="form-check mb-2 mb-sm-0">
                                                 <input type="checkbox" class="form-check-input" id="rememberMe">
                                                 <label class="form-check-label small text-muted" for="rememberMe">
                                                     Remember me
                                                 </label>
                                             </div>
-                                            <a href="forgot-password.html" class="text-decoration-none small">Forgot Password?</a>
+                                            <a href="forgot-password.html" class="text-decoration-none small fw-semibold" style="color: #667eea;">
+                                                Forgot Password?
+                                            </a>
                                         </div>
                                         
-                                        <button type="submit" class="btn btn-primary btn-modern w-100 py-3 mb-3">
+                                        <button type="submit" class="btn btn-modern w-100 py-3 mb-3 fw-bold text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
                                             <i class="fas fa-sign-in-alt me-2"></i>Sign In to VideoHub
                                         </button>
                                     </form>
                                     
-                                    <hr class="my-4">
+                                    <!-- Divider -->
+                                    <div class="position-relative my-4">
+                                        <hr class="border-0" style="height: 1px; background: linear-gradient(90deg, transparent, #dee2e6, transparent);">
+                                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">OR</span>
+                                    </div>
                                     
+                                    <!-- Footer Links -->
                                     <div class="text-center">
-                                        <p class="mb-0">Don't have an account? 
-                                            <a href="signup.html" class="text-decoration-none">Sign up here</a>
+                                        <p class="mb-3 text-muted small">
+                                            Don't have an account? 
+                                            <a href="signup.html" class="text-decoration-none fw-bold" style="color: #667eea;">Create Account</a>
                                         </p>
+                                        <a href="../index.html" class="btn btn-outline-secondary btn-modern">
+                                            <i class="fas fa-arrow-left me-2"></i>Back to Home
+                                        </a>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="text-center mt-3">
-                                <a href="../index.html" class="btn btn-link">
-                                    <i class="fas fa-arrow-left me-2"></i>Back to Home
-                                </a>
                             </div>
                         </div>
                     </div>
@@ -114,5 +456,34 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/auth.js"></script>
+    <script>
+        // Demo account click handlers
+        document.querySelectorAll('.demo-account').forEach(account => {
+            account.addEventListener('click', function() {
+                const email = this.querySelector('.small.text-muted').textContent;
+                const password = this.querySelectorAll('.small.text-muted')[1].textContent;
+                
+                document.getElementById('email').value = email;
+                document.getElementById('password').value = password;
+                
+                // Add visual feedback
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+            });
+        });
+        
+        // Enhanced form interactions
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.classList.remove('focused');
+            });
+        });
+    </script>
 </body>
 </html>

@@ -14,8 +14,10 @@ class CreatorManager {
     async init() {
         this.loadMockData(); // Fallback for demo
         this.bindEvents();
-        this.loadPageSpecificHandlers();
         await this.loadDashboardData();
+        
+        // Load page-specific handlers after data is loaded
+        this.loadPageSpecificHandlers();
     }
 
     loadMockData() {
@@ -42,6 +44,13 @@ class CreatorManager {
                 this.videos = window.dataService.cache.videos.filter(v => v.creatorId === currentCreatorId) || [];
                 this.earnings = window.dataService.cache.earnings.filter(e => e.creatorId === currentCreatorId) || [];
                 
+                console.log('Filtered creator data:', {
+                    allVideos: window.dataService.cache.videos.length,
+                    creatorVideos: this.videos.length,
+                    creatorId: currentCreatorId,
+                    sampleVideo: window.dataService.cache.videos[0]
+                });
+                
                 // Calculate stats from loaded data
                 this.stats = {
                     totalVideos: this.videos.length,
@@ -61,6 +70,12 @@ class CreatorManager {
 
             this.updateDashboardDisplay();
             console.log('Creator data loaded:', { videos: this.videos.length, earnings: this.earnings.length });
+            
+            // Trigger page-specific updates if we're on the videos page
+            const currentPage = window.location.pathname.split('/').pop();
+            if (currentPage === 'videos.html') {
+                this.setupVideosPage();
+            }
         } catch (error) {
             console.error('Error loading creator data:', error);
             this.updateDashboardDisplay();
@@ -69,10 +84,15 @@ class CreatorManager {
 
     updateDashboardDisplay() {
         // Update stats cards
-        document.getElementById('totalVideos')?.textContent = this.stats.totalVideos || '--';
-        document.getElementById('totalViews')?.textContent = this.formatNumber(this.stats.totalViews) || '--';
-        document.getElementById('totalEarnings')?.textContent = this.formatCurrency(this.stats.totalEarnings) || '--';
-        document.getElementById('subscribers')?.textContent = this.stats.subscribers || '--';
+        const totalVideosEl = document.getElementById('totalVideos');
+        const totalViewsEl = document.getElementById('totalViews');
+        const totalEarningsEl = document.getElementById('totalEarnings');
+        const subscribersEl = document.getElementById('subscribers');
+
+        if (totalVideosEl) totalVideosEl.textContent = this.stats.totalVideos || '--';
+        if (totalViewsEl) totalViewsEl.textContent = this.formatNumber(this.stats.totalViews) || '--';
+        if (totalEarningsEl) totalEarningsEl.textContent = this.formatCurrency(this.stats.totalEarnings) || '--';
+        if (subscribersEl) subscribersEl.textContent = this.stats.subscribers || '--';
 
         // Update earnings table and recent videos
         this.loadEarningsTable();
@@ -155,6 +175,12 @@ class CreatorManager {
         const uploadForm = document.getElementById('uploadVideoForm');
         if (uploadForm) {
             uploadForm.addEventListener('submit', (e) => this.handleVideoUpload(e));
+        }
+
+        // Update video button
+        const updateBtn = document.getElementById('updateVideo');
+        if (updateBtn) {
+            updateBtn.addEventListener('click', (e) => this.handleVideoUpdate(e));
         }
 
         // Refresh button
@@ -285,6 +311,49 @@ class CreatorManager {
         return isValid;
     }
 
+    async handleVideoUpdate(e) {
+        e.preventDefault();
+        
+        const form = document.getElementById('editVideoForm');
+        const videoId = parseInt(document.getElementById('editVideoId').value);
+        const videoData = {
+            id: videoId,
+            title: document.getElementById('editVideoTitle').value,
+            description: document.getElementById('editVideoDescription').value,
+            price: parseFloat(document.getElementById('editVideoPrice').value),
+            category: document.getElementById('editVideoCategory').value
+        };
+
+        // Show loading state
+        const submitBtn = e.target;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Updating...';
+        submitBtn.disabled = true;
+
+        try {
+            // In demo mode, just update the local data
+            const videoIndex = this.videos.findIndex(v => v.id === videoId);
+            if (videoIndex !== -1) {
+                this.videos[videoIndex] = { ...this.videos[videoIndex], ...videoData };
+                this.renderVideosGrid(this.videos);
+                this.updateVideoStats();
+            }
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editVideoModal'));
+            modal.hide();
+            
+            window.apiService.showSuccessMessage('Video updated successfully');
+        } catch (error) {
+            console.error('Error updating video:', error);
+            window.apiService.showErrorMessage('Failed to update video');
+        } finally {
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
     loadPageSpecificHandlers() {
         const currentPage = window.location.pathname.split('/').pop();
         
@@ -307,20 +376,48 @@ class CreatorManager {
 
     async setupVideosPage() {
         try {
-            const result = await window.apiService.getCreatorVideos();
-            if (result.success) {
-                this.renderVideosGrid(result.data.videos || result.data);
-            } else {
-                this.renderVideosGrid(this.videos);
-            }
-        } catch (error) {
+            console.log('Setting up creator videos page with', this.videos.length, 'videos');
             this.renderVideosGrid(this.videos);
+            this.updateVideoStats();
+        } catch (error) {
+            console.error('Error setting up videos page:', error);
+            this.renderVideosGrid([]);
         }
+    }
+
+    updateVideoStats() {
+        const totalVideos = this.videos.length;
+        const publishedVideos = this.videos.filter(v => v.status === 'published').length;
+        const pendingVideos = this.videos.filter(v => v.status === 'pending').length;
+        const totalViews = this.videos.reduce((sum, v) => sum + (v.views || 0), 0);
+
+        // Update stat cards on videos page using specific IDs
+        const totalVideosEl = document.getElementById('totalVideos');
+        const publishedVideosEl = document.getElementById('publishedVideos');
+        const pendingVideosEl = document.getElementById('pendingVideos');
+        const totalViewsEl = document.getElementById('totalViews');
+
+        if (totalVideosEl) totalVideosEl.textContent = totalVideos;
+        if (publishedVideosEl) publishedVideosEl.textContent = publishedVideos;
+        if (pendingVideosEl) pendingVideosEl.textContent = pendingVideos;
+        if (totalViewsEl) totalViewsEl.textContent = this.formatNumber(totalViews);
+
+        console.log('Updated video stats:', { totalVideos, publishedVideos, pendingVideos, totalViews });
     }
 
     renderVideosGrid(videos) {
         const grid = document.getElementById('videosGrid');
-        if (!grid) return;
+        if (!grid) {
+            console.error('Videos grid container not found');
+            return;
+        }
+
+        console.log('Rendering videos grid with', videos.length, 'videos');
+
+        if (!videos || videos.length === 0) {
+            grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No videos found</p></div>';
+            return;
+        }
 
         grid.innerHTML = videos.map(video => `
             <div class="col-lg-4 col-md-6 mb-4">
@@ -373,16 +470,10 @@ class CreatorManager {
                         
                         <div class="btn-group w-100" role="group">
                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="editVideo(${video.id})" title="Edit video">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-success" onclick="viewVideoStats(${video.id})" title="View stats">
-                                <i class="fas fa-chart-bar"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="duplicateVideo(${video.id})" title="Duplicate">
-                                <i class="fas fa-copy"></i>
+                                <i class="fas fa-edit me-1"></i>Edit
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteVideo(${video.id})" title="Delete video">
-                                <i class="fas fa-trash"></i>
+                                <i class="fas fa-trash me-1"></i>Delete
                             </button>
                         </div>
                     </div>
@@ -443,40 +534,95 @@ window.exportEarnings = function() {
 };
 
 window.editVideo = function(videoId) {
-    window.apiService.showSuccessMessage(`Edit video ${videoId} functionality would open here`);
+    if (window.creatorManager) {
+        const video = window.creatorManager.videos.find(v => v.id === videoId);
+        if (!video) {
+            console.error('Video not found:', videoId);
+            return;
+        }
+
+        // Populate edit modal with video data
+        document.getElementById('editVideoId').value = video.id;
+        document.getElementById('editVideoTitle').value = video.title;
+        document.getElementById('editVideoDescription').value = video.description || '';
+        document.getElementById('editVideoPrice').value = video.price;
+        document.getElementById('editVideoCategory').value = video.category;
+
+        // Show edit modal
+        const modal = new bootstrap.Modal(document.getElementById('editVideoModal'));
+        modal.show();
+    }
 };
 
 window.viewVideoStats = function(videoId) {
-    window.apiService.showSuccessMessage(`Video ${videoId} stats would be displayed here`);
+    if (window.creatorManager) {
+        const video = window.creatorManager.videos.find(v => v.id === videoId);
+        if (!video) {
+            console.error('Video not found:', videoId);
+            return;
+        }
+
+        // Show simple stats in alert for demo
+        alert(`Video Stats for "${video.title}":
+        
+Views: ${window.creatorManager.formatNumber(video.views || 0)}
+Likes: ${window.creatorManager.formatNumber(video.likes || 0)}
+Earnings: ${window.creatorManager.formatCurrency(video.earnings || 0)}
+Status: ${video.status}
+Upload Date: ${new Date(video.uploadDate).toLocaleDateString()}`);
+    }
 };
 
 window.deleteVideo = async function(videoId) {
-    if (confirm('Are you sure you want to delete this video?')) {
-        try {
-            const result = await window.apiService.deleteVideo(videoId);
-            if (result.success) {
+    if (window.creatorManager) {
+        const video = window.creatorManager.videos.find(v => v.id === videoId);
+        if (!video) {
+            console.error('Video not found:', videoId);
+            return;
+        }
+
+        // Show confirmation dialog
+        if (confirm(`Are you sure you want to delete "${video.title}"? This action cannot be undone.`)) {
+            try {
+                // In demo mode, just remove from local data
+                window.creatorManager.videos = window.creatorManager.videos.filter(v => v.id !== videoId);
+                window.creatorManager.renderVideosGrid(window.creatorManager.videos);
+                window.creatorManager.updateVideoStats();
+                
                 window.apiService.showSuccessMessage('Video deleted successfully');
-                window.creatorManager.setupVideosPage();
-            } else {
-                window.apiService.handleApiError(result, 'Failed to delete video');
+            } catch (error) {
+                console.error('Error deleting video:', error);
+                window.apiService.showErrorMessage('Failed to delete video');
             }
-        } catch (error) {
-            window.apiService.showSuccessMessage('Demo mode: Video deletion simulated');
         }
     }
 };
 
 window.duplicateVideo = async function(videoId) {
-    try {
-        const result = await window.apiService.duplicateVideo(videoId);
-        if (result.success) {
-            window.apiService.showSuccessMessage('Video duplicated successfully');
-            window.creatorManager.setupVideosPage();
-        } else {
-            window.apiService.handleApiError(result, 'Failed to duplicate video');
+    if (window.creatorManager) {
+        const video = window.creatorManager.videos.find(v => v.id === videoId);
+        if (!video) {
+            console.error('Video not found:', videoId);
+            return;
         }
-    } catch (error) {
-        window.apiService.showSuccessMessage('Demo mode: Video duplication simulated');
+
+        // Create duplicate with new ID
+        const newVideo = {
+            ...video,
+            id: Math.max(...window.creatorManager.videos.map(v => v.id)) + 1,
+            title: video.title + ' (Copy)',
+            status: 'draft',
+            views: 0,
+            likes: 0,
+            earnings: 0,
+            uploadDate: new Date().toISOString().split('T')[0]
+        };
+
+        window.creatorManager.videos.push(newVideo);
+        window.creatorManager.renderVideosGrid(window.creatorManager.videos);
+        window.creatorManager.updateVideoStats();
+        
+        window.apiService.showSuccessMessage('Video duplicated successfully');
     }
 };
 

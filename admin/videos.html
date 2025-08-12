@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,24 +9,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<body class="bg-light">
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
         <div class="container-fluid">
-            <a class="navbar-brand" href="dashboard.html">
-                <i class="fas fa-shield-alt me-2"></i>VideoHub Admin
+            <a class="navbar-brand fw-bold" href="dashboard.html">
+                <i class="fas fa-shield-alt me-2 text-primary"></i>VideoHub Admin
             </a>
             
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+            <!-- Mobile menu button -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="d-flex align-items-center">
+                <!-- User Profile -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="fas fa-user-circle me-2"></i>Admin User
-                    </a>
-                    <ul class="dropdown-menu">
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item text-danger" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                     </ul>
                 </div>
             </div>
@@ -35,101 +43,130 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
-                <div class="position-sticky pt-3">
+            <div class="offcanvas-lg offcanvas-start bg-white shadow-sm" id="adminSidebar" style="width: 280px;">
+                <div class="offcanvas-header d-lg-none">
+                    <h5 class="offcanvas-title">Navigation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+                </div>
+                <nav class="offcanvas-body pt-4">
                     <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="dashboard.html">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        <li class="nav-item mb-1">
+                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="dashboard.html">
+                                <i class="fas fa-tachometer-alt me-3 text-primary"></i>
+                                <span>Dashboard</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="users.html">
-                                <i class="fas fa-users me-2"></i>Users
+                        <li class="nav-item mb-1">
+                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="users.html">
+                                <i class="fas fa-users me-3 text-success"></i>
+                                <span>Users</span>
+                                <span class="badge bg-light text-dark ms-auto">24</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="videos.html">
-                                <i class="fas fa-video me-2"></i>Videos
+                        <li class="nav-item mb-1">
+                            <a class="nav-link active d-flex align-items-center py-2 px-3 rounded" href="videos.html">
+                                <i class="fas fa-video me-3 text-info"></i>
+                                <span>Videos</span>
+                                <span class="badge bg-light text-dark ms-auto">156</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="analytics.html">
-                                <i class="fas fa-chart-bar me-2"></i>Analytics
+                        <li class="nav-item mb-1">
+                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="analytics.html">
+                                <i class="fas fa-chart-bar me-3 text-warning"></i>
+                                <span>Analytics</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="profile.html">
-                                <i class="fas fa-cog me-2"></i>Settings
+                        <li class="nav-item mb-1">
+                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="profile.html">
+                                <i class="fas fa-cog me-3 text-secondary"></i>
+                                <span>Settings</span>
                             </a>
                         </li>
                     </ul>
-                </div>
-            </nav>
+                </nav>
+            </div>
 
             <!-- Main Content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">Video Management</h1>
-                    <div class="btn-toolbar mb-2 mb-md-0">
-                        <div class="btn-group me-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-download me-2"></i>Export
-                            </button>
-                        </div>
+            <main class="col-lg-10 ms-lg-auto px-3 px-md-4 py-4">
+                <!-- Header -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+                    <div class="mb-3 mb-md-0">
+                        <h1 class="h3 mb-1 fw-bold">Video Management</h1>
+                        <p class="text-muted mb-0">Review, approve, and manage all platform videos</p>
                     </div>
+                    <button type="button" class="btn btn-success">
+                        <i class="fas fa-download me-2"></i>Export Report
+                    </button>
                 </div>
 
                 <!-- Stats Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card bg-primary text-white">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <p class="card-text">Total Videos</p>
-                                        <h4>3,678</h4>
+                <div class="row g-4 mb-5">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden">
+                            <div class="position-absolute top-0 start-0 w-100 h-1 bg-primary"></div>
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                            <i class="fas fa-video text-primary fa-xl"></i>
+                                        </div>
                                     </div>
-                                    <i class="fas fa-video fa-2x"></i>
+                                    <div class="flex-grow-1 ms-4">
+                                        <h2 class="h3 mb-1 fw-bold text-dark">3,678</h2>
+                                        <p class="text-muted mb-0 fw-medium">Total Videos</p>
+                                        <small class="text-muted">Content library</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card bg-success text-white">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <p class="card-text">Published</p>
-                                        <h4>3,245</h4>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                                            <i class="fas fa-check-circle text-success fa-lg"></i>
+                                        </div>
                                     </div>
-                                    <i class="fas fa-check-circle fa-2x"></i>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h3 class="h4 mb-0 fw-bold">3,245</h3>
+                                        <p class="text-muted mb-0 small">Published</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card bg-warning text-white">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <p class="card-text">Pending Review</p>
-                                        <h4>234</h4>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                                            <i class="fas fa-clock text-warning fa-lg"></i>
+                                        </div>
                                     </div>
-                                    <i class="fas fa-clock fa-2x"></i>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h3 class="h4 mb-0 fw-bold">234</h3>
+                                        <p class="text-muted mb-0 small">Pending Review</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card bg-danger text-white">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <p class="card-text">Flagged</p>
-                                        <h4>23</h4>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-danger bg-opacity-10 rounded-3 p-3">
+                                            <i class="fas fa-flag text-danger fa-lg"></i>
+                                        </div>
                                     </div>
-                                    <i class="fas fa-flag fa-2x"></i>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h3 class="h4 mb-0 fw-bold">23</h3>
+                                        <p class="text-muted mb-0 small">Flagged</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -137,100 +174,189 @@
                 </div>
 
                 <!-- Filters and Search -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" placeholder="Search videos..." id="searchInput">
-                    </div>
-                    <div class="col-md-2">
-                        <select class="form-select" id="statusFilter">
-                            <option value="">All Status</option>
-                            <option value="published">Published</option>
-                            <option value="pending">Pending</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="flagged">Flagged</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select class="form-select" id="creatorFilter">
-                            <option value="">All Creators</option>
-                            <option value="john_creator">John Creator</option>
-                            <option value="jane_creator">Jane Creator</option>
-                            <option value="mike_creator">Mike Creator</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select class="form-select" id="dateFilter">
-                            <option value="">All Dates</option>
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-primary w-100" id="applyFilters">
-                            <i class="fas fa-filter"></i> Filter
-                        </button>
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold">Search Videos</label>
+                                <input type="text" class="form-control" placeholder="Search by title or creator..." id="searchInput">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-semibold">Status</label>
+                                <select class="form-select" id="statusFilter">
+                                    <option value="">All Status</option>
+                                    <option value="published">Published</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="rejected">Rejected</option>
+                                    <option value="flagged">Flagged</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-semibold">Creator</label>
+                                <select class="form-select" id="creatorFilter">
+                                    <option value="">All Creators</option>
+                                    <option value="john_creator">John Creator</option>
+                                    <option value="jane_creator">Jane Creator</option>
+                                    <option value="mike_creator">Mike Creator</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-semibold">Date Range</label>
+                                <select class="form-select" id="dateFilter">
+                                    <option value="">All Dates</option>
+                                    <option value="today">Today</option>
+                                    <option value="week">This Week</option>
+                                    <option value="month">This Month</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-semibold">Category</label>
+                                <select class="form-select" id="categoryFilter">
+                                    <option value="">All Categories</option>
+                                    <option value="technology">Technology</option>
+                                    <option value="education">Education</option>
+                                    <option value="entertainment">Entertainment</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label small fw-semibold">&nbsp;</label>
+                                <button class="btn btn-primary w-100 d-block" id="applyFilters">
+                                    <i class="fas fa-filter"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Videos Grid -->
-                <div class="row" id="videosGrid">
-                    <!-- Video cards will be populated by JavaScript -->
+                <div class="row g-3 g-md-4" id="videosGrid">
+                    <!-- Sample video cards - will be populated by JavaScript -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/300x169/007bff/ffffff?text=Sample+Video" class="card-img-top" alt="Video Thumbnail">
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge bg-warning">Pending</span>
+                                </div>
+                                <div class="position-absolute bottom-0 end-0 m-2">
+                                    <span class="badge bg-dark">12:34</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold mb-2">JavaScript Advanced Concepts</h6>
+                                <p class="card-text text-muted small mb-2">by John Creator</p>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-primary fw-semibold">$19.99</span>
+                                    <small class="text-muted">1,234 views</small>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-success btn-sm flex-fill">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                    <button class="btn btn-danger btn-sm flex-fill">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#videoDetailsModal">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State (when no videos) -->
+                <div class="text-center py-5 d-none" id="emptyState">
+                    <div class="mb-4">
+                        <i class="fas fa-video fa-3x text-muted"></i>
+                    </div>
+                    <h4 class="text-muted mb-2">No Videos Found</h4>
+                    <p class="text-muted">Try adjusting your filters or search criteria.</p>
                 </div>
 
                 <!-- Pagination -->
-                <nav aria-label="Video pagination" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1">Previous</a>
-                        </li>
-                        <li class="page-item active">
-                            <a class="page-link" href="#">1</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">2</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">3</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">Next</a>
-                        </li>
-                    </ul>
-                </nav>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <span class="text-muted small">Showing 1-12 of 156 videos</span>
+                    <nav aria-label="Video pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">Previous</a>
+                            </li>
+                            <li class="page-item active">
+                                <a class="page-link" href="#">1</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">2</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">3</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
             </main>
         </div>
     </div>
 
     <!-- Video Details Modal -->
     <div class="modal fade" id="videoDetailsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Video Details</h5>
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-video text-primary me-2"></i>
+                        Video Details
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
+                    <div class="row g-4">
                         <div class="col-md-6">
                             <div class="video-thumbnail mb-3">
-                                <img id="modalVideoThumbnail" src="" class="img-fluid rounded" alt="Video Thumbnail">
+                                <img id="modalVideoThumbnail" src="https://via.placeholder.com/300x169/007bff/ffffff?text=Video+Preview" class="img-fluid rounded" alt="Video Thumbnail">
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <h5 id="modalVideoTitle"></h5>
-                            <p><strong>Creator:</strong> <span id="modalVideoCreator"></span></p>
-                            <p><strong>Duration:</strong> <span id="modalVideoDuration"></span></p>
-                            <p><strong>Upload Date:</strong> <span id="modalVideoDate"></span></p>
-                            <p><strong>Views:</strong> <span id="modalVideoViews"></span></p>
-                            <p><strong>Price:</strong> <span id="modalVideoPrice"></span></p>
-                            <p><strong>Status:</strong> <span id="modalVideoStatus"></span></p>
-                            <p><strong>Description:</strong></p>
-                            <p id="modalVideoDescription"></p>
+                            <h5 id="modalVideoTitle" class="fw-bold mb-3">JavaScript Advanced Concepts</h5>
+                            <div class="mb-3">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <p class="mb-1"><strong>Creator:</strong></p>
+                                        <p class="text-muted" id="modalVideoCreator">John Creator</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p class="mb-1"><strong>Duration:</strong></p>
+                                        <p class="text-muted" id="modalVideoDuration">45:30</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p class="mb-1"><strong>Upload Date:</strong></p>
+                                        <p class="text-muted" id="modalVideoDate">2024-03-10</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p class="mb-1"><strong>Views:</strong></p>
+                                        <p class="text-muted" id="modalVideoViews">1,234</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p class="mb-1"><strong>Price:</strong></p>
+                                        <p class="text-success fw-semibold" id="modalVideoPrice">$19.99</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p class="mb-1"><strong>Status:</strong></p>
+                                        <span class="badge bg-warning" id="modalVideoStatus">Pending</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="mb-1"><strong>Description:</strong></p>
+                                <p class="text-muted" id="modalVideoDescription">Deep dive into advanced JavaScript concepts including closures, prototypes, and async programming.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-top">
                     <button type="button" class="btn btn-success" id="approveVideo">
                         <i class="fas fa-check me-2"></i>Approve
                     </button>
@@ -240,7 +366,7 @@
                     <button type="button" class="btn btn-warning" id="flagVideo">
                         <i class="fas fa-flag me-2"></i>Flag
                     </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>

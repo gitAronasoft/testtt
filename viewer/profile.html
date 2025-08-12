@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,27 +10,404 @@
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="bg-gray-50">
-    <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="dashboard.html">
-                <i class="fas fa-play-circle me-2 text-white"></i>VideoHub Viewer
-            </a>
+    <style>
+        .profile-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .modern-card {
+            border: none;
+            border-radius: 24px;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .modern-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .modern-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+        
+        .navbar-modern {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-modern {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
+            min-height: calc(100vh - 76px);
+        }
+        
+        .nav-link-modern {
+            border-radius: 16px;
+            margin: 0.25rem 0;
+            padding: 1rem 1.25rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-link-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .nav-link-modern:hover::before {
+            left: 100%;
+        }
+        
+        .nav-link-modern:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            transform: translateX(8px);
+            color: #667eea;
+        }
+        
+        .nav-link-modern.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        }
+        
+        .page-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        .avatar-section {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .avatar-large {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: white;
+            font-size: 3rem;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+            position: relative;
+        }
+        
+        .avatar-large::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(8px);
+            opacity: 0.5;
+        }
+        
+        .form-control-modern, .form-select-modern {
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+        }
+        
+        .form-control-modern:focus, .form-select-modern:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+            background: white;
+            transform: translateY(-2px);
+        }
+        
+        .form-label-modern {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-modern {
+            border-radius: 16px;
+            padding: 1rem 2.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-modern:hover::before {
+            left: 100%;
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .security-card {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+        
+        .security-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .stat-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-4px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--stat-color, #667eea) 0%, var(--stat-color-dark, #764ba2) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin: 0 auto 1rem;
+            font-size: 1.25rem;
+        }
+        
+        .modal-modern .modal-content {
+            border: none;
+            border-radius: 24px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .modal-modern .modal-header {
+            border: none;
+            border-radius: 24px 24px 0 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+        }
+        
+        .modal-modern .modal-body {
+            padding: 2rem;
+        }
+        
+        .modal-modern .modal-footer {
+            border: none;
+            padding: 1.5rem 2rem 2rem;
+        }
+        
+        .password-strength-indicator {
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            margin-top: 0.75rem;
+            overflow: hidden;
+        }
+        
+        .password-strength-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+            border-radius: 3px;
+        }
+        
+        .password-strength-bar.weak {
+            background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
+            width: 25%;
+        }
+        
+        .password-strength-bar.fair {
+            background: linear-gradient(90deg, #ffc107 0%, #e0a800 100%);
+            width: 50%;
+        }
+        
+        .password-strength-bar.good {
+            background: linear-gradient(90deg, #17a2b8 0%, #138496 100%);
+            width: 75%;
+        }
+        
+        .password-strength-bar.strong {
+            background: linear-gradient(90deg, #28a745 0%, #1e7e34 100%);
+            width: 100%;
+        }
+        
+        @media (max-width: 991.98px) {
+            .sidebar-modern {
+                transform: translateX(-100%);
+                position: fixed;
+                top: 76px;
+                left: 0;
+                height: calc(100vh - 76px);
+                z-index: 1050;
+                transition: transform 0.3s ease;
+                width: 320px;
+            }
             
-            <div class="d-flex align-items-center">
-                <!-- User Profile -->
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i>Viewer
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item active" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
-                </div>
+            .sidebar-modern.show {
+                transform: translateX(0);
+            }
+            
+            .page-header {
+                padding: 2rem;
+            }
+            
+            .avatar-large {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 575.98px) {
+            .page-header {
+                padding: 1.5rem;
+            }
+            
+            .modern-card {
+                border-radius: 20px;
+                margin: 0.5rem;
+            }
+            
+            .avatar-section {
+                padding: 1.5rem;
+            }
+            
+            .security-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="profile-bg">
+    <!-- Modern Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light navbar-modern sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold text-primary" href="dashboard.html">
+                <i class="fas fa-play-circle me-2"></i>VideoHub Viewer
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                <i class="fas fa-user text-primary"></i>
+                            </div>
+                            <span class="fw-semibold">Viewer</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 15px;">
+                            <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
@@ -37,97 +415,108 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Modern Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar bg-white shadow-sm" style="min-height: calc(100vh - 56px);">
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar-modern">
                 <div class="position-sticky pt-4">
-                    <ul class="nav flex-column">
-                        <li class="nav-item mb-1">
-                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="dashboard.html">
-                                <i class="fas fa-tachometer-alt me-3 text-primary"></i>
-                                <span>Dashboard</span>
-                            </a>
-                        </li>
-
-                        <li class="nav-item mb-1">
-                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="purchases.html">
-                                <i class="fas fa-shopping-cart me-3 text-info"></i>
-                                <span>My Purchases</span>
-                                <span class="badge bg-light text-dark ms-auto">7</span>
-                            </a>
-                        </li>
-                        <li class="nav-item mb-1">
-                            <a class="nav-link active d-flex align-items-center py-2 px-3 rounded" href="profile.html">
-                                <i class="fas fa-cog me-3 text-secondary"></i>
-                                <span>Settings</span>
-                            </a>
-                        </li>
-                    </ul>
+                    <div class="px-3">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-modern d-flex align-items-center" href="dashboard.html">
+                                    <i class="fas fa-tachometer-alt me-3"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-modern d-flex align-items-center" href="purchases.html">
+                                    <i class="fas fa-shopping-cart me-3"></i>
+                                    <span>My Purchases</span>
+                                    <span class="badge bg-white bg-opacity-20 ms-auto">7</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-modern active d-flex align-items-center" href="profile.html">
+                                    <i class="fas fa-cog me-3"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </nav>
 
             <!-- Main Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h1 class="h3 mb-1 fw-bold">My Profile</h1>
-                        <p class="text-muted mb-0">Manage your account information and preferences</p>
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="display-6 fw-bold mb-2">My Profile</h1>
+                            <p class="lead mb-0 opacity-75">Manage your account information and preferences</p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="d-inline-flex bg-white bg-opacity-10 rounded-circle p-3">
+                                <i class="fas fa-user-cog fa-2x"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="row g-4">
                     <!-- Profile Information -->
                     <div class="col-lg-8">
-                        <div class="card card-modern">
-                            <div class="card-header bg-transparent border-bottom">
+                        <div class="card modern-card">
+                            <div class="card-header bg-transparent border-0 py-4">
                                 <div class="d-flex align-items-center">
-                                    <div class="avatar bg-primary bg-opacity-10 text-primary me-3">
+                                    <div class="avatar bg-primary bg-opacity-10 text-primary me-3" style="width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
                                         <i class="fas fa-user"></i>
                                     </div>
                                     <div>
-                                        <h5 class="card-title mb-0 fw-semibold">Personal Information</h5>
-                                        <p class="text-muted text-sm mb-0">Update your account details</p>
+                                        <h4 class="card-title mb-0 fw-bold">Personal Information</h4>
+                                        <p class="text-muted mb-0">Update your account details and preferences</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="card-body p-4">
                                 <form id="profileForm" class="space-y-4">
-                                    <div class="row g-3">
+                                    <div class="row g-4">
                                         <div class="col-md-6">
-                                            <label for="firstName" class="form-label fw-semibold">First Name</label>
-                                            <input type="text" class="form-control" id="firstName" name="firstName" value="Jane" required>
+                                            <label for="firstName" class="form-label form-label-modern">First Name</label>
+                                            <input type="text" class="form-control form-control-modern" id="firstName" name="firstName" value="Jane" required>
                                             <div class="invalid-feedback">
                                                 Please provide a valid first name.
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="lastName" class="form-label fw-semibold">Last Name</label>
-                                            <input type="text" class="form-control" id="lastName" name="lastName" value="Viewer" required>
+                                            <label for="lastName" class="form-label form-label-modern">Last Name</label>
+                                            <input type="text" class="form-control form-control-modern" id="lastName" name="lastName" value="Viewer" required>
                                             <div class="invalid-feedback">
                                                 Please provide a valid last name.
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="row g-3">
+                                    <div class="row g-4">
                                         <div class="col-md-6">
-                                            <label for="email" class="form-label fw-semibold">Email Address</label>
-                                            <input type="email" class="form-control" id="email" name="email" value="jane.viewer@videohub.com" readonly>
-                                            <div class="form-text">Email cannot be changed. Contact support if needed.</div>
+                                            <label for="email" class="form-label form-label-modern">Email Address</label>
+                                            <input type="email" class="form-control form-control-modern" id="email" name="email" value="jane.viewer@videohub.com" readonly>
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Email cannot be changed. Contact support if needed.
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="role" class="form-label fw-semibold">Account Type</label>
-                                            <input type="text" class="form-control" id="role" value="Viewer" readonly>
+                                            <label for="role" class="form-label form-label-modern">Account Type</label>
+                                            <input type="text" class="form-control form-control-modern" id="role" value="Premium Viewer" readonly>
                                         </div>
                                     </div>
 
                                     <hr class="my-4">
 
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="resetProfileForm()">
-                                            <i class="fas fa-undo me-1"></i> Reset
+                                    <div class="d-flex justify-content-end gap-3">
+                                        <button type="button" class="btn btn-outline-secondary btn-modern" onclick="resetProfileForm()">
+                                            <i class="fas fa-undo me-2"></i>Reset Changes
                                         </button>
-                                        <button type="submit" class="btn btn-primary btn-modern">
-                                            <i class="fas fa-save me-1"></i> Save Changes
+                                        <button type="submit" class="btn btn-primary btn-modern" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                            <i class="fas fa-save me-2"></i>Save Profile
                                         </button>
                                     </div>
                                 </form>
@@ -135,63 +524,87 @@
                         </div>
                     </div>
 
-                    <!-- Account Security & Viewing Stats -->
+                    <!-- Account Security & Profile Info -->
                     <div class="col-lg-4">
-                        <!-- Security Card -->
-                        <div class="card card-modern mb-4">
-                            <div class="card-header bg-transparent border-bottom">
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar bg-warning bg-opacity-10 text-warning me-3">
-                                        <i class="fas fa-shield-alt"></i>
+                        <!-- Profile Avatar -->
+                        <div class="card modern-card mb-4">
+                            <div class="card-body">
+                                <div class="avatar-section">
+                                    <div class="avatar-large">
+                                        <i class="fas fa-user"></i>
                                     </div>
-                                    <div>
-                                        <h5 class="card-title mb-0 fw-semibold">Account Security</h5>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body p-4">
-                                <div class="d-grid gap-3">
-                                    <button type="button" class="btn btn-outline-primary btn-modern" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                                        <i class="fas fa-key me-2"></i>
-                                        Change Password
-                                    </button>
-                                    
-                                    <div class="border rounded p-3">
-                                        <div class="d-flex align-items-center justify-content-between mb-2">
-                                            <span class="fw-semibold text-sm">Account Status</span>
-                                            <span class="badge bg-success">Active</span>
-                                        </div>
-                                        <p class="text-muted text-sm mb-0">Member since Feb 2024</p>
+                                    <h5 class="fw-bold mb-2">Jane Viewer</h5>
+                                    <p class="text-muted mb-3">Premium Member</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2" style="border-radius: 12px;">
+                                            <i class="fas fa-check-circle me-1"></i>Verified
+                                        </span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2" style="border-radius: 12px;">
+                                            <i class="fas fa-crown me-1"></i>Premium
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-
+                        <!-- Security Card -->
+                        <div class="card modern-card">
+                            <div class="card-body">
+                                <div class="security-card">
+                                    <div class="text-center">
+                                        <div class="security-icon mx-auto">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <h5 class="fw-bold mb-3">Account Security</h5>
+                                        <p class="text-muted mb-4">Keep your account safe and secure</p>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-3">
+                                        <button type="button" class="btn btn-outline-warning btn-modern" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                            <i class="fas fa-key me-2"></i>Change Password
+                                        </button>
+                                        
+                                        <div class="border rounded-3 p-3" style="background: rgba(255, 255, 255, 0.1);">
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <span class="fw-semibold">Account Status</span>
+                                                <span class="badge bg-success" style="border-radius: 8px;">Active</span>
+                                            </div>
+                                            <p class="text-muted mb-1">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                Member since Feb 2024
+                                            </p>
+                                            <p class="text-muted mb-0">
+                                                <i class="fas fa-clock me-1"></i>
+                                                Last login: Today
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Change Password Modal (Same as others) -->
-    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <!-- Change Password Modal -->
+    <div class="modal fade modal-modern" id="changePasswordModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header border-bottom">
+                <div class="modal-header">
                     <h5 class="modal-title fw-bold">
-                        <i class="fas fa-key text-warning me-2"></i>
-                        Change Password
+                        <i class="fas fa-key me-2"></i>Change Password
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body">
                     <form id="changePasswordForm" class="space-y-4">
-                        <div class="mb-3">
-                            <label for="currentPassword" class="form-label fw-semibold">Current Password</label>
+                        <div class="mb-4">
+                            <label for="currentPassword" class="form-label form-label-modern">Current Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword', this)">
+                                <input type="password" class="form-control form-control-modern" id="currentPassword" name="currentPassword" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword', this)" style="border-radius: 0 16px 16px 0;">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
@@ -200,15 +613,16 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="newPassword" class="form-label fw-semibold">New Password</label>
+                        <div class="mb-4">
+                            <label for="newPassword" class="form-label form-label-modern">New Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="newPassword" name="newPassword" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword', this)">
+                                <input type="password" class="form-control form-control-modern" id="newPassword" name="newPassword" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword', this)" style="border-radius: 0 16px 16px 0;">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
                             <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
                                 Password must be at least 8 characters with letters, numbers, and symbols.
                             </div>
                             <div class="invalid-feedback">
@@ -216,11 +630,11 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="confirmPassword" class="form-label fw-semibold">Confirm New Password</label>
+                        <div class="mb-4">
+                            <label for="confirmPassword" class="form-label form-label-modern">Confirm New Password</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword', this)">
+                                <input type="password" class="form-control form-control-modern" id="confirmPassword" name="confirmPassword" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword', this)" style="border-radius: 0 16px 16px 0;">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
@@ -230,23 +644,23 @@
                         </div>
 
                         <!-- Password Strength Indicator -->
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="text-sm fw-semibold">Password Strength</span>
-                                <span id="strengthText" class="text-sm text-muted">Enter password</span>
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="form-label-modern mb-0">Password Strength</span>
+                                <span id="strengthText" class="text-muted">Enter password</span>
                             </div>
-                            <div class="progress" style="height: 4px;">
-                                <div id="strengthBar" class="progress-bar" style="width: 0%;"></div>
+                            <div class="password-strength-indicator">
+                                <div id="strengthBar" class="password-strength-bar"></div>
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-modern" data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    <button type="submit" form="changePasswordForm" class="btn btn-primary btn-modern">
-                        <i class="fas fa-save me-1"></i> Update Password
+                    <button type="submit" form="changePasswordForm" class="btn btn-warning btn-modern">
+                        <i class="fas fa-save me-2"></i>Update Password
                     </button>
                 </div>
             </div>
@@ -257,5 +671,85 @@
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/profile.js"></script>
+    
+    <script>
+        // Enhanced form interactions
+        document.querySelectorAll('.form-control-modern').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.closest('.mb-4, .col-md-6').classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                this.closest('.mb-4, .col-md-6').classList.remove('focused');
+            });
+        });
+
+        // Password strength indicator
+        document.getElementById('newPassword').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            
+            let strength = 0;
+            let text = 'Weak';
+            let className = 'weak';
+            
+            if (password.length >= 8) strength += 1;
+            if (password.match(/[a-z]+/)) strength += 1;
+            if (password.match(/[A-Z]+/)) strength += 1;
+            if (password.match(/[0-9]+/)) strength += 1;
+            if (password.match(/[^a-zA-Z0-9]+/)) strength += 1;
+            
+            switch (strength) {
+                case 0:
+                case 1:
+                    text = 'Very Weak';
+                    className = 'weak';
+                    break;
+                case 2:
+                    text = 'Weak';
+                    className = 'weak';
+                    break;
+                case 3:
+                    text = 'Fair';
+                    className = 'fair';
+                    break;
+                case 4:
+                    text = 'Good';
+                    className = 'good';
+                    break;
+                case 5:
+                    text = 'Strong';
+                    className = 'strong';
+                    break;
+            }
+            
+            strengthBar.className = `password-strength-bar ${className}`;
+            strengthText.textContent = text;
+        });
+
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Reset profile form
+        function resetProfileForm() {
+            document.getElementById('profileForm').reset();
+            document.getElementById('firstName').value = 'Jane';
+            document.getElementById('lastName').value = 'Viewer';
+        }
+    </script>
 </body>
 </html>
