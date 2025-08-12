@@ -106,7 +106,7 @@
                     <div class="col-md-3 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="mb-0" id="totalPurchases">7</h4>
+                                <h4 class="mb-0" id="totalPurchases">0</h4>
                                 <small class="text-muted">Total Purchases</small>
                             </div>
                         </div>
@@ -114,7 +114,7 @@
                     <div class="col-md-3 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="mb-0" id="totalSpent">$89.99</h4>
+                                <h4 class="mb-0" id="totalSpent">$0.00</h4>
                                 <small class="text-muted">Total Spent</small>
                             </div>
                         </div>
@@ -122,7 +122,7 @@
                     <div class="col-md-3 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="mb-0" id="thisMonth">2</h4>
+                                <h4 class="mb-0" id="thisMonth">0</h4>
                                 <small class="text-muted">This Month</small>
                             </div>
                         </div>
@@ -176,66 +176,7 @@
 
                 <!-- Purchased Videos Grid -->
                 <div class="row" id="purchasesGrid">
-                    <!-- Sample Purchase Cards -->
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card">
-                            <div class="video-thumbnail">
-                                <i class="fas fa-play fa-3x text-success"></i>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-title">JavaScript Fundamentals</h6>
-                                <p class="card-text text-muted small">Learn the basics of JavaScript programming...</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-success fw-bold">$19.99</span>
-                                    <small class="text-muted">by John Smith</small>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small class="text-muted">Purchased: Jan 15, 2024</small>
-                                    <button class="btn btn-sm btn-success">Watch Now</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card">
-                            <div class="video-thumbnail">
-                                <i class="fas fa-play fa-3x text-success"></i>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-title">React Components</h6>
-                                <p class="card-text text-muted small">Building reusable components in React...</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-success fw-bold">$24.99</span>
-                                    <small class="text-muted">by John Smith</small>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small class="text-muted">Purchased: Jan 20, 2024</small>
-                                    <button class="btn btn-sm btn-success">Watch Now</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card">
-                            <div class="video-thumbnail">
-                                <i class="fas fa-play fa-3x text-success"></i>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-title">Node.js API Development</h6>
-                                <p class="card-text text-muted small">Creating REST APIs with Node.js...</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-success fw-bold">$29.99</span>
-                                    <small class="text-muted">by John Smith</small>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small class="text-muted">Purchased: Feb 5, 2024</small>
-                                    <button class="btn btn-sm btn-success">Watch Now</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Dynamic content will be loaded here -->
                 </div>
 
                 <!-- Pagination -->
@@ -263,5 +204,13 @@
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/viewer.js"></script>
+    <script>
+        // Initialize viewer manager when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof ViewerManager !== 'undefined') {
+                window.viewerManager = new ViewerManager();
+            }
+        });
+    </script>
 </body>
 </html>

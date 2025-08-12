@@ -49,54 +49,48 @@ try {
                 }
             } else {
                 // Get all purchases with filters
-                $filters = [];
+                $userId = $_GET['user_id'] ?? null;
                 
-                if (isset($_GET['viewer_id'])) {
-                    $filters['user_id'] = $_GET['viewer_id'];
+                // Build SQL query with filters
+                $sql = "SELECT p.*, v.title as video_title, v.thumbnail, v.price as video_price, 
+                               v.description, u.name as creator_name
+                        FROM purchases p 
+                        LEFT JOIN videos v ON p.video_id = v.id 
+                        LEFT JOIN users u ON v.user_id = u.id
+                        WHERE 1=1";
+                $params = [];
+                
+                if ($userId) {
+                    $sql .= " AND p.user_id_new = ?";
+                    $params[] = $userId;
                 }
                 
                 if (isset($_GET['video_id'])) {
-                    $filters['video_id'] = $_GET['video_id'];
+                    $sql .= " AND p.video_id = ?";
+                    $params[] = $_GET['video_id'];
                 }
                 
                 if (isset($_GET['status'])) {
-                    $filters['status'] = $_GET['status'];
+                    $sql .= " AND p.status = ?";
+                    $params[] = $_GET['status'];
                 }
+                
+                $sql .= " ORDER BY p.purchase_date DESC";
                 
                 if (isset($_GET['limit'])) {
-                    $filters['limit'] = (int)$_GET['limit'];
+                    $sql .= " LIMIT ?";
+                    $params[] = (int)$_GET['limit'];
                 }
                 
-                if (isset($_GET['offset'])) {
-                    $filters['offset'] = (int)$_GET['offset'];
-                }
-
-                // For demo purposes, return sample purchase data until database table is set up
-                $purchases = [
-                    [
-                        'id' => 1,
-                        'viewerId' => 2,
-                        'videoId' => 1,
-                        'amount' => 0,
-                        'status' => 'completed',
-                        'purchaseDate' => '2025-08-12',
-                        'paymentMethod' => 'card'
-                    ],
-                    [
-                        'id' => 2,
-                        'viewerId' => 2,
-                        'videoId' => 3,
-                        'amount' => 60,
-                        'status' => 'completed',
-                        'purchaseDate' => '2025-08-11',
-                        'paymentMethod' => 'paypal'
-                    ]
-                ];
+                $stmt = $db->prepare($sql);
+                $stmt->execute($params);
+                $purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 http_response_code(200);
                 echo json_encode([
                     'success' => true,
-                    'data' => ['purchases' => $purchases]
+                    'data' => $purchases,
+                    'purchases' => $purchases
                 ]);
             }
             break;

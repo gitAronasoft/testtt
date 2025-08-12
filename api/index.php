@@ -51,6 +51,11 @@ switch (true) {
         require_once 'endpoints/admin.php';
         break;
         
+    // Payment endpoints
+    case preg_match('/^\/payments/', $path):
+        require_once 'endpoints/payments.php';
+        break;
+        
     // Health check
     case $path === '/' || $path === '/health':
         http_response_code(200);

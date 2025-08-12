@@ -75,6 +75,12 @@ class CreatorManager {
                     earningsLength: this.earnings.length,
                     stats: this.stats
                 });
+
+                // Update recent sections if on dashboard page
+                if (window.location.pathname.includes('dashboard.html')) {
+                    this.updateRecentVideos();
+                    this.updateRecentEarnings();
+                }
             }
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
@@ -161,6 +167,68 @@ class CreatorManager {
 
     initDashboard() {
         console.log('Creator dashboard initialized');
+        this.updateRecentVideos();
+        this.updateRecentEarnings();
+    }
+
+    updateRecentVideos() {
+        const recentVideosContainer = document.getElementById('recentVideos');
+        if (!recentVideosContainer) return;
+
+        if (!this.videos || this.videos.length === 0) {
+            recentVideosContainer.innerHTML = '<p class="text-muted">No videos uploaded yet.</p>';
+            return;
+        }
+
+        // Get the 3 most recent videos
+        const recentVideos = this.videos
+            .sort((a, b) => new Date(b.created_at || b.uploadDate) - new Date(a.created_at || a.uploadDate))
+            .slice(0, 3);
+
+        recentVideosContainer.innerHTML = recentVideos.map(video => {
+            const statusClass = video.status === 'published' ? 'bg-success' : 
+                               video.status === 'pending' ? 'bg-warning' : 'bg-secondary';
+            const statusIcon = video.status === 'published' ? 'fa-play' : 
+                              video.status === 'pending' ? 'fa-clock' : 'fa-pause';
+            
+            return `
+                <div class="d-flex mb-3">
+                    <div class="me-3">
+                        <div class="${statusClass} text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 40px; border-radius: 4px;">
+                            <i class="fas ${statusIcon}"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${video.title}</h6>
+                        <small class="text-muted">${video.status.charAt(0).toUpperCase() + video.status.slice(1)}</small>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    updateRecentEarnings() {
+        const earningsTableBody = document.getElementById('earningsTable');
+        if (!earningsTableBody) return;
+
+        if (!this.earnings || this.earnings.length === 0) {
+            earningsTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No earnings data available</td></tr>';
+            return;
+        }
+
+        // Get the 5 most recent earnings
+        const recentEarnings = this.earnings
+            .sort((a, b) => new Date(b.date || b.purchaseDate) - new Date(a.date || a.purchaseDate))
+            .slice(0, 5);
+
+        earningsTableBody.innerHTML = recentEarnings.map(earning => `
+            <tr>
+                <td>${earning.videoTitle || 'N/A'}</td>
+                <td>${earning.viewerName || 'Anonymous'}</td>
+                <td>${earning.date || earning.purchaseDate || 'N/A'}</td>
+                <td>$${earning.amount || '0.00'}</td>
+            </tr>
+        `).join('');
     }
 
     initVideosPage() {
@@ -188,8 +256,10 @@ class CreatorManager {
             return `
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card">
-                        <div class="video-thumbnail" style="background-image: url('${video.youtube_thumbnail || 'https://via.placeholder.com/300x169'}'); background-size: cover; background-position: center;">
-                            <i class="fas fa-play fa-3x text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);"></i>
+                        <div class="video-thumbnail cursor-pointer" style="background-image: url('${video.youtube_thumbnail || video.thumbnail || 'https://via.placeholder.com/300x169'}'); background-size: cover; background-position: center; height: 180px; position: relative;" onclick="window.creatorManager.playVideo('${video.id}')">
+                            <div class="video-overlay d-flex align-items-center justify-content-center" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s;">
+                                <i class="fas fa-play fa-3x text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);"></i>
+                            </div>
                         </div>
                         <div class="card-body">
                             <h6 class="card-title">${video.title}</h6>
@@ -199,7 +269,7 @@ class CreatorManager {
                                 <span class="text-muted small">$${video.price || '0.00'}</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mt-2">
-                                <small class="text-muted">${video.views || 0} views</small>
+                                <small class="text-muted">${video.youtube_views || video.views || 0} views</small>
                                 <div>
                                     <button class="btn btn-sm btn-outline-primary edit-video-btn" data-video-id="${video.id}">Edit</button>
                                     <button class="btn btn-sm btn-outline-danger delete-video-btn" data-video-id="${video.id}">Delete</button>
@@ -210,6 +280,17 @@ class CreatorManager {
                 </div>
             `;
         }).join('');
+
+        // Add hover effect for play overlay
+        document.querySelectorAll('.video-thumbnail').forEach(thumbnail => {
+            const overlay = thumbnail.querySelector('.video-overlay');
+            thumbnail.addEventListener('mouseenter', () => {
+                overlay.style.opacity = '1';
+            });
+            thumbnail.addEventListener('mouseleave', () => {
+                overlay.style.opacity = '0';
+            });
+        });
     }
 
     updateVideoPageStats() {
@@ -256,13 +337,199 @@ class CreatorManager {
         console.log('Show upload modal');
     }
 
-    editVideo(videoId) {
-        console.log('Edit video:', videoId);
+    playVideo(videoId) {
+        const video = this.videos.find(v => v.id == videoId);
+        if (!video) {
+            alert('Video not found');
+            return;
+        }
+
+        // Extract YouTube video ID
+        let youtubeVideoId = '';
+        if (video.youtube_id) {
+            youtubeVideoId = video.youtube_id;
+        } else if (video.youtube_thumbnail) {
+            // Extract from thumbnail URL
+            const match = video.youtube_thumbnail.match(/\/vi\/([^\/]+)\//);
+            if (match) {
+                youtubeVideoId = match[1];
+            }
+        }
+
+        if (!youtubeVideoId) {
+            alert('Video not available for playback');
+            return;
+        }
+
+        // Create video player modal
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'videoPlayerModal';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${video.title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <div class="ratio ratio-16x9">
+                            <iframe src="https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1" 
+                                    title="${video.title}" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen></iframe>
+                        </div>
+                        <div class="p-3">
+                            <h6>${video.title}</h6>
+                            <p class="text-muted">${video.description || 'No description available'}</p>
+                            <div class="d-flex justify-content-between">
+                                <span>Views: ${video.youtube_views || video.views || 0}</span>
+                                <span>Price: $${video.price}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+
+        // Remove modal after it's hidden
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
     }
 
-    deleteVideo(videoId) {
-        if (confirm('Are you sure you want to delete this video?')) {
-            console.log('Delete video:', videoId);
+    editVideo(videoId) {
+        const video = this.videos.find(v => v.id == videoId);
+        if (!video) {
+            alert('Video not found');
+            return;
+        }
+
+        // Create edit modal
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'editVideoModal';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Video</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editVideoForm">
+                            <div class="mb-3">
+                                <label for="editTitle" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="editTitle" value="${video.title}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="editDescription" rows="3">${video.description || ''}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editPrice" class="form-label">Price ($)</label>
+                                <input type="number" class="form-control" id="editPrice" value="${video.price}" min="0" step="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editStatus" class="form-label">Status</label>
+                                <select class="form-select" id="editStatus">
+                                    <option value="published" ${video.status === 'published' ? 'selected' : ''}>Published</option>
+                                    <option value="pending" ${video.status === 'pending' ? 'selected' : ''}>Pending Review</option>
+                                    <option value="draft" ${video.status === 'draft' ? 'selected' : ''}>Draft</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="window.creatorManager.saveVideoChanges('${videoId}')">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+
+        // Remove modal after it's hidden
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+    }
+
+    async saveVideoChanges(videoId) {
+        const title = document.getElementById('editTitle').value;
+        const description = document.getElementById('editDescription').value;
+        const price = document.getElementById('editPrice').value;
+        const status = document.getElementById('editStatus').value;
+
+        if (!title.trim()) {
+            alert('Title is required');
+            return;
+        }
+
+        try {
+            const response = await window.apiService.put(`/videos/${videoId}`, {
+                title: title.trim(),
+                description: description.trim(),
+                price: parseFloat(price),
+                status: status
+            });
+
+            if (response.success) {
+                // Update local video data
+                const videoIndex = this.videos.findIndex(v => v.id == videoId);
+                if (videoIndex !== -1) {
+                    this.videos[videoIndex] = { ...this.videos[videoIndex], title, description, price, status };
+                }
+
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editVideoModal'));
+                modal.hide();
+
+                // Reload videos grid
+                this.loadVideosGrid();
+                this.updateVideoPageStats();
+
+                alert('Video updated successfully!');
+            } else {
+                alert('Failed to update video: ' + (response.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error updating video:', error);
+            alert('Error updating video. Please try again.');
+        }
+    }
+
+    async deleteVideo(videoId) {
+        if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await window.apiService.delete(`/videos/${videoId}`);
+
+            if (response.success) {
+                // Remove from local videos array
+                this.videos = this.videos.filter(v => v.id != videoId);
+
+                // Reload videos grid
+                this.loadVideosGrid();
+                this.updateVideoPageStats();
+
+                alert('Video deleted successfully!');
+            } else {
+                alert('Failed to delete video: ' + (response.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error deleting video:', error);
+            alert('Error deleting video. Please try again.');
         }
     }
 

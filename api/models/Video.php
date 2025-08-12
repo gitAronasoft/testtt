@@ -260,24 +260,27 @@ class Video {
         ];
     }
     
-    // Get creator earnings
+    // Get creator earnings from purchases table
     public function getCreatorEarnings($creatorId = null) {
         if (!$creatorId) {
             $creatorId = 1; // Default creator for demo
         }
         
         $query = "SELECT 
-                    id,
-                    title as videoTitle,
-                    CAST(price AS DECIMAL(10,2)) as amount,
-                    created_at as date,
-                    'completed' as status
-                  FROM " . $this->table_name . " 
-                  WHERE uploader_id = :creator_id AND CAST(price AS DECIMAL(10,2)) > 0
-                  ORDER BY created_at DESC";
+                    p.id,
+                    v.title as videoTitle,
+                    CAST(p.amount AS DECIMAL(10,2)) as amount,
+                    p.purchase_date as date,
+                    p.status,
+                    u.name as viewerName
+                  FROM purchases p
+                  JOIN videos v ON p.video_id = v.id
+                  LEFT JOIN users u ON p.viewer_id = u.id
+                  WHERE v.user_id = :creator_id AND p.status = 'completed'
+                  ORDER BY p.purchase_date DESC";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':user_id', $creatorId);
+        $stmt->bindParam(':creator_id', $creatorId);
         $stmt->execute();
         
         $earnings = [];
@@ -288,6 +291,7 @@ class Video {
                 'amount' => (float)$row['amount'],
                 'date' => $row['date'],
                 'videoTitle' => $row['videoTitle'],
+                'viewerName' => $row['viewerName'] ?? 'Anonymous',
                 'status' => $row['status']
             ];
         }
