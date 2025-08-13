@@ -405,18 +405,14 @@ class YouTubeAPIClient {
             console.log("Upload success:", result);
 
             if (result.id) {
-                // Step 3: Sync with our database
-                const syncSuccess = await this.syncVideoToDatabase(
-                    result,
-                    metadata.price,
-                );
-
                 if (progressCallback) progressCallback(100);
 
                 return {
                     success: true,
-                    video: result,
-                    synced: syncSuccess,
+                    videoId: result.id,
+                    thumbnail: result.snippet?.thumbnails?.default?.url || '',
+                    duration: result.contentDetails?.duration || '',
+                    video: result
                 };
             } else {
                 throw new Error("Upload failed - no video ID returned");

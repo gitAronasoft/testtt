@@ -13,6 +13,7 @@ Data loading: Migrated from JSON files to PHP/MySQL backend with user's existing
 Settings pages: Removed "Viewing Activity" section from viewer profile page and "Your Stats" section from creator profile page for cleaner interface.
 UI/UX improvements: Enhanced all user panels with modern Bootstrap styling, consistent navigation, improved card designs, and sleek auth forms.
 Modal design: Request for proper Bootstrap modals with neat, clean, and sleek layout across all pages (August 13, 2025).
+Video upload flow: Videos must upload directly to YouTube channel, then sync with database for metrics and embedded display with YouTube ID. UI should not show connection button but maintain seamless YouTube integration (August 13, 2025).
 
 ## System Architecture
 

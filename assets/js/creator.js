@@ -981,23 +981,21 @@ class CreatorManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.creatorManager = new CreatorManager();
     
-    // Initialize YouTube upload functionality if on videos page
+    // Initialize VideoHub upload functionality if on videos page
     if (window.location.pathname.includes('videos.html')) {
-        new YouTubeUploadManager();
+        new VideoHubUploadManager();
     }
 });
 
 /**
- * YouTube Upload Manager
- * Handles video uploads to YouTube and database sync
+ * VideoHub Upload Manager
+ * Handles video uploads directly to VideoHub
  */
-class YouTubeUploadManager {
+class VideoHubUploadManager {
     constructor() {
         this.uploadModal = document.getElementById('uploadModal');
         this.uploadForm = document.getElementById('uploadForm');
         this.uploadBtn = document.getElementById('uploadBtn');
-        this.authStatus = document.getElementById('authStatus');
-        this.connectBtn = document.getElementById('connectYouTube');
         this.progressDiv = document.getElementById('uploadProgress');
         this.progressBar = document.getElementById('progressBar');
         this.progressText = document.getElementById('progressText');
@@ -1009,7 +1007,6 @@ class YouTubeUploadManager {
     async init() {
         this.bindEvents();
         this.setupCharacterCounters();
-        await this.checkAuthStatus();
     }
     
     bindEvents() {
@@ -1018,15 +1015,16 @@ class YouTubeUploadManager {
             this.uploadBtn.addEventListener('click', (e) => this.handleUpload(e));
         }
         
-        // Connect YouTube button
-        if (this.connectBtn) {
-            this.connectBtn.addEventListener('click', (e) => this.connectYouTube(e));
-        }
-        
         // Modal events
         if (this.uploadModal) {
             this.uploadModal.addEventListener('show.bs.modal', () => this.onModalShow());
             this.uploadModal.addEventListener('hidden.bs.modal', () => this.onModalHide());
+        }
+        
+        // File input change
+        const fileInput = document.getElementById('videoFile');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => this.onFileSelect(e));
         }
     }
     
@@ -1050,52 +1048,26 @@ class YouTubeUploadManager {
         }
     }
     
-    async checkAuthStatus() {
-        try {
-            if (window.youtubeAPI) {
-                await window.youtubeAPI.initialize();
-                
-                if (window.youtubeAPI.isSignedIn()) {
-                    this.authStatus.style.display = 'none';
-                    this.uploadBtn.disabled = false;
-                } else {
-                    this.authStatus.style.display = 'block';
-                    this.uploadBtn.disabled = true;
-                }
-            }
-        } catch (error) {
-            console.error('Auth check failed:', error);
-            this.authStatus.style.display = 'block';
-            this.uploadBtn.disabled = true;
+    onFileSelect(e) {
+        const file = e.target.files[0];
+        const fileInfo = document.getElementById('fileInfo');
+        
+        if (file && fileInfo) {
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2); // Convert to MB
+            fileInfo.innerHTML = `<i class="fas fa-file-video text-success me-2"></i>${file.name} (${fileSize} MB)`;
+            fileInfo.style.display = 'block';
         }
     }
     
-    async connectYouTube(e) {
-        e.preventDefault();
-        
-        try {
-            this.connectBtn.disabled = true;
-            this.connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Connecting...';
-            
-            if (window.youtubeAPI) {
-                const success = await window.youtubeAPI.signIn();
-                
-                if (success) {
-                    await this.checkAuthStatus();
-                    this.showSuccess('YouTube account connected successfully!');
-                } else {
-                    this.showError('Failed to connect YouTube account.');
-                }
-            } else {
-                throw new Error('YouTube API not available');
-            }
-        } catch (error) {
-            console.error('Connect failed:', error);
-            this.showError('Failed to connect YouTube account.');
-        } finally {
-            this.connectBtn.disabled = false;
-            this.connectBtn.innerHTML = '<i class="fab fa-youtube me-1"></i>Connect YouTube';
-        }
+    onModalShow() {
+        // Reset form when modal is shown
+        this.resetForm();
+    }
+    
+    onModalHide() {
+        // Clean up when modal is hidden
+        this.hideProgress();
+        this.resetForm();
     }
     
     async handleUpload(e) {
@@ -1107,43 +1079,88 @@ class YouTubeUploadManager {
                 return;
             }
             
-            // Check auth
-            if (!window.youtubeAPI || !window.youtubeAPI.isSignedIn()) {
-                this.showError('Please connect your YouTube account first.');
-                return;
-            }
-            
             // Get form data
             const formData = this.getFormData();
             
             // Show progress
             this.showProgress();
+            this.updateProgress(10);
             
-            // Upload video
-            const result = await window.youtubeAPI.uploadVideo(
+            // Get current user session
+            const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+            const creatorId = userSession.id;
+            
+            if (!creatorId) {
+                this.showError('User session not found. Please login again.');
+                return;
+            }
+            
+            this.updateProgress(20);
+            
+            // Upload video directly to YouTube using JavaScript API
+            const youtubeResult = await window.youtubeAPI.uploadVideo(
                 formData.file, 
                 formData.metadata, 
-                (progress) => this.updateProgress(progress)
+                (progress) => this.updateProgress(Math.min(progress, 80))
             );
             
-            if (result.success) {
-                this.showSuccess('Video uploaded successfully!');
-                this.hideProgress();
-                this.resetForm();
+            if (youtubeResult.success) {
+                this.updateProgress(85);
                 
-                // Close modal and refresh videos
-                const modal = bootstrap.Modal.getInstance(this.uploadModal);
-                modal.hide();
+                // Sync with database after successful YouTube upload
+                const syncData = {
+                    title: formData.metadata.title,
+                    description: formData.metadata.description,
+                    user_id: creatorId,
+                    price: formData.metadata.price,
+                    category: formData.metadata.tags.join(','),
+                    youtube_id: youtubeResult.videoId,
+                    thumbnail: youtubeResult.thumbnail || '',
+                    status: formData.metadata.privacy === 'public' ? 'published' : 'pending',
+                    duration: youtubeResult.duration || '',
+                    file_size: formData.file.size
+                };
                 
-                // Refresh videos list
-                window.location.reload();
+                const syncResponse = await fetch('/api/videos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(syncData)
+                });
+                
+                this.updateProgress(100);
+                
+                const syncResult = await syncResponse.json();
+                
+                if (syncResult.success) {
+                    this.showSuccess('Video uploaded successfully!');
+                    
+                    // Wait a moment for user to see success
+                    setTimeout(() => {
+                        this.hideProgress();
+                        this.resetForm();
+                        
+                        // Close modal and refresh videos
+                        const modal = bootstrap.Modal.getInstance(this.uploadModal);
+                        modal.hide();
+                        
+                        // Refresh videos list
+                        if (window.creatorManager) {
+                            window.creatorManager.loadDashboardData();
+                        }
+                        setTimeout(() => window.location.reload(), 500);
+                    }, 1500);
+                } else {
+                    throw new Error('Video uploaded to YouTube but failed to sync with database: ' + syncResult.message);
+                }
             } else {
-                throw new Error(result.error || 'Upload failed');
+                throw new Error(youtubeResult.error || 'Upload failed');
             }
             
         } catch (error) {
             console.error('Upload failed:', error);
-            this.showError(error.message);
+            this.showError(error.message || 'Upload failed. Please try again.');
             this.hideProgress();
         }
     }
@@ -1213,66 +1230,38 @@ class YouTubeUploadManager {
         if (progress < 30) {
             this.progressStatus.textContent = 'Preparing upload...';
         } else if (progress < 75) {
-            this.progressStatus.textContent = 'Converting video...';
-        } else if (progress < 90) {
             this.progressStatus.textContent = 'Uploading to YouTube...';
+        } else if (progress < 90) {
+            this.progressStatus.textContent = 'Processing video...';
         } else {
-            this.progressStatus.textContent = 'Finalizing...';
+            this.progressStatus.textContent = 'Syncing with VideoHub...';
         }
     }
     
     resetForm() {
         this.uploadForm.reset();
-        document.getElementById('titleCount').textContent = '0';
-        document.getElementById('descCount').textContent = '0';
-    }
-    
-    onModalShow() {
-        this.checkAuthStatus();
-    }
-    
-    onModalHide() {
-        this.resetForm();
-        this.hideProgress();
+        const titleCount = document.getElementById('titleCount');
+        const descCount = document.getElementById('descCount');
+        const fileInfo = document.getElementById('fileInfo');
+        
+        if (titleCount) titleCount.textContent = '0';
+        if (descCount) descCount.textContent = '0';
+        if (fileInfo) fileInfo.style.display = 'none';
     }
     
     showSuccess(message) {
-        this.showAlert(message, 'success');
+        if (window.commonUtils) {
+            window.commonUtils.showToast(message, 'success');
+        } else {
+            alert(message);
+        }
     }
     
     showError(message) {
-        this.showAlert(message, 'danger');
-    }
-    
-    showAlert(message, type) {
-        // Remove existing alerts
-        const existingAlert = this.uploadModal.querySelector('.alert-dismissible');
-        if (existingAlert) {
-            existingAlert.remove();
+        if (window.commonUtils) {
+            window.commonUtils.showToast(message, 'error');
+        } else {
+            alert(message);
         }
-        
-        // Create new alert
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type} alert-dismissible fade show`;
-        alert.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        // Insert at top of modal body
-        const modalBody = this.uploadModal.querySelector('.modal-body');
-        modalBody.insertBefore(alert, modalBody.firstChild);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (alert.parentNode) {
-                alert.remove();
-            }
-        }, 5000);
     }
 }
-
-// Initialize creator manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.creatorManager = new CreatorManager();
-});

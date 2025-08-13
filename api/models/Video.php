@@ -123,8 +123,9 @@ class Video {
     public function create() {
         $query = "INSERT INTO " . $this->table_name . " 
                   SET title=:title, description=:description, user_id=:user_id, 
-                      price=:price, category=:category,  
-                      thumbnail=:thumbnail, status=:status, upload_date=NOW(), 
+                      price=:price, category=:category, youtube_id=:youtube_id,
+                      thumbnail=:thumbnail, status=:status, duration=:duration,
+                      file_size=:file_size, upload_date=NOW(), 
                       created_at=NOW(), updated_at=NOW()";
 
         $stmt = $this->conn->prepare($query);
@@ -135,11 +136,10 @@ class Video {
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
         $this->price = htmlspecialchars(strip_tags($this->price));
         $this->category = htmlspecialchars(strip_tags($this->category));
-        // $this->duration = htmlspecialchars(strip_tags($this->duration));
-        $this->thumbnail = htmlspecialchars(strip_tags($this->thumbnail));
-        // $this->tags = htmlspecialchars(strip_tags($this->tags));
-        // $this->file_size = htmlspecialchars(strip_tags($this->file_size));
-        // $this->quality = htmlspecialchars(strip_tags($this->quality));
+        $this->youtube_id = htmlspecialchars(strip_tags($this->youtube_id ?? ''));
+        $this->thumbnail = htmlspecialchars(strip_tags($this->thumbnail ?? ''));
+        $this->duration = htmlspecialchars(strip_tags($this->duration ?? ''));
+        $this->file_size = htmlspecialchars(strip_tags($this->file_size ?? ''));
         $this->status = htmlspecialchars(strip_tags($this->status));
 
         // Bind values
@@ -148,11 +148,10 @@ class Video {
         $stmt->bindParam(":user_id", $this->user_id);
         $stmt->bindParam(":price", $this->price);
         $stmt->bindParam(":category", $this->category);
-        // $stmt->bindParam(":duration", $this->duration);
+        $stmt->bindParam(":youtube_id", $this->youtube_id);
         $stmt->bindParam(":thumbnail", $this->thumbnail);
-        // $stmt->bindParam(":tags", $this->tags);
-        // $stmt->bindParam(":file_size", $this->file_size);
-        // $stmt->bindParam(":quality", $this->quality);
+        $stmt->bindParam(":duration", $this->duration);
+        $stmt->bindParam(":file_size", $this->file_size);
         $stmt->bindParam(":status", $this->status);
 
         if ($stmt->execute()) {
