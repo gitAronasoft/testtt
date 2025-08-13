@@ -358,6 +358,53 @@
         </div>
     </div>
 
+    <!-- Video Player Modal -->
+    <div class="modal fade" id="videoPlayerModal" tabindex="-1" aria-labelledby="videoPlayerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content border-0 bg-dark">
+                <div class="modal-header bg-dark text-white border-0 py-2">
+                    <h5 class="modal-title fw-bold" id="videoPlayerModalLabel">
+                        <i class="fas fa-play-circle text-primary me-2"></i>
+                        <span id="videoTitle">Watch Video</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0 d-flex align-items-center justify-content-center bg-black">
+                    <div class="w-100 h-100 position-relative">
+                        <div class="ratio ratio-16x9 h-100">
+                            <iframe id="youtubePlayer" 
+                                    src="" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                    allowfullscreen
+                                    class="w-100 h-100">
+                            </iframe>
+                        </div>
+                        
+                        <!-- Loading Overlay -->
+                        <div id="playerLoading" class="position-absolute top-50 start-50 translate-middle text-white text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mb-0">Loading video player...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-dark text-white border-0 py-2">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle text-muted me-2"></i>
+                            <small class="text-muted">Press ESC or click outside to close</small>
+                        </div>
+                        <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close Player
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../assets/js/global-state.js"></script>
     <script src="../assets/js/api.js"></script>
@@ -422,112 +469,42 @@
                     video.creator_name.toLowerCase().includes(creatorFilter.toLowerCase())
                 );
             }
-            
-            // Re-render grid with filtered data
-            renderVideosGrid(filteredVideos);
         }
         
-        function renderVideosGrid(videos) {
-            const videosGrid = document.getElementById('videosGrid');
-            const loadingIndicator = document.getElementById('videosLoadingIndicator');
-            const emptyState = document.getElementById('emptyState');
-            
-            if (!videosGrid) return;
-            
-            // Hide loading indicator
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'none';
+        // Watch video function for admin panel
+        window.watchVideo = function(youtubeId, title) {
+            if (!youtubeId) {
+                alert('Video not available for playback - missing YouTube ID');
+                return;
             }
             
-            // Clear existing content
-            videosGrid.innerHTML = '';
+            // Set modal title
+            document.getElementById('videoTitle').textContent = title || 'Watch Video';
             
-            if (videos.length === 0) {
-                if (emptyState) {
-                    emptyState.classList.remove('d-none');
-                }
-            } else {
-                if (emptyState) {
-                    emptyState.classList.add('d-none');
-                }
-                
-                videos.forEach(video => {
-                    const videoCard = document.createElement('div');
-                    videoCard.className = 'col-lg-4 col-md-6 mb-4';
-                    
-                    const statusClass = video.status === 'published' || video.status === 'active' ? 'success' : 
-                                      video.status === 'pending' ? 'warning' : 
-                                      video.status === 'flagged' ? 'danger' : 'secondary';
-                    
-                    const uploadDate = video.upload_date ? new Date(video.upload_date).toLocaleDateString() : 
-                                     video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Unknown';
-                    
-                    videoCard.innerHTML = `
-                        <div class="card h-100">
-                            <div class="position-relative">
-                                <img src="${video.thumbnail || video.youtube_thumbnail || 'https://via.placeholder.com/350x200/007bff/ffffff?text=Video+Thumbnail'}" 
-                                     class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
-                                <div class="position-absolute top-0 end-0 m-2">
-                                    <span class="badge bg-${statusClass}">${(video.status || 'active').charAt(0).toUpperCase() + (video.status || 'active').slice(1)}</span>
-                                </div>
-                                <div class="position-absolute bottom-0 end-0 m-2">
-                                    <span class="badge bg-dark">${video.duration || '00:00'}</span>
-                                </div>
-                                <div class="position-absolute top-0 start-0 m-2">
-                                    <span class="badge bg-success">$${parseFloat(video.price || 0).toFixed(2)}</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-title" title="${video.title}">${video.title.length > 50 ? video.title.substring(0, 47) + '...' : video.title}</h6>
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-user me-2 text-muted"></i>
-                                    <span class="text-muted small">by ${video.creator_name || video.youtube_channel_title || 'Unknown Creator'}</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div class="d-flex align-items-center text-muted small">
-                                        <i class="fas fa-eye me-1"></i>
-                                        <span>${(video.views || video.youtube_views || 0).toLocaleString()} views</span>
-                                    </div>
-                                    <div class="d-flex align-items-center text-muted small">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        <span>${uploadDate}</span>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
-                                        <i class="fas fa-check me-1"></i>Approve
-                                    </button>
-                                    <button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
-                                        <i class="fas fa-times me-1"></i>Reject
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" onclick="adminManager.showVideoDetails(${video.id})" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    videosGrid.appendChild(videoCard);
-                });
-            }
-        }
-        
-        function exportVideos() {
-            if (!adminManager || !adminManager.videos) return;
+            // Set YouTube iframe source
+            const iframe = document.getElementById('youtubePlayer');
+            const loading = document.getElementById('playerLoading');
             
-            // Simple CSV export
-            const videos = adminManager.videos;
-            const csvContent = "data:text/csv;charset=utf-8,ID,Title,Creator,Price,Views,Upload Date,Status\n" + 
-                videos.map(video => `${video.id},"${video.title}","${video.creator_name}","$${video.price}","${video.views || 0}","${video.upload_date}","${video.status}"`).join("\n");
+            // Show loading
+            if (loading) loading.style.display = 'block';
             
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "videos.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+            iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('videoPlayerModal'));
+            modal.show();
+            
+            // Hide loading after iframe loads
+            iframe.onload = function() {
+                if (loading) loading.style.display = 'none';
+            };
+            
+            // Clean up when modal is closed
+            document.getElementById('videoPlayerModal').addEventListener('hidden.bs.modal', function () {
+                iframe.src = '';
+                if (loading) loading.style.display = 'block';
+            });
+        };
     </script>
 </body>
 </html>

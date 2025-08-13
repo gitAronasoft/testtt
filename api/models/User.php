@@ -12,6 +12,7 @@ class User {
     public $email;
     public $role;
     public $status;
+    public $email_verified;
     public $email_verified_at;
     public $created_at;
     public $updated_at;
@@ -69,7 +70,7 @@ class User {
     // Get single user by ID
     public function readOne() {
         $this->createEmailVerifiedColumnIfNotExists();
-        $query = "SELECT id, name, email, role, status, email_verified_at, created_at, updated_at FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
+        $query = "SELECT id, name, email, role, status, email_verified, email_verified_at, created_at, updated_at FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $this->id);
         $stmt->execute();
@@ -81,6 +82,7 @@ class User {
             $this->email = $row['email'];
             $this->role = $row['role'];
             $this->status = $row['status'];
+            $this->email_verified = $row['email_verified'];
             $this->email_verified_at = $row['email_verified_at'];
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];

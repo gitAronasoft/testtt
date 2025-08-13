@@ -24,9 +24,9 @@ $path_parts = explode('/', trim($path, '/'));
 try {
     switch ($method) {
         case 'GET':
-            if (isset($path_parts[2]) && is_numeric($path_parts[2])) {
+            if (isset($path_parts[3]) && is_numeric($path_parts[3])) {
                 // Get specific video
-                $video->id = $path_parts[2];
+                $video->id = $path_parts[3];
                 if ($video->readOne()) {
                     http_response_code(200);
                     echo json_encode([
@@ -102,7 +102,7 @@ try {
                         'uploadDate' => date('Y-m-d', strtotime($videoData['created_at'])),
                         'views' => (int)$videoData['views'],
                         'likes' => (int)($videoData['youtube_likes'] ?? 0),
-                        'status' => 'published', // Default status
+                        'status' => $videoData['status'] ?? 'pending', // Use actual status from database
                         'thumbnail' => $videoData['youtube_thumbnail'] ?? 'https://via.placeholder.com/300x169/4f46e5/ffffff?text=Video',
                         'youtube_id' => $videoData['youtube_id'] ?? '', // Add YouTube ID for video player
                         'earnings' => 0, // Calculate separately if needed
@@ -121,9 +121,9 @@ try {
             break;
 
         case 'POST':
-            if (isset($path_parts[2]) && $path_parts[2] === 'view' && isset($path_parts[3])) {
+            if (isset($path_parts[3]) && $path_parts[3] === 'view' && isset($path_parts[4])) {
                 // Increment view count
-                $video->id = $path_parts[3];
+                $video->id = $path_parts[4];
                 if ($video->incrementViews()) {
                     http_response_code(200);
                     echo json_encode([
@@ -137,9 +137,9 @@ try {
                         'message' => 'Unable to update view count'
                     ]);
                 }
-            } elseif (isset($path_parts[2]) && $path_parts[2] === 'like' && isset($path_parts[3])) {
+            } elseif (isset($path_parts[3]) && $path_parts[3] === 'like' && isset($path_parts[4])) {
                 // Increment like count
-                $video->id = $path_parts[3];
+                $video->id = $path_parts[4];
                 if ($video->incrementLikes()) {
                     http_response_code(200);
                     echo json_encode([
@@ -195,10 +195,10 @@ try {
 
         case 'PUT':
             // Update video
-            if (isset($path_parts[2]) && is_numeric($path_parts[2])) {
+            if (isset($path_parts[3]) && is_numeric($path_parts[3])) {
                 $data = json_decode(file_get_contents("php://input"), true);
                 
-                $video->id = $path_parts[2];
+                $video->id = $path_parts[3];
                 
                 if (!empty($data['title'])) {
                     $video->title = $data['title'];
@@ -249,8 +249,8 @@ try {
 
         case 'DELETE':
             // Delete video
-            if (isset($path_parts[2]) && is_numeric($path_parts[2])) {
-                $video->id = $path_parts[2];
+            if (isset($path_parts[3]) && is_numeric($path_parts[3])) {
+                $video->id = $path_parts[3];
                 
                 if ($video->delete()) {
                     http_response_code(200);

@@ -41,7 +41,7 @@ try {
                                 'updated_at' => $user->updated_at,
                                 'joinDate' => date('M d, Y', strtotime($user->created_at)),
                                 'lastActive' => 'Recently',
-                                'email_verified' => $user->email_verified_at !== null
+                                'email_verified' => $user->email_verified
                             ]
                         ]);
                     } else {
@@ -58,6 +58,7 @@ try {
                             role,
                             COALESCE(status, 'active') as status,
                             email_verified_at,
+                            email_verified,
                             created_at,
                             updated_at
                         FROM users 
@@ -73,7 +74,7 @@ try {
                         $user['username'] = $user['name'];
                         $user['user_type'] = $user['role'];
                         $user['lastActive'] = 'Recently';
-                        $user['email_verified'] = $user['email_verified_at'] !== null;
+                        $user['email_verified'] = $user['email_verified'];
                     }
                     
                     echo json_encode([

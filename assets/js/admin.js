@@ -394,7 +394,7 @@ class AdminManager {
                     targets: 5,
                     data: null,
                     render: function(data, type, row) {
-                        return row.email_verified_at ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-warning">Not Verified</span>';
+                        return row.email_verified ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-warning">Not Verified</span>';
                     }
                 },
                 {
@@ -467,8 +467,19 @@ class AdminManager {
         
         console.log('DataTable initialized successfully with', this.users.length, 'users');
         
+        // Hide loading indicator after successful initialization
+        const loadingIndicator = document.getElementById('usersLoadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        
         } catch (error) {
             console.error('Error initializing DataTable:', error);
+            // Hide loading indicator even on error
+            const loadingIndicator = document.getElementById('usersLoadingIndicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
         } finally {
             this.isInitializingTable = false;
         }
@@ -816,11 +827,48 @@ class AdminManager {
             const uploadDate = video.upload_date ? new Date(video.upload_date).toLocaleDateString() : 
                              video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Unknown';
             
+            // Get YouTube ID from various possible fields  
+            const youtubeId = video.youtube_id || video.youtube_video_id || video.video_id;
+            
+
+            
+            // Improved thumbnail handling with fallbacks
+            const getThumbnailHtml = () => {
+                if (youtubeId) {
+                    return `
+                        <img src="https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg" 
+                             class="card-img-top w-100 h-100" alt="${video.title}" style="object-fit: cover; height: 200px;"
+                             onerror="this.onerror=null; this.src='https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg';">
+                    `;
+                } else if (video.thumbnail) {
+                    return `
+                        <img src="${video.thumbnail}" 
+                             class="card-img-top w-100 h-100" alt="${video.title}" style="object-fit: cover; height: 200px;"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/350x200/6c757d/ffffff?text=Video+Unavailable';">
+                    `;
+                } else {
+                    return `
+                        <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+                            <i class="fas fa-play fa-3x text-muted"></i>
+                        </div>
+                    `;
+                }
+            };
+            
             videoCard.innerHTML = `
                 <div class="card h-100">
-                    <div class="position-relative">
-                        <img src="${video.thumbnail || video.youtube_thumbnail || 'https://via.placeholder.com/350x200/007bff/ffffff?text=Video+Thumbnail'}" 
-                             class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
+                    <div class="position-relative" style="height: 200px; cursor: pointer;" 
+                         onclick="${youtubeId ? `watchVideo('${youtubeId}', '${video.title}')` : `alert('Video not available for playback')`}">
+                        ${getThumbnailHtml()}
+                        
+                        <!-- Play Button Overlay -->
+                        <div class="position-absolute top-50 start-50 translate-middle">
+                            <div class="d-flex align-items-center justify-content-center" 
+                                 style="width: 60px; height: 60px; background: rgba(0,0,0,0.7); border-radius: 50%;">
+                                <i class="fas fa-play text-white" style="font-size: 24px; margin-left: 3px;"></i>
+                            </div>
+                        </div>
+                        
                         <div class="position-absolute top-0 end-0 m-2">
                             <span class="badge bg-${statusClass}">${(video.status || 'active').charAt(0).toUpperCase() + (video.status || 'active').slice(1)}</span>
                         </div>
@@ -832,28 +880,40 @@ class AdminManager {
                         </div>
                     </div>
                     <div class="card-body">
-                        <h6 class="card-title" title="${video.title}">${video.title.length > 50 ? video.title.substring(0, 47) + '...' : video.title}</h6>
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fas fa-user me-2 text-muted"></i>
-                            <span class="text-muted small">by ${video.creator_name || video.youtube_channel_title || 'Unknown Creator'}</span>
+                        <h6 class="card-title mb-2" title="${video.title}">${video.title.length > 50 ? video.title.substring(0, 47) + '...' : video.title}</h6>
+                        <p class="card-text text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            ${video.description || 'No description available'}
+                        </p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">by ${video.creator_name || video.youtube_channel_title || 'Unknown Creator'}</small>
+                            <small class="text-muted">${(video.views || video.youtube_views || 0).toLocaleString()} views</small>
                         </div>
+                        
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="d-flex align-items-center text-muted small">
-                                <i class="fas fa-eye me-1"></i>
-                                <span>${(video.views || video.youtube_views || 0).toLocaleString()} views</span>
-                            </div>
-                            <div class="d-flex align-items-center text-muted small">
-                                <i class="fas fa-calendar me-1"></i>
-                                <span>${uploadDate}</span>
-                            </div>
+                            <small class="text-muted">${uploadDate}</small>
+                            <button class="btn btn-sm ${youtubeId ? 'btn-primary' : 'btn-outline-secondary'}" 
+                                    onclick="${youtubeId ? `watchVideo('${youtubeId}', '${video.title}')` : `alert('Video not available')`}">
+                                ${youtubeId ? '<i class="fas fa-play me-1"></i>Watch' : '<i class="fas fa-ban me-1"></i>Unavailable'}
+                            </button>
                         </div>
+                        
                         <div class="d-flex gap-2">
-                            <button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
-                                <i class="fas fa-check me-1"></i>Approve
-                            </button>
-                            <button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
-                                <i class="fas fa-times me-1"></i>Reject
-                            </button>
+                            ${video.status === 'published' || video.status === 'active' ? 
+                                `<button class="btn btn-warning btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
+                                    <i class="fas fa-times me-1"></i>Reject
+                                </button>` :
+                                video.status === 'rejected' ?
+                                `<button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
+                                    <i class="fas fa-check me-1"></i>Approve
+                                </button>` :
+                                `<button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
+                                    <i class="fas fa-check me-1"></i>Approve
+                                </button>
+                                <button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
+                                    <i class="fas fa-times me-1"></i>Reject
+                                </button>`
+                            }
                             <button class="btn btn-outline-primary btn-sm" onclick="adminManager.showVideoDetails(${video.id})" title="View Details">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -900,6 +960,7 @@ class AdminManager {
                     description: video.description,
                     price: video.price,
                     thumbnail: video.thumbnail,
+                    youtube_id: video.youtube_id,
                     creator_name: video.creatorName,
                     creator_email: '',
                     upload_date: video.uploadDate,
@@ -1065,7 +1126,11 @@ class AdminManager {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    ...video,
+                    title: video.title,
+                    description: video.description,
+                    price: video.price,
+                    category: video.category,
+                    thumbnail: video.thumbnail,
                     status: 'published'
                 })
             });
@@ -1073,17 +1138,11 @@ class AdminManager {
             const result = await response.json();
             
             if (result.success) {
-                // Update local data
-                const videoIndex = this.videos.findIndex(v => v.id === videoId);
-                if (videoIndex !== -1) {
-                    this.videos[videoIndex].status = 'published';
-                }
-                
                 this.showAlert('Video approved successfully', 'success');
-                this.renderVideosGrid();
-                this.updateVideoStats();
+                // Reload the entire grid to reflect database changes
+                await this.loadVideosGrid();
             } else {
-                this.showAlert('Failed to approve video', 'danger');
+                this.showAlert('Failed to approve video: ' + (result.message || 'Unknown error'), 'danger');
             }
         } catch (error) {
             console.error('Error approving video:', error);
@@ -1104,7 +1163,11 @@ class AdminManager {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        ...video,
+                        title: video.title,
+                        description: video.description,
+                        price: video.price,
+                        category: video.category,
+                        thumbnail: video.thumbnail,
                         status: 'rejected'
                     })
                 });
@@ -1112,17 +1175,11 @@ class AdminManager {
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Update local data
-                    const videoIndex = this.videos.findIndex(v => v.id === videoId);
-                    if (videoIndex !== -1) {
-                        this.videos[videoIndex].status = 'rejected';
-                    }
-                    
                     this.showAlert('Video rejected', 'warning');
-                    this.renderVideosGrid();
-                    this.updateVideoStats();
+                    // Reload the entire grid to reflect database changes
+                    await this.loadVideosGrid();
                 } else {
-                    this.showAlert('Failed to reject video', 'danger');
+                    this.showAlert('Failed to reject video: ' + (result.message || 'Unknown error'), 'danger');
                 }
             } catch (error) {
                 console.error('Error rejecting video:', error);
