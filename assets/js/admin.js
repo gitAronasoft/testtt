@@ -48,8 +48,8 @@ class AdminManager {
                 }
                 
                 if (currentPage === 'videos.html') {
-                    const videosResponse = await window.apiService.get('/videos');
-                    this.videos = videosResponse.data || videosResponse.videos || [];
+                    // const videosResponse = await window.apiService.get('/videos');
+                    // this.videos = videosResponse.data || videosResponse.videos || [];
                 }
             } catch (error) {
                 console.error('Failed to load data from API:', error);
@@ -200,7 +200,7 @@ class AdminManager {
                 this.initUsersPage();
                 break;
             case 'videos.html':
-                this.initVideosPage();
+                ///this.initVideosPage();
                 break;
         }
     }
@@ -213,9 +213,9 @@ class AdminManager {
         await this.loadUsersDataTable();
     }
 
-    initVideosPage() {
-        this.loadVideosGrid();
-    }
+    // initVideosPage() {
+    //     this.loadVideosGrid();
+    // }
 
     async loadUsersDataTable() {
         // Wait for jQuery and DataTables to be available
@@ -634,6 +634,8 @@ class AdminManager {
     }
 
     async loadVideosGrid() {
+
+           console.log('load grid');
         const videosGrid = document.getElementById('videosGrid');
         const loadingIndicator = document.getElementById('videosLoadingIndicator');
         const emptyState = document.getElementById('emptyState');
@@ -650,14 +652,14 @@ class AdminManager {
             }
             
             // Try to load from admin videos endpoint first, fallback to regular videos endpoint
-            let response = await fetch('/api/admin/videos');
+            let response = await fetch('/api/videos');
             let result = await response.json();
-            
+             console.log(result);
             if (!result.success) {
                 // Fallback to regular videos API
                 response = await fetch('/api/videos');
                 result = await response.json();
-                
+               
                 if (result.success && result.data && result.data.videos) {
                     // Transform videos data for admin display
                     this.videos = result.data.videos.map(video => ({
