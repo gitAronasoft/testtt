@@ -282,7 +282,11 @@
                         // Initialize DataTable
                         const tableData = purchases.map(purchase => {
                             const videoId = purchase.video_id || purchase.id;
-                            const thumbnail = purchase.thumbnail_url ? 
+                            // Get YouTube ID from the video data, not the purchase data
+                            const youtubeId = purchase.youtube_id || '';
+                            const thumbnail = youtubeId ? 
+                                `<img src="https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg" alt="Thumbnail" class="img-thumbnail" style="width: 60px; height: 40px; object-fit: cover;">` :
+                                purchase.thumbnail_url ? 
                                 `<img src="${purchase.thumbnail_url}" alt="Thumbnail" class="img-thumbnail" style="width: 60px; height: 40px; object-fit: cover;">` :
                                 `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 60px; height: 40px; font-size: 12px;">No Image</div>`;
                             
@@ -293,7 +297,7 @@
                                 purchase.category || 'General',
                                 `$${parseFloat(purchase.amount || 0).toFixed(2)}`,
                                 new Date(purchase.purchase_date || purchase.purchased_at).toLocaleDateString(),
-                                `<button class="btn btn-primary btn-sm" onclick="watchVideo('${purchase.youtube_id || purchase.video_id}', '${purchase.video_title || 'Video'}')">
+                                `<button class="btn btn-primary btn-sm" onclick="watchVideo('${youtubeId}', '${purchase.video_title || 'Video'}')">
                                     <i class="fas fa-play"></i> Watch
                                 </button>`
                             ];
@@ -347,24 +351,35 @@
         // Watch video function
         function watchVideo(youtubeId, title) {
             if (!youtubeId) {
-                alert('Video ID not available');
+                alert('Video not available for playback - missing YouTube ID');
                 return;
             }
             
             // Set modal title
-            document.getElementById('videoPlayerModalLabel').textContent = title || 'Watch Video';
+            document.getElementById('videoTitle').textContent = title || 'Watch Video';
             
             // Set YouTube iframe source
             const iframe = document.getElementById('youtubePlayer');
-            iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`;
+            const loading = document.getElementById('playerLoading');
+            
+            // Show loading
+            if (loading) loading.style.display = 'block';
+            
+            iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('videoPlayerModal'));
             modal.show();
             
+            // Hide loading after iframe loads
+            iframe.onload = function() {
+                if (loading) loading.style.display = 'none';
+            };
+            
             // Clean up when modal is closed
             document.getElementById('videoPlayerModal').addEventListener('hidden.bs.modal', function () {
                 iframe.src = '';
+                if (loading) loading.style.display = 'block';
             });
         }
     </script>

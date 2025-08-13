@@ -119,14 +119,13 @@ class Video {
         return false;
     }
 
-    // Create video
+    // Create video (fixed to match actual database schema)
     public function create() {
         $query = "INSERT INTO " . $this->table_name . " 
                   SET title=:title, description=:description, user_id=:user_id, 
                       price=:price, category=:category, youtube_id=:youtube_id,
-                      thumbnail=:thumbnail, status=:status, duration=:duration,
-                      file_size=:file_size, upload_date=NOW(), 
-                      created_at=NOW(), updated_at=NOW()";
+                      thumbnail=:thumbnail, status=:status,
+                      created_at=NOW()";
 
         $stmt = $this->conn->prepare($query);
 
@@ -138,8 +137,6 @@ class Video {
         $this->category = htmlspecialchars(strip_tags($this->category));
         $this->youtube_id = htmlspecialchars(strip_tags($this->youtube_id ?? ''));
         $this->thumbnail = htmlspecialchars(strip_tags($this->thumbnail ?? ''));
-        $this->duration = htmlspecialchars(strip_tags($this->duration ?? ''));
-        $this->file_size = htmlspecialchars(strip_tags($this->file_size ?? ''));
         $this->status = htmlspecialchars(strip_tags($this->status));
 
         // Bind values
@@ -150,8 +147,6 @@ class Video {
         $stmt->bindParam(":category", $this->category);
         $stmt->bindParam(":youtube_id", $this->youtube_id);
         $stmt->bindParam(":thumbnail", $this->thumbnail);
-        $stmt->bindParam(":duration", $this->duration);
-        $stmt->bindParam(":file_size", $this->file_size);
         $stmt->bindParam(":status", $this->status);
 
         if ($stmt->execute()) {

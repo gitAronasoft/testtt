@@ -1107,18 +1107,17 @@ class VideoHubUploadManager {
             if (youtubeResult.success) {
                 this.updateProgress(85);
                 
-                // Sync with database after successful YouTube upload
+                // Sync with database after successful YouTube upload (fixed fields to match schema)
                 const syncData = {
                     title: formData.metadata.title,
                     description: formData.metadata.description,
-                    user_id: creatorId,
+                    uploader_id: creatorId, // Fixed: changed from user_id to uploader_id
                     price: formData.metadata.price,
                     category: formData.metadata.tags.join(','),
                     youtube_id: youtubeResult.videoId,
                     thumbnail: youtubeResult.thumbnail || '',
-                    status: formData.metadata.privacy === 'public' ? 'published' : 'pending',
-                    duration: youtubeResult.duration || '',
-                    file_size: formData.file.size
+                    status: formData.metadata.privacy === 'public' ? 'published' : 'pending'
+                    // Removed duration and file_size as they don't exist in the database
                 };
                 
                 const syncResponse = await fetch('/api/videos', {

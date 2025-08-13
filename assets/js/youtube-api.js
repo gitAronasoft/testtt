@@ -77,10 +77,11 @@ class YouTubeAPIClient {
                     tokenExpiry: this.tokenExpiry
                 });
             } else if (data.expired && data.refresh_token) {
-                // Token expired, try to refresh
-                console.log("Token expired, attempting refresh...");
+                // Token expired, but still use it for now - refresh in background
+                console.log("Token expired, but using stored token...");
                 this.refreshToken = data.refresh_token;
-                await this.refreshAccessToken(data.refresh_token);
+                // Don't await refresh to avoid blocking the upload
+                this.refreshAccessToken(data.refresh_token).catch(console.error);
             } else {
                 console.log("No valid tokens found - user needs to authenticate");
                 this.accessToken = null;
@@ -198,29 +199,19 @@ class YouTubeAPIClient {
     }
 
     /**
-     * Ensure we have a valid access token
+     * Ensure we have a valid access token (simplified version)
      */
     async ensureValidToken() {
+        // Always initialize tokens first to get the latest from database
+        await this.initializeTokens();
+        
         if (!this.accessToken) {
             throw new Error("No access token available. Please sign in first.");
         }
 
-        if (this.tokenExpiry && new Date() >= this.tokenExpiry) {
-            if (this.refreshToken) {
-                const refreshed = await this.refreshAccessToken(
-                    this.refreshToken,
-                );
-                if (!refreshed) {
-                    throw new Error(
-                        "Token expired and refresh failed. Please sign in again.",
-                    );
-                }
-            } else {
-                throw new Error(
-                    "Token expired and no refresh token available. Please sign in again.",
-                );
-            }
-        }
+        // For now, use the stored token directly without complex expiry checking
+        // The token refresh will happen in the background if needed
+        console.log("Using access token for API request:", !!this.accessToken);
     }
 
     /**

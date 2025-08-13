@@ -104,6 +104,7 @@ try {
                         'likes' => (int)($videoData['youtube_likes'] ?? 0),
                         'status' => 'published', // Default status
                         'thumbnail' => $videoData['youtube_thumbnail'] ?? 'https://via.placeholder.com/300x169/4f46e5/ffffff?text=Video',
+                        'youtube_id' => $videoData['youtube_id'] ?? '', // Add YouTube ID for video player
                         'earnings' => 0, // Calculate separately if needed
                         'tags' => [], // Not available in current DB structure
                         'fileSize' => 'N/A',
@@ -162,11 +163,8 @@ try {
                     $video->user_id = $data['uploader_id'];
                     $video->price = $data['price'] ?? 0;
                     $video->category = $data['category'] ?? '';
-                    // $video->duration = $data['duration'] ?? '00:00';
+                    $video->youtube_id = $data['youtube_id'] ?? ''; // Add YouTube ID field
                     $video->thumbnail = $data['thumbnail'] ?? '';
-                    // $video->tags = is_array($data['tags']) ? json_encode($data['tags']) : $data['tags'];
-                    // $video->file_size = $data['file_size'] ?? '';
-                    // $video->quality = $data['quality'] ?? '720p';
                     $video->status = $data['status'] ?? 'pending';
                     
                     if ($video->create()) {

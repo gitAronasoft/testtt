@@ -328,9 +328,13 @@ class AdminManager {
             columnDefs: [
                 { 
                     targets: 0,
-                    data: 'id',
+                    data: null,
                     width: '60px',
-                    className: 'text-center'
+                    className: 'text-center',
+                    orderable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + 1; // Serial number starting from 1
+                    }
                 },
                 { 
                     targets: 1,

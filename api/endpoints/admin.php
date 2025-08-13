@@ -49,7 +49,7 @@ try {
                         echo json_encode(['success' => false, 'message' => 'User not found']);
                     }
                 } else {
-                    // Get all users for admin panel
+                    // Get all users for admin panel (exclude admin users)
                     $stmt = $pdo->query("
                         SELECT 
                             id,
@@ -61,6 +61,7 @@ try {
                             created_at,
                             updated_at
                         FROM users 
+                        WHERE role IN ('creator', 'viewer')
                         ORDER BY created_at DESC
                     ");
                     

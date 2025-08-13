@@ -553,7 +553,7 @@ class ViewerManager {
                     <td>${video.views || 0} views</td>
                     <td>
                         <button class="btn btn-sm ${isPurchased ? 'btn-success' : 'btn-primary'}" 
-                                onclick="viewerManager.${isPurchased ? `playVideo(${video.id})` : `showPurchaseModal(${video.id})`}">
+                                onclick="${isPurchased ? `watchVideo('${video.youtube_id}', '${video.title}')` : `viewerManager.showPurchaseModal(${video.id})`}">
                             <i class="fas fa-${isPurchased ? 'play' : 'shopping-cart'} me-1"></i>
                             ${isPurchased ? 'Watch' : 'Purchase'}
                         </button>
@@ -571,12 +571,17 @@ class ViewerManager {
     createVideoCard(video) {
         const isPurchased = this.purchases.some(p => p.video_id == video.id);
         const price = parseFloat(video.price || 0);
+        const youtubeId = video.youtube_id || '';
         
         return `
             <div class="card h-100">
                 <div class="position-relative" style="height: 180px; background-color: #e9ecef; cursor: pointer;" 
-                     onclick="viewerManager.${isPurchased ? `playVideo(${video.id})` : `showPurchaseModal(${video.id})`}">
-                    ${video.thumbnail ? `
+                     onclick="${isPurchased ? `watchVideo('${youtubeId}', '${video.title}')` : `viewerManager.showPurchaseModal(${video.id})`}">
+                    ${youtubeId ? `
+                        <img src="https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg" 
+                             class="card-img-top w-100 h-100" alt="${video.title}" style="object-fit: cover;"
+                             onerror="this.src='https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg'">
+                    ` : video.thumbnail ? `
                         <img src="${video.thumbnail}" 
                              class="card-img-top w-100 h-100" alt="${video.title}" style="object-fit: cover;">
                     ` : `
@@ -612,7 +617,7 @@ class ViewerManager {
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted">${video.views || 0} views</small>
                         <button class="btn btn-sm ${isPurchased ? 'btn-success' : 'btn-primary'}" 
-                                onclick="viewerManager.${isPurchased ? `playVideo(${video.id})` : `showPurchaseModal(${video.id})`}">
+                                onclick="${isPurchased ? `watchVideo('${youtubeId}', '${video.title}')` : `viewerManager.showPurchaseModal(${video.id})`}">
                             ${isPurchased ? 'Watch' : 'Purchase'}
                         </button>
                     </div>
@@ -807,10 +812,14 @@ class ViewerManager {
                 return;
             }
             
-            // Extract YouTube video ID from thumbnail URL
+            // Get YouTube video ID - prioritize youtube_id field over thumbnail extraction
             let youtubeVideoId = '';
-            if (video.thumbnail) {
-                // Try different YouTube URL patterns
+            
+            // First try to get YouTube ID from the video's youtube_id field
+            if (video.youtube_id) {
+                youtubeVideoId = video.youtube_id;
+            } else if (video.thumbnail) {
+                // Fallback: Extract from thumbnail URL
                 const patterns = [
                     /\/vi\/([^\/]+)\//,  // Standard thumbnail format
                     /watch\?v=([^&]+)/,  // Watch URL format
@@ -828,7 +837,7 @@ class ViewerManager {
             }
             
             if (!youtubeVideoId) {
-                alert('Video not available for playback');
+                alert('Video not available for playback - missing YouTube ID');
                 return;
             }
             
@@ -842,57 +851,39 @@ class ViewerManager {
     }
 
     showVideoPlayer(youtubeVideoId, title) {
-        // Create modal with YouTube player
-        const modal = document.createElement('div');
-        modal.className = 'modal fade';
-        modal.id = 'videoPlayerModal';
-        modal.innerHTML = `
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">${title}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="viewerManager.stopVideo()"></button>
-                    </div>
-                    <div class="modal-body p-0">
-                        <div id="youtubePlayer" style="width: 100%; height: 500px;"></div>
-                    </div>
-                </div>
-            </div>
-        `;
+        // Use the static modal instead of creating a dynamic one (like purchases page)
+        const modal = document.getElementById('videoPlayerModal');
+        const iframe = document.getElementById('youtubePlayer');
+        const titleElement = document.getElementById('videoTitle');
+        const loading = document.getElementById('playerLoading');
         
-        document.body.appendChild(modal);
+        if (!modal || !iframe || !titleElement) {
+            alert('Video player modal not found');
+            return;
+        }
+        
+        // Set title
+        titleElement.textContent = title;
+        
+        // Show loading
+        if (loading) loading.style.display = 'block';
+        
+        // Set iframe source
+        iframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
         
         // Show modal
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
         
-        // Initialize YouTube player
-        if (window.YT && window.YT.Player) {
-            this.ytPlayer = new window.YT.Player('youtubePlayer', {
-                height: '500',
-                width: '100%',
-                videoId: youtubeVideoId,
-                playerVars: {
-                    autoplay: 1,
-                    controls: 1,
-                    modestbranding: 1,
-                    rel: 0
-                }
-            });
-        } else {
-            // Fallback to iframe embed
-            document.getElementById('youtubePlayer').innerHTML = `
-                <iframe width="100%" height="500" 
-                        src="https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&controls=1" 
-                        frameborder="0" allowfullscreen>
-                </iframe>
-            `;
-        }
+        // Hide loading after iframe loads
+        iframe.onload = function() {
+            if (loading) loading.style.display = 'none';
+        };
         
-        // Clean up on modal close
-        modal.addEventListener('hidden.bs.modal', () => {
-            this.stopVideo();
-            modal.remove();
+        // Clean up when modal closes
+        modal.addEventListener('hidden.bs.modal', function() {
+            iframe.src = '';
+            if (loading) loading.style.display = 'block';
         });
     }
 

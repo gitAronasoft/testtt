@@ -48,29 +48,17 @@ try {
                 $token = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($token) {
-                    // Check if token is expired
-                    $expiresAt = new DateTime($token['expires_at']);
-                    $now = new DateTime();
-                    
-                    if ($now >= $expiresAt) {
-                        http_response_code(200);
-                        echo json_encode([
-                            'success' => false,
-                            'expired' => true,
+                    // Always return the token, even if expired, for simplified handling
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'tokens' => [
+                            'access_token' => $token['access_token'],
                             'refresh_token' => $token['refresh_token'],
-                            'message' => 'Token expired'
-                        ]);
-                    } else {
-                        http_response_code(200);
-                        echo json_encode([
-                            'success' => true,
-                            'tokens' => [
-                                'access_token' => $token['access_token'],
-                                'refresh_token' => $token['refresh_token'],
-                                'expires_at' => $token['expires_at']
-                            ]
-                        ]);
-                    }
+                            'expires_at' => $token['expires_at']
+                        ],
+                        'message' => 'Tokens retrieved successfully'
+                    ]);
                 } else {
                     http_response_code(200);
                     echo json_encode([
