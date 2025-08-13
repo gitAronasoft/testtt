@@ -65,7 +65,21 @@
             clearTimeout(timeoutId);
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                
+                // Try to get more detailed error from response
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message) {
+                        errorMessage = errorData.message;
+                    } else if (errorData.error) {
+                        errorMessage = errorData.error;
+                    }
+                } catch (e) {
+                    // If can't parse JSON, use default error message
+                }
+                
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
@@ -77,10 +91,24 @@
             return { success: true, data: result };
         } catch (error) {
             console.error(`API Error [${method} ${endpoint}]:`, error);
+            
+            let errorMessage = error.message;
+            let isNetworkError = false;
+            
+            if (error.name === 'AbortError') {
+                errorMessage = 'Request timed out. Please try again.';
+                isNetworkError = true;
+            } else if (error.name === 'TypeError') {
+                errorMessage = 'Network error. Please check your connection.';
+                isNetworkError = true;
+            }
+            
             return {
                 success: false,
-                error: error.message,
-                isNetworkError: error.name === 'TypeError' || error.name === 'AbortError'
+                error: errorMessage,
+                isNetworkError,
+                endpoint: endpoint,
+                method: method
             };
         }
     }

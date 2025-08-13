@@ -61,6 +61,11 @@
     50% { box-shadow: 0 0 20px rgba(79, 70, 229, 0.4), 0 0 30px rgba(79, 70, 229, 0.2); }
 }
 
+@keyframes skeleton {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
 .animate-pulse {
     animation: pulse 2s ease-in-out infinite;
 }
@@ -71,6 +76,99 @@
 
 .slide-in-up {
     animation: slideInUp 0.6s ease-out;
+}
+
+/* Loading States */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.btn-loading .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.section-loader {
+    min-height: 200px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(2px);
+}
+
+/* Skeleton Loading */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200px 100%;
+    animation: skeleton 1.5s infinite;
+}
+
+.skeleton-text {
+    height: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+
+.skeleton-text:last-child {
+    width: 80%;
+}
+
+.skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.skeleton-card {
+    height: 200px;
+    border-radius: 0.75rem;
+}
+
+/* Error States */
+.error-boundary {
+    border: 2px dashed var(--danger-color);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    text-align: center;
+    background: rgba(220, 38, 38, 0.05);
+}
+
+.error-boundary .error-icon {
+    font-size: 3rem;
+    color: var(--danger-color);
+    margin-bottom: 1rem;
+}
+
+.error-boundary .error-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--danger-color);
+    margin-bottom: 0.5rem;
+}
+
+.error-boundary .error-message {
+    color: var(--gray-600);
+    margin-bottom: 1rem;
+}
+
+/* Enhanced Loading Overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: inherit;
+}
+
+.loading-overlay .spinner-border {
+    width: 3rem;
+    height: 3rem;
 }
 
 /* Enhanced Card Hover Effects */

@@ -66,6 +66,17 @@ class AdminManager {
                 window.VideoHubState.setLoading('adminData', true);
             }
 
+            // Show section loaders
+            const metricsSection = document.querySelector('.admin-metrics');
+            const usersSection = document.querySelector('.admin-users');
+            const videosSection = document.querySelector('.admin-videos');
+
+            if (window.commonUtils) {
+                if (metricsSection) window.commonUtils.showSectionLoader(metricsSection, 'Loading admin metrics...');
+                if (usersSection) window.commonUtils.showSectionLoader(usersSection, 'Loading user data...');
+                if (videosSection) window.commonUtils.showSectionLoader(videosSection, 'Loading video data...');
+            }
+
             // Wait for API service to be available
             let retries = 0;
             const maxRetries = 50;
@@ -97,6 +108,12 @@ class AdminManager {
             }
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
+            
+            // Handle API error with proper user feedback
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Loading admin dashboard data');
+            }
+            
             // Set empty values on error
             this.updateDashboardMetrics({
                 totalUsers: 0,
@@ -107,6 +124,17 @@ class AdminManager {
         } finally {
             if (window.VideoHubState) {
                 window.VideoHubState.setLoading('adminData', false);
+            }
+
+            // Hide section loaders
+            const metricsSection = document.querySelector('.admin-metrics');
+            const usersSection = document.querySelector('.admin-users');
+            const videosSection = document.querySelector('.admin-videos');
+
+            if (window.commonUtils) {
+                if (metricsSection) window.commonUtils.hideSectionLoader(metricsSection);
+                if (usersSection) window.commonUtils.hideSectionLoader(usersSection);
+                if (videosSection) window.commonUtils.hideSectionLoader(videosSection);
             }
         }
     }

@@ -255,22 +255,19 @@
                     }
                 } else {
                     console.error('API service not available');
-                }mentById('email').value = user.email || '';
-                    document.getElementById('channelName').value = user.channel_name || `${firstName}'s Channel`;
-                    document.getElementById('channelDescription').value = user.channel_description || '';
-                } else {
-                    console.error('Failed to load user data');
-                    // Use session data as fallback
-                    if (userData.name) {
-                        const nameParts = userData.name.split(' ');
-                        document.getElementById('firstName').value = nameParts[0] || '';
-                        document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
-                    }
-                    document.getElementById('email').value = userData.email || '';
                 }
-                
-                // Form submission handler
-                document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                // Handle profile loading errors gracefully
+                if (window.commonUtils) {
+                    window.commonUtils.handleAPIError(error, 'Loading profile');
+                } else {
+                    console.error('Failed to load profile:', error.message);
+                }
+            }
+            
+            // Form submission handler
+            document.getElementById('profileForm').addEventListener('submit', async function(e) {
                     e.preventDefault();
                     
                     const formData = {
@@ -306,8 +303,10 @@
                 });
                 
             } catch (error) {
-                console.error('Error loading profile:', error);
-                showAlert('Error loading profile data', 'danger');
+                console.error('Error initializing profile:', error);
+                if (window.commonUtils) {
+                    window.commonUtils.handleAPIError(error, 'Loading profile');
+                }
             }
         });
         

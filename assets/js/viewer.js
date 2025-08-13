@@ -24,6 +24,17 @@ class ViewerManager {
     }
 
     async loadDataFromAPI() {
+        // Show section loaders
+        const dashboardSection = document.querySelector('.dashboard-stats');
+        const videosSection = document.querySelector('.videos-grid');
+        const purchasesSection = document.querySelector('.purchases-section');
+
+        if (window.commonUtils) {
+            if (dashboardSection) window.commonUtils.showSectionLoader(dashboardSection, 'Loading dashboard...');
+            if (videosSection) window.commonUtils.showSectionLoader(videosSection, 'Loading videos...');
+            if (purchasesSection) window.commonUtils.showSectionLoader(purchasesSection, 'Loading purchases...');
+        }
+
         try {
             // Wait for API service to be available and load data
             let retries = 0;
@@ -74,6 +85,12 @@ class ViewerManager {
             }
         } catch (error) {
             console.error('Failed to load viewer data:', error);
+            
+            // Handle API error with proper user feedback
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Loading viewer data');
+            }
+            
             // Set empty values on error
             this.updateDashboardMetrics({
                 totalVideosCount: 0,
@@ -81,6 +98,17 @@ class ViewerManager {
                 totalSpentAmount: '0.00',
                 favoritesCount: 0
             });
+        } finally {
+            // Hide section loaders
+            const dashboardSection = document.querySelector('.dashboard-stats');
+            const videosSection = document.querySelector('.videos-grid');
+            const purchasesSection = document.querySelector('.purchases-section');
+
+            if (window.commonUtils) {
+                if (dashboardSection) window.commonUtils.hideSectionLoader(dashboardSection);
+                if (videosSection) window.commonUtils.hideSectionLoader(videosSection);
+                if (purchasesSection) window.commonUtils.hideSectionLoader(purchasesSection);
+            }
         }
     }
 

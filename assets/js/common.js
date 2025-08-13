@@ -195,6 +195,130 @@ class CommonUtils {
         }
     }
 
+    // Button Loading States
+    setButtonLoading(button, isLoading = true, loadingText = 'Loading...') {
+        if (!button) return;
+
+        if (isLoading) {
+            // Store original content
+            button.dataset.originalContent = button.innerHTML;
+            button.dataset.originalDisabled = button.disabled;
+            
+            // Set loading state
+            button.disabled = true;
+            button.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                ${loadingText}
+            `;
+            button.classList.add('btn-loading');
+        } else {
+            // Restore original state
+            if (button.dataset.originalContent) {
+                button.innerHTML = button.dataset.originalContent;
+                delete button.dataset.originalContent;
+            }
+            
+            button.disabled = button.dataset.originalDisabled === 'true';
+            delete button.dataset.originalDisabled;
+            button.classList.remove('btn-loading');
+        }
+    }
+
+    // Section Loading States
+    showSectionLoader(sectionElement, message = 'Loading data...') {
+        if (!sectionElement) return null;
+
+        const loaderId = 'section-loader-' + Date.now();
+        const existingLoader = sectionElement.querySelector('.section-loader');
+        
+        if (existingLoader) {
+            existingLoader.remove();
+        }
+
+        const loader = document.createElement('div');
+        loader.id = loaderId;
+        loader.className = 'section-loader d-flex justify-content-center align-items-center py-5';
+        loader.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="text-muted">${message}</div>
+            </div>
+        `;
+
+        // Hide existing content
+        const content = sectionElement.children;
+        for (let i = 0; i < content.length; i++) {
+            if (!content[i].classList.contains('section-loader')) {
+                content[i].style.display = 'none';
+            }
+        }
+
+        sectionElement.appendChild(loader);
+        return loaderId;
+    }
+
+    hideSectionLoader(sectionElement) {
+        if (!sectionElement) return;
+
+        const loader = sectionElement.querySelector('.section-loader');
+        if (loader) {
+            loader.remove();
+        }
+
+        // Show hidden content
+        const content = sectionElement.children;
+        for (let i = 0; i < content.length; i++) {
+            if (!content[i].classList.contains('section-loader')) {
+                content[i].style.display = '';
+            }
+        }
+    }
+
+    // Enhanced Error Handling
+    handleAPIError(error, context = '', showToast = true) {
+        console.error(`API Error in ${context}:`, error);
+        
+        let message = 'An unexpected error occurred. Please try again.';
+        let type = 'danger';
+        
+        if (error) {
+            if (error.isNetworkError) {
+                message = 'Network error. Please check your connection and try again.';
+                type = 'warning';
+            } else if (error.error) {
+                message = error.error;
+            } else if (typeof error === 'string') {
+                message = error;
+            } else if (error.message) {
+                message = error.message;
+            }
+        }
+
+        if (showToast) {
+            this.showToast(message, type);
+        }
+
+        return { message, type };
+    }
+
+    // Retry functionality
+    async retryOperation(operation, maxRetries = 3, delay = 1000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await operation();
+            } catch (error) {
+                if (attempt === maxRetries) {
+                    throw error;
+                }
+                console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms...`, error);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2; // Exponential backoff
+            }
+        }
+    }
+
     // Form Validation
     validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

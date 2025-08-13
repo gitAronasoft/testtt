@@ -45,19 +45,32 @@ class ProfileManager {
             }
 
             if (window.apiService) {
-                const result = await window.apiService.getUserProfile();
-                if (result.success) {
-                    this.currentUser = result.data;
-                    this.populateProfileForm();
-                    console.log('Profile loaded:', this.currentUser);
+                try {
+                    const result = await window.apiService.getUserProfile();
+                    if (result.success) {
+                        this.currentUser = result.data;
+                        this.populateProfileForm();
+                        console.log('Profile loaded:', this.currentUser);
 
-                    // Also load admin metrics and update sidebar badges
-                    if (this.currentUser.role === 'admin') {
-                        await this.loadAdminMetrics();
+                        // Also load admin metrics and update sidebar badges
+                        if (this.currentUser.role === 'admin') {
+                            await this.loadAdminMetrics();
+                        }
+                    } else {
+                        throw new Error(result.message || 'Failed to load profile');
                     }
-                } else {
-                    console.error('Failed to load profile:', result.message);
-                    // Fallback to session data
+                } catch (apiError) {
+                    console.error('API error loading profile:', apiError);
+                    
+                    // Handle 401 authentication errors by redirecting to login
+                    if (apiError.message && (apiError.message.includes('401') || apiError.message.includes('not authenticated'))) {
+                        console.log('User not authenticated, redirecting to login');
+                        window.location.href = '../auth/login.html';
+                        return;
+                    }
+                    
+                    // For other errors, fallback to session data
+                    console.log('Using session data as fallback');
                     this.currentUser = {
                         name: userSession.name || '',
                         email: userSession.email || '',
@@ -76,7 +89,15 @@ class ProfileManager {
             }
         } catch (error) {
             console.error('Error loading profile:', error);
-            // Try to use session data as fallback
+            
+            // Handle authentication errors gracefully
+            if (error.message && (error.message.includes('401') || error.message.includes('not authenticated'))) {
+                console.log('User not authenticated, redirecting to login');
+                window.location.href = '../auth/login.html';
+                return;
+            }
+            
+            // Try to use session data as fallback for other errors
             let userSession = null;
             const localSession = localStorage.getItem('userSession');
             const sessionSession = sessionStorage.getItem('userSession');

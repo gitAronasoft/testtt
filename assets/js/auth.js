@@ -144,12 +144,16 @@ class AuthManager {
     async handleLogin(e) {
         e.preventDefault();
         
+        const submitButton = e.target.querySelector('button[type="submit"]');
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('rememberMe').checked;
 
         try {
-            this.showLoading('Signing in...');
+            // Set button loading state
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(submitButton, true, 'Signing in...');
+            }
             
             // Wait for API service to be available
             await this.waitForAPIService();
@@ -178,7 +182,9 @@ class AuthManager {
                     window.apiService.setAuthToken(token);
                 }
                 
-                this.showSuccess('Login successful! Redirecting...');
+                if (window.commonUtils) {
+                    window.commonUtils.showToast('Login successful! Redirecting...', 'success');
+                }
                 
                 // Redirect based on user type
                 setTimeout(() => {
@@ -190,15 +196,22 @@ class AuthManager {
             
         } catch (error) {
             console.error('Login error:', error);
-            this.showError(error.message || 'Invalid email or password. Please try again.');
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Login');
+            } else {
+                this.showError(error.message || 'Invalid email or password. Please try again.');
+            }
         } finally {
-            this.hideLoading();
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(submitButton, false);
+            }
         }
     }
 
     async handleSignup(e) {
         e.preventDefault();
         
+        const submitButton = e.target.querySelector('button[type="submit"]');
         const formData = {
             firstName: document.getElementById('firstName').value,
             lastName: document.getElementById('lastName').value,
@@ -213,7 +226,10 @@ class AuthManager {
             // Validate form
             this.validateSignupForm(formData);
             
-            this.showLoading('Creating your account...');
+            // Set button loading state
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(submitButton, true, 'Creating account...');
+            }
             
             // Wait for API service to be available
             await this.waitForAPIService();
@@ -224,7 +240,9 @@ class AuthManager {
             if (response.success && response.data) {
                 if (response.data.verification_required) {
                     // Show email verification message
-                    this.showSuccess(response.message);
+                    if (window.commonUtils) {
+                        window.commonUtils.showToast(response.message || 'Account created! Please check your email to verify.', 'success');
+                    }
                     
                     // Store email for verification page
                     sessionStorage.setItem('pendingVerificationEmail', formData.email);
@@ -235,7 +253,9 @@ class AuthManager {
                     }, 2000);
                 } else {
                     // Traditional registration flow (if email verification is disabled)
-                    this.showSuccess('Account created successfully! You can now log in.');
+                    if (window.commonUtils) {
+                        window.commonUtils.showToast('Account created successfully! You can now log in.', 'success');
+                    }
                     
                     // Redirect to login page
                     setTimeout(() => {
@@ -248,9 +268,15 @@ class AuthManager {
             
         } catch (error) {
             console.error('Registration error:', error);
-            this.showError(error.message || 'Registration failed. Please try again.');
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Registration');
+            } else {
+                this.showError(error.message || 'Registration failed. Please try again.');
+            }
         } finally {
-            this.hideLoading();
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(submitButton, false);
+            }
         }
     }
 

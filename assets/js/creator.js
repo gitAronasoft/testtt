@@ -33,6 +33,17 @@ class CreatorManager {
         if (window.VideoHubState) {
             window.VideoHubState.setLoading('creatorData', true);
         }
+
+        // Show section loaders
+        const dashboardSection = document.querySelector('.dashboard-stats');
+        const videosSection = document.querySelector('.recent-videos');
+        const earningsSection = document.querySelector('.recent-earnings');
+
+        if (window.commonUtils) {
+            if (dashboardSection) window.commonUtils.showSectionLoader(dashboardSection, 'Loading dashboard metrics...');
+            if (videosSection) window.commonUtils.showSectionLoader(videosSection, 'Loading recent videos...');
+            if (earningsSection) window.commonUtils.showSectionLoader(earningsSection, 'Loading earnings data...');
+        }
         
         try {
             // Wait for API service to be available
@@ -124,6 +135,12 @@ class CreatorManager {
             }
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
+            
+            // Handle API error with proper user feedback
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Loading creator dashboard data');
+            }
+            
             // Set empty values on error
             this.updateDashboardMetrics({
                 totalVideos: 0,
@@ -135,6 +152,17 @@ class CreatorManager {
             this.isLoading = false;
             if (window.VideoHubState) {
                 window.VideoHubState.setLoading('creatorData', false);
+            }
+
+            // Hide section loaders
+            const dashboardSection = document.querySelector('.dashboard-stats');
+            const videosSection = document.querySelector('.recent-videos');
+            const earningsSection = document.querySelector('.recent-earnings');
+
+            if (window.commonUtils) {
+                if (dashboardSection) window.commonUtils.hideSectionLoader(dashboardSection);
+                if (videosSection) window.commonUtils.hideSectionLoader(videosSection);
+                if (earningsSection) window.commonUtils.hideSectionLoader(earningsSection);
             }
         }
     }
@@ -181,15 +209,25 @@ class CreatorManager {
             uploadBtn.addEventListener('click', () => this.showUploadModal());
         }
 
-        // Video management events
+        // Video management events - use more specific targeting to prevent duplicates
         document.addEventListener('click', (e) => {
+            // Check for edit video button
             if (e.target.classList.contains('edit-video-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
                 const videoId = e.target.dataset.videoId;
-                this.editVideo(videoId);
+                if (videoId) {
+                    this.editVideo(videoId);
+                }
             }
+            // Check for delete video button  
             if (e.target.classList.contains('delete-video-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
                 const videoId = e.target.dataset.videoId;
-                this.deleteVideo(videoId);
+                if (videoId && !this.isDeleting) {
+                    this.deleteVideo(videoId);
+                }
             }
         });
     }
@@ -450,9 +488,17 @@ class CreatorManager {
     }
 
     editVideo(videoId) {
-        const video = this.videos.find(v => v.id == videoId);
+        console.log('Edit video called with ID:', videoId, 'Available videos:', this.videos.length);
+        
+        // Convert videoId to string for comparison since IDs may be numbers or strings
+        const video = this.videos.find(v => String(v.id) === String(videoId));
         if (!video) {
-            alert('Video not found');
+            console.error('Video not found. Looking for ID:', videoId, 'Available IDs:', this.videos.map(v => v.id));
+            if (window.commonUtils) {
+                window.commonUtils.showToast('Video not found', 'error');
+            } else {
+                alert('Video not found');
+            }
             return;
         }
 
@@ -510,17 +556,26 @@ class CreatorManager {
     }
 
     async saveVideoChanges(videoId) {
+        const saveButton = document.querySelector('#editVideoModal .btn-primary');
         const title = document.getElementById('editTitle').value;
         const description = document.getElementById('editDescription').value;
         const price = document.getElementById('editPrice').value;
         const status = document.getElementById('editStatus').value;
 
         if (!title.trim()) {
-            alert('Title is required');
+            if (window.commonUtils) {
+                window.commonUtils.showToast('Title is required', 'warning');
+            } else {
+                alert('Title is required');
+            }
             return;
         }
 
         try {
+            // Set button loading state
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(saveButton, true, 'Saving...');
+            }
             // Update video in our database first
             const response = await window.apiService.put(`/videos/${videoId}`, {
                 title: title.trim(),
@@ -589,7 +644,16 @@ class CreatorManager {
             }
         } catch (error) {
             console.error('Error updating video:', error);
-            this.showNotification('Error updating video. Please try again.', 'error');
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Updating video');
+            } else {
+                this.showNotification('Error updating video. Please try again.', 'error');
+            }
+        } finally {
+            // Reset button loading state
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(saveButton, false);
+            }
         }
     }
 
@@ -663,28 +727,64 @@ class CreatorManager {
     }
 
     async deleteVideo(videoId) {
-        if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+        // Prevent multiple confirmations by checking if one is already showing
+        if (this.isDeleting) {
             return;
         }
-
+        
+        this.isDeleting = true;
+        
         try {
+            if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+                return;
+            }
+
+            // Find and disable the delete button to prevent multiple calls
+            const deleteButton = document.querySelector(`[data-video-id="${videoId}"].delete-video-btn`);
+            if (deleteButton) {
+                deleteButton.disabled = true;
+                if (window.commonUtils) {
+                    window.commonUtils.setButtonLoading(deleteButton, true, 'Deleting...');
+                }
+            }
+
             const response = await window.apiService.delete(`/videos/${videoId}`);
 
             if (response.success) {
                 // Remove from local videos array
-                this.videos = this.videos.filter(v => v.id != videoId);
+                this.videos = this.videos.filter(v => String(v.id) !== String(videoId));
 
                 // Reload videos grid
                 this.loadVideosGrid();
                 this.updateVideoPageStats();
 
-                alert('Video deleted successfully!');
+                if (window.commonUtils) {
+                    window.commonUtils.showToast('Video deleted successfully!', 'success');
+                } else {
+                    alert('Video deleted successfully!');
+                }
             } else {
-                alert('Failed to delete video: ' + (response.message || 'Unknown error'));
+                if (window.commonUtils) {
+                    window.commonUtils.showToast('Failed to delete video: ' + (response.message || 'Unknown error'), 'error');
+                } else {
+                    alert('Failed to delete video: ' + (response.message || 'Unknown error'));
+                }
             }
         } catch (error) {
             console.error('Error deleting video:', error);
-            alert('Error deleting video. Please try again.');
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Deleting video');
+            } else {
+                alert('Error deleting video. Please try again.');
+            }
+        } finally {
+            this.isDeleting = false;
+            // Re-enable the delete button
+            const deleteButton = document.querySelector(`[data-video-id="${videoId}"].delete-video-btn`);
+            if (deleteButton && window.commonUtils) {
+                window.commonUtils.setButtonLoading(deleteButton, false);
+                deleteButton.disabled = false;
+            }
         }
     }
 
