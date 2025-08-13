@@ -28,13 +28,8 @@ class ViewerManager {
         
         // Show section loaders only for relevant sections
         const dashboardSection = document.querySelector('.dashboard-stats');
-        const videosSection = document.querySelector('.videos-grid');
+        const videosSection = document.querySelector('.videos-section');
         const purchasesSection = document.querySelector('.purchases-section');
-
-        if (window.commonUtils && currentPage === 'dashboard.html') {
-            if (dashboardSection) window.commonUtils.showSectionLoader(dashboardSection, 'Loading dashboard...');
-            if (videosSection) window.commonUtils.showSectionLoader(videosSection, 'Loading videos...');
-        }
 
         try {
             // Wait for API service to be available
@@ -110,7 +105,7 @@ class ViewerManager {
         } finally {
             // Hide section loaders
             const dashboardSection = document.querySelector('.dashboard-stats');
-            const videosSection = document.querySelector('.videos-grid');
+            const videosSection = document.querySelector('.videos-section');
             const purchasesSection = document.querySelector('.purchases-section');
 
             if (window.commonUtils) {
@@ -369,13 +364,30 @@ class ViewerManager {
 
     displayVideos() {
         const container = document.getElementById('allVideos');
+        const loader = document.getElementById('videosLoader');
+        
         if (!container) return;
 
+        // Hide loader and show videos
+        if (loader) loader.style.display = 'none';
+        
         container.innerHTML = '';
+        container.className = 'row'; // Ensure it's always a row for grid
+
+        if (this.filteredVideos.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-video fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No videos found</h5>
+                    <p class="text-muted">Try adjusting your search filters</p>
+                </div>
+            `;
+            return;
+        }
 
         this.filteredVideos.forEach(video => {
             const col = document.createElement('div');
-            col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
+            col.className = 'col-lg-4 col-md-6 mb-4';
             col.innerHTML = this.createVideoCard(video);
             container.appendChild(col);
         });
@@ -470,10 +482,29 @@ class ViewerManager {
 
     switchViewMode(mode) {
         const container = document.getElementById('allVideos');
+        const gridBtn = document.getElementById('gridView');
+        const listBtn = document.getElementById('listView');
+        
         if (!container) return;
+
+        // Update button states
+        if (gridBtn && listBtn) {
+            if (mode === 'grid') {
+                gridBtn.classList.remove('btn-outline-primary');
+                gridBtn.classList.add('btn-primary');
+                listBtn.classList.remove('btn-primary');
+                listBtn.classList.add('btn-outline-primary');
+            } else {
+                listBtn.classList.remove('btn-outline-primary');
+                listBtn.classList.add('btn-primary');
+                gridBtn.classList.remove('btn-primary');
+                gridBtn.classList.add('btn-outline-primary');
+            }
+        }
 
         if (mode === 'list') {
             // Create table view
+            container.className = 'col-12';
             container.innerHTML = `
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -481,9 +512,9 @@ class ViewerManager {
                             <tr>
                                 <th>Video</th>
                                 <th>Creator</th>
-                                <th>Duration</th>
                                 <th>Price</th>
                                 <th>Category</th>
+                                <th>Views</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -495,51 +526,55 @@ class ViewerManager {
             
             const tbody = document.getElementById('videosTableBody');
             this.filteredVideos.forEach(video => {
-                const isPurchased = this.purchases.some(p => p.videoId === video.id);
+                const isPurchased = this.purchases.some(p => p.video_id == video.id);
+                const price = parseFloat(video.price || 0);
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>
                         <div class="d-flex align-items-center">
-                            <img src="${video.thumbnail}" width="60" height="34" class="rounded me-3" alt="${video.title}">
+                            <div class="position-relative me-3" style="width: 80px; height: 45px; background-color: #e9ecef;">
+                                ${video.thumbnail ? `
+                                    <img src="${video.thumbnail}" width="80" height="45" class="rounded" alt="${video.title}" style="object-fit: cover;">
+                                ` : `
+                                    <div class="d-flex align-items-center justify-content-center w-100 h-100">
+                                        <i class="fas fa-play text-muted"></i>
+                                    </div>
+                                `}
+                            </div>
                             <div>
                                 <strong>${video.title}</strong><br>
-                                <small class="text-muted">${video.category}</small>
+                                <small class="text-muted">${(video.description || '').substring(0, 60)}...</small>
                             </div>
                         </div>
                     </td>
-                    <td>${video.creatorName}</td>
-                    <td>${video.duration}</td>
-                    <td>${isPurchased ? 'Owned' : '$' + video.price.toFixed(2)}</td>
-                    <td><span class="badge bg-secondary">${video.category}</span></td>
+                    <td>${video.youtube_channel_title || video.creatorName || video.creator_name || 'Unknown Creator'}</td>
+                    <td>${isPurchased ? '<span class="text-success fw-bold">Purchased</span>' : `<span class="text-primary fw-bold">$${price.toFixed(2)}</span>`}</td>
+                    <td><span class="badge bg-secondary">${video.category || 'General'}</span></td>
+                    <td>${video.views || 0} views</td>
                     <td>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary" onclick="viewerManager.${isPurchased ? 'playVideo' : 'showVideoPreview'}(${video.id})">
-                                <i class="fas fa-${isPurchased ? 'play' : 'eye'}"></i>
-                            </button>
-                            ${!isPurchased ? `
-                                <button class="btn btn-outline-success" onclick="viewerManager.showPurchaseModal(${video.id})">
-                                    <i class="fas fa-shopping-cart"></i>
-                                </button>
-                            ` : ''}
-                        </div>
+                        <button class="btn btn-sm ${isPurchased ? 'btn-success' : 'btn-primary'}" 
+                                onclick="viewerManager.${isPurchased ? `playVideo(${video.id})` : `showPurchaseModal(${video.id})`}">
+                            <i class="fas fa-${isPurchased ? 'play' : 'shopping-cart'} me-1"></i>
+                            ${isPurchased ? 'Watch' : 'Purchase'}
+                        </button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
         } else {
             // Grid view is the default
+            container.className = 'row';
             this.displayVideos();
         }
     }
 
     createVideoCard(video) {
         const isPurchased = this.purchases.some(p => p.video_id == video.id);
-        const isFavorite = this.favorites.includes(video.id);
         const price = parseFloat(video.price || 0);
         
         return `
-            <div class="card h-100 shadow-sm border-0 video-card">
-                <div class="position-relative video-thumbnail-container" style="height: 180px; background-color: #e9ecef; cursor: pointer;" 
+            <div class="card h-100">
+                <div class="position-relative" style="height: 180px; background-color: #e9ecef; cursor: pointer;" 
                      onclick="viewerManager.${isPurchased ? `playVideo(${video.id})` : `showPurchaseModal(${video.id})`}">
                     ${video.thumbnail ? `
                         <img src="${video.thumbnail}" 
@@ -552,35 +587,29 @@ class ViewerManager {
                     
                     <!-- Play Button Overlay -->
                     <div class="position-absolute top-50 start-50 translate-middle">
-                        <div class="play-button-overlay d-flex align-items-center justify-content-center" 
-                             style="width: 60px; height: 60px; background: rgba(0,0,0,0.7); border-radius: 50%; transition: all 0.3s ease;">
+                        <div class="d-flex align-items-center justify-content-center" 
+                             style="width: 60px; height: 60px; background: rgba(0,0,0,0.7); border-radius: 50%;">
                             <i class="fas fa-play text-white" style="font-size: 24px; margin-left: 3px;"></i>
                         </div>
                     </div>
-                    
-                    ${isPurchased ? `
-                        <div class="position-absolute top-0 end-0 m-2">
-                            <span class="badge bg-success"><i class="fas fa-check"></i></span>
-                        </div>
-                    ` : ''}
                 </div>
                 
-                <div class="card-body p-3">
-                    <h6 class="card-title mb-2 fw-bold" style="line-height: 1.3;">${video.title}</h6>
-                    <p class="card-text text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">${video.title}</h6>
+                    <p class="card-text text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                         ${video.description || 'No description available'}
                     </p>
                     
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         ${isPurchased ? `
                             <span class="text-success fw-bold">Purchased</span>
                         ` : `
                             <span class="text-primary fw-bold">${price > 0 ? `$${price.toFixed(2)}` : 'Free'}</span>
                         `}
-                        <small class="text-muted">by ${video.creatorName || 'Unknown Creator'}</small>
+                        <small class="text-muted">by ${video.youtube_channel_title || video.creatorName || video.creator_name || 'Unknown Creator'}</small>
                     </div>
                     
-                    <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted">${video.views || 0} views</small>
                         <button class="btn btn-sm ${isPurchased ? 'btn-success' : 'btn-primary'}" 
                                 onclick="viewerManager.${isPurchased ? `playVideo(${video.id})` : `showPurchaseModal(${video.id})`}">
@@ -956,91 +985,174 @@ class ViewerManager {
         modal.className = 'modal fade';
         modal.id = 'purchaseModal';
         modal.innerHTML = `
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Purchase Video</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-success text-white border-0">
+                        <h5 class="modal-title fw-bold">
+                            <i class="fas fa-shopping-cart me-2"></i>Purchase Video
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <img src="${video.thumbnail || 'https://via.placeholder.com/400x225/666/fff?text=Video'}" class="img-fluid rounded" alt="${video.title}">
-                            </div>
-                            <div class="col-md-8">
-                                <h5>${video.title}</h5>
-                                <p class="text-muted">By ${video.creatorName || video.creator_name || 'Unknown Creator'}</p>
-                                <p>${video.description || 'No description available'}</p>
-                                <div class="alert alert-info">
-                                    <strong>Price: $${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}</strong>
-                                    <br><small>One-time purchase - lifetime access</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <hr>
-                        
-                        <form id="paymentForm">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Payment Method</h6>
-                                    <div class="mb-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="paymentMethod" value="card" id="cardPayment" checked>
-                                            <label class="form-check-label" for="cardPayment">
-                                                <i class="fas fa-credit-card me-2"></i>Credit/Debit Card
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="paymentMethod" value="paypal" id="paypalPayment">
-                                            <label class="form-check-label" for="paypalPayment">
-                                                <i class="fab fa-paypal me-2"></i>PayPal
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="paymentMethod" value="crypto" id="cryptoPayment">
-                                            <label class="form-check-label" for="cryptoPayment">
-                                                <i class="fab fa-bitcoin me-2"></i>Cryptocurrency
-                                            </label>
+                    <div class="modal-body p-0">
+                        <!-- Video Preview Section -->
+                        <div class="bg-gradient-success p-4 text-white">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <div class="position-relative">
+                                        <img src="${video.thumbnail || 'https://via.placeholder.com/400x225/666/fff?text=Video'}" 
+                                             class="img-fluid rounded shadow" alt="${video.title}">
+                                        <div class="position-absolute top-50 start-50 translate-middle">
+                                            <i class="fas fa-play-circle fa-3x text-white opacity-75"></i>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div id="cardDetails">
-                                        <h6>Card Details</h6>
-                                        <div class="mb-2">
-                                            <input type="text" class="form-control" placeholder="Card Number" name="cardNumber" value="4242 4242 4242 4242">
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-6">
-                                                <input type="text" class="form-control" placeholder="MM/YY" name="expiry" value="12/26">
-                                            </div>
-                                            <div class="col-6">
-                                                <input type="text" class="form-control" placeholder="CVV" name="cvv" value="123">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div id="paypalDetails" style="display: none;">
-                                        <h6>PayPal Details</h6>
-                                        <input type="email" class="form-control" placeholder="PayPal Email" name="paypalEmail" value="demo@example.com">
-                                    </div>
-                                    <div id="cryptoDetails" style="display: none;">
-                                        <h6>Crypto Wallet</h6>
-                                        <input type="text" class="form-control" placeholder="Wallet Address" name="walletAddress" value="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa">
+                                    <h4 class="mb-2">${video.title}</h4>
+                                    <p class="mb-2 opacity-75">
+                                        <i class="fas fa-user me-1"></i>
+                                        By ${video.creatorName || video.creator_name || 'Unknown Creator'}
+                                    </p>
+                                    <p class="mb-0 small opacity-75">${video.description || 'No description available'}</p>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <div class="bg-white text-success rounded p-3 shadow">
+                                        <h3 class="mb-1 fw-bold">$${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}</h3>
+                                        <small class="text-muted">One-time purchase</small>
+                                        <br><small class="text-muted">Lifetime access</small>
                                     </div>
                                 </div>
                             </div>
-                        </form>
+                        </div>
                         
-                        <div class="alert alert-warning mt-3">
-                            <i class="fas fa-info-circle me-2"></i>
-                            This is a demo payment system. No real charges will be made.
+                        <!-- Payment Form Section -->
+                        <div class="p-4">
+                            <form id="paymentForm">
+                                <div class="row g-4">
+                                    <!-- Payment Methods -->
+                                    <div class="col-md-6">
+                                        <div class="card border-0 bg-light-subtle h-100">
+                                            <div class="card-body p-4">
+                                                <h6 class="card-title mb-3">
+                                                    <i class="fas fa-credit-card text-primary me-2"></i>Payment Method
+                                                </h6>
+                                                <div class="d-grid gap-3">
+                                                    <div class="form-check p-3 border rounded">
+                                                        <input class="form-check-input" type="radio" name="paymentMethod" value="card" id="cardPayment" checked>
+                                                        <label class="form-check-label fw-semibold w-100" for="cardPayment">
+                                                            <i class="fas fa-credit-card text-primary me-2"></i>Credit/Debit Card
+                                                            <small class="d-block text-muted">Visa, Mastercard, American Express</small>
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check p-3 border rounded">
+                                                        <input class="form-check-input" type="radio" name="paymentMethod" value="paypal" id="paypalPayment">
+                                                        <label class="form-check-label fw-semibold w-100" for="paypalPayment">
+                                                            <i class="fab fa-paypal text-primary me-2"></i>PayPal
+                                                            <small class="d-block text-muted">Pay with your PayPal account</small>
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check p-3 border rounded">
+                                                        <input class="form-check-input" type="radio" name="paymentMethod" value="crypto" id="cryptoPayment">
+                                                        <label class="form-check-label fw-semibold w-100" for="cryptoPayment">
+                                                            <i class="fab fa-bitcoin text-warning me-2"></i>Cryptocurrency
+                                                            <small class="d-block text-muted">Bitcoin, Ethereum supported</small>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Payment Details -->
+                                    <div class="col-md-6">
+                                        <div class="card border-0 bg-light-subtle h-100">
+                                            <div class="card-body p-4">
+                                                <h6 class="card-title mb-3">
+                                                    <i class="fas fa-lock text-success me-2"></i>Payment Details
+                                                </h6>
+                                                
+                                                <div id="cardDetails">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Card Number</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-white border-end-0">
+                                                                <i class="fas fa-credit-card text-muted"></i>
+                                                            </span>
+                                                            <input type="text" class="form-control border-start-0 ps-0" placeholder="1234 5678 9012 3456" name="cardNumber" value="4242 4242 4242 4242">
+                                                        </div>
+                                                    </div>
+                                                    <div class="row g-3">
+                                                        <div class="col-6">
+                                                            <label class="form-label fw-semibold">Expiry</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text bg-white border-end-0">
+                                                                    <i class="fas fa-calendar text-muted"></i>
+                                                                </span>
+                                                                <input type="text" class="form-control border-start-0 ps-0" placeholder="MM/YY" name="expiry" value="12/26">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <label class="form-label fw-semibold">CVV</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text bg-white border-end-0">
+                                                                    <i class="fas fa-shield-alt text-muted"></i>
+                                                                </span>
+                                                                <input type="text" class="form-control border-start-0 ps-0" placeholder="123" name="cvv" value="123">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div id="paypalDetails" style="display: none;">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">PayPal Email</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-white border-end-0">
+                                                                <i class="fab fa-paypal text-muted"></i>
+                                                            </span>
+                                                            <input type="email" class="form-control border-start-0 ps-0" placeholder="your@paypal.com" name="paypalEmail" value="demo@example.com">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div id="cryptoDetails" style="display: none;">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Wallet Address</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-white border-end-0">
+                                                                <i class="fab fa-bitcoin text-muted"></i>
+                                                            </span>
+                                                            <input type="text" class="form-control border-start-0 ps-0" placeholder="Wallet address..." name="walletAddress" value="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="alert alert-info border-0 bg-info-subtle mt-3">
+                                                    <i class="fas fa-shield-check text-info me-2"></i>
+                                                    <small>Your payment is secured with SSL encryption</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                            
+                            <div class="alert alert-warning border-0 bg-warning-subtle mt-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-info-circle text-warning fa-2x me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">Demo Payment System</h6>
+                                        <small class="mb-0">This is a demonstration. No real charges will be made to your account.</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-success" onclick="viewerManager.processPayment(${video.id}, ${userId})">
-                            <i class="fas fa-shopping-cart me-2"></i>Purchase for $${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}
+                    <div class="modal-footer bg-light border-0 px-4 py-3">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-success btn-lg px-4" onclick="viewerManager.processPayment(${video.id}, ${userId})">
+                            <i class="fas fa-shopping-cart me-2"></i>Complete Purchase - $${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}
                         </button>
                     </div>
                 </div>

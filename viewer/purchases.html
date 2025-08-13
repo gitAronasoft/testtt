@@ -109,7 +109,11 @@
                     <div class="col-md-3 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="mb-0" id="totalPurchases">0</h4>
+                                <h4 class="mb-0" id="totalPurchases">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </h4>
                                 <small class="text-muted">Total Purchases</small>
                             </div>
                         </div>
@@ -117,7 +121,11 @@
                     <div class="col-md-3 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="mb-0" id="totalSpent">$0.00</h4>
+                                <h4 class="mb-0" id="totalSpent">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </h4>
                                 <small class="text-muted">Total Spent</small>
                             </div>
                         </div>
@@ -125,7 +133,11 @@
                     <div class="col-md-3 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="mb-0" id="thisMonth">0</h4>
+                                <h4 class="mb-0" id="thisMonth">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </h4>
                                 <small class="text-muted">This Month</small>
                             </div>
                         </div>
@@ -133,7 +145,11 @@
                     <div class="col-md-3 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="mb-0" id="avgPrice">$0</h4>
+                                <h4 class="mb-0" id="avgPrice">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </h4>
                                 <small class="text-muted">Average Price</small>
                             </div>
                         </div>
@@ -174,19 +190,46 @@
 
     <!-- Video Player Modal -->
     <div class="modal fade" id="videoPlayerModal" tabindex="-1" aria-labelledby="videoPlayerModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="videoPlayerModalLabel">Watch Video</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content border-0 bg-dark">
+                <div class="modal-header bg-dark text-white border-0 py-2">
+                    <h5 class="modal-title fw-bold" id="videoPlayerModalLabel">
+                        <i class="fas fa-play-circle text-primary me-2"></i>
+                        <span id="videoTitle">Watch Video</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-0">
-                    <div class="ratio ratio-16x9">
-                        <iframe id="youtubePlayer" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <div class="modal-body p-0 d-flex align-items-center justify-content-center bg-black">
+                    <div class="w-100 h-100 position-relative">
+                        <div class="ratio ratio-16x9 h-100">
+                            <iframe id="youtubePlayer" 
+                                    src="" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                    allowfullscreen
+                                    class="w-100 h-100">
+                            </iframe>
+                        </div>
+                        
+                        <!-- Loading Overlay -->
+                        <div id="playerLoading" class="position-absolute top-50 start-50 translate-middle text-white text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mb-0">Loading video player...</p>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <div class="modal-footer bg-dark text-white border-0 py-2">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle text-muted me-2"></i>
+                            <small class="text-muted">Press ESC or click outside to close</small>
+                        </div>
+                        <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close Player
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -528,39 +528,100 @@ class CreatorManager {
         modal.className = 'modal fade';
         modal.id = 'editVideoModal';
         modal.innerHTML = `
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Edit Video</h5>
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-warning text-dark border-0">
+                        <h5 class="modal-title fw-bold">
+                            <i class="fas fa-edit me-2"></i>Edit Video Details
+                        </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body p-4">
+                        <div class="alert alert-info border-0 bg-info-subtle mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle text-info me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">Video Information</h6>
+                                    <small>Update your video details. Changes will be reflected across the platform.</small>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <form id="editVideoForm">
-                            <div class="mb-3">
-                                <label for="editTitle" class="form-label">Title</label>
-                                <input type="text" class="form-control" id="editTitle" value="${video.title}" required>
+                            <div class="row g-4">
+                                <div class="col-12">
+                                    <label for="editTitle" class="form-label fw-semibold">Video Title *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-heading text-muted"></i>
+                                        </span>
+                                        <input type="text" class="form-control border-start-0 ps-0" id="editTitle" value="${video.title}" placeholder="Enter video title..." required>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label for="editDescription" class="form-label fw-semibold">Description</label>
+                                    <textarea class="form-control" id="editDescription" rows="4" placeholder="Describe your video content...">${video.description || ''}</textarea>
+                                    <small class="text-muted">Help viewers understand what your video is about</small>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="editPrice" class="form-label fw-semibold">Price ($) *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">$</span>
+                                        <input type="number" class="form-control border-start-0" id="editPrice" value="${video.price}" min="0" step="0.01" placeholder="0.00" required>
+                                    </div>
+                                    <small class="text-muted">Set to $0.00 for free viewing</small>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="editStatus" class="form-label fw-semibold">Publication Status</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-toggle-on text-muted"></i>
+                                        </span>
+                                        <select class="form-select border-start-0" id="editStatus">
+                                            <option value="published" ${video.status === 'published' ? 'selected' : ''}>📺 Published (Live)</option>
+                                            <option value="pending" ${video.status === 'pending' ? 'selected' : ''}>⏳ Pending Review</option>
+                                            <option value="draft" ${video.status === 'draft' ? 'selected' : ''}>📝 Draft (Private)</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="editDescription" class="form-label">Description</label>
-                                <textarea class="form-control" id="editDescription" rows="3">${video.description || ''}</textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="editPrice" class="form-label">Price ($)</label>
-                                <input type="number" class="form-control" id="editPrice" value="${video.price}" min="0" step="0.01" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="editStatus" class="form-label">Status</label>
-                                <select class="form-select" id="editStatus">
-                                    <option value="published" ${video.status === 'published' ? 'selected' : ''}>Published</option>
-                                    <option value="pending" ${video.status === 'pending' ? 'selected' : ''}>Pending Review</option>
-                                    <option value="draft" ${video.status === 'draft' ? 'selected' : ''}>Draft</option>
-                                </select>
+                            
+                            <!-- Video Preview -->
+                            <div class="mt-4">
+                                <h6 class="fw-semibold text-muted mb-3">
+                                    <i class="fas fa-eye me-2"></i>Current Video Preview
+                                </h6>
+                                <div class="card border-0 bg-light-subtle">
+                                    <div class="card-body p-3">
+                                        <div class="row align-items-center">
+                                            <div class="col-auto">
+                                                <img src="${video.thumbnail || video.youtube_thumbnail || 'https://via.placeholder.com/120x68/666/fff?text=Video'}" 
+                                                     class="rounded" style="width: 120px; height: 68px; object-fit: cover;" alt="Video thumbnail">
+                                            </div>
+                                            <div class="col">
+                                                <h6 class="mb-1">${video.title}</h6>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-eye me-1"></i>${video.views || 0} views
+                                                    <span class="mx-2">•</span>
+                                                    <i class="fas fa-calendar me-1"></i>${video.upload_date || 'Unknown date'}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </form>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="window.creatorManager.saveVideoChanges('${videoId}')">Save Changes</button>
+                    <div class="modal-footer bg-light border-0 px-4 py-3">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-warning px-4" onclick="window.creatorManager.saveVideoChanges('${videoId}')">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
                     </div>
                 </div>
             </div>

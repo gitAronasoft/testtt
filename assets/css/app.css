@@ -1103,3 +1103,139 @@ body {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* ===== Enhanced Modal Styles ===== */
+.modal-content {
+    border: none !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    border-radius: 0.75rem !important;
+}
+
+.modal-header {
+    border-bottom: none !important;
+    padding: 1.5rem 1.5rem 0 !important;
+}
+
+.modal-footer {
+    border-top: none !important;
+    padding: 0 1.5rem 1.5rem !important;
+}
+
+.modal-body {
+    padding: 1.5rem !important;
+}
+
+/* Gradient backgrounds for modal headers */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-500)) !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, var(--success-600), var(--success-500)) !important;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, var(--warning-600), var(--warning-500)) !important;
+}
+
+.bg-gradient-danger {
+    background: linear-gradient(135deg, var(--danger-600), var(--danger-500)) !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #0dcaf0, #17a2b8) !important;
+}
+
+/* Enhanced input groups in modals */
+.modal .input-group-text {
+    background-color: white !important;
+    border: 1px solid #dee2e6 !important;
+    color: var(--gray-500) !important;
+}
+
+.modal .form-control {
+    border: 1px solid #dee2e6 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.modal .form-control:focus {
+    border-color: var(--primary-400) !important;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Enhanced form checks in modals */
+.modal .form-check {
+    padding: 0.75rem !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.modal .form-check:hover {
+    background-color: var(--gray-50) !important;
+}
+
+.modal .form-check-input:checked {
+    background-color: var(--primary-600) !important;
+    border-color: var(--primary-600) !important;
+}
+
+/* Video upload area styling */
+.upload-area {
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+}
+
+.upload-area:hover {
+    background-color: var(--success-50) !important;
+    border-color: var(--success-500) !important;
+}
+
+/* Modal sizing for different screens */
+@media (max-width: 768px) {
+    .modal-xl {
+        max-width: 95% !important;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem !important;
+    }
+}
+
+/* Video player modal enhancements */
+.modal-fullscreen .modal-content {
+    border-radius: 0 !important;
+}
+
+.modal-fullscreen .modal-body {
+    padding: 0 !important;
+    background-color: #000 !important;
+}
+
+/* Loading state for buttons in modals */
+.btn-loading {
+    position: relative !important;
+    color: transparent !important;
+}
+
+.btn-loading:after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: button-loading-spinner 0.6s ease infinite;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+    to {
+        transform: rotate(1turn);
+    }
+}

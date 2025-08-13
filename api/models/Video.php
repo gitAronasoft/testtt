@@ -40,23 +40,24 @@ class Video {
 
     // Get all videos with optional filters
     public function read($filters = []) {
-        $query = "SELECT * FROM " . $this->table_name;
+        $query = "SELECT v.*, u.name as creator_name FROM " . $this->table_name . " v 
+                  LEFT JOIN users u ON v.user_id = u.id";
         
         $conditions = [];
         $params = [];
 
         if (isset($filters['uploader_id']) && !empty($filters['uploader_id'])) {
-            $conditions[] = "user_id = :uploader_id";
+            $conditions[] = "v.user_id = :uploader_id";
             $params[':uploader_id'] = $filters['uploader_id'];
         }
 
         if (isset($filters['category']) && !empty($filters['category'])) {
-            $conditions[] = "category = :category";
+            $conditions[] = "v.category = :category";
             $params[':category'] = $filters['category'];
         }
 
         if (isset($filters['search']) && !empty($filters['search'])) {
-            $conditions[] = "(title LIKE :search OR description LIKE :search)";
+            $conditions[] = "(v.title LIKE :search OR v.description LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
 
@@ -64,7 +65,7 @@ class Video {
             $query .= " WHERE " . implode(" AND ", $conditions);
         }
 
-        $query .= " ORDER BY created_at DESC";
+        $query .= " ORDER BY v.created_at DESC";
 
         // Add pagination
         if (isset($filters['limit'])) {

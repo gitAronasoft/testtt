@@ -93,7 +93,7 @@ try {
                         'title' => $videoData['title'],
                         'description' => $videoData['description'],
                         'creatorId' => (int)($videoData['uploader_id'] ?? 0),
-                        'creatorName' => $videoData['youtube_channel_title'] ?? 'Unknown Creator',
+                        'creatorName' => $videoData['creator_name'] ?? $videoData['youtube_channel_title'] ?? 'Unknown Creator',
                         'price' => (float)$videoData['price'],
                         'category' => $videoData['category'],
                         'duration' => '00:00', // Not available in current DB
