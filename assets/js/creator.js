@@ -395,15 +395,16 @@ class CreatorManager {
                 overlay.style.opacity = '0';
             });
         });
+
+        // Ensure edit and delete buttons are properly bound
+        this.bindVideoButtons();
     }
 
     updateVideoPageStats() {
-        if (!this.videos) return;
-        
-        const totalVideos = this.videos.length;
-        const publishedVideos = this.videos.filter(v => (v.status || 'published') === 'published').length;
-        const pendingVideos = this.videos.filter(v => v.status === 'pending').length;
-        const totalViews = this.videos.reduce((sum, v) => sum + (parseInt(v.views) || 0), 0);
+        const totalVideos = this.videos ? this.videos.length : 0;
+        const publishedVideos = this.videos ? this.videos.filter(v => (v.status || 'published') === 'published').length : 0;
+        const pendingVideos = this.videos ? this.videos.filter(v => v.status === 'pending').length : 0;
+        const totalViews = this.videos ? this.videos.reduce((sum, v) => sum + (parseInt(v.views) || 0), 0) : 0;
 
         // Update stats cards on videos page
         const totalVideosEl = document.getElementById('totalVideos');
@@ -411,10 +412,10 @@ class CreatorManager {
         const pendingVideosEl = document.getElementById('pendingVideos');
         const totalViewsEl = document.getElementById('totalViews');
 
-        if (totalVideosEl) totalVideosEl.textContent = totalVideos;
-        if (publishedVideosEl) publishedVideosEl.textContent = publishedVideos;
-        if (pendingVideosEl) pendingVideosEl.textContent = pendingVideos;
-        if (totalViewsEl) totalViewsEl.textContent = totalViews.toLocaleString();
+        if (totalVideosEl) totalVideosEl.innerHTML = totalVideos;
+        if (publishedVideosEl) publishedVideosEl.innerHTML = publishedVideos;
+        if (pendingVideosEl) pendingVideosEl.innerHTML = pendingVideos;
+        if (totalViewsEl) totalViewsEl.innerHTML = totalViews.toLocaleString();
     }
 
     async loadEarningsTable() {
@@ -817,6 +818,101 @@ class CreatorManager {
             style: 'currency',
             currency: 'USD'
         }).format(amount || 0);
+    }
+
+    bindVideoButtons() {
+        // Bind edit buttons
+        document.querySelectorAll('.edit-video-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const videoId = e.target.dataset.videoId;
+                if (videoId) {
+                    console.log('Edit button clicked for video:', videoId);
+                    this.editVideo(videoId);
+                }
+            });
+        });
+
+        // Bind delete buttons
+        document.querySelectorAll('.delete-video-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const videoId = e.target.dataset.videoId;
+                if (videoId && !this.isDeleting) {
+                    console.log('Delete button clicked for video:', videoId);
+                    this.deleteVideo(videoId);
+                }
+            });
+        });
+    }
+
+    // Add missing debounce utility function
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Add missing filter functionality
+    applyVideoFilters() {
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const sortFilter = document.getElementById('sortFilter');
+
+        let filteredVideos = [...this.videos];
+
+        // Apply search filter
+        if (searchInput && searchInput.value) {
+            const searchTerm = searchInput.value.toLowerCase();
+            filteredVideos = filteredVideos.filter(video => 
+                video.title.toLowerCase().includes(searchTerm) ||
+                (video.description && video.description.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        // Apply status filter
+        if (statusFilter && statusFilter.value) {
+            filteredVideos = filteredVideos.filter(video => 
+                (video.status || 'published') === statusFilter.value
+            );
+        }
+
+        // Apply category filter
+        if (categoryFilter && categoryFilter.value) {
+            filteredVideos = filteredVideos.filter(video => 
+                video.category === categoryFilter.value
+            );
+        }
+
+        // Apply sorting
+        if (sortFilter && sortFilter.value) {
+            switch (sortFilter.value) {
+                case 'newest':
+                    filteredVideos.sort((a, b) => new Date(b.uploadDate || b.created_at) - new Date(a.uploadDate || a.created_at));
+                    break;
+                case 'oldest':
+                    filteredVideos.sort((a, b) => new Date(a.uploadDate || a.created_at) - new Date(b.uploadDate || b.created_at));
+                    break;
+                case 'views':
+                    filteredVideos.sort((a, b) => (b.views || 0) - (a.views || 0));
+                    break;
+            }
+        }
+
+        // Store original videos and update with filtered
+        const originalVideos = this.videos;
+        this.videos = filteredVideos;
+        this.loadVideosGrid();
+        this.videos = originalVideos; // Restore original array
     }
 }
 

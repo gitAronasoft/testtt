@@ -7,6 +7,9 @@
     <title>My Purchases - VideoHub Viewer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jQuery DataTable CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">
     <style>
         body {
             background-color: #f8f9fa;
@@ -137,75 +140,73 @@
                     </div>
                 </div>
 
-                <!-- Filters -->
-                <div class="card mb-4">
+                <!-- Purchased Videos Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-shopping-cart me-2"></i>My Purchased Videos
+                        </h5>
+                    </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <input type="text" class="form-control" placeholder="Search purchases..." id="searchInput">
-                            </div>
-                            <div class="col-md-2">
-                                <select class="form-select" id="categoryFilter">
-                                    <option value="">All Categories</option>
-                                    <option value="education">Education</option>
-                                    <option value="technology">Technology</option>
-                                    <option value="business">Business</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <select class="form-select" id="sortFilter">
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                    <option value="price-high">Price: High to Low</option>
-                                    <option value="price-low">Price: Low to High</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-outline-primary w-100" id="applyFilters">
-                                    <i class="fas fa-filter me-1"></i>Filter
-                                </button>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-outline-secondary w-100" id="clearFilters">
-                                    <i class="fas fa-times me-1"></i>Clear
-                                </button>
-                            </div>
+                        <div class="table-responsive">
+                            <table id="purchasesTable" class="table table-striped table-hover dt-responsive nowrap" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th>Thumbnail</th>
+                                        <th>Video Title</th>
+                                        <th>Creator</th>
+                                        <th>Category</th>
+                                        <th>Price</th>
+                                        <th>Purchase Date</th>
+                                        <th>Watch</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic content will be loaded here -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-
-                <!-- Purchased Videos Grid -->
-                <div class="row" id="purchasesGrid">
-                    <!-- Dynamic content will be loaded here -->
-                </div>
-
-                <!-- Pagination -->
-                <nav>
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#">Previous</a>
-                        </li>
-                        <li class="page-item active">
-                            <a class="page-link" href="#">1</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">2</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">Next</a>
-                        </li>
-                    </ul>
-                </nav>
             </main>
         </div>
     </div>
 
+    <!-- Video Player Modal -->
+    <div class="modal fade" id="videoPlayerModal" tabindex="-1" aria-labelledby="videoPlayerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="videoPlayerModalLabel">Watch Video</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="ratio ratio-16x9">
+                        <iframe id="youtubePlayer" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery and DataTable Libraries -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>
+    
     <script src="../assets/js/global-state.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
     <script>
-        // Optimized purchases page - loads only relevant data
+        let purchasesTable;
+        
+        // Optimized purchases page with DataTable
         document.addEventListener('DOMContentLoaded', async function() {
             // Wait for API service
             let retries = 0;
@@ -235,31 +236,94 @@
                         const avgPrice = purchases.length > 0 ? totalSpent / purchases.length : 0;
                         document.getElementById('avgPrice').textContent = `$${avgPrice.toFixed(2)}`;
                         
-                        // Render purchases grid
-                        const grid = document.getElementById('purchasesGrid');
-                        if (purchases.length === 0) {
-                            grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="fas fa-shopping-cart fa-3x mb-3"></i><p>No purchases found</p></div>';
-                        } else {
-                            grid.innerHTML = purchases.map(purchase => `
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h6 class="card-title">${purchase.video_title || 'Unknown Video'}</h6>
-                                            <p class="text-muted small">By ${purchase.creator_name || 'Unknown Creator'}</p>
-                                            <p class="text-success fw-bold">$${parseFloat(purchase.amount || 0).toFixed(2)}</p>
-                                            <small class="text-muted">Purchased ${new Date(purchase.purchase_date || purchase.purchased_at).toLocaleDateString()}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('');
-                        }
+                        // Initialize DataTable
+                        const tableData = purchases.map(purchase => {
+                            const videoId = purchase.video_id || purchase.id;
+                            const thumbnail = purchase.thumbnail_url ? 
+                                `<img src="${purchase.thumbnail_url}" alt="Thumbnail" class="img-thumbnail" style="width: 60px; height: 40px; object-fit: cover;">` :
+                                `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 60px; height: 40px; font-size: 12px;">No Image</div>`;
+                            
+                            return [
+                                thumbnail,
+                                purchase.video_title || 'Unknown Video',
+                                purchase.creator_name || 'Unknown Creator',
+                                purchase.category || 'General',
+                                `$${parseFloat(purchase.amount || 0).toFixed(2)}`,
+                                new Date(purchase.purchase_date || purchase.purchased_at).toLocaleDateString(),
+                                `<button class="btn btn-primary btn-sm" onclick="watchVideo('${purchase.youtube_id || purchase.video_id}', '${purchase.video_title || 'Video'}')">
+                                    <i class="fas fa-play"></i> Watch
+                                </button>`
+                            ];
+                        });
+                        
+                        // Initialize DataTable
+                        purchasesTable = $('#purchasesTable').DataTable({
+                            data: tableData,
+                            columns: [
+                                { title: "Thumbnail", orderable: false, searchable: false },
+                                { title: "Video Title" },
+                                { title: "Creator" },
+                                { title: "Category" },
+                                { title: "Price" },
+                                { title: "Purchase Date" },
+                                { title: "Watch", orderable: false, searchable: false }
+                            ],
+                            responsive: true,
+                            pageLength: 10,
+                            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+                            order: [[5, 'desc']], // Sort by purchase date descending
+                            language: {
+                                emptyTable: "No purchased videos found",
+                                info: "Showing _START_ to _END_ of _TOTAL_ purchases",
+                                infoEmpty: "No purchases available",
+                                lengthMenu: "Show _MENU_ purchases per page",
+                                search: "Search purchases:",
+                                paginate: {
+                                    first: "First",
+                                    last: "Last",
+                                    next: "Next",
+                                    previous: "Previous"
+                                }
+                            },
+                            dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
+                                 '<"row"<"col-sm-12"tr>>' +
+                                 '<"row"<"col-sm-5"i><"col-sm-7"p>>',
+                            initComplete: function() {
+                                console.log('Purchases DataTable initialized successfully');
+                            }
+                        });
+                        
                     } catch (error) {
                         console.error('Failed to load purchases:', error);
-                        document.getElementById('purchasesGrid').innerHTML = '<div class="col-12 text-center text-danger py-5">Failed to load purchases</div>';
+                        $('#purchasesTable tbody').html('<tr><td colspan="7" class="text-center text-danger">Failed to load purchases</td></tr>');
                     }
                 }
             }
         });
+        
+        // Watch video function
+        function watchVideo(youtubeId, title) {
+            if (!youtubeId) {
+                alert('Video ID not available');
+                return;
+            }
+            
+            // Set modal title
+            document.getElementById('videoPlayerModalLabel').textContent = title || 'Watch Video';
+            
+            // Set YouTube iframe source
+            const iframe = document.getElementById('youtubePlayer');
+            iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('videoPlayerModal'));
+            modal.show();
+            
+            // Clean up when modal is closed
+            document.getElementById('videoPlayerModal').addEventListener('hidden.bs.modal', function () {
+                iframe.src = '';
+            });
+        }
     </script>
 </body>
 </html>

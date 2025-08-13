@@ -17,35 +17,59 @@ class SimpleProfileManager {
         try {
             // Get user session
             const userSession = this.getUserSession();
-            if (!userSession) {
+            if (!userSession || !userSession.id) {
+                console.error('No user session found');
                 window.location.href = '../auth/login.html';
                 return;
             }
+
+            console.log('Loading profile for user ID:', userSession.id);
 
             // Try API first, fallback to session data
             let userData = null;
             if (window.apiService) {
                 try {
-                    const result = await window.apiService.getUserProfile();
-                    if (result.success) {
+                    const result = await window.apiService.get(`/users/${userSession.id}`);
+                    console.log('API response:', result);
+                    if (result.success && result.data) {
                         userData = result.data;
+                        console.log('Using API data:', userData);
                     }
                 } catch (error) {
-                    console.warn('API unavailable, using session data');
+                    console.warn('API error, using session data:', error);
                 }
             }
 
             // Use session data as fallback
             if (!userData) {
+                console.log('Using session data fallback');
                 userData = {
                     firstName: userSession.name?.split(' ')[0] || '',
                     lastName: userSession.name?.split(' ').slice(1).join(' ') || '',
                     email: userSession.email || '',
                     role: userSession.userType || 'viewer',
-                    name: userSession.name || ''
+                    name: userSession.name || '',
+                    joinDate: 'Recent'
                 };
+            } else {
+                // Ensure we have split names for API data
+                if (userData.name && !userData.firstName) {
+                    const nameParts = userData.name.split(' ');
+                    userData.firstName = nameParts[0] || '';
+                    userData.lastName = nameParts.slice(1).join(' ') || '';
+                }
+                
+                // Format created_at date if available
+                if (userData.created_at) {
+                    userData.joinDate = new Date(userData.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+                }
             }
 
+            console.log('Final user data to populate:', userData);
             this.populateForm(userData);
             
         } catch (error) {
@@ -60,6 +84,8 @@ class SimpleProfileManager {
     }
 
     populateForm(userData) {
+        console.log('Populating form with data:', userData);
+        
         // Safely populate form fields
         this.setFieldValue('firstName', userData.firstName);
         this.setFieldValue('lastName', userData.lastName);
@@ -76,6 +102,7 @@ class SimpleProfileManager {
                 'viewer': 'Viewer'
             };
             roleEl.value = roleMap[userData.role] || userData.role;
+            console.log('Set role to:', roleMap[userData.role] || userData.role);
         }
 
         // Update additional profile elements (viewer/admin specific)
@@ -86,6 +113,8 @@ class SimpleProfileManager {
 
         // Update user badges based on role
         this.updateUserBadges(userData.role);
+        
+        console.log('Form population completed');
     }
 
     getMembershipType(role) {
@@ -113,9 +142,20 @@ class SimpleProfileManager {
     }
 
     setFieldValue(fieldId, value) {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.value = value || '';
+        const element = document.getElementById(fieldId);
+        if (!element) {
+            console.warn(`Field ${fieldId} not found in DOM`);
+            return;
+        }
+        
+        // Check if it's an input field
+        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT') {
+            element.value = value || '';
+            console.log(`Set ${fieldId} value to:`, value);
+        } else {
+            // For display elements (h6, strong, span, div, p, etc.)
+            element.textContent = value || '';
+            console.log(`Set ${fieldId} textContent to:`, value);
         }
     }
 

@@ -53,7 +53,7 @@ try {
                 
                 // Build SQL query with filters
                 $sql = "SELECT p.*, v.title as video_title, v.thumbnail, v.price as video_price, 
-                               v.description, u.name as creator_name
+                               v.description, v.youtube_id, v.category, u.name as creator_name
                         FROM purchases p 
                         LEFT JOIN videos v ON p.video_id = v.id 
                         LEFT JOIN users u ON v.user_id = u.id
