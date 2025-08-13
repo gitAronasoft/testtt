@@ -8,16 +8,25 @@ class CreatorManager {
         this.stats = {};
         this.videos = [];
         this.earnings = [];
+        this.isLoading = false;
         this.init();
     }
 
     async init() {
         this.bindEvents();
-        await this.loadDashboardData();
         this.loadPageSpecificHandlers();
+        await this.loadDashboardData();
     }
 
     async loadDashboardData() {
+        // Prevent multiple concurrent loads
+        if (this.isLoading) {
+            console.log('Data loading already in progress, skipping...');
+            return;
+        }
+        
+        this.isLoading = true;
+        
         try {
             // Wait for API service to be available
             let retries = 0;
@@ -34,9 +43,6 @@ class CreatorManager {
                 const sessionSession = sessionStorage.getItem('userSession');
                 const userSession = JSON.parse(localSession || sessionSession || '{}');
                 
-                // Debug: Log the session to see what we have
-                console.log('Current user session:', userSession);
-                
                 // Get creator ID from session
                 const creatorId = userSession.id;
                 
@@ -46,40 +52,46 @@ class CreatorManager {
                     return;
                 }
                 
-                console.log('Using creator ID:', creatorId);
+                console.log('Loading data for creator ID:', creatorId);
                 
-                // Load metrics from new metrics API
-                const metricsResponse = await window.apiService.get(`/metrics/creator?creator_id=${creatorId}`);
-                if (metricsResponse.success) {
-                    this.stats = metricsResponse.data;
-                    this.updateDashboardMetrics(this.stats);
-                }
-                
-                // Load data from API with creator ID
-                const [videosResponse, earningsResponse] = await Promise.all([
-                    window.apiService.getCreatorVideos({ uploader_id: creatorId }),
-                    window.apiService.getCreatorEarnings({ creator_id: creatorId })
+                // Load all data in parallel but only once
+                const [metricsResponse, videosResponse, earningsResponse] = await Promise.all([
+                    window.apiService.get(`/metrics/creator?creator_id=${creatorId}`),
+                    window.apiService.get(`/creator/videos?uploader_id=${creatorId}`),
+                    window.apiService.get(`/creator/earnings?creator_id=${creatorId}`)
                 ]);
                 
-                // Ensure arrays are properly initialized
+                // Process metrics
+                if (metricsResponse.success) {
+                    this.stats = metricsResponse.data;
+                }
+                
+                // Process videos 
                 this.videos = Array.isArray(videosResponse.data?.videos) ? videosResponse.data.videos : 
                              Array.isArray(videosResponse.videos) ? videosResponse.videos : 
                              Array.isArray(videosResponse.data) ? videosResponse.data : [];
                              
+                // Process earnings
                 this.earnings = Array.isArray(earningsResponse.data?.earnings) ? earningsResponse.data.earnings : 
                                Array.isArray(earningsResponse.earnings) ? earningsResponse.earnings : 
                                Array.isArray(earningsResponse.data) ? earningsResponse.data : [];
                 
-                console.log('Creator data loaded:', {
+                console.log('Creator data loaded successfully:', {
                     videosLength: this.videos.length,
                     earningsLength: this.earnings.length,
                     stats: this.stats
                 });
 
-                // Update recent sections if on dashboard page
+                // Update UI
+                this.updateDashboardMetrics(this.stats);
+                
+                // Update page-specific content based on current page
                 if (window.location.pathname.includes('dashboard.html')) {
                     this.updateRecentVideos();
                     this.updateRecentEarnings();
+                } else if (window.location.pathname.includes('videos.html')) {
+                    this.loadVideosGrid();
+                    this.updateVideoPageStats();
                 }
             }
         } catch (error) {
@@ -91,6 +103,8 @@ class CreatorManager {
                 totalEarnings: '0.00',
                 subscribers: 0
             });
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -200,7 +214,7 @@ class CreatorManager {
                     </div>
                     <div class="flex-grow-1">
                         <h6 class="mb-1">${video.title}</h6>
-                        <small class="text-muted">${video.status.charAt(0).toUpperCase() + video.status.slice(1)}</small>
+                        <small class="text-muted">${(video.status || 'unknown').charAt(0).toUpperCase() + (video.status || 'unknown').slice(1)}</small>
                     </div>
                 </div>
             `;
@@ -250,8 +264,9 @@ class CreatorManager {
         }
 
         videosGrid.innerHTML = this.videos.map(video => {
-            const statusClass = video.status === 'published' ? 'bg-success' : 
-                               video.status === 'pending' ? 'bg-warning' : 'bg-secondary';
+            const status = video.status || 'published'; // Default to published if no status
+            const statusClass = status === 'published' ? 'bg-success' : 
+                               status === 'pending' ? 'bg-warning' : 'bg-secondary';
             
             return `
                 <div class="col-lg-4 col-md-6 mb-4">
@@ -265,7 +280,7 @@ class CreatorManager {
                             <h6 class="card-title">${video.title}</h6>
                             <p class="card-text text-muted small">${(video.description || '').substring(0, 50)}...</p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge ${statusClass}">${video.status}</span>
+                                <span class="badge ${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
                                 <span class="text-muted small">$${video.price || '0.00'}</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mt-2">
@@ -297,7 +312,7 @@ class CreatorManager {
         if (!this.videos) return;
         
         const totalVideos = this.videos.length;
-        const publishedVideos = this.videos.filter(v => v.status === 'published').length;
+        const publishedVideos = this.videos.filter(v => (v.status || 'published') === 'published').length;
         const pendingVideos = this.videos.filter(v => v.status === 'pending').length;
         const totalViews = this.videos.reduce((sum, v) => sum + (parseInt(v.views) || 0), 0);
 
@@ -475,6 +490,7 @@ class CreatorManager {
         }
 
         try {
+            // Update video in our database first
             const response = await window.apiService.put(`/videos/${videoId}`, {
                 title: title.trim(),
                 description: description.trim(),
@@ -493,18 +509,70 @@ class CreatorManager {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editVideoModal'));
                 modal.hide();
 
+                // If video has YouTube ID, sync with YouTube
+                if (response.data?.youtube_id) {
+                    console.log('Syncing video update to YouTube...');
+                    this.showNotification('Video updated! Syncing with YouTube...', 'info');
+                    
+                    try {
+                        // Initialize YouTube client if not available
+                        if (!window.youtubeClient) {
+                            window.youtubeClient = new YouTubeAPIClient();
+                        }
+                        
+                        const youtubeResult = await window.youtubeClient.updateVideoMetadata(response.data.youtube_id, {
+                            title: title.trim(),
+                            description: description.trim()
+                        });
+                        
+                        if (youtubeResult.success) {
+                            console.log('Video successfully updated on YouTube');
+                            this.showNotification('✓ Video updated successfully in VideoHub and YouTube!', 'success');
+                        } else {
+                            console.warn('Video updated in VideoHub but YouTube sync failed:', youtubeResult.error);
+                            this.showNotification('Video updated in VideoHub. YouTube sync failed: ' + youtubeResult.error, 'warning');
+                        }
+                    } catch (youtubeError) {
+                        console.error('YouTube sync error:', youtubeError);
+                        this.showNotification('Video updated in VideoHub. YouTube sync failed - please check authentication.', 'warning');
+                    }
+                } else {
+                    this.showNotification('✓ Video updated successfully!', 'success');
+                }
+
                 // Reload videos grid
                 this.loadVideosGrid();
                 this.updateVideoPageStats();
-
-                alert('Video updated successfully!');
             } else {
-                alert('Failed to update video: ' + (response.message || 'Unknown error'));
+                this.showNotification('Failed to update video: ' + (response.message || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error updating video:', error);
-            alert('Error updating video. Please try again.');
+            this.showNotification('Error updating video. Please try again.', 'error');
         }
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '9999';
+        notification.style.minWidth = '300px';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
     }
 
     async deleteVideo(videoId) {

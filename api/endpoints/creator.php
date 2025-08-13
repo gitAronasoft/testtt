@@ -48,8 +48,19 @@ try {
                 ]);
             } elseif (isset($path_parts[2]) && $path_parts[2] === 'earnings') {
                 // Get creator earnings
+                $creator_id = $_GET['creator_id'] ?? null;
+                
+                if (!$creator_id) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Creator ID is required'
+                    ]);
+                    break;
+                }
+                
                 $video = new Video($db);
-                $earnings = $video->getCreatorEarnings();
+                $earnings = $video->getCreatorEarnings($creator_id);
                 
                 http_response_code(200);
                 echo json_encode([

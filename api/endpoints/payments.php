@@ -89,17 +89,8 @@ try {
                 $purchaseId = $db->lastInsertId();
                 
                 // Create earnings record for creator (if earnings table exists)
-                try {
-                    $stmt = $db->prepare("
-                        INSERT INTO earnings (creator_id, video_id, amount, date) 
-                        VALUES (?, ?, ?, CURDATE())
-                    ");
-                    $creatorEarnings = $video['price'] * 0.8; // 80% to creator, 20% platform fee
-                    $stmt->execute([$video['creator_id'], $videoId, $creatorEarnings]);
-                } catch (Exception $e) {
-                    // Earnings table might not exist, continue without it
-                    error_log("Could not create earnings record: " . $e->getMessage());
-                }
+                // Note: Creator earnings are calculated from purchases table 
+                // No separate earnings table needed - all data is in purchases
                 
                 http_response_code(201);
                 echo json_encode([

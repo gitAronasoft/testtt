@@ -11,8 +11,8 @@ class ViewerManager {
         this.currentVideo = null;
         this.player = null;
         this.filteredVideos = [];
-        this.currentViewerId = 2; // Demo viewer ID (Sarah Davis)
-        this.favorites = [1, 2]; // Demo favorites - videos 1 and 2
+        this.currentViewerId = null; // Will be set from session
+        this.favorites = []; // Will be loaded from API
         this.init();
     }
 
@@ -35,9 +35,16 @@ class ViewerManager {
             }
             
             if (window.apiService) {
-                // Get current user info
-                const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
-                const userId = userSession.userId || 8; // Default to test viewer
+                // Get current user info from session
+                const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+                const userId = userSession.id || userSession.userId;
+                this.currentViewerId = userId;
+                
+                if (!userId) {
+                    console.error('No viewer ID found in session, redirecting to login');
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
                 
                 // Load general platform metrics (with optional user data)
                 const metricsResponse = await window.apiService.get(`/metrics/viewer?user_id=${userId}`);
@@ -203,8 +210,14 @@ class ViewerManager {
         console.log('Loading dashboard page...');
         
         // Load user purchases for proper card display
-        const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
-        const userId = userSession.userId || 8;
+        const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+        const userId = userSession.id || userSession.userId;
+        
+        if (!userId) {
+            console.error('No user ID found for purchases');
+            this.purchases = [];
+            return;
+        }
         
         try {
             // Get user-specific purchases for card display
@@ -230,8 +243,16 @@ class ViewerManager {
         console.log('Loading purchases page data...');
         
         // Load user's purchase data from API
-        const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
-        const userId = userSession.userId || 8;
+        const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+        const userId = userSession.id || userSession.userId;
+        
+        if (!userId) {
+            console.error('No user ID found for purchases page');
+            this.purchases = [];
+            this.updatePurchaseStats();
+            this.renderPurchasedVideos();
+            return;
+        }
         
         try {
             // Get user-specific purchases ONLY on purchases page

@@ -79,8 +79,13 @@ try {
                 $stmt->execute([$creatorId]);
                 $metrics['totalViews'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
                 
-                // Total earnings by creator
-                $stmt = $db->prepare("SELECT COALESCE(SUM(e.amount), 0) as total FROM earnings e WHERE e.creator_id = ?");
+                // Total earnings by creator from purchases table
+                $stmt = $db->prepare("
+                    SELECT COALESCE(SUM(p.amount), 0) as total 
+                    FROM purchases p 
+                    JOIN videos v ON p.video_id = v.id 
+                    WHERE CAST(v.user_id AS UNSIGNED) = ?
+                ");
                 $stmt->execute([$creatorId]);
                 $metrics['totalEarnings'] = number_format($stmt->fetch(PDO::FETCH_ASSOC)['total'], 2);
                 

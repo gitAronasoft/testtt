@@ -207,6 +207,65 @@ class YouTubeAPIClient {
     }
 
     /**
+     * Update YouTube video metadata
+     * @param {string} videoId - YouTube video ID
+     * @param {Object} metadata - Updated metadata (title, description)
+     * @returns {Promise<Object>} Update result
+     */
+    async updateVideoMetadata(videoId, metadata) {
+        try {
+            if (!this.accessToken) {
+                throw new Error('Not authenticated with YouTube');
+            }
+
+            await this.ensureValidToken();
+
+            const updateData = {
+                id: videoId,
+                snippet: {
+                    title: metadata.title,
+                    description: metadata.description,
+                    categoryId: "22" // People & Blogs category
+                }
+            };
+
+            const response = await fetch(
+                `https://www.googleapis.com/youtube/v3/videos?part=snippet`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`YouTube API error: ${errorData.error?.message || response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log('YouTube video updated successfully:', result);
+
+            return {
+                success: true,
+                videoId: result.id,
+                title: result.snippet.title,
+                description: result.snippet.description
+            };
+
+        } catch (error) {
+            console.error('Error updating YouTube video:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
      * Make authenticated request to YouTube API
      */
     async makeYouTubeAPIRequest(url, options = {}) {

@@ -38,12 +38,13 @@ class DataService {
                 this.cache.earnings = earnings.data?.earnings || [];
                 this.cache.purchases = purchases.data?.purchases || [];
 
-            console.log('Data loaded successfully:', {
-                users: this.cache.users.length,
-                videos: this.cache.videos.length,
-                earnings: this.cache.earnings.length,
-                purchases: this.cache.purchases.length
-            });
+                console.log('Data loaded successfully:', {
+                    users: this.cache.users.length,
+                    videos: this.cache.videos.length,
+                    earnings: this.cache.earnings.length,
+                    purchases: this.cache.purchases.length
+                });
+            }
         } catch (error) {
             console.error('Error loading data:', error);
         }

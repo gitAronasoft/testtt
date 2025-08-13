@@ -153,7 +153,7 @@ class Purchase {
         $query = "SELECT COALESCE(SUM(p.amount), 0) as total_earnings
                   FROM " . $this->table_name . " p
                   JOIN videos v ON p.video_id = v.id
-                  WHERE v.creator_id = :creator_id AND p.status = 'completed'";
+                  WHERE v.user_id = :creator_id";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":creator_id", $creator_id);

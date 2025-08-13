@@ -42,10 +42,18 @@ class ProfileManager {
     }
 
     populateProfileForm() {
-        document.getElementById('firstName').value = this.currentUser.firstName || '';
-        document.getElementById('lastName').value = this.currentUser.lastName || '';
-        document.getElementById('email').value = this.currentUser.email || '';
-        document.getElementById('role').value = this.currentUser.role || '';
+        // Safely update form fields if they exist
+        const firstNameEl = document.getElementById('firstName');
+        const lastNameEl = document.getElementById('lastName');
+        const emailEl = document.getElementById('email');
+        const channelNameEl = document.getElementById('channelName');
+        const channelDescriptionEl = document.getElementById('channelDescription');
+        
+        if (firstNameEl) firstNameEl.value = this.currentUser.firstName || this.currentUser.name?.split(' ')[0] || '';
+        if (lastNameEl) lastNameEl.value = this.currentUser.lastName || this.currentUser.name?.split(' ')[1] || '';
+        if (emailEl) emailEl.value = this.currentUser.email || '';
+        if (channelNameEl) channelNameEl.value = this.currentUser.channelName || this.currentUser.name || '';
+        if (channelDescriptionEl) channelDescriptionEl.value = this.currentUser.channelDescription || '';
         
         // Update last login time
         const lastLoginElement = document.getElementById('lastLoginTime');

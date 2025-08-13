@@ -205,18 +205,24 @@ try {
                     $video->description = $data['description'] ?? '';
                     $video->price = $data['price'] ?? 0;
                     $video->category = $data['category'] ?? '';
-                    $video->duration = $data['duration'] ?? '00:00';
                     $video->thumbnail = $data['thumbnail'] ?? '';
-                    $video->tags = is_array($data['tags']) ? json_encode($data['tags']) : $data['tags'];
-                    $video->file_size = $data['file_size'] ?? '';
-                    $video->quality = $data['quality'] ?? '720p';
-                    $video->status = $data['status'] ?? 'pending';
+                    $video->status = $data['status'] ?? 'published';
                     
                     if ($video->update()) {
+                        // Get the video data to check if it has a YouTube ID
+                        $video->readOne();
+                        $youtubeId = $video->youtube_id ?? null;
+                        
                         http_response_code(200);
                         echo json_encode([
                             'success' => true,
-                            'message' => 'Video updated successfully'
+                            'message' => 'Video updated successfully',
+                            'data' => [
+                                'id' => $video->id,
+                                'youtube_id' => $youtubeId,
+                                'title' => $video->title,
+                                'description' => $video->description
+                            ]
                         ]);
                     } else {
                         http_response_code(400);

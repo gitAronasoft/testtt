@@ -98,21 +98,20 @@ class Video {
             $this->title = $row['title'];
             $this->description = $row['description'];
             $this->creator_id = $row['user_id'];
-            // $this->creator_name = $row['user_id'];
             $this->price = $row['price'];
             $this->category = $row['category'];
-            // $this->duration = $row['duration'];
-            $this->upload_date = $row['upload_date'];
+            $this->upload_date = $row['created_at'] ?? null;
             $this->views = $row['views'];
-            $this->likes = $row['likes'];
+            $this->likes = $row['youtube_likes'] ?? null;
             $this->status = $row['status'];
             $this->thumbnail = $row['thumbnail'];
-            $this->earnings = $row['earnings'];
-            $this->tags = $row['tags'];
-            $this->file_size = $row['file_size'];
-            $this->quality = $row['quality'];
+            $this->earnings = null; // Not stored in this table
+            $this->tags = null; // Not stored in this table
+            $this->file_size = null; // Not stored in this table
+            $this->quality = null; // Not stored in this table
             $this->created_at = $row['created_at'];
-            $this->updated_at = $row['updated_at'];
+            $this->updated_at = null; // Not stored in this table
+            $this->youtube_id = $row['youtube_id'] ?? null;
             return true;
         }
 
@@ -167,36 +166,26 @@ class Video {
     public function update() {
         $query = "UPDATE " . $this->table_name . " 
                   SET title=:title, description=:description, price=:price, 
-                      category=:category, duration=:duration, thumbnail=:thumbnail, 
-                      tags=:tags, file_size=:file_size, quality=:quality, 
-                      status=:status, updated_at=NOW() 
+                      category=:category, thumbnail=:thumbnail, status=:status
                   WHERE id=:id";
 
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize
-        $this->title = htmlspecialchars(strip_tags($this->title));
-        $this->description = htmlspecialchars(strip_tags($this->description));
-        $this->price = htmlspecialchars(strip_tags($this->price));
-        $this->category = htmlspecialchars(strip_tags($this->category));
-        $this->duration = htmlspecialchars(strip_tags($this->duration));
-        $this->thumbnail = htmlspecialchars(strip_tags($this->thumbnail));
-        $this->tags = htmlspecialchars(strip_tags($this->tags));
-        $this->file_size = htmlspecialchars(strip_tags($this->file_size));
-        $this->quality = htmlspecialchars(strip_tags($this->quality));
-        $this->status = htmlspecialchars(strip_tags($this->status));
-        $this->id = htmlspecialchars(strip_tags($this->id));
+        // Sanitize - only sanitize non-null values
+        $this->title = htmlspecialchars(strip_tags($this->title ?? ''));
+        $this->description = htmlspecialchars(strip_tags($this->description ?? ''));
+        $this->price = htmlspecialchars(strip_tags($this->price ?? ''));
+        $this->category = htmlspecialchars(strip_tags($this->category ?? ''));
+        $this->thumbnail = htmlspecialchars(strip_tags($this->thumbnail ?? ''));
+        $this->status = htmlspecialchars(strip_tags($this->status ?? ''));
+        $this->id = htmlspecialchars(strip_tags($this->id ?? ''));
 
         // Bind values
         $stmt->bindParam(":title", $this->title);
         $stmt->bindParam(":description", $this->description);
         $stmt->bindParam(":price", $this->price);
         $stmt->bindParam(":category", $this->category);
-        $stmt->bindParam(":duration", $this->duration);
         $stmt->bindParam(":thumbnail", $this->thumbnail);
-        $stmt->bindParam(":tags", $this->tags);
-        $stmt->bindParam(":file_size", $this->file_size);
-        $stmt->bindParam(":quality", $this->quality);
         $stmt->bindParam(":status", $this->status);
         $stmt->bindParam(":id", $this->id);
 
@@ -271,12 +260,12 @@ class Video {
                     v.title as videoTitle,
                     CAST(p.amount AS DECIMAL(10,2)) as amount,
                     p.purchase_date as date,
-                    p.status,
+                    COALESCE(p.status, 'completed') as status,
                     u.name as viewerName
                   FROM purchases p
                   JOIN videos v ON p.video_id = v.id
-                  LEFT JOIN users u ON p.viewer_id = u.id
-                  WHERE v.user_id = :creator_id AND p.status = 'completed'
+                  LEFT JOIN users u ON p.user_id_new = u.id
+                  WHERE v.user_id = :creator_id
                   ORDER BY p.purchase_date DESC";
         
         $stmt = $this->conn->prepare($query);
