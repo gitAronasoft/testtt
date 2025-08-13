@@ -31,12 +31,32 @@ try {
                     $token = str_replace('Bearer ', '', $headers['Authorization']);
                 }
                 
-                // Get user ID from session token
-                // For demo purposes, try to decode token or use session data
-                // In a real app, you'd validate the JWT token
-                $userId = 7; // Default to creator ID 7 for testing
+                // Get user ID from session data or token
+                $userId = null;
                 
-                // TODO: In production, extract user ID from validated JWT token
+                // Try to get user ID from session first
+                session_start();
+                if (isset($_SESSION['user_id'])) {
+                    $userId = $_SESSION['user_id'];
+                } else {
+                    // Try to get from request headers or POST data
+                    $input = json_decode(file_get_contents("php://input"), true);
+                    if (isset($input['user_id'])) {
+                        $userId = $input['user_id'];
+                    } elseif (isset($_GET['user_id'])) {
+                        $userId = $_GET['user_id'];
+                    }
+                }
+                
+                // If still no user ID, return error
+                if (!$userId) {
+                    http_response_code(401);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'User not authenticated'
+                    ]);
+                    break;
+                }
                 
                 // Get user from database
                 $stmt = $db->prepare("SELECT id, name, email, role, created_at FROM users WHERE id = ?");

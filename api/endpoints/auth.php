@@ -61,7 +61,7 @@ try {
                         }
 
                         // Check if user already exists with this email
-                        $stmt = $db->prepare("SELECT id, name, email, role, email_verified_at FROM users WHERE email = ?");
+                        $stmt = $db->prepare("SELECT id, name, email, role, email_verified_at, status FROM users WHERE email = ?");
                         $stmt->execute([$googleUserData['email']]);
                         $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -71,6 +71,17 @@ try {
                         $userPicture = $googleUserData['picture'] ?? null;
 
                         if ($existingUser) {
+                            // Check if user is not revoked/banned
+                            $userStatus = $existingUser['status'] ?? 'active';
+                            if ($userStatus === 'revoked' || $userStatus === 'banned') {
+                                http_response_code(403);
+                                echo json_encode([
+                                    'success' => false,
+                                    'message' => 'Your account has been suspended. Please contact support.'
+                                ]);
+                                exit;
+                            }
+                            
                             // User exists, log them in
                             $userId = $existingUser['id'];
                             $userRole = $existingUser['role'];
@@ -368,13 +379,33 @@ try {
                 }
 
                 // Check if user exists and password is correct
-                $stmt = $db->prepare("SELECT id, name, email, role, password, email_verified_at FROM users WHERE email = ?");
+                $stmt = $db->prepare("SELECT id, name, email, role, password, email_verified, status FROM users WHERE email = ?");
                 $stmt->execute([$data['email']]);
                 $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($userData && password_verify($data['password'], $userData['password'])) {
-                    // Check if email is verified (optional - you can require it or not)
-                    $emailVerified = $userData['email_verified_at'] !== null;
+                    // Check if email is verified and user is not revoked
+                    $emailVerified = $userData['email_verified'] !== null;
+                    $userStatus = $userData['status'] ?? 'active';
+                    
+                    if (!$emailVerified) {
+                        http_response_code(403);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Please verify your email before logging in',
+                            'verification_required' => true
+                        ]);
+                        break;
+                    }
+                    
+                    if ($userStatus === 'revoked' || $userStatus === 'banned') {
+                        http_response_code(403);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Your account has been suspended. Please contact support.'
+                        ]);
+                        break;
+                    }
 
                     // Generate session token
                     $token = bin2hex(random_bytes(32));

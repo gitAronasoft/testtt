@@ -92,7 +92,10 @@ class User {
 
     // Create user
     public function create() {
-        $query = "INSERT INTO " . $this->table_name . " SET name=:name, email=:email, role=:role, status=:status, created_at=NOW(), updated_at=NOW()";
+        // Ensure status column exists
+        $this->createStatusColumnIfNotExists();
+        
+        $query = "INSERT INTO " . $this->table_name . " SET name=:name, email=:email, role=:role, status=:status, password=:password, created_at=NOW(), updated_at=NOW()";
 
         $stmt = $this->conn->prepare($query);
 
@@ -100,13 +103,17 @@ class User {
         $this->name = htmlspecialchars(strip_tags($this->name));
         $this->email = htmlspecialchars(strip_tags($this->email));
         $this->role = htmlspecialchars(strip_tags($this->role));
-        $this->status = htmlspecialchars(strip_tags($this->status));
+        $this->status = htmlspecialchars(strip_tags($this->status ?? 'active'));
+        
+        // Generate random password for admin-created users
+        $randomPassword = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
 
         // Bind values
         $stmt->bindParam(":name", $this->name);
         $stmt->bindParam(":email", $this->email);
         $stmt->bindParam(":role", $this->role);
         $stmt->bindParam(":status", $this->status);
+        $stmt->bindParam(":password", $randomPassword);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();

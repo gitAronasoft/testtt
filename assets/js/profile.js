@@ -17,10 +17,28 @@ class ProfileManager {
 
     async loadUserProfile() {
         try {
+            // Check for user session first
+            let userSession = null;
+
+            // Try to get session from both localStorage and sessionStorage
+            const localSession = localStorage.getItem('userSession');
+            const sessionSession = sessionStorage.getItem('userSession');
+
+            if (localSession) {
+                userSession = JSON.parse(localSession);
+            } else if (sessionSession) {
+                userSession = JSON.parse(sessionSession);
+            }
+
+            if (!userSession || !userSession.email) {
+                console.log('No user session found');
+                return;
+            }
+
             // Wait for API service to be available
             let retries = 0;
             const maxRetries = 50;
-            
+
             while (retries < maxRetries && !window.apiService) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 retries++;
@@ -32,17 +50,51 @@ class ProfileManager {
                     this.currentUser = result.data;
                     this.populateProfileForm();
                     console.log('Profile loaded:', this.currentUser);
-                    
+
                     // Also load admin metrics and update sidebar badges
                     if (this.currentUser.role === 'admin') {
                         await this.loadAdminMetrics();
                     }
                 } else {
                     console.error('Failed to load profile:', result.message);
+                    // Fallback to session data
+                    this.currentUser = {
+                        name: userSession.name || '',
+                        email: userSession.email || '',
+                        role: userSession.userType || 'viewer'
+                    };
+                    this.populateProfileForm();
                 }
+            } else {
+                // Use session data as fallback
+                this.currentUser = {
+                    name: userSession.name || '',
+                    email: userSession.email || '',
+                    role: userSession.userType || 'viewer'
+                };
+                this.populateProfileForm();
             }
         } catch (error) {
             console.error('Error loading profile:', error);
+            // Try to use session data as fallback
+            let userSession = null;
+            const localSession = localStorage.getItem('userSession');
+            const sessionSession = sessionStorage.getItem('userSession');
+
+            if (localSession) {
+                userSession = JSON.parse(localSession);
+            } else if (sessionSession) {
+                userSession = JSON.parse(sessionSession);
+            }
+
+            if (userSession && userSession.email) {
+                this.currentUser = {
+                    name: userSession.name || '',
+                    email: userSession.email || '',
+                    role: userSession.userType || 'viewer'
+                };
+                this.populateProfileForm();
+            }
         }
     }
 
@@ -53,25 +105,25 @@ class ProfileManager {
         const emailEl = document.getElementById('email');
         const channelNameEl = document.getElementById('channelName');
         const channelDescriptionEl = document.getElementById('channelDescription');
-        
+
         if (firstNameEl) firstNameEl.value = this.currentUser.firstName || this.currentUser.name?.split(' ')[0] || '';
         if (lastNameEl) lastNameEl.value = this.currentUser.lastName || this.currentUser.name?.split(' ')[1] || '';
         if (emailEl) emailEl.value = this.currentUser.email || '';
         if (channelNameEl) channelNameEl.value = this.currentUser.channelName || this.currentUser.name || '';
         if (channelDescriptionEl) channelDescriptionEl.value = this.currentUser.channelDescription || '';
-        
+
         // Update last login time
         const lastLoginElement = document.getElementById('lastLoginTime');
         if (lastLoginElement) {
             const now = new Date();
             lastLoginElement.textContent = `${now.toLocaleDateString()}, ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
         }
-        
+
         // Update role field
         const roleEl = document.getElementById('role');
         if (roleEl && this.currentUser.role) {
             const roleMap = {
-                'admin': 'Administrator', 
+                'admin': 'Administrator',
                 'creator': 'Content Creator',
                 'viewer': 'Viewer'
             };
@@ -116,7 +168,7 @@ class ProfileManager {
         // Password confirmation validation
         const confirmPasswordInput = document.getElementById('confirmPassword');
         const newPasswordInput = document.getElementById('newPassword');
-        
+
         if (confirmPasswordInput && newPasswordInput) {
             [confirmPasswordInput, newPasswordInput].forEach(input => {
                 input.addEventListener('input', () => {
@@ -129,7 +181,7 @@ class ProfileManager {
     validateName(input) {
         const name = input.value.trim();
         const isValid = name.length >= 2 && /^[a-zA-Z\s'-]+$/.test(name);
-        
+
         if (isValid) {
             input.classList.remove('is-invalid');
             input.classList.add('is-valid');
@@ -170,15 +222,15 @@ class ProfileManager {
     updatePasswordStrength(password) {
         const strengthBar = document.getElementById('strengthBar');
         const strengthText = document.getElementById('strengthText');
-        
+
         if (!strengthBar || !strengthText) return;
 
         const strength = this.calculatePasswordStrength(password);
-        
+
         // Update progress bar
         strengthBar.style.width = `${strength.percentage}%`;
         strengthBar.className = `progress-bar bg-${strength.color}`;
-        
+
         // Update text
         strengthText.textContent = strength.text;
         strengthText.className = `text-sm text-${strength.color}`;
@@ -186,7 +238,7 @@ class ProfileManager {
 
     calculatePasswordStrength(password) {
         if (!password) return { percentage: 0, color: 'secondary', text: 'Enter password' };
-        
+
         let score = 0;
         const checks = [
             { test: /.{8,}/, points: 25 }, // Length >= 8
@@ -210,7 +262,7 @@ class ProfileManager {
 
     async handleProfileUpdate(e) {
         e.preventDefault();
-        
+
         const form = e.target;
         const formData = new FormData(form);
         const profileData = {
@@ -232,15 +284,15 @@ class ProfileManager {
 
         try {
             const result = await window.apiService.updateUserProfile(profileData);
-            
+
             if (result.success) {
                 // Update local data
                 this.currentUser.firstName = profileData.firstName;
                 this.currentUser.lastName = profileData.lastName;
-                
+
                 // Add success class to form
                 form.classList.add('was-validated');
-                
+
                 window.apiService.showSuccessMessage('Profile updated successfully');
             } else {
                 window.apiService.handleApiError(result, 'Failed to update profile');
@@ -260,13 +312,13 @@ class ProfileManager {
     validateProfileForm(form) {
         const firstName = form.querySelector('#firstName');
         const lastName = form.querySelector('#lastName');
-        
+
         let isValid = true;
-        
+
         if (!this.validateName(firstName)) {
             isValid = false;
         }
-        
+
         if (!this.validateName(lastName)) {
             isValid = false;
         }
@@ -277,7 +329,7 @@ class ProfileManager {
 
     async handlePasswordChange(e) {
         e.preventDefault();
-        
+
         const form = e.target;
         const formData = new FormData(form);
         const passwordData = {
@@ -303,19 +355,19 @@ class ProfileManager {
                 currentPassword: passwordData.currentPassword,
                 newPassword: passwordData.newPassword
             });
-            
+
             if (result.success) {
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
                 modal.hide();
-                
+
                 // Reset form
                 form.reset();
                 form.classList.remove('was-validated');
-                
+
                 // Reset password strength indicator
                 this.updatePasswordStrength('');
-                
+
                 window.apiService.showSuccessMessage('Password updated successfully');
             } else {
                 window.apiService.handleApiError(result, 'Failed to update password');
@@ -337,7 +389,7 @@ class ProfileManager {
 
     validatePasswordForm(form, data) {
         let isValid = true;
-        
+
         // Current password validation
         const currentPasswordInput = form.querySelector('#currentPassword');
         if (!data.currentPassword || data.currentPassword.length < 6) {
@@ -347,7 +399,7 @@ class ProfileManager {
             currentPasswordInput.classList.remove('is-invalid');
             currentPasswordInput.classList.add('is-valid');
         }
-        
+
         // New password validation
         const newPasswordInput = form.querySelector('#newPassword');
         const strength = this.calculatePasswordStrength(data.newPassword);
@@ -358,7 +410,7 @@ class ProfileManager {
             newPasswordInput.classList.remove('is-invalid');
             newPasswordInput.classList.add('is-valid');
         }
-        
+
         // Confirm password validation
         if (data.newPassword !== data.confirmPassword) {
             form.querySelector('#confirmPassword').classList.add('is-invalid');
@@ -376,12 +428,12 @@ class ProfileManager {
                 window.apiService.get('/admin/users'),
                 window.apiService.get('/videos')
             ]);
-            
+
             const users = usersResponse.data || usersResponse.users || [];
             const videos = videosResponse.data || videosResponse.videos || [];
-            
+
             // Sidebar badges removed for cleaner interface
-            
+
         } catch (error) {
             console.error('Failed to load admin metrics:', error);
         }
@@ -394,12 +446,12 @@ window.resetProfileForm = function() {
     if (form) {
         form.reset();
         form.classList.remove('was-validated');
-        
+
         // Remove validation classes
         form.querySelectorAll('.form-control').forEach(input => {
             input.classList.remove('is-valid', 'is-invalid');
         });
-        
+
         // Reload original data
         window.profileManager.populateProfileForm();
     }
@@ -408,7 +460,7 @@ window.resetProfileForm = function() {
 window.togglePasswordVisibility = function(inputId, button) {
     const input = document.getElementById(inputId);
     const icon = button.querySelector('i');
-    
+
     if (input.type === 'password') {
         input.type = 'text';
         icon.classList.remove('fa-eye');

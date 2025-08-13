@@ -191,6 +191,13 @@ class AdminManager {
             return;
         }
 
+        // Check if table element exists
+        const tableElement = $('#usersTable');
+        if (tableElement.length === 0) {
+            console.error('Users table element not found');
+            return;
+        }
+
         // Load users data first
         if (!this.users.length && window.apiService) {
             try {
@@ -208,23 +215,32 @@ class AdminManager {
             totalUsersCount.textContent = this.users.length;
         }
 
-        // Initialize DataTable
-        if (this.usersTable) {
-            this.usersTable.destroy();
+        // Properly destroy existing DataTable
+        if ($.fn.DataTable.isDataTable('#usersTable')) {
+            tableElement.DataTable().clear().destroy();
+            this.usersTable = null;
         }
 
-        this.usersTable = $('#usersTable').DataTable({
+        // Small delay to ensure cleanup is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Initialize DataTable
+        this.usersTable = tableElement.DataTable({
             data: this.users,
             responsive: true,
             pageLength: 25,
             order: [[0, 'asc']],
-            columns: [
+            columnDefs: [
                 { 
+                    targets: 0,
                     data: 'id',
-                    width: '60px'
+                    width: '60px',
+                    className: 'text-center'
                 },
                 { 
+                    targets: 1,
                     data: null,
+                    orderable: true,
                     render: function(data, type, row) {
                         const firstName = row.firstName || row.name || 'Unknown';
                         const lastName = row.lastName || '';
@@ -243,12 +259,14 @@ class AdminManager {
                     }
                 },
                 { 
+                    targets: 2,
                     data: 'email',
                     render: function(data) {
                         return data || 'No email';
                     }
                 },
                 { 
+                    targets: 3,
                     data: 'role',
                     render: function(data) {
                         const badgeClass = {
@@ -261,6 +279,7 @@ class AdminManager {
                     }
                 },
                 {
+                    targets: 4,
                     data: 'status',
                     render: function(data) {
                         const badgeClass = {
@@ -274,6 +293,14 @@ class AdminManager {
                     }
                 },
                 {
+                    targets: 5,
+                    data: null,
+                    render: function(data, type, row) {
+                        return row.email_verified_at ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-warning">Not Verified</span>';
+                    }
+                },
+                {
+                    targets: 6,
                     data: 'joinDate',
                     render: function(data) {
                         if (!data) return 'Unknown';
@@ -285,15 +312,23 @@ class AdminManager {
                     }
                 },
                 {
+                    targets: 7,
                     data: null,
                     orderable: false,
                     width: '200px',
+                    className: 'text-center',
                     render: function(data, type, row) {
                         return `
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-info" onclick="adminManager.showUserDetails(${row.id})" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-info dropdown-toggle" type="button" data-bs-toggle="dropdown" title="View Options">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="adminManager.showUserDetails(${row.id})"><i class="fas fa-info-circle me-2"></i>Quick View</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="viewUserDetailsPage(${row.id})"><i class="fas fa-external-link-alt me-2"></i>Full Details</a></li>
+                                    </ul>
+                                </div>
                                 <button class="btn btn-sm btn-outline-primary" onclick="adminManager.editUser(${row.id})" title="Edit User">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -312,6 +347,9 @@ class AdminManager {
                 search: "Search users:",
                 lengthMenu: "Show _MENU_ users per page",
                 info: "Showing _START_ to _END_ of _TOTAL_ users",
+                infoEmpty: "No users available",
+                infoFiltered: "(filtered from _MAX_ total users)",
+                zeroRecords: "No matching users found",
                 paginate: {
                     first: "First",
                     last: "Last",
@@ -319,49 +357,441 @@ class AdminManager {
                     previous: "Previous"
                 }
             },
-            dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>rtip'
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                 '<"row"<"col-sm-12"tr>>' +
+                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            searchDelay: 400,
+            processing: true
         });
     }
 
-    async loadVideosTable() {
-        if (!this.videos.length && window.apiService) {
+    // User management methods
+    async showUserDetails(userId) {
+        try {
+            // Find user in local data first
+            let user = this.users.find(u => u.id == userId);
+            
+            // If not found locally, fetch from API
+            if (!user) {
+                const response = await fetch(`/api/admin/users?id=${userId}`);
+                const result = await response.json();
+                if (result.success) {
+                    user = result.data;
+                }
+            }
+
+            if (user) {
+                // Populate user details modal
+                document.getElementById('detailUserId').textContent = user.id;
+                document.getElementById('detailUserName').textContent = user.name || 'Unknown User';
+                document.getElementById('detailUserEmail').textContent = user.email || 'No email';
+                document.getElementById('detailUserRole').textContent = (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1);
+                document.getElementById('detailUserRole').className = `badge bg-${this.getUserRoleBadgeClass(user.role)}`;
+                
+                // Status badge
+                const statusEl = document.getElementById('detailUserStatus');
+                statusEl.textContent = (user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1);
+                statusEl.className = `badge bg-${user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'revoked' ? 'dark' : 'warning'}`;
+                
+                document.getElementById('detailJoinDate').textContent = user.joinDate ? new Date(user.joinDate).toLocaleDateString() : (user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown');
+                document.getElementById('detailEmailVerified').textContent = user.email_verified_at ? 'Verified' : 'Not Verified';
+                document.getElementById('detailEmailVerified').className = `badge bg-${user.email_verified_at ? 'success' : 'warning'}`;
+                document.getElementById('detailLastLogin').textContent = 'Recently'; // Mock data for now
+                
+                // Mock additional data - in production, you'd fetch this from API
+                document.getElementById('detailVideoCount').textContent = Math.floor(Math.random() * 10);
+                document.getElementById('detailPurchaseCount').textContent = Math.floor(Math.random() * 20);
+                document.getElementById('detailTotalSpent').textContent = `$${(Math.random() * 500).toFixed(2)}`;
+                
+                // Store current user ID for editing
+                this.currentUserId = userId;
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+                modal.show();
+            } else {
+                this.showAlert('User not found', 'danger');
+            }
+        } catch (error) {
+            console.error('Error loading user details:', error);
+            this.showAlert('Failed to load user details', 'danger');
+        }
+    }
+
+    async editUser(userId) {
+        try {
+            const response = await fetch(`/api/admin/users?id=${userId}`);
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                const user = result.data;
+                
+                // Fill edit form
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editFirstName').value = user.name?.split(' ')[0] || '';
+                document.getElementById('editLastName').value = user.name?.split(' ').slice(1).join(' ') || '';
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editUserType').value = user.role;
+                document.getElementById('editStatus').value = user.status || 'active';
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                modal.show();
+            }
+        } catch (error) {
+            console.error('Error loading user for edit:', error);
+            this.showAlert('Error loading user details', 'danger');
+        }
+    }
+
+    async revokeUser(userId) {
+        if (confirm('Are you sure you want to revoke access for this user?')) {
             try {
-                const response = await window.apiService.get('/videos');
-                this.videos = response.data || response.videos || [];
+                const response = await fetch('/api/admin/users', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: userId,
+                        status: 'revoked'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.showAlert('User access revoked successfully', 'warning');
+                    this.refreshUsersTable();
+                } else {
+                    this.showAlert(result.message || 'Failed to revoke user access', 'danger');
+                }
             } catch (error) {
-                console.error('Failed to load videos:', error);
-                this.videos = [];
+                console.error('Error revoking user:', error);
+                this.showAlert('Error revoking user access', 'danger');
             }
         }
+    }
+
+    async deleteUser(userId) {
+        if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: userId })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.showAlert('User deleted successfully', 'success');
+                    this.refreshUsersTable();
+                } else {
+                    this.showAlert(result.message || 'Failed to delete user', 'danger');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                this.showAlert('Error deleting user', 'danger');
+            }
+        }
+    }
+
+    async createUser(userData) {
+        try {
+            const response = await fetch('/api/admin/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showAlert('User created successfully', 'success');
+                this.refreshUsersTable();
+                return true;
+            } else {
+                this.showAlert(result.message || 'Failed to create user', 'danger');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error creating user:', error);
+            this.showAlert('Error creating user', 'danger');
+            return false;
+        }
+    }
+
+    async updateUser(userData) {
+        try {
+            const response = await fetch('/api/admin/users', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showAlert('User updated successfully', 'success');
+                this.refreshUsersTable();
+                return true;
+            } else {
+                this.showAlert(result.message || 'Failed to update user', 'danger');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error updating user:', error);
+            this.showAlert('Error updating user', 'danger');
+            return false;
+        }
+    }
+
+    async refreshUsersTable() {
+        if (this.usersTable && $.fn.DataTable.isDataTable('#usersTable')) {
+            // Reload data
+            try {
+                const response = await fetch('/api/admin/users');
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.users = result.data || [];
+                    this.usersTable.clear();
+                    this.usersTable.rows.add(this.users);
+                    this.usersTable.draw();
+                    
+                    // Update total count
+                    const totalUsersCount = document.getElementById('totalUsersCount');
+                    if (totalUsersCount) {
+                        totalUsersCount.textContent = this.users.length;
+                    }
+                }
+            } catch (error) {
+                console.error('Error refreshing users table:', error);
+                this.showAlert('Error refreshing table', 'danger');
+            }
+        } else {
+            // If table doesn't exist, reinitialize it
+            await this.loadUsersDataTable();
+        }
+    }
+
+    showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
         
-        const tbody = document.querySelector('#videosTable tbody');
+        const container = document.querySelector('main');
+        if (container) {
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+    }
+
+    async loadVideosTable() {
+        const tbody = document.querySelector('#videosTableBody');
+        const loadingIndicator = document.getElementById('videosLoadingIndicator');
+        const emptyState = document.getElementById('videosEmptyState');
+        const totalCount = document.getElementById('totalVideosCount');
+        
         if (!tbody) return;
         
-        if (this.videos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No videos found</td></tr>';
-            return;
+        try {
+            // Show loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'block';
+            }
+            if (emptyState) {
+                emptyState.classList.add('d-none');
+            }
+            
+            // Try to load from admin videos endpoint first, fallback to regular videos endpoint
+            let response = await fetch('/api/admin/videos');
+            let result = await response.json();
+            
+            if (!result.success) {
+                // Fallback to regular videos API
+                response = await fetch('/api/videos');
+                result = await response.json();
+                
+                if (result.success && result.data && result.data.videos) {
+                    // Transform videos data for admin display
+                    this.videos = result.data.videos.map(video => ({
+                        id: video.id,
+                        title: video.title,
+                        description: video.description,
+                        price: video.price,
+                        thumbnail: video.thumbnail,
+                        creator_name: video.creatorName,
+                        creator_email: '',
+                        upload_date: video.uploadDate,
+                        views: video.views,
+                        purchase_count: video.views,
+                        status: video.status || 'published',
+                        created_at: new Date().toISOString()
+                    }));
+                } else {
+                    throw new Error('Failed to load videos from both endpoints');
+                }
+            } else {
+                this.videos = result.data || [];
+            }
+            
+            // Update total count
+            if (totalCount) {
+                totalCount.textContent = this.videos.length;
+            }
+            
+            // Update stats cards
+            this.updateVideoStats();
+            
+            // Clear existing content
+            tbody.innerHTML = '';
+            
+            if (this.videos.length === 0) {
+                if (emptyState) {
+                    emptyState.classList.remove('d-none');
+                }
+            } else {
+                this.videos.forEach(video => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><span class="fw-bold">${video.id}</span></td>
+                        <td>
+                            <img src="${video.thumbnail || 'https://via.placeholder.com/60x40'}" 
+                                 alt="${video.title}" class="rounded shadow-sm" 
+                                 style="width: 60px; height: 40px; object-fit: cover;">
+                        </td>
+                        <td>
+                            <div class="fw-bold">${video.title}</div>
+                            <small class="text-muted">${video.description ? video.description.substring(0, 50) + '...' : 'No description'}</small>
+                        </td>
+                        <td>
+                            <div>${video.creator_name || 'Unknown'}</div>
+                            <small class="text-muted">${video.creator_email || ''}</small>
+                        </td>
+                        <td><span class="fw-bold text-success">$${video.price || '0.00'}</span></td>
+                        <td>
+                            <span class="badge bg-${this.getVideoStatusBadgeColor(video.status)}">${video.status || 'active'}</span>
+                        </td>
+                        <td><span class="fw-bold">${video.views || video.purchase_count || 0}</span></td>
+                        <td>${video.upload_date || new Date(video.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info btn-sm" onclick="adminManager.viewVideo(${video.id})" title="View Video">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="adminManager.editVideo(${video.id})" title="Edit Video">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="adminManager.toggleVideoStatus(${video.id})" title="Toggle Status">
+                                    <i class="fas fa-toggle-on"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="adminManager.deleteVideo(${video.id})" title="Delete Video">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+        } catch (error) {
+            console.error('Error loading videos:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <div class="text-danger">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                            <p>Error loading videos: ${error.message}</p>
+                            <button class="btn btn-outline-primary btn-sm" onclick="adminManager.loadVideosTable()">
+                                <i class="fas fa-refresh me-1"></i>Retry
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } finally {
+            // Hide loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
         }
+    }
+
+    updateVideoStats() {
+        const totalVideos = document.getElementById('totalVideos');
+        const publishedVideos = document.getElementById('publishedVideos');
+        const pendingVideos = document.getElementById('pendingVideos');
+        const flaggedVideos = document.getElementById('flaggedVideos');
         
-        tbody.innerHTML = this.videos.map(video => `
-            <tr>
-                <td>${video.id}</td>
-                <td>
-                    <img src="${video.youtube_thumbnail || 'https://via.placeholder.com/60x40'}" 
-                         alt="${video.title}" class="rounded" style="width: 60px; height: 40px; object-fit: cover;">
-                </td>
-                <td>${video.title}</td>
-                <td>${video.uploader_id}</td>
-                <td>$${video.price || '0.00'}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="adminManager.editVideo(${video.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="adminManager.deleteVideo(${video.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        if (totalVideos) totalVideos.textContent = this.videos.length;
+        if (publishedVideos) publishedVideos.textContent = this.videos.filter(v => v.status === 'published' || v.status === 'active').length;
+        if (pendingVideos) pendingVideos.textContent = this.videos.filter(v => v.status === 'pending').length;
+        if (flaggedVideos) flaggedVideos.textContent = this.videos.filter(v => v.status === 'flagged').length;
+    }
+
+    getVideoStatusBadgeColor(status) {
+        switch(status) {
+            case 'published':
+            case 'active': return 'success';
+            case 'pending': return 'warning';
+            case 'flagged': return 'danger';
+            case 'draft': return 'secondary';
+            default: return 'primary';
+        }
+    }
+
+    // Video management methods
+    async viewVideo(videoId) {
+        window.open(`/video-player.html?id=${videoId}`, '_blank');
+    }
+
+    async editVideo(videoId) {
+        // Redirect to video edit page or show modal
+        this.showAlert('Video editing functionality coming soon', 'info');
+    }
+
+    async toggleVideoStatus(videoId) {
+        try {
+            const video = this.videos.find(v => v.id === videoId);
+            if (!video) return;
+            
+            const newStatus = video.status === 'active' ? 'pending' : 'active';
+            
+            // Here you would call API to update video status
+            this.showAlert(`Video status would be changed to ${newStatus}`, 'info');
+            
+        } catch (error) {
+            console.error('Error toggling video status:', error);
+            this.showAlert('Error updating video status', 'danger');
+        }
+    }
+
+    async deleteVideo(videoId) {
+        if (confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+            try {
+                // Here you would call API to delete video
+                this.showAlert('Video deletion functionality coming soon', 'info');
+                
+            } catch (error) {
+                console.error('Error deleting video:', error);
+                this.showAlert('Error deleting video', 'danger');
+            }
+        }
     }
 
     getUserRoleBadgeClass(role) {
@@ -697,14 +1127,20 @@ class AdminManager {
     }
 }
 
-// Global functions
+// Global functions for user detail modal integration
 window.editUserFromDetails = function() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('userDetailsModal'));
-    modal.hide();
-    
-    setTimeout(() => {
-        window.adminManager.editUser(window.adminManager.currentUserId);
-    }, 300);
+    if (window.adminManager && window.adminManager.currentUserId) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('userDetailsModal'));
+        modal.hide();
+        
+        setTimeout(() => {
+            window.adminManager.editUser(window.adminManager.currentUserId);
+        }, 300);
+    }
+};
+
+window.viewUserDetailsPage = function(userId) {
+    window.location.href = `user-detail.html?id=${userId}`;
 };
 
 window.exportUsers = function() {

@@ -104,22 +104,22 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="firstName" class="form-label">First Name</label>
-                                            <input type="text" class="form-control" id="firstName" value="Jane" required>
+                                            <input type="text" class="form-control" id="firstName" placeholder="Loading..." required>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="lastName" class="form-label">Last Name</label>
-                                            <input type="text" class="form-control" id="lastName" value="Viewer" required>
+                                            <input type="text" class="form-control" id="lastName" placeholder="Loading..." required>
                                         </div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="email" value="jane.viewer@videohub.com" readonly>
+                                            <input type="email" class="form-control" id="email" placeholder="Loading..." readonly>
                                             <div class="form-text">Email cannot be changed. Contact support if needed.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="role" class="form-label">Account Type</label>
-                                            <input type="text" class="form-control" id="role" value="Premium Viewer" readonly>
+                                            <input type="text" class="form-control" id="role" placeholder="Loading..." readonly>
                                         </div>
                                     </div>
                                     <hr>
@@ -223,9 +223,138 @@
     <script src="../assets/js/profile.js"></script>
     
     <script>
+        // Load viewer profile data
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Check for user session data
+                let userSession = null;
+                
+                // Try to get session from both localStorage and sessionStorage
+                const localSession = localStorage.getItem('userSession');
+                const sessionSession = sessionStorage.getItem('userSession');
+                
+                if (localSession) {
+                    userSession = JSON.parse(localSession);
+                } else if (sessionSession) {
+                    userSession = JSON.parse(sessionSession);
+                }
+                
+                // Check if user is logged in and is a viewer
+                if (!userSession || !userSession.email || userSession.userType !== 'viewer') {
+                    console.log('No valid viewer session found, redirecting to login');
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+                
+                console.log('Found viewer session:', userSession);
+                
+                // Wait for profile manager to be available
+                let retries = 0;
+                const maxRetries = 50;
+                
+                while (retries < maxRetries && !window.profileManager) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries++;
+                }
+                
+                // Initialize profile manager if not already done
+                if (!window.profileManager) {
+                    console.log('ProfileManager not found, initializing...');
+                } else {
+                    console.log('ProfileManager found and ready');
+                }
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                window.location.href = '../auth/login.html';
+            }ntById('email').value = user.email || '';
+                    document.getElementById('role').value = (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1) + ' User';
+                    
+                    // Update account status card
+                    const nameDisplay = document.querySelector('.card-body h6.fw-bold');
+                    if (nameDisplay) {
+                        nameDisplay.textContent = user.name || 'User';
+                    }
+                } else {
+                    console.error('Failed to load user data');
+                    // Use session data as fallback
+                    if (userData.name) {
+                        const nameParts = userData.name.split(' ');
+                        document.getElementById('firstName').value = nameParts[0] || '';
+                        document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
+                    }
+                    document.getElementById('email').value = userData.email || '';
+                    document.getElementById('role').value = (userData.role || 'viewer').charAt(0).toUpperCase() + (userData.role || 'viewer').slice(1) + ' User';
+                }
+                
+                // Form submission handler
+                document.getElementById('profileForm').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = {
+                        name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`.trim()
+                    };
+                    
+                    try {
+                        const updateResponse = await fetch(`/api/users/${currentUserId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                            },
+                            body: JSON.stringify(formData)
+                        });
+                        
+                        if (updateResponse.ok) {
+                            // Update session data
+                            const updatedUserData = { ...userData, ...formData };
+                            sessionStorage.setItem('userData', JSON.stringify(updatedUserData));
+                            
+                            // Update display name
+                            const nameDisplay = document.querySelector('.card-body h6.fw-bold');
+                            if (nameDisplay) {
+                                nameDisplay.textContent = formData.name;
+                            }
+                            
+                            // Show success message
+                            showAlert('Profile updated successfully!', 'success');
+                        } else {
+                            showAlert('Failed to update profile', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Error updating profile:', error);
+                        showAlert('Error updating profile', 'danger');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showAlert('Error loading profile data', 'danger');
+            }
+        });
+        
         function resetForm() {
-            document.getElementById('firstName').value = 'Jane';
-            document.getElementById('lastName').value = 'Viewer';
+            document.getElementById('profileForm').reset();
+            // Reload original data
+            location.reload();
+        }
+        
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('main');
+            if (container) {
+                container.insertBefore(alertDiv, container.firstChild);
+                
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
+            }
         }
     </script>
 </body>

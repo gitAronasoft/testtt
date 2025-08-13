@@ -77,8 +77,8 @@
             return { success: true, data: result };
         } catch (error) {
             console.error(`API Error [${method} ${endpoint}]:`, error);
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: error.message,
                 isNetworkError: error.name === 'TypeError' || error.name === 'AbortError'
             };
@@ -135,7 +135,24 @@
 
     // User API endpoints
     async getUserProfile() {
-        return this.get('/users/profile');
+        // Check user role to determine correct endpoint
+        let userSession = null;
+        const localSession = localStorage.getItem('userSession');
+        const sessionSession = sessionStorage.getItem('userSession');
+
+        if (localSession) {
+            userSession = JSON.parse(localSession);
+        } else if (sessionSession) {
+            userSession = JSON.parse(sessionSession);
+        }
+
+        if (userSession && userSession.userType === 'viewer') {
+            // For viewers, use the users/profile endpoint which is more generic
+            return this.get('/users/profile');
+        } else {
+            // For other roles (admin, creator)
+            return this.get('/users/profile');
+        }
     }
 
     async updateUserProfile(profileData) {

@@ -115,27 +115,27 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="firstName" class="form-label">First Name</label>
-                                            <input type="text" class="form-control" id="firstName" value="John" required>
+                                            <input type="text" class="form-control" id="firstName" placeholder="Loading..." required>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="lastName" class="form-label">Last Name</label>
-                                            <input type="text" class="form-control" id="lastName" value="Smith" required>
+                                            <input type="text" class="form-control" id="lastName" placeholder="Loading..." required>
                                         </div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="email" value="john.creator@videohub.com" readonly>
+                                            <input type="email" class="form-control" id="email" placeholder="Loading..." readonly>
                                             <div class="form-text">Email cannot be changed</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="channelName" class="form-label">Channel Name</label>
-                                            <input type="text" class="form-control" id="channelName" value="John's Tech Channel" required>
+                                            <input type="text" class="form-control" id="channelName" placeholder="Loading..." required>
                                         </div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="channelDescription" class="form-label">Channel Description</label>
-                                        <textarea class="form-control" id="channelDescription" rows="4">Tech tutorials, programming guides, and software development insights for developers of all levels.</textarea>
+                                        <textarea class="form-control" id="channelDescription" rows="4" placeholder="Loading..."></textarea>
                                     </div>
                                     <div class="d-flex gap-2">
                                         <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">Reset</button>
@@ -215,11 +215,124 @@
     <script src="../assets/js/profile.js"></script>
 
     <script>
+        // Load creator profile data
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Get current user from session (check both localStorage and sessionStorage)
+                const localSession = localStorage.getItem('userSession');
+                const sessionSession = sessionStorage.getItem('userSession');
+                const userSession = JSON.parse(localSession || sessionSession || '{}');
+                
+                if (!userSession.id || userSession.role !== 'creator') {
+                    console.log('No valid creator session found, redirecting to login');
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+                
+                const currentUserId = userSession.id;
+                
+                // Load user profile data using the API service
+                if (window.apiService) {
+                    const result = await window.apiService.getUserProfile();
+                    if (result.success) {
+                        const user = result.data;
+                        
+                        // Populate form fields
+                        document.getElementById('firstName').value = user.firstName || '';
+                        document.getElementById('lastName').value = user.lastName || '';
+                        document.getElementById('email').value = user.email || '';
+                        document.getElementById('channelName').value = user.channelName || user.name || '';
+                        document.getElementById('channelDescription').value = user.channelDescription || '';
+                        document.getElementById('role').value = user.role === 'creator' ? 'Content Creator' : user.role;
+                        
+                        console.log('Profile loaded successfully:', user);
+                    } else {
+                        console.error('Failed to load profile:', result.message);
+                        // Don't redirect on API failure, show error instead
+                        if (window.commonUtils) {
+                            window.commonUtils.showToast('Failed to load profile data', 'danger');
+                        }
+                    }
+                } else {
+                    console.error('API service not available');
+                }mentById('email').value = user.email || '';
+                    document.getElementById('channelName').value = user.channel_name || `${firstName}'s Channel`;
+                    document.getElementById('channelDescription').value = user.channel_description || '';
+                } else {
+                    console.error('Failed to load user data');
+                    // Use session data as fallback
+                    if (userData.name) {
+                        const nameParts = userData.name.split(' ');
+                        document.getElementById('firstName').value = nameParts[0] || '';
+                        document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
+                    }
+                    document.getElementById('email').value = userData.email || '';
+                }
+                
+                // Form submission handler
+                document.getElementById('profileForm').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = {
+                        name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`.trim(),
+                        channel_name: document.getElementById('channelName').value,
+                        channel_description: document.getElementById('channelDescription').value
+                    };
+                    
+                    try {
+                        const updateResponse = await fetch(`/api/users/${currentUserId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                            },
+                            body: JSON.stringify(formData)
+                        });
+                        
+                        if (updateResponse.ok) {
+                            // Update session data
+                            const updatedUserData = { ...userData, ...formData };
+                            sessionStorage.setItem('userData', JSON.stringify(updatedUserData));
+                            
+                            // Show success message
+                            showAlert('Profile updated successfully!', 'success');
+                        } else {
+                            showAlert('Failed to update profile', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Error updating profile:', error);
+                        showAlert('Error updating profile', 'danger');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showAlert('Error loading profile data', 'danger');
+            }
+        });
+        
         function resetForm() {
-            document.getElementById('firstName').value = 'John';
-            document.getElementById('lastName').value = 'Smith';
-            document.getElementById('channelName').value = "John's Tech Channel";
-            document.getElementById('channelDescription').value = 'Tech tutorials, programming guides, and software development insights for developers of all levels.';
+            document.getElementById('profileForm').reset();
+            // Reload original data
+            location.reload();
+        }
+        
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('main');
+            if (container) {
+                container.insertBefore(alertDiv, container.firstChild);
+                
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
+            }
         }
     </script>
 </body>
