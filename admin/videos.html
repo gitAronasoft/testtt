@@ -226,50 +226,12 @@
 
                 <!-- Videos Grid -->
                 <div class="row g-4 mb-4" id="videosGrid">
-                    <!-- Sample video card -->
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100">
-                            <div class="position-relative">
-                                <img src="https://via.placeholder.com/350x200/007bff/ffffff?text=Sample+Video" class="card-img-top" alt="Video Thumbnail" style="height: 200px; object-fit: cover;">
-                                <div class="position-absolute top-0 end-0 m-2">
-                                    <span class="badge bg-warning">Pending</span>
-                                </div>
-                                <div class="position-absolute bottom-0 end-0 m-2">
-                                    <span class="badge bg-dark">12:34</span>
-                                </div>
-                                <div class="position-absolute top-0 start-0 m-2">
-                                    <span class="badge bg-success">$19.99</span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <h6 class="card-title">JavaScript Advanced Concepts</h6>
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-user me-2 text-muted"></i>
-                                    <span class="text-muted small">by John Creator</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div class="d-flex align-items-center text-muted small">
-                                        <i class="fas fa-eye me-1"></i>
-                                        <span>1,234 views</span>
-                                    </div>
-                                    <div class="d-flex align-items-center text-muted small">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        <span>2 days ago</span>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-success btn-sm flex-fill">
-                                        <i class="fas fa-check me-1"></i>Approve
-                                    </button>
-                                    <button class="btn btn-danger btn-sm flex-fill">
-                                        <i class="fas fa-times me-1"></i>Reject
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#videoDetailsModal">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
+                    <!-- Loading indicator -->
+                    <div class="col-12 text-center" id="videosLoadingIndicator">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading videos...</span>
                         </div>
+                        <p class="text-muted mt-2">Loading videos from database...</p>
                     </div>
                 </div>
 
@@ -393,8 +355,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             adminManager = new AdminManager();
             
-            // Load videos table with correct table body ID
-            adminManager.loadVideosTable();
+            // Load videos grid
+            adminManager.loadVideosGrid();
             
             // Add search functionality
             const searchInput = document.getElementById('searchInput');
@@ -445,22 +407,16 @@
                 );
             }
             
-            // Re-render table with filtered data
-            renderVideosTable(filteredVideos);
+            // Re-render grid with filtered data
+            renderVideosGrid(filteredVideos);
         }
         
-        function renderVideosTable(videos) {
-            const tbody = document.querySelector('#videosTableBody');
+        function renderVideosGrid(videos) {
+            const videosGrid = document.getElementById('videosGrid');
             const loadingIndicator = document.getElementById('videosLoadingIndicator');
-            const emptyState = document.getElementById('videosEmptyState');
-            const totalCount = document.getElementById('totalVideosCount');
+            const emptyState = document.getElementById('emptyState');
             
-            if (!tbody) return;
-            
-            // Update total count
-            if (totalCount) {
-                totalCount.textContent = videos.length;
-            }
+            if (!videosGrid) return;
             
             // Hide loading indicator
             if (loadingIndicator) {
@@ -468,7 +424,7 @@
             }
             
             // Clear existing content
-            tbody.innerHTML = '';
+            videosGrid.innerHTML = '';
             
             if (videos.length === 0) {
                 if (emptyState) {
@@ -480,46 +436,62 @@
                 }
                 
                 videos.forEach(video => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td><span class="fw-bold">${video.id}</span></td>
-                        <td>
-                            <img src="${video.thumbnail || 'https://via.placeholder.com/60x40'}" 
-                                 alt="${video.title}" class="rounded shadow-sm" 
-                                 style="width: 60px; height: 40px; object-fit: cover;">
-                        </td>
-                        <td>
-                            <div class="fw-bold">${video.title}</div>
-                            <small class="text-muted">${video.description ? video.description.substring(0, 50) + '...' : 'No description'}</small>
-                        </td>
-                        <td>
-                            <div>${video.creator_name || 'Unknown'}</div>
-                            <small class="text-muted">${video.creator_email || ''}</small>
-                        </td>
-                        <td><span class="fw-bold text-success">$${video.price || '0.00'}</span></td>
-                        <td>
-                            <span class="badge bg-${adminManager.getVideoStatusBadgeColor(video.status)}">${video.status || 'active'}</span>
-                        </td>
-                        <td><span class="fw-bold">${video.views || video.purchase_count || 0}</span></td>
-                        <td>${video.upload_date || new Date(video.created_at).toLocaleDateString()}</td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-info btn-sm" onclick="adminManager.viewVideo(${video.id})" title="View Video">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-primary btn-sm" onclick="adminManager.editVideo(${video.id})" title="Edit Video">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="adminManager.toggleVideoStatus(${video.id})" title="Toggle Status">
-                                    <i class="fas fa-toggle-on"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="adminManager.deleteVideo(${video.id})" title="Delete Video">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                    const videoCard = document.createElement('div');
+                    videoCard.className = 'col-lg-4 col-md-6 mb-4';
+                    
+                    const statusClass = video.status === 'published' || video.status === 'active' ? 'success' : 
+                                      video.status === 'pending' ? 'warning' : 
+                                      video.status === 'flagged' ? 'danger' : 'secondary';
+                    
+                    const uploadDate = video.upload_date ? new Date(video.upload_date).toLocaleDateString() : 
+                                     video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Unknown';
+                    
+                    videoCard.innerHTML = `
+                        <div class="card h-100">
+                            <div class="position-relative">
+                                <img src="${video.thumbnail || video.youtube_thumbnail || 'https://via.placeholder.com/350x200/007bff/ffffff?text=Video+Thumbnail'}" 
+                                     class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge bg-${statusClass}">${(video.status || 'active').charAt(0).toUpperCase() + (video.status || 'active').slice(1)}</span>
+                                </div>
+                                <div class="position-absolute bottom-0 end-0 m-2">
+                                    <span class="badge bg-dark">${video.duration || '00:00'}</span>
+                                </div>
+                                <div class="position-absolute top-0 start-0 m-2">
+                                    <span class="badge bg-success">$${parseFloat(video.price || 0).toFixed(2)}</span>
+                                </div>
                             </div>
-                        </td>
+                            <div class="card-body">
+                                <h6 class="card-title" title="${video.title}">${video.title.length > 50 ? video.title.substring(0, 47) + '...' : video.title}</h6>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-user me-2 text-muted"></i>
+                                    <span class="text-muted small">by ${video.creator_name || video.youtube_channel_title || 'Unknown Creator'}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <i class="fas fa-eye me-1"></i>
+                                        <span>${(video.views || video.youtube_views || 0).toLocaleString()} views</span>
+                                    </div>
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        <span>${uploadDate}</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
+                                        <i class="fas fa-check me-1"></i>Approve
+                                    </button>
+                                    <button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
+                                        <i class="fas fa-times me-1"></i>Reject
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="adminManager.showVideoDetails(${video.id})" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     `;
-                    tbody.appendChild(row);
+                    videosGrid.appendChild(videoCard);
                 });
             }
         }

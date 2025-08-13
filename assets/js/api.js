@@ -83,11 +83,11 @@
             }
 
             const result = await response.json();
-            // If the result has success field, return it as-is
+            // Standardize response format
             if (result.hasOwnProperty('success')) {
                 return result;
             }
-            // Otherwise wrap it
+            // Otherwise wrap it in standard format
             return { success: true, data: result };
         } catch (error) {
             console.error(`API Error [${method} ${endpoint}]:`, error);

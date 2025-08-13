@@ -24,19 +24,20 @@ class ViewerManager {
     }
 
     async loadDataFromAPI() {
-        // Show section loaders
+        const currentPage = window.location.pathname.split('/').pop();
+        
+        // Show section loaders only for relevant sections
         const dashboardSection = document.querySelector('.dashboard-stats');
         const videosSection = document.querySelector('.videos-grid');
         const purchasesSection = document.querySelector('.purchases-section');
 
-        if (window.commonUtils) {
+        if (window.commonUtils && currentPage === 'dashboard.html') {
             if (dashboardSection) window.commonUtils.showSectionLoader(dashboardSection, 'Loading dashboard...');
             if (videosSection) window.commonUtils.showSectionLoader(videosSection, 'Loading videos...');
-            if (purchasesSection) window.commonUtils.showSectionLoader(purchasesSection, 'Loading purchases...');
         }
 
         try {
-            // Wait for API service to be available and load data
+            // Wait for API service to be available
             let retries = 0;
             const maxRetries = 50;
             
@@ -57,24 +58,32 @@ class ViewerManager {
                     return;
                 }
                 
-                // Load general platform metrics (with optional user data)
-                const metricsResponse = await window.apiService.get(`/metrics/viewer?user_id=${userId}`);
-                if (metricsResponse.success) {
-                    this.updateDashboardMetrics(metricsResponse.data);
+                // Load data based on current page
+                if (currentPage === 'dashboard.html') {
+                    // Load metrics and videos for dashboard
+                    const [metricsResponse, videosResponse] = await Promise.all([
+                        window.apiService.get(`/metrics/viewer?user_id=${userId}`),
+                        window.apiService.get('/videos')
+                    ]);
+                    
+                    if (metricsResponse.success) {
+                        this.updateDashboardMetrics(metricsResponse.data);
+                    }
+                    
+                    this.videos = Array.isArray(videosResponse.videos) ? videosResponse.videos : 
+                                 Array.isArray(videosResponse.data?.videos) ? videosResponse.data.videos : 
+                                 Array.isArray(videosResponse.data) ? videosResponse.data : [];
+                } else if (currentPage === 'purchases.html') {
+                    // Load only purchases for purchases page
+                    this.videos = [];
+                } else {
+                    // Minimal loading for other pages
+                    this.videos = [];
                 }
                 
-                // Load videos data (needed for all pages)
-                const videosResponse = await window.apiService.get('/videos');
-                
-                // Handle API response format properly
-                this.videos = Array.isArray(videosResponse.videos) ? videosResponse.videos : 
-                             Array.isArray(videosResponse.data?.videos) ? videosResponse.data.videos : 
-                             Array.isArray(videosResponse.data) ? videosResponse.data : [];
-                             
-                // Initialize purchases as empty - will be loaded on purchases page only
                 this.purchases = [];
                 
-                console.log('Viewer data loaded:', {
+                console.log('Viewer data loaded for', currentPage, {
                     videosLength: this.videos.length,
                     purchasesLength: this.purchases.length
                 });

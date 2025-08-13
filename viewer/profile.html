@@ -144,11 +144,10 @@
                                         <i class="fas fa-user fa-2x text-white"></i>
                                     </div>
                                 </div>
-                                <h6 class="fw-bold">Jane Viewer</h6>
-                                <p class="text-muted">Premium Member</p>
-                                <div class="d-flex justify-content-center gap-2">
-                                    <span class="badge bg-success">Verified</span>
-                                    <span class="badge bg-primary">Premium</span>
+                                <h6 class="fw-bold" id="userDisplayName">Loading...</h6>
+                                <p class="text-muted" id="userMembershipType">Loading...</p>
+                                <div class="d-flex justify-content-center gap-2" id="userBadges">
+                                    <span class="badge bg-secondary">Loading...</span>
                                 </div>
                             </div>
                         </div>
@@ -167,11 +166,11 @@
                                 <hr>
                                 <div class="row text-center">
                                     <div class="col-6">
-                                        <strong class="text-primary">Feb 2024</strong>
+                                        <strong class="text-primary" id="memberSince">Loading...</strong>
                                         <div class="text-muted small">Member since</div>
                                     </div>
                                     <div class="col-6">
-                                        <strong class="text-success">Today</strong>
+                                        <strong class="text-success" id="lastLogin">Loading...</strong>
                                         <div class="text-muted small">Last login</div>
                                     </div>
                                 </div>
@@ -220,141 +219,12 @@
     <script src="../assets/js/global-state.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
-    <script src="../assets/js/profile.js"></script>
+    <script src="../assets/js/simple-profile.js"></script>
     
     <script>
-        // Load viewer profile data
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                // Check for user session data
-                let userSession = null;
-                
-                // Try to get session from both localStorage and sessionStorage
-                const localSession = localStorage.getItem('userSession');
-                const sessionSession = sessionStorage.getItem('userSession');
-                
-                if (localSession) {
-                    userSession = JSON.parse(localSession);
-                } else if (sessionSession) {
-                    userSession = JSON.parse(sessionSession);
-                }
-                
-                // Check if user is logged in and is a viewer
-                if (!userSession || !userSession.email || userSession.userType !== 'viewer') {
-                    console.log('No valid viewer session found, redirecting to login');
-                    window.location.href = '../auth/login.html';
-                    return;
-                }
-                
-                console.log('Found viewer session:', userSession);
-                
-                // Wait for profile manager to be available
-                let retries = 0;
-                const maxRetries = 50;
-                
-                while (retries < maxRetries && !window.profileManager) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    retries++;
-                }
-                
-                // Initialize profile manager if not already done
-                if (!window.profileManager) {
-                    console.log('ProfileManager not found, initializing...');
-                } else {
-                    console.log('ProfileManager found and ready');
-                }
-                
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                window.location.href = '../auth/login.html';
-            }ntById('email').value = user.email || '';
-                    document.getElementById('role').value = (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1) + ' User';
-                    
-                    // Update account status card
-                    const nameDisplay = document.querySelector('.card-body h6.fw-bold');
-                    if (nameDisplay) {
-                        nameDisplay.textContent = user.name || 'User';
-                    }
-                } else {
-                    console.error('Failed to load user data');
-                    // Use session data as fallback
-                    if (userData.name) {
-                        const nameParts = userData.name.split(' ');
-                        document.getElementById('firstName').value = nameParts[0] || '';
-                        document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
-                    }
-                    document.getElementById('email').value = userData.email || '';
-                    document.getElementById('role').value = (userData.role || 'viewer').charAt(0).toUpperCase() + (userData.role || 'viewer').slice(1) + ' User';
-                }
-                
-                // Form submission handler
-                document.getElementById('profileForm').addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const formData = {
-                        name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`.trim()
-                    };
-                    
-                    try {
-                        const updateResponse = await fetch(`/api/users/${currentUserId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-                            },
-                            body: JSON.stringify(formData)
-                        });
-                        
-                        if (updateResponse.ok) {
-                            // Update session data
-                            const updatedUserData = { ...userData, ...formData };
-                            sessionStorage.setItem('userData', JSON.stringify(updatedUserData));
-                            
-                            // Update display name
-                            const nameDisplay = document.querySelector('.card-body h6.fw-bold');
-                            if (nameDisplay) {
-                                nameDisplay.textContent = formData.name;
-                            }
-                            
-                            // Show success message
-                            showAlert('Profile updated successfully!', 'success');
-                        } else {
-                            showAlert('Failed to update profile', 'danger');
-                        }
-                    } catch (error) {
-                        console.error('Error updating profile:', error);
-                        showAlert('Error updating profile', 'danger');
-                    }
-                });
-                
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                showAlert('Error loading profile data', 'danger');
-            }
-        });
-        
         function resetForm() {
             document.getElementById('profileForm').reset();
-            // Reload original data
             location.reload();
-        }
-        
-        function showAlert(message, type) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            const container = document.querySelector('main');
-            if (container) {
-                container.insertBefore(alertDiv, container.firstChild);
-                
-                setTimeout(() => {
-                    alertDiv.remove();
-                }, 5000);
-            }
         }
     </script>
 </body>

@@ -85,12 +85,32 @@ class CreatorManager {
                     videosResponse = { data: { videos: cachedVideos } };
                     earningsResponse = { data: { earnings: cachedEarnings } };
                 } else {
-                    // Load all data in parallel but only once
-                    [metricsResponse, videosResponse, earningsResponse] = await Promise.all([
-                        window.apiService.get(`/metrics/creator?creator_id=${creatorId}`),
-                        window.apiService.get(`/creator/videos?uploader_id=${creatorId}`),
-                        window.apiService.get(`/creator/earnings?creator_id=${creatorId}`)
-                    ]);
+                    // Load data based on current page
+                    const currentPage = window.location.pathname.split('/').pop();
+                    
+                    if (currentPage === 'dashboard.html') {
+                        // Load all data for dashboard
+                        [metricsResponse, videosResponse, earningsResponse] = await Promise.all([
+                            window.apiService.get(`/metrics/creator?creator_id=${creatorId}`),
+                            window.apiService.get(`/creator/videos?uploader_id=${creatorId}`),
+                            window.apiService.get(`/creator/earnings?creator_id=${creatorId}`)
+                        ]);
+                    } else if (currentPage === 'videos.html') {
+                        // Load only videos for videos page
+                        videosResponse = await window.apiService.get(`/creator/videos?uploader_id=${creatorId}`);
+                        metricsResponse = { success: false };
+                        earningsResponse = { data: { earnings: [] } };
+                    } else if (currentPage === 'earnings.html') {
+                        // Load only earnings for earnings page
+                        earningsResponse = await window.apiService.get(`/creator/earnings?creator_id=${creatorId}`);
+                        metricsResponse = { success: false };
+                        videosResponse = { data: { videos: [] } };
+                    } else {
+                        // Minimal loading for other pages
+                        metricsResponse = { success: false };
+                        videosResponse = { data: { videos: [] } };
+                        earningsResponse = { data: { earnings: [] } };
+                    }
                     
                     // Cache the responses
                     if (window.VideoHubState) {

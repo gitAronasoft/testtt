@@ -37,15 +37,20 @@ class AdminManager {
             retries++;
         }
 
+        // Load only the data needed for current page
+        const currentPage = window.location.pathname.split('/').pop();
+        
         if (window.apiService) {
             try {
-                const [usersResponse, videosResponse] = await Promise.all([
-                    window.apiService.get('/admin/users'),
-                    window.apiService.get('/videos')
-                ]);
+                if (currentPage === 'users.html' || currentPage === 'user-detail.html') {
+                    const usersResponse = await window.apiService.get('/admin/users');
+                    this.users = usersResponse.data || usersResponse.users || [];
+                }
                 
-                this.users = usersResponse.data || usersResponse.users || [];
-                this.videos = videosResponse.data || videosResponse.videos || [];
+                if (currentPage === 'videos.html') {
+                    const videosResponse = await window.apiService.get('/videos');
+                    this.videos = videosResponse.data || videosResponse.videos || [];
+                }
             } catch (error) {
                 console.error('Failed to load data from API:', error);
                 this.users = [];
@@ -209,7 +214,7 @@ class AdminManager {
     }
 
     initVideosPage() {
-        this.loadVideosTable();
+        this.loadVideosGrid();
     }
 
     async loadUsersDataTable() {
@@ -628,6 +633,164 @@ class AdminManager {
         }
     }
 
+    async loadVideosGrid() {
+        const videosGrid = document.getElementById('videosGrid');
+        const loadingIndicator = document.getElementById('videosLoadingIndicator');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (!videosGrid) return;
+        
+        try {
+            // Show loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'block';
+            }
+            if (emptyState) {
+                emptyState.classList.add('d-none');
+            }
+            
+            // Try to load from admin videos endpoint first, fallback to regular videos endpoint
+            let response = await fetch('/api/admin/videos');
+            let result = await response.json();
+            
+            if (!result.success) {
+                // Fallback to regular videos API
+                response = await fetch('/api/videos');
+                result = await response.json();
+                
+                if (result.success && result.data && result.data.videos) {
+                    // Transform videos data for admin display
+                    this.videos = result.data.videos.map(video => ({
+                        id: video.id,
+                        title: video.title,
+                        description: video.description,
+                        price: video.price,
+                        thumbnail: video.thumbnail,
+                        creator_name: video.creatorName,
+                        creator_email: '',
+                        upload_date: video.uploadDate,
+                        views: video.views,
+                        purchase_count: video.views,
+                        status: video.status || 'published',
+                        created_at: new Date().toISOString(),
+                        youtube_thumbnail: video.thumbnail,
+                        youtube_channel_title: video.creatorName,
+                        youtube_views: video.views
+                    }));
+                } else {
+                    throw new Error('Failed to load videos from both endpoints');
+                }
+            } else {
+                this.videos = result.data || [];
+            }
+            
+            // Update stats cards
+            this.updateVideoStats();
+            
+            // Render videos grid
+            this.renderVideosGrid();
+            
+        } catch (error) {
+            console.error('Error loading videos:', error);
+            videosGrid.innerHTML = `
+                <div class="col-12 text-center py-4">
+                    <div class="text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <p>Error loading videos: ${error.message}</p>
+                        <button class="btn btn-outline-primary btn-sm" onclick="adminManager.loadVideosGrid()">
+                            <i class="fas fa-refresh me-1"></i>Retry
+                        </button>
+                    </div>
+                </div>
+            `;
+        } finally {
+            // Hide loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+    }
+
+    renderVideosGrid() {
+        const videosGrid = document.getElementById('videosGrid');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (!videosGrid) return;
+        
+        if (this.videos.length === 0) {
+            if (emptyState) {
+                emptyState.classList.remove('d-none');
+            }
+            videosGrid.innerHTML = '';
+            return;
+        }
+        
+        if (emptyState) {
+            emptyState.classList.add('d-none');
+        }
+        
+        videosGrid.innerHTML = '';
+        
+        this.videos.forEach(video => {
+            const videoCard = document.createElement('div');
+            videoCard.className = 'col-lg-4 col-md-6 mb-4';
+            
+            const statusClass = video.status === 'published' || video.status === 'active' ? 'success' : 
+                              video.status === 'pending' ? 'warning' : 
+                              video.status === 'flagged' ? 'danger' : 'secondary';
+            
+            const uploadDate = video.upload_date ? new Date(video.upload_date).toLocaleDateString() : 
+                             video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Unknown';
+            
+            videoCard.innerHTML = `
+                <div class="card h-100">
+                    <div class="position-relative">
+                        <img src="${video.thumbnail || video.youtube_thumbnail || 'https://via.placeholder.com/350x200/007bff/ffffff?text=Video+Thumbnail'}" 
+                             class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-${statusClass}">${(video.status || 'active').charAt(0).toUpperCase() + (video.status || 'active').slice(1)}</span>
+                        </div>
+                        <div class="position-absolute bottom-0 end-0 m-2">
+                            <span class="badge bg-dark">${video.duration || '00:00'}</span>
+                        </div>
+                        <div class="position-absolute top-0 start-0 m-2">
+                            <span class="badge bg-success">$${parseFloat(video.price || 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title" title="${video.title}">${video.title.length > 50 ? video.title.substring(0, 47) + '...' : video.title}</h6>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-user me-2 text-muted"></i>
+                            <span class="text-muted small">by ${video.creator_name || video.youtube_channel_title || 'Unknown Creator'}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center text-muted small">
+                                <i class="fas fa-eye me-1"></i>
+                                <span>${(video.views || video.youtube_views || 0).toLocaleString()} views</span>
+                            </div>
+                            <div class="d-flex align-items-center text-muted small">
+                                <i class="fas fa-calendar me-1"></i>
+                                <span>${uploadDate}</span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
+                                <i class="fas fa-check me-1"></i>Approve
+                            </button>
+                            <button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
+                                <i class="fas fa-times me-1"></i>Reject
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="adminManager.showVideoDetails(${video.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            videosGrid.appendChild(videoCard);
+        });
+    }
+
     async loadVideosTable() {
         const tbody = document.querySelector('#videosTableBody');
         const loadingIndicator = document.getElementById('videosLoadingIndicator');
@@ -809,12 +972,135 @@ class AdminManager {
         }
     }
 
+    async approveVideo(videoId) {
+        try {
+            const video = this.videos.find(v => v.id === videoId);
+            if (!video) return;
+            
+            // Update video status to published
+            const response = await fetch(`/api/endpoints/videos.php/${videoId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...video,
+                    status: 'published'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update local data
+                const videoIndex = this.videos.findIndex(v => v.id === videoId);
+                if (videoIndex !== -1) {
+                    this.videos[videoIndex].status = 'published';
+                }
+                
+                this.showAlert('Video approved successfully', 'success');
+                this.renderVideosGrid();
+                this.updateVideoStats();
+            } else {
+                this.showAlert('Failed to approve video', 'danger');
+            }
+        } catch (error) {
+            console.error('Error approving video:', error);
+            this.showAlert('Error approving video', 'danger');
+        }
+    }
+
+    async rejectVideo(videoId) {
+        if (confirm('Are you sure you want to reject this video?')) {
+            try {
+                const video = this.videos.find(v => v.id === videoId);
+                if (!video) return;
+                
+                // Update video status to rejected
+                const response = await fetch(`/api/endpoints/videos.php/${videoId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...video,
+                        status: 'rejected'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update local data
+                    const videoIndex = this.videos.findIndex(v => v.id === videoId);
+                    if (videoIndex !== -1) {
+                        this.videos[videoIndex].status = 'rejected';
+                    }
+                    
+                    this.showAlert('Video rejected', 'warning');
+                    this.renderVideosGrid();
+                    this.updateVideoStats();
+                } else {
+                    this.showAlert('Failed to reject video', 'danger');
+                }
+            } catch (error) {
+                console.error('Error rejecting video:', error);
+                this.showAlert('Error rejecting video', 'danger');
+            }
+        }
+    }
+
+    async showVideoDetails(videoId) {
+        try {
+            const video = this.videos.find(v => v.id === videoId);
+            if (!video) {
+                this.showAlert('Video not found', 'danger');
+                return;
+            }
+            
+            // Populate modal with video details
+            document.getElementById('modalVideoThumbnail').src = video.thumbnail || video.youtube_thumbnail || 'https://via.placeholder.com/300x200';
+            document.getElementById('modalVideoTitle').textContent = video.title;
+            document.getElementById('modalVideoCreator').textContent = video.creator_name || video.youtube_channel_title || 'Unknown Creator';
+            document.getElementById('modalVideoDuration').textContent = video.duration || '00:00';
+            document.getElementById('modalVideoDate').textContent = video.upload_date ? new Date(video.upload_date).toLocaleDateString() : 'Unknown';
+            document.getElementById('modalVideoViews').textContent = (video.views || video.youtube_views || 0).toLocaleString();
+            document.getElementById('modalVideoPrice').textContent = `$${parseFloat(video.price || 0).toFixed(2)}`;
+            document.getElementById('modalVideoStatus').textContent = (video.status || 'active').charAt(0).toUpperCase() + (video.status || 'active').slice(1);
+            document.getElementById('modalVideoStatus').className = `badge bg-${this.getVideoStatusBadgeColor(video.status)}`;
+            document.getElementById('modalVideoDescription').textContent = video.description || 'No description available';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('videoDetailsModal'));
+            modal.show();
+        } catch (error) {
+            console.error('Error showing video details:', error);
+            this.showAlert('Error loading video details', 'danger');
+        }
+    }
+
     async deleteVideo(videoId) {
         if (confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
             try {
-                // Here you would call API to delete video
-                this.showAlert('Video deletion functionality coming soon', 'info');
+                const response = await fetch(`/api/endpoints/videos.php/${videoId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
                 
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Remove from local data
+                    this.videos = this.videos.filter(v => v.id !== videoId);
+                    
+                    this.showAlert('Video deleted successfully', 'success');
+                    this.renderVideosGrid();
+                    this.updateVideoStats();
+                } else {
+                    this.showAlert('Failed to delete video', 'danger');
+                }
             } catch (error) {
                 console.error('Error deleting video:', error);
                 this.showAlert('Error deleting video', 'danger');

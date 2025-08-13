@@ -163,8 +163,8 @@
                                         <span class="badge bg-success">Active</span>
                                     </div>
                                     <div class="text-muted small">
-                                        <div><i class="fas fa-calendar me-1"></i>Creator since Jan 2024</div>
-                                        <div><i class="fas fa-clock me-1"></i>Last login: Today</div>
+                                        <div><i class="fas fa-calendar me-1"></i>Creator since <span id="memberSince">Loading...</span></div>
+                                        <div><i class="fas fa-clock me-1"></i>Last login: <span id="lastLogin">Loading...</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -212,126 +212,12 @@
     <script src="../assets/js/global-state.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
-    <script src="../assets/js/profile.js"></script>
+    <script src="../assets/js/simple-profile.js"></script>
 
     <script>
-        // Load creator profile data
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                // Get current user from session (check both localStorage and sessionStorage)
-                const localSession = localStorage.getItem('userSession');
-                const sessionSession = sessionStorage.getItem('userSession');
-                const userSession = JSON.parse(localSession || sessionSession || '{}');
-                
-                if (!userSession.id || userSession.role !== 'creator') {
-                    console.log('No valid creator session found, redirecting to login');
-                    window.location.href = '../auth/login.html';
-                    return;
-                }
-                
-                const currentUserId = userSession.id;
-                
-                // Load user profile data using the API service
-                if (window.apiService) {
-                    const result = await window.apiService.getUserProfile();
-                    if (result.success) {
-                        const user = result.data;
-                        
-                        // Populate form fields
-                        document.getElementById('firstName').value = user.firstName || '';
-                        document.getElementById('lastName').value = user.lastName || '';
-                        document.getElementById('email').value = user.email || '';
-                        document.getElementById('channelName').value = user.channelName || user.name || '';
-                        document.getElementById('channelDescription').value = user.channelDescription || '';
-                        document.getElementById('role').value = user.role === 'creator' ? 'Content Creator' : user.role;
-                        
-                        console.log('Profile loaded successfully:', user);
-                    } else {
-                        console.error('Failed to load profile:', result.message);
-                        // Don't redirect on API failure, show error instead
-                        if (window.commonUtils) {
-                            window.commonUtils.showToast('Failed to load profile data', 'danger');
-                        }
-                    }
-                } else {
-                    console.error('API service not available');
-                }
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                // Handle profile loading errors gracefully
-                if (window.commonUtils) {
-                    window.commonUtils.handleAPIError(error, 'Loading profile');
-                } else {
-                    console.error('Failed to load profile:', error.message);
-                }
-            }
-            
-            // Form submission handler
-            document.getElementById('profileForm').addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const formData = {
-                        name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`.trim(),
-                        channel_name: document.getElementById('channelName').value,
-                        channel_description: document.getElementById('channelDescription').value
-                    };
-                    
-                    try {
-                        const updateResponse = await fetch(`/api/users/${currentUserId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-                            },
-                            body: JSON.stringify(formData)
-                        });
-                        
-                        if (updateResponse.ok) {
-                            // Update session data
-                            const updatedUserData = { ...userData, ...formData };
-                            sessionStorage.setItem('userData', JSON.stringify(updatedUserData));
-                            
-                            // Show success message
-                            showAlert('Profile updated successfully!', 'success');
-                        } else {
-                            showAlert('Failed to update profile', 'danger');
-                        }
-                    } catch (error) {
-                        console.error('Error updating profile:', error);
-                        showAlert('Error updating profile', 'danger');
-                    }
-                });
-                
-            } catch (error) {
-                console.error('Error initializing profile:', error);
-                if (window.commonUtils) {
-                    window.commonUtils.handleAPIError(error, 'Loading profile');
-                }
-            }
-        });
-        
         function resetForm() {
             document.getElementById('profileForm').reset();
-            // Reload original data
             location.reload();
-        }
-        
-        function showAlert(message, type) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            const container = document.querySelector('main');
-            if (container) {
-                container.insertBefore(alertDiv, container.firstChild);
-                
-                setTimeout(() => {
-                    alertDiv.remove();
-                }, 5000);
-            }
         }
     </script>
 </body>

@@ -130,7 +130,7 @@
                     <div class="col-md-3 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="mb-0" id="avgPrice">$12.86</h4>
+                                <h4 class="mb-0" id="avgPrice">$0</h4>
                                 <small class="text-muted">Average Price</small>
                             </div>
                         </div>
@@ -204,12 +204,60 @@
     <script src="../assets/js/global-state.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
-    <script src="../assets/js/viewer.js"></script>
     <script>
-        // Initialize viewer manager when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof ViewerManager !== 'undefined') {
-                window.viewerManager = new ViewerManager();
+        // Optimized purchases page - loads only relevant data
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Wait for API service
+            let retries = 0;
+            while (retries < 50 && !window.apiService) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
+            
+            if (window.apiService) {
+                const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+                const userId = userSession.id;
+                
+                if (userId) {
+                    try {
+                        const response = await window.apiService.get(`/purchases?user_id=${userId}`);
+                        const purchases = response.data || response.purchases || [];
+                        
+                        // Update stats
+                        document.getElementById('totalPurchases').textContent = purchases.length;
+                        const totalSpent = purchases.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+                        document.getElementById('totalSpent').textContent = `$${totalSpent.toFixed(2)}`;
+                        
+                        const currentMonth = new Date().getMonth();
+                        const thisMonthPurchases = purchases.filter(p => new Date(p.purchase_date).getMonth() === currentMonth);
+                        document.getElementById('thisMonth').textContent = thisMonthPurchases.length;
+                        
+                        const avgPrice = purchases.length > 0 ? totalSpent / purchases.length : 0;
+                        document.getElementById('avgPrice').textContent = `$${avgPrice.toFixed(2)}`;
+                        
+                        // Render purchases grid
+                        const grid = document.getElementById('purchasesGrid');
+                        if (purchases.length === 0) {
+                            grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="fas fa-shopping-cart fa-3x mb-3"></i><p>No purchases found</p></div>';
+                        } else {
+                            grid.innerHTML = purchases.map(purchase => `
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="card-title">${purchase.video_title || 'Unknown Video'}</h6>
+                                            <p class="text-muted small">By ${purchase.creator_name || 'Unknown Creator'}</p>
+                                            <p class="text-success fw-bold">$${parseFloat(purchase.amount || 0).toFixed(2)}</p>
+                                            <small class="text-muted">Purchased ${new Date(purchase.purchase_date || purchase.purchased_at).toLocaleDateString()}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                    } catch (error) {
+                        console.error('Failed to load purchases:', error);
+                        document.getElementById('purchasesGrid').innerHTML = '<div class="col-12 text-center text-danger py-5">Failed to load purchases</div>';
+                    }
+                }
             }
         });
     </script>

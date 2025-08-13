@@ -9,7 +9,7 @@ class YouTubeAPIClient {
         this.tokenExpiry = null;
         this.clientId =
             "824425517340-c4g9ilvg3i7cddl75hvq1a8gromuc95n.apps.googleusercontent.com";
-        this.clientSecret = "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";
+        // Client secret handled server-side for security
         this.scope =
             "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly";
         this.isInitialized = false;
@@ -171,18 +171,28 @@ class YouTubeAPIClient {
                 }),
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success && data.tokens) {
                 this.accessToken = data.tokens.access_token;
-                this.refreshToken = data.tokens.refresh_token;
-                this.tokenExpiry = new Date(Date.now() + 3600 * 1000); // 1 hour from now
+                this.refreshToken = data.tokens.refresh_token || refreshToken;
+                this.tokenExpiry = new Date(Date.now() + (data.tokens.expires_in || 3600) * 1000);
+                console.log("Token refreshed successfully");
                 return true;
             }
 
+            console.error("Token refresh failed:", data.error || "Unknown error");
             return false;
         } catch (error) {
             console.error("Token refresh failed:", error);
+            // Clear tokens on refresh failure
+            this.accessToken = null;
+            this.refreshToken = null;
+            this.tokenExpiry = null;
             return false;
         }
     }
@@ -404,7 +414,7 @@ class YouTubeAPIClient {
                 if (progressCallback) progressCallback(100);
 
                 return {
-                    success: false,
+                    success: true,
                     video: result,
                     synced: syncSuccess,
                 };
