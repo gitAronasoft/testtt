@@ -118,6 +118,9 @@ class User {
 
     // Update user
     public function update() {
+        // First check if status column exists, if not create it
+        $this->createStatusColumnIfNotExists();
+        
         $query = "UPDATE " . $this->table_name . " SET name=:name, email=:email, role=:role, status=:status, updated_at=NOW() WHERE id=:id";
 
         $stmt = $this->conn->prepare($query);
@@ -233,6 +236,41 @@ class User {
         }
         
         return false;
+    }
+    
+    /**
+     * Create status column if it doesn't exist
+     */
+    public function createStatusColumnIfNotExists() {
+        try {
+            // Check if column exists
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM " . $this->table_name . " LIKE 'status'");
+            $stmt->execute();
+            
+            if ($stmt->rowCount() === 0) {
+                // Column doesn't exist, create it
+                $alterQuery = "ALTER TABLE " . $this->table_name . " ADD COLUMN status ENUM('active', 'inactive', 'suspended', 'revoked') DEFAULT 'active'";
+                $this->conn->exec($alterQuery);
+                error_log("Added status column to users table");
+            }
+        } catch (PDOException $e) {
+            error_log("Error checking/creating status column: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Check if user has revoked access
+     */
+    public function isRevoked() {
+        return $this->status === 'revoked';
+    }
+    
+    /**
+     * Revoke user access
+     */
+    public function revokeAccess() {
+        $this->status = 'revoked';
+        return $this->update();
     }
 }
 ?>

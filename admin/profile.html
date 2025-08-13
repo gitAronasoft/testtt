@@ -1,33 +1,60 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile Settings - VideoHub Admin</title>
+    <title>Admin Profile - VideoHub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/enhanced-styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background-color: white;
+            border-right: 1px solid #dee2e6;
+        }
+        .nav-link {
+            color: #495057;
+            border-radius: 5px;
+            margin: 2px 0;
+        }
+        .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .card {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .navbar {
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body>
     <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="dashboard.html">
-                <i class="fas fa-shield-alt me-2 text-primary"></i>VideoHub Admin
-            </a>
-
-            <div class="d-flex align-items-center">
-                <!-- User Profile -->
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i>Admin User
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item active" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-shield-alt me-2"></i>VideoHub Admin
+            </span>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i>Admin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item" href="../auth/login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                     </ul>
                 </div>
             </div>
@@ -36,34 +63,28 @@
 
     <div class="container-fluid">
         <div class="row">
-            <!-- Modern Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar bg-white shadow-sm" style="min-height: calc(100vh - 56px);">
-                <div class="position-sticky pt-4">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 sidebar">
+                <div class="position-sticky pt-3">
                     <ul class="nav flex-column">
-                        <li class="nav-item mb-1">
-                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="dashboard.html">
-                                <i class="fas fa-tachometer-alt me-3 text-primary"></i>
-                                <span>Dashboard</span>
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </li>
-                        <li class="nav-item mb-1">
-                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="users.html">
-                                <i class="fas fa-users me-3 text-success"></i>
-                                <span>Users</span>
-                                <span class="badge bg-light text-dark ms-auto">24</span>
+                        <li class="nav-item">
+                            <a class="nav-link" href="users.html">
+                                <i class="fas fa-users me-2"></i>Users
                             </a>
                         </li>
-                        <li class="nav-item mb-1">
-                            <a class="nav-link d-flex align-items-center py-2 px-3 rounded" href="videos.html">
-                                <i class="fas fa-video me-3 text-info"></i>
-                                <span>Videos</span>
-                                <span class="badge bg-light text-dark ms-auto">156</span>
+                        <li class="nav-item">
+                            <a class="nav-link" href="videos.html">
+                                <i class="fas fa-video me-2"></i>Videos
                             </a>
                         </li>
-                        <li class="nav-item mb-1">
-                            <a class="nav-link active d-flex align-items-center py-2 px-3 rounded" href="profile.html">
-                                <i class="fas fa-cog me-3 text-secondary"></i>
-                                <span>Settings</span>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="profile.html">
+                                <i class="fas fa-cog me-2"></i>Settings
                             </a>
                         </li>
                     </ul>
@@ -71,71 +92,58 @@
             </nav>
 
             <!-- Main Content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h1 class="h3 mb-1 fw-bold">Profile Settings</h1>
-                        <p class="text-muted mb-0">Manage your account information and security settings</p>
-                    </div>
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-3">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Profile Settings</h1>
                 </div>
 
                 <div class="row g-4">
                     <!-- Profile Information -->
                     <div class="col-lg-8">
-                        <div class="card border-0 shadow-sm position-relative overflow-hidden">
-                            <div class="position-absolute top-0 start-0 w-100 h-1 bg-gradient" style="background: linear-gradient(90deg, #007bff 0%, #6f42c1 100%);"></div>
-                            <div class="card-header bg-white border-bottom">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                        <i class="fas fa-user text-primary fa-lg"></i>
-                                    </div>
-                                    <div>
-                                        <h5 class="card-title mb-1 fw-bold">Personal Information</h5>
-                                        <p class="text-muted small mb-0">Update your personal details and preferences</p>
-                                    </div>
-                                </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Personal Information</h5>
                             </div>
-                            <div class="card-body p-4">
-                                <form id="profileForm" class="space-y-4">
-                                    <div class="row g-3">
+                            <div class="card-body">
+                                <form id="profileForm">
+                                    <div class="row g-3 mb-4">
                                         <div class="col-md-6">
-                                            <label for="firstName" class="form-label fw-semibold">First Name</label>
+                                            <label for="firstName" class="form-label">First Name</label>
                                             <input type="text" class="form-control" id="firstName" name="firstName" value="Admin" required>
                                             <div class="invalid-feedback">
-                                                Please provide a valid first name.
+                                                Please provide a valid first name (min. 2 characters, letters only).
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="lastName" class="form-label fw-semibold">Last Name</label>
+                                            <label for="lastName" class="form-label">Last Name</label>
                                             <input type="text" class="form-control" id="lastName" name="lastName" value="User" required>
                                             <div class="invalid-feedback">
-                                                Please provide a valid last name.
+                                                Please provide a valid last name (min. 2 characters, letters only).
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="row g-3">
+                                    <div class="row g-3 mb-4">
                                         <div class="col-md-6">
-                                            <label for="email" class="form-label fw-semibold">Email Address</label>
-                                            <input type="email" class="form-control" id="email" name="email" value="admin@videohub.com" readonly>
+                                            <label for="email" class="form-label">Email Address</label>
+                                            <input type="email" class="form-control bg-light" id="email" name="email" value="admin@videohub.com" readonly>
                                             <div class="form-text">Email cannot be changed. Contact support if needed.</div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="role" class="form-label fw-semibold">Role</label>
-                                            <input type="text" class="form-control" id="role" value="Administrator" readonly>
+                                            <label for="role" class="form-label">Role</label>
+                                            <input type="text" class="form-control bg-light" id="role" value="Administrator" readonly>
                                             <div class="form-text">Role is managed by system administrators.</div>
                                         </div>
                                     </div>
 
                                     <hr class="my-4">
 
-                                    <div class="d-flex justify-content-end gap-2">
+                                    <div class="d-flex justify-content-end gap-3">
                                         <button type="button" class="btn btn-outline-secondary" onclick="resetProfileForm()">
-                                            <i class="fas fa-undo me-1"></i> Reset
+                                            <i class="fas fa-undo me-2"></i>Reset
                                         </button>
-                                        <button type="submit" class="btn btn-primary btn-modern">
-                                            <i class="fas fa-save me-1"></i> Save Changes
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Save Changes
                                         </button>
                                     </div>
                                 </form>
@@ -145,42 +153,44 @@
 
                     <!-- Account Security -->
                     <div class="col-lg-4">
-                        <div class="card border-0 shadow-sm position-relative overflow-hidden">
-                            <div class="position-absolute top-0 start-0 w-100 h-1 bg-gradient" style="background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%);"></div>
-                            <div class="card-header bg-white border-bottom">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                        <i class="fas fa-shield-alt text-warning fa-lg"></i>
-                                    </div>
-                                    <div>
-                                        <h5 class="card-title mb-1 fw-bold">Account Security</h5>
-                                        <p class="text-muted small mb-0">Manage your security settings</p>
-                                    </div>
-                                </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Account Security</h5>
                             </div>
-                            <div class="card-body p-4">
+                            <div class="card-body">
                                 <div class="d-grid gap-3">
-                                    <button type="button" class="btn btn-outline-primary btn-modern" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                                        <i class="fas fa-key me-2"></i>
-                                        Change Password
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                        <i class="fas fa-key me-2"></i>Change Password
                                     </button>
 
-                                    <div class="border rounded p-3">
+                                    <!-- Security Status Cards -->
+                                    <div class="border rounded p-3 bg-light">
                                         <div class="d-flex align-items-center justify-content-between mb-2">
-                                            <span class="fw-semibold text-sm">Last Login</span>
-                                            <span class="text-success">
-                                                <i class="fas fa-circle text-xs me-1"></i>Active
+                                            <span class="fw-bold">Last Login</span>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-circle me-1" style="font-size: 6px;"></i>Active
                                             </span>
                                         </div>
-                                        <p class="text-muted text-sm mb-0" id="lastLoginTime">Today, 2:30 PM</p>
+                                        <p class="text-muted small mb-0" id="lastLoginTime">Today, 2:30 PM</p>
                                     </div>
 
-                                    <div class="border rounded p-3">
+                                    <div class="border rounded p-3 bg-light">
                                         <div class="d-flex align-items-center justify-content-between mb-2">
-                                            <span class="fw-semibold text-sm">Password Strength</span>
+                                            <span class="fw-bold">Password Strength</span>
                                             <span class="badge bg-success">Strong</span>
                                         </div>
-                                        <p class="text-muted text-sm mb-0">Last changed 30 days ago</p>
+                                        <p class="text-muted small mb-2">Last changed 30 days ago</p>
+                                        <div class="progress" style="height: 4px;">
+                                            <div class="progress-bar bg-success" style="width: 90%"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="border rounded p-3 bg-light">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <span class="fw-bold">Two-Factor Auth</span>
+                                            <span class="badge bg-warning">Disabled</span>
+                                        </div>
+                                        <p class="text-muted small mb-0">Enhance security with 2FA</p>
                                     </div>
                                 </div>
                             </div>
@@ -195,17 +205,16 @@
     <div class="modal fade" id="changePasswordModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header border-bottom">
-                    <h5 class="modal-title fw-bold">
-                        <i class="fas fa-key text-warning me-2"></i>
-                        Change Password
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-key me-2"></i>Change Password
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <form id="changePasswordForm" class="space-y-4">
+                <div class="modal-body">
+                    <form id="changePasswordForm">
                         <div class="mb-3">
-                            <label for="currentPassword" class="form-label fw-semibold">Current Password</label>
+                            <label for="currentPassword" class="form-label">Current Password</label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword', this)">
@@ -218,7 +227,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="newPassword" class="form-label fw-semibold">New Password</label>
+                            <label for="newPassword" class="form-label">New Password</label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="newPassword" name="newPassword" required>
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword', this)">
@@ -234,7 +243,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="confirmPassword" class="form-label fw-semibold">Confirm New Password</label>
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword', this)">
@@ -248,22 +257,22 @@
 
                         <!-- Password Strength Indicator -->
                         <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="text-sm fw-semibold">Password Strength</span>
-                                <span id="strengthText" class="text-sm text-muted">Enter password</span>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold">Password Strength</span>
+                                <span id="strengthText" class="badge bg-secondary">Enter password</span>
                             </div>
-                            <div class="progress" style="height: 4px;">
-                                <div id="strengthBar" class="progress-bar" style="width: 0%;"></div>
+                            <div class="progress" style="height: 6px;">
+                                <div id="strengthBar" class="progress-bar" style="width: 0%; transition: all 0.3s ease;"></div>
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    <button type="submit" form="changePasswordForm" class="btn btn-primary btn-modern">
-                        <i class="fas fa-save me-1"></i> Update Password
+                    <button type="submit" form="changePasswordForm" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Update Password
                     </button>
                 </div>
             </div>
@@ -271,6 +280,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/global-state.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/profile.js"></script>

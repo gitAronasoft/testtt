@@ -41,9 +41,18 @@ try {
                 $stmt = $db->query("SELECT COUNT(*) as count FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
                 $metrics['newUsersThisMonth'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
-                // Active users (users who logged in recently or have purchases)
-                $stmt = $db->query("SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE expires_at > NOW()");
+                // Active users (simplified - count users with recent purchases)
+                $stmt = $db->query("SELECT COUNT(DISTINCT user_id_new) as count FROM purchases WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
                 $metrics['activeUsers'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+                
+                // Total views across all videos
+                $stmt = $db->query("SELECT COALESCE(SUM(views), 0) as total FROM videos");
+                $metrics['totalViews'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                
+                // Pending videos (simplified - count all videos, no complex review status)
+                $stmt = $db->query("SELECT COUNT(*) as count FROM videos WHERE status IS NULL OR status = 'pending'");
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $metrics['pendingVideos'] = $result ? $result['count'] : 0;
                 
                 http_response_code(200);
                 echo json_encode([

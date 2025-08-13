@@ -72,13 +72,20 @@ class YouTubeAPIClient {
                 this.accessToken = data.tokens.access_token;
                 this.refreshToken = data.tokens.refresh_token;
                 this.tokenExpiry = new Date(data.tokens.expires_at);
-                console.log("YouTube tokens initialized successfully");
+                console.log("YouTube tokens initialized successfully", {
+                    hasAccessToken: !!this.accessToken,
+                    tokenExpiry: this.tokenExpiry
+                });
             } else if (data.expired && data.refresh_token) {
                 // Token expired, try to refresh
                 console.log("Token expired, attempting refresh...");
+                this.refreshToken = data.refresh_token;
                 await this.refreshAccessToken(data.refresh_token);
             } else {
-                console.log("No valid tokens found");
+                console.log("No valid tokens found - user needs to authenticate");
+                this.accessToken = null;
+                this.refreshToken = null;
+                this.tokenExpiry = null;
             }
         } catch (error) {
             console.error("Failed to initialize tokens:", error);
@@ -214,8 +221,22 @@ class YouTubeAPIClient {
      */
     async updateVideoMetadata(videoId, metadata) {
         try {
+            console.log('YouTube API updateVideoMetadata called with:', { videoId, metadata });
+            console.log('Current accessToken:', this.accessToken);
+            
+            // Ensure we're initialized first
+            if (!this.isInitialized) {
+                console.log('YouTube client not initialized, initializing now...');
+                await this.initialize();
+            }
+            
             if (!this.accessToken) {
-                throw new Error('Not authenticated with YouTube');
+                console.error('No YouTube access token available');
+                return {
+                    success: false,
+                    error: 'Not authenticated with YouTube. Please connect your YouTube account first.',
+                    needsAuth: true
+                };
             }
 
             await this.ensureValidToken();

@@ -32,6 +32,11 @@ class ProfileManager {
                     this.currentUser = result.data;
                     this.populateProfileForm();
                     console.log('Profile loaded:', this.currentUser);
+                    
+                    // Also load admin metrics and update sidebar badges
+                    if (this.currentUser.role === 'admin') {
+                        await this.loadAdminMetrics();
+                    }
                 } else {
                     console.error('Failed to load profile:', result.message);
                 }
@@ -60,6 +65,17 @@ class ProfileManager {
         if (lastLoginElement) {
             const now = new Date();
             lastLoginElement.textContent = `${now.toLocaleDateString()}, ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+        }
+        
+        // Update role field
+        const roleEl = document.getElementById('role');
+        if (roleEl && this.currentUser.role) {
+            const roleMap = {
+                'admin': 'Administrator', 
+                'creator': 'Content Creator',
+                'viewer': 'Viewer'
+            };
+            roleEl.value = roleMap[this.currentUser.role] || this.currentUser.role;
         }
     }
 
@@ -351,6 +367,24 @@ class ProfileManager {
 
         form.classList.add('was-validated');
         return isValid;
+    }
+
+    async loadAdminMetrics() {
+        try {
+            // Load admin data for sidebar badges
+            const [usersResponse, videosResponse] = await Promise.all([
+                window.apiService.get('/admin/users'),
+                window.apiService.get('/videos')
+            ]);
+            
+            const users = usersResponse.data || usersResponse.users || [];
+            const videos = videosResponse.data || videosResponse.videos || [];
+            
+            // Sidebar badges removed for cleaner interface
+            
+        } catch (error) {
+            console.error('Failed to load admin metrics:', error);
+        }
     }
 }
 

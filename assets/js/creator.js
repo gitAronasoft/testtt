@@ -15,17 +15,24 @@ class CreatorManager {
     async init() {
         this.bindEvents();
         this.loadPageSpecificHandlers();
-        await this.loadDashboardData();
+        
+        // Only load data if we haven't already loaded it
+        if (!this.stats || Object.keys(this.stats).length === 0) {
+            await this.loadDashboardData();
+        }
     }
 
     async loadDashboardData() {
-        // Prevent multiple concurrent loads
-        if (this.isLoading) {
-            console.log('Data loading already in progress, skipping...');
+        // Prevent multiple concurrent loads using global state
+        if (window.VideoHubState && window.VideoHubState.isLoading('creatorData')) {
+            console.log('Creator data loading already in progress, skipping...');
             return;
         }
         
         this.isLoading = true;
+        if (window.VideoHubState) {
+            window.VideoHubState.setLoading('creatorData', true);
+        }
         
         try {
             // Wait for API service to be available
@@ -54,12 +61,33 @@ class CreatorManager {
                 
                 console.log('Loading data for creator ID:', creatorId);
                 
-                // Load all data in parallel but only once
-                const [metricsResponse, videosResponse, earningsResponse] = await Promise.all([
-                    window.apiService.get(`/metrics/creator?creator_id=${creatorId}`),
-                    window.apiService.get(`/creator/videos?uploader_id=${creatorId}`),
-                    window.apiService.get(`/creator/earnings?creator_id=${creatorId}`)
-                ]);
+                // Check cache first
+                const cachedMetrics = window.VideoHubState?.getCached('metrics', creatorId);
+                const cachedVideos = window.VideoHubState?.getCached('videos', creatorId);
+                const cachedEarnings = window.VideoHubState?.getCached('earnings', creatorId);
+                
+                let metricsResponse, videosResponse, earningsResponse;
+                
+                if (cachedMetrics && cachedVideos && cachedEarnings) {
+                    console.log('Using cached creator data');
+                    metricsResponse = { success: true, data: cachedMetrics };
+                    videosResponse = { data: { videos: cachedVideos } };
+                    earningsResponse = { data: { earnings: cachedEarnings } };
+                } else {
+                    // Load all data in parallel but only once
+                    [metricsResponse, videosResponse, earningsResponse] = await Promise.all([
+                        window.apiService.get(`/metrics/creator?creator_id=${creatorId}`),
+                        window.apiService.get(`/creator/videos?uploader_id=${creatorId}`),
+                        window.apiService.get(`/creator/earnings?creator_id=${creatorId}`)
+                    ]);
+                    
+                    // Cache the responses
+                    if (window.VideoHubState) {
+                        if (metricsResponse.success) window.VideoHubState.setCached('metrics', metricsResponse.data, creatorId);
+                        if (videosResponse.data) window.VideoHubState.setCached('videos', videosResponse.data.videos || videosResponse.data, creatorId);
+                        if (earningsResponse.data) window.VideoHubState.setCached('earnings', earningsResponse.data.earnings || earningsResponse.data, creatorId);
+                    }
+                }
                 
                 // Process metrics
                 if (metricsResponse.success) {
@@ -105,6 +133,9 @@ class CreatorManager {
             });
         } finally {
             this.isLoading = false;
+            if (window.VideoHubState) {
+                window.VideoHubState.setLoading('creatorData', false);
+            }
         }
     }
 
@@ -515,12 +546,16 @@ class CreatorManager {
                     this.showNotification('Video updated! Syncing with YouTube...', 'info');
                     
                     try {
-                        // Initialize YouTube client if not available
-                        if (!window.youtubeClient) {
-                            window.youtubeClient = new YouTubeAPIClient();
+                        // Use the global YouTube API instance
+                        if (!window.youtubeAPI) {
+                            console.error('YouTube API client not available');
+                            throw new Error('YouTube API client not available');
                         }
                         
-                        const youtubeResult = await window.youtubeClient.updateVideoMetadata(response.data.youtube_id, {
+                        // Ensure YouTube client is properly initialized
+                        await window.youtubeAPI.initialize();
+                        
+                        const youtubeResult = await window.youtubeAPI.updateVideoMetadata(response.data.youtube_id, {
                             title: title.trim(),
                             description: description.trim()
                         });
@@ -530,11 +565,17 @@ class CreatorManager {
                             this.showNotification('✓ Video updated successfully in VideoHub and YouTube!', 'success');
                         } else {
                             console.warn('Video updated in VideoHub but YouTube sync failed:', youtubeResult.error);
-                            this.showNotification('Video updated in VideoHub. YouTube sync failed: ' + youtubeResult.error, 'warning');
+                            if (youtubeResult.needsAuth) {
+                                this.showNotification('Video updated in VideoHub. YouTube sync requires authentication. Please connect your YouTube account.', 'warning');
+                                this.showYouTubeConnectOption();
+                            } else {
+                                this.showNotification('Video updated in VideoHub. YouTube sync failed: ' + youtubeResult.error, 'warning');
+                            }
                         }
                     } catch (youtubeError) {
                         console.error('YouTube sync error:', youtubeError);
                         this.showNotification('Video updated in VideoHub. YouTube sync failed - please check authentication.', 'warning');
+                        this.showYouTubeConnectOption();
                     }
                 } else {
                     this.showNotification('✓ Video updated successfully!', 'success');
@@ -573,6 +614,52 @@ class CreatorManager {
                 notification.remove();
             }
         }, 5000);
+    }
+
+    showYouTubeConnectOption() {
+        // Create YouTube connect notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '9999';
+        notification.style.minWidth = '350px';
+        notification.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between">
+                <span>Connect YouTube to sync video changes</span>
+                <button type="button" class="btn btn-sm btn-primary ms-2" onclick="window.creatorManager.connectYouTubeFromToast()">
+                    <i class="fab fa-youtube me-1"></i>Connect
+                </button>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 10000);
+    }
+
+    async connectYouTubeFromToast() {
+        try {
+            if (window.youtubeAPI) {
+                const success = await window.youtubeAPI.signIn();
+                if (success) {
+                    this.showNotification('✓ YouTube account connected successfully!', 'success');
+                } else {
+                    this.showNotification('Failed to connect YouTube account.', 'error');
+                }
+            } else {
+                this.showNotification('YouTube API not available', 'error');
+            }
+        } catch (error) {
+            console.error('Connect failed:', error);
+            this.showNotification('Failed to connect YouTube account.', 'error');
+        }
     }
 
     async deleteVideo(videoId) {
@@ -907,3 +994,8 @@ class YouTubeUploadManager {
         }, 5000);
     }
 }
+
+// Initialize creator manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.creatorManager = new CreatorManager();
+});

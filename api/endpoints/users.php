@@ -201,30 +201,46 @@ try {
                 
                 $user->id = $path_parts[2];
                 
-                if (!empty($data['name']) && !empty($data['email']) && !empty($data['role'])) {
-                    $user->name = $data['name'];
-                    $user->email = $data['email'];
-                    $user->role = $data['role'];
-                    $user->status = isset($data['status']) ? $data['status'] : 'active';
-                    
-                    if ($user->update()) {
-                        http_response_code(200);
-                        echo json_encode([
-                            'success' => true,
-                            'message' => 'User updated successfully'
-                        ]);
-                    } else {
-                        http_response_code(400);
-                        echo json_encode([
-                            'success' => false,
-                            'message' => 'Unable to update user'
-                        ]);
-                    }
+                // Check if user exists first
+                if (!$user->readOne()) {
+                    http_response_code(404);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'User not found'
+                    ]);
+                    break;
+                }
+                
+                // Allow partial updates - only update provided fields
+                if (isset($data['name'])) $user->name = $data['name'];
+                if (isset($data['email'])) $user->email = $data['email'];
+                if (isset($data['role'])) $user->role = $data['role'];
+                if (isset($data['status'])) $user->status = $data['status'];
+                
+                // Special handling for revoke action
+                if (isset($data['status']) && $data['status'] === 'revoked') {
+                    // Log revoke action
+                    error_log("User {$user->id} access revoked by admin");
+                }
+                
+                if ($user->update()) {
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'User updated successfully',
+                        'data' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'role' => $user->role,
+                            'status' => $user->status
+                        ]
+                    ]);
                 } else {
                     http_response_code(400);
                     echo json_encode([
                         'success' => false,
-                        'message' => 'Missing required fields: name, email, role'
+                        'message' => 'Unable to update user'
                     ]);
                 }
             } else {
