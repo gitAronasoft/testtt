@@ -7,7 +7,9 @@
     <title>User Management - VideoHub Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.css" />
+    <!-- jQuery DataTable CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">
     <style>
         body {
             background-color: #f8f9fa;
@@ -87,16 +89,40 @@
         }
         
         #usersTable th {
-            background-color: #212529;
-            border-color: #32383e;
-            vertical-align: middle;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
             font-weight: 600;
             font-size: 0.875rem;
+            padding: 0.75rem;
+            vertical-align: middle;
         }
         
         #usersTable td {
             vertical-align: middle;
-            padding: 12px 8px;
+            padding: 0.75rem;
+            border-color: #dee2e6;
+        }
+        
+        .table-striped > tbody > tr:nth-of-type(odd) > td {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.08);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
         }
         
         .btn-group .btn {
@@ -191,17 +217,17 @@
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover table-striped mb-0 align-middle" id="usersTable" style="width:100%">
-                                <thead class="table-dark">
+                            <table id="usersTable" class="table table-striped table-hover dt-responsive nowrap" width="100%">
+                                <thead>
                                     <tr>
-                                        <th class="text-center" style="width: 60px;">ID</th>
-                                        <th style="min-width: 200px;">User</th>
-                                        <th style="min-width: 180px;">Email</th>
-                                        <th class="text-center" style="width: 100px;">Role</th>
-                                        <th class="text-center" style="width: 100px;">Status</th>
-                                        <th class="text-center" style="width: 100px;">Verified</th>
-                                        <th class="text-center" style="width: 120px;">Joined</th>
-                                        <th class="text-center" style="width: 200px;">Actions</th>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Verified</th>
+                                        <th>Joined</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -454,19 +480,31 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery and DataTable Libraries -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>
     <script src="../assets/js/global-state.js"></script>
     <script src="../assets/js/api.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/admin.js"></script>
     
     <script>
-        // Initialize admin manager
+        // Initialize admin manager (SINGLE INSTANCE ONLY)
         let adminManager;
         
         document.addEventListener('DOMContentLoaded', function() {
-            adminManager = new AdminManager();
+            // Prevent multiple AdminManager instances
+            if (!window.adminManager) {
+                console.log('Creating AdminManager instance from users.html');
+                window.adminManager = new AdminManager();
+                adminManager = window.adminManager;
+            } else {
+                console.log('Using existing AdminManager instance');
+                adminManager = window.adminManager;
+            }
             
             // Add user form handler
             const saveUserBtn = document.getElementById('saveUser');

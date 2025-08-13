@@ -92,86 +92,108 @@
                     <h1 class="h2">Profile Settings</h1>
                 </div>
 
-                <div class="row">
+                <div class="row g-4">
                     <!-- Profile Information -->
                     <div class="col-lg-8">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="card-title mb-0">Personal Information</h5>
+                                <h5 class="card-title mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
                             </div>
                             <div class="card-body">
                                 <form id="profileForm">
-                                    <div class="row mb-3">
+                                    <div class="row g-3 mb-4">
                                         <div class="col-md-6">
                                             <label for="firstName" class="form-label">First Name</label>
-                                            <input type="text" class="form-control" id="firstName" placeholder="Loading..." required>
+                                            <input type="text" class="form-control" id="firstName" name="firstName" placeholder="Loading..." required>
+                                            <div class="invalid-feedback">
+                                                Please provide a valid first name (min. 2 characters).
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="lastName" class="form-label">Last Name</label>
-                                            <input type="text" class="form-control" id="lastName" placeholder="Loading..." required>
+                                            <input type="text" class="form-control" id="lastName" name="lastName" placeholder="Loading..." required>
+                                            <div class="invalid-feedback">
+                                                Please provide a valid last name (min. 2 characters).
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="row mb-3">
+
+                                    <div class="row g-3 mb-4">
                                         <div class="col-md-6">
-                                            <label for="email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="email" placeholder="Loading..." readonly>
+                                            <label for="email" class="form-label">Email Address</label>
+                                            <input type="email" class="form-control bg-light" id="email" name="email" placeholder="Loading..." readonly>
                                             <div class="form-text">Email cannot be changed. Contact support if needed.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="role" class="form-label">Account Type</label>
-                                            <input type="text" class="form-control" id="role" placeholder="Loading..." readonly>
+                                            <input type="text" class="form-control bg-light" id="role" placeholder="Loading..." readonly>
+                                            <div class="form-text">Account type is managed by administrators.</div>
                                         </div>
                                     </div>
-                                    <hr>
-                                    <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">Reset</button>
-                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+
+                                    <hr class="my-4">
+
+                                    <div class="d-flex justify-content-end gap-3">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="resetProfileForm()">
+                                            <i class="fas fa-undo me-2"></i>Reset
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Save Changes
+                                        </button>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Account Info -->
+                    <!-- Account Summary & Security -->
                     <div class="col-lg-4">
+                        <!-- Account Summary -->
                         <div class="card mb-4">
                             <div class="card-header">
-                                <h5 class="card-title mb-0">Account Status</h5>
+                                <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Account Summary</h5>
                             </div>
                             <div class="card-body text-center">
                                 <div class="mb-3">
                                     <div class="bg-primary rounded-circle p-3 d-inline-flex">
-                                        <i class="fas fa-user fa-2x text-white"></i>
+                                        <i class="fas fa-play-circle fa-2x text-white"></i>
                                     </div>
                                 </div>
-                                <h6 class="fw-bold" id="userDisplayName">Loading...</h6>
-                                <p class="text-muted" id="userMembershipType">Loading...</p>
-                                <div class="d-flex justify-content-center gap-2" id="userBadges">
-                                    <span class="badge bg-secondary">Loading...</span>
+                                <h6 class="fw-bold" id="displayName">Loading...</h6>
+                                <p class="text-muted mb-3" id="userRole">Video Viewer</p>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <strong class="text-primary d-block" id="memberSince">Loading...</strong>
+                                        <small class="text-muted">Member since</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="text-success d-block" id="lastLogin">Loading...</strong>
+                                        <small class="text-muted">Last login</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Account Security -->
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="card-title mb-0">Account Security</h5>
+                                <h5 class="card-title mb-0"><i class="fas fa-shield-alt me-2"></i>Account Security</h5>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted mb-3">Keep your account safe and secure</p>
-                                <div class="d-grid gap-2">
-                                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                <div class="d-grid gap-3">
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                                         <i class="fas fa-key me-2"></i>Change Password
                                     </button>
-                                </div>
-                                <hr>
-                                <div class="row text-center">
-                                    <div class="col-6">
-                                        <strong class="text-primary" id="memberSince">Loading...</strong>
-                                        <div class="text-muted small">Member since</div>
-                                    </div>
-                                    <div class="col-6">
-                                        <strong class="text-success" id="lastLogin">Loading...</strong>
-                                        <div class="text-muted small">Last login</div>
+
+                                    <!-- Security Status Card -->
+                                    <div class="border rounded p-3 bg-light">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <span class="fw-bold">Account Status</span>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-circle me-1" style="font-size: 6px;"></i>Active
+                                            </span>
+                                        </div>
+                                        <p class="text-muted small mb-0">Account is secure and active</p>
                                     </div>
                                 </div>
                             </div>

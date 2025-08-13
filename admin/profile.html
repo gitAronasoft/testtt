@@ -102,7 +102,7 @@
                     <div class="col-lg-8">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="card-title mb-0">Personal Information</h5>
+                                <h5 class="card-title mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
                             </div>
                             <div class="card-body">
                                 <form id="profileForm">
@@ -111,14 +111,14 @@
                                             <label for="firstName" class="form-label">First Name</label>
                                             <input type="text" class="form-control" id="firstName" name="firstName" placeholder="Loading..." required>
                                             <div class="invalid-feedback">
-                                                Please provide a valid first name (min. 2 characters, letters only).
+                                                Please provide a valid first name (min. 2 characters).
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="lastName" class="form-label">Last Name</label>
                                             <input type="text" class="form-control" id="lastName" name="lastName" placeholder="Loading..." required>
                                             <div class="invalid-feedback">
-                                                Please provide a valid last name (min. 2 characters, letters only).
+                                                Please provide a valid last name (min. 2 characters).
                                             </div>
                                         </div>
                                     </div>
@@ -151,11 +151,38 @@
                         </div>
                     </div>
 
-                    <!-- Account Security -->
+                    <!-- Account Summary & Security -->
                     <div class="col-lg-4">
+                        <!-- Account Summary -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Account Summary</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <div class="bg-primary rounded-circle p-3 d-inline-flex">
+                                        <i class="fas fa-shield-alt fa-2x text-white"></i>
+                                    </div>
+                                </div>
+                                <h6 class="fw-bold" id="displayName">Loading...</h6>
+                                <p class="text-muted mb-3" id="userRole">Administrator</p>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <strong class="text-primary d-block" id="memberSince">Loading...</strong>
+                                        <small class="text-muted">Member since</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="text-success d-block" id="lastLogin">Loading...</strong>
+                                        <small class="text-muted">Last login</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Account Security -->
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="card-title mb-0">Account Security</h5>
+                                <h5 class="card-title mb-0"><i class="fas fa-shield-alt me-2"></i>Account Security</h5>
                             </div>
                             <div class="card-body">
                                 <div class="d-grid gap-3">
@@ -163,15 +190,15 @@
                                         <i class="fas fa-key me-2"></i>Change Password
                                     </button>
 
-                                    <!-- Security Status Cards -->
+                                    <!-- Security Status Card -->
                                     <div class="border rounded p-3 bg-light">
                                         <div class="d-flex align-items-center justify-content-between mb-2">
-                                            <span class="fw-bold">Last Login</span>
+                                            <span class="fw-bold">Account Status</span>
                                             <span class="badge bg-success">
                                                 <i class="fas fa-circle me-1" style="font-size: 6px;"></i>Active
                                             </span>
                                         </div>
-                                        <p class="text-muted small mb-0" id="lastLoginTime">Today, 2:30 PM</p>
+                                        <p class="text-muted small mb-0">Account is secure and active</p>
                                     </div>
 
                                     <div class="border rounded p-3 bg-light">

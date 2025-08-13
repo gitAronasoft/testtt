@@ -6,11 +6,28 @@
 
 class AdminManager {
     constructor() {
+        console.log('AdminManager constructor called');
+        
+        // Prevent multiple instances
+        if (window.adminManagerInstance) {
+            console.log('Returning existing AdminManager instance');
+            return window.adminManagerInstance;
+        }
+        
         this.users = [];
         this.videos = [];
         this.stats = {};
         this.usersTable = null;
         this.currentUserId = null;
+        this.isInitializingTable = false;
+        this.dataLoaded = false;
+        this.tableInitialized = false;
+        this.handlersLoaded = false;
+        
+        // Store instance globally
+        window.adminManagerInstance = this;
+        console.log('New AdminManager instance created');
+        
         this.init();
     }
 
@@ -21,6 +38,9 @@ class AdminManager {
         const currentPage = window.location.pathname.split('/').pop();
         if (currentPage === 'dashboard.html') {
             await this.loadDashboardData();
+        } else if (currentPage === 'users.html') {
+            // For users page, only initialize table once
+            await this.initUsersPage();
         } else {
             await this.waitForAPIService();
         }
@@ -37,19 +57,21 @@ class AdminManager {
             retries++;
         }
 
-        // Load only the data needed for current page
+        // Only load data for non-dashboard and non-users pages
         const currentPage = window.location.pathname.split('/').pop();
         
-        if (window.apiService) {
+        if (window.apiService && !this.dataLoaded && currentPage !== 'users.html') {
             try {
-                if (currentPage === 'users.html' || currentPage === 'user-detail.html') {
+                if (currentPage === 'user-detail.html') {
                     const usersResponse = await window.apiService.get('/admin/users');
                     this.users = usersResponse.data || usersResponse.users || [];
+                    this.dataLoaded = true;
                 }
                 
                 if (currentPage === 'videos.html') {
                     // const videosResponse = await window.apiService.get('/videos');
                     // this.videos = videosResponse.data || videosResponse.videos || [];
+                    this.dataLoaded = true;
                 }
             } catch (error) {
                 console.error('Failed to load data from API:', error);
@@ -192,12 +214,18 @@ class AdminManager {
     loadPageSpecificHandlers() {
         const currentPage = window.location.pathname.split('/').pop();
         
+        // Prevent multiple handler loads
+        if (this.handlersLoaded) {
+            return;
+        }
+        this.handlersLoaded = true;
+        
         switch (currentPage) {
             case 'dashboard.html':
                 this.initDashboard();
                 break;
             case 'users.html':
-                this.initUsersPage();
+                // Users page already initialized in init() method
                 break;
             case 'videos.html':
                 ///this.initVideosPage();
@@ -210,7 +238,18 @@ class AdminManager {
     }
 
     async initUsersPage() {
-        await this.loadUsersDataTable();
+        // Wait for API service first
+        let retries = 0;
+        while (retries < 50 && !window.apiService) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+        }
+        
+        // Only initialize if not already done and ensure single initialization
+        if (!this.isInitializingTable && !this.usersTable && !this.tableInitialized) {
+            this.tableInitialized = true;
+            await this.loadUsersDataTable();
+        }
     }
 
     // initVideosPage() {
@@ -218,44 +257,67 @@ class AdminManager {
     // }
 
     async loadUsersDataTable() {
-        // Wait for jQuery and DataTables to be available
-        if (typeof $ === 'undefined' || !$.fn.DataTable) {
-            setTimeout(() => this.loadUsersDataTable(), 100);
+        // Prevent multiple simultaneous initializations
+        if (this.isInitializingTable) {
+            console.log('Table initialization already in progress');
             return;
         }
+        
+        this.isInitializingTable = true;
 
-        // Check if table element exists
-        const tableElement = $('#usersTable');
-        if (tableElement.length === 0) {
-            console.error('Users table element not found');
-            return;
-        }
+        try {
+            // Wait for jQuery and DataTables to be available
+            // if (typeof $ === 'undefined' || !$.fn.DataTable) {
+            //     setTimeout(() => {
+            //         this.isInitializingTable = false;
+            //         this.loadUsersDataTable();
+            //     }, 100);
+            //     return;
+            // }
 
-        // Load users data first
-        if (!this.users.length && window.apiService) {
-            try {
-                const response = await window.apiService.get('/admin/users');
-                this.users = response.data || response.users || [];
-            } catch (error) {
-                console.error('Failed to load users:', error);
-                this.users = [];
+            // Check if table element exists
+            const tableElement = $('#usersTable');
+            if (tableElement.length === 0) {
+                console.error('Users table element not found');
+                this.isInitializingTable = false;
+                return;
             }
-        }
 
-        // Update total users count
-        const totalUsersCount = document.getElementById('totalUsersCount');
-        if (totalUsersCount) {
-            totalUsersCount.textContent = this.users.length;
-        }
+            // Load users data first (only if not already loaded)
+            if (!this.users.length && !this.dataLoaded) {
+                try {
+                    console.log('Loading users data from API...');
+                    const response = await fetch('/api/admin/users');
+                    const result = await response.json();
+                    if (result.success) {
+                        this.users = result.data || [];
+                        this.dataLoaded = true;
+                        console.log(`Loaded ${this.users.length} users`);
+                    } else {
+                        this.users = [];
+                    }
+                } catch (error) {
+                    console.error('Failed to load users:', error);
+                    this.users = [];
+                }
+            }
 
-        // Properly destroy existing DataTable
-        if ($.fn.DataTable.isDataTable('#usersTable')) {
-            tableElement.DataTable().clear().destroy();
-            this.usersTable = null;
-        }
+            // Update total users count
+            const totalUsersCount = document.getElementById('totalUsersCount');
+            if (totalUsersCount) {
+                totalUsersCount.textContent = this.users.length;
+            }
 
-        // Small delay to ensure cleanup is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
+            // Properly destroy existing DataTable if it exists
+            if ($.fn.DataTable.isDataTable('#usersTable')) {
+                console.log('Destroying existing DataTable');
+                tableElement.DataTable().clear().destroy();
+                tableElement.empty(); // Clear table contents
+                this.usersTable = null;
+            }
+
+            // Small delay to ensure cleanup is complete
+            await new Promise(resolve => setTimeout(resolve, 150));
 
         // Initialize DataTable
         this.usersTable = tableElement.DataTable({
@@ -275,16 +337,15 @@ class AdminManager {
                     data: null,
                     orderable: true,
                     render: function(data, type, row) {
-                        const firstName = row.firstName || row.name || 'Unknown';
-                        const lastName = row.lastName || '';
-                        const fullName = `${firstName} ${lastName}`.trim();
+                        const name = row.name || 'Unknown User';
+                        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
                         return `
                             <div class="d-flex align-items-center">
-                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                    <i class="fas fa-user text-primary"></i>
+                                <div class="user-avatar me-3">
+                                    ${initials}
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">${fullName}</div>
+                                    <div class="fw-semibold">${name}</div>
                                     <small class="text-muted">ID: ${row.id}</small>
                                 </div>
                             </div>
@@ -394,8 +455,19 @@ class AdminManager {
                  '<"row"<"col-sm-12"tr>>' +
                  '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             searchDelay: 400,
-            processing: true
+            processing: true,
+            drawCallback: function() {
+                console.log('DataTable draw completed');
+            }
         });
+        
+        console.log('DataTable initialized successfully with', this.users.length, 'users');
+        
+        } catch (error) {
+            console.error('Error initializing DataTable:', error);
+        } finally {
+            this.isInitializingTable = false;
+        }
     }
 
     // User management methods
@@ -651,39 +723,35 @@ class AdminManager {
                 emptyState.classList.add('d-none');
             }
             
-            // Try to load from admin videos endpoint first, fallback to regular videos endpoint
+            // Load videos from API
             let response = await fetch('/api/videos');
             let result = await response.json();
-             console.log(result);
-            if (!result.success) {
-                // Fallback to regular videos API
-                response = await fetch('/api/videos');
-                result = await response.json();
-               
-                if (result.success && result.data && result.data.videos) {
-                    // Transform videos data for admin display
-                    this.videos = result.data.videos.map(video => ({
-                        id: video.id,
-                        title: video.title,
-                        description: video.description,
-                        price: video.price,
-                        thumbnail: video.thumbnail,
-                        creator_name: video.creatorName,
-                        creator_email: '',
-                        upload_date: video.uploadDate,
-                        views: video.views,
-                        purchase_count: video.views,
-                        status: video.status || 'published',
-                        created_at: new Date().toISOString(),
-                        youtube_thumbnail: video.thumbnail,
-                        youtube_channel_title: video.creatorName,
-                        youtube_views: video.views
-                    }));
-                } else {
-                    throw new Error('Failed to load videos from both endpoints');
-                }
+            console.log('Videos API response:', result);
+            
+            if (result.success && result.data && result.data.videos) {
+                // Transform videos data for admin display
+                this.videos = result.data.videos.map(video => ({
+                    id: video.id,
+                    title: video.title,
+                    description: video.description,
+                    price: video.price,
+                    thumbnail: video.thumbnail,
+                    creator_name: video.creatorName,
+                    creator_email: '',
+                    upload_date: video.uploadDate,
+                    views: video.views,
+                    purchase_count: video.views,
+                    status: video.status || 'published',
+                    created_at: new Date().toISOString(),
+                    youtube_thumbnail: video.thumbnail,
+                    youtube_channel_title: video.creatorName,
+                    youtube_views: video.views
+                }));
+            } else if (result.success && Array.isArray(result.data)) {
+                // Handle case where data is directly an array
+                this.videos = result.data;
             } else {
-                this.videos = result.data || [];
+                throw new Error('Failed to load videos: ' + (result.message || 'Invalid response format'));
             }
             
             // Update stats cards
@@ -818,28 +886,29 @@ class AdminManager {
                 // Fallback to regular videos API
                 response = await fetch('/api/videos');
                 result = await response.json();
-                
-                if (result.success && result.data && result.data.videos) {
-                    // Transform videos data for admin display
-                    this.videos = result.data.videos.map(video => ({
-                        id: video.id,
-                        title: video.title,
-                        description: video.description,
-                        price: video.price,
-                        thumbnail: video.thumbnail,
-                        creator_name: video.creatorName,
-                        creator_email: '',
-                        upload_date: video.uploadDate,
-                        views: video.views,
-                        purchase_count: video.views,
-                        status: video.status || 'published',
-                        created_at: new Date().toISOString()
-                    }));
-                } else {
-                    throw new Error('Failed to load videos from both endpoints');
-                }
+            }
+            
+            if (result.success && result.data && result.data.videos) {
+                // Transform videos data for admin display
+                this.videos = result.data.videos.map(video => ({
+                    id: video.id,
+                    title: video.title,
+                    description: video.description,
+                    price: video.price,
+                    thumbnail: video.thumbnail,
+                    creator_name: video.creatorName,
+                    creator_email: '',
+                    upload_date: video.uploadDate,
+                    views: video.views,
+                    purchase_count: video.views,
+                    status: video.status || 'published',
+                    created_at: new Date().toISOString()
+                }));
+            } else if (result.success && Array.isArray(result.data)) {
+                // Handle case where data is directly an array
+                this.videos = result.data;
             } else {
-                this.videos = result.data || [];
+                throw new Error('Failed to load videos: ' + (result.message || 'Invalid response format'));
             }
             
             // Update total count
@@ -930,6 +999,12 @@ class AdminManager {
         const publishedVideos = document.getElementById('publishedVideos');
         const pendingVideos = document.getElementById('pendingVideos');
         const flaggedVideos = document.getElementById('flaggedVideos');
+        
+        // Ensure this.videos is an array before using filter
+        if (!Array.isArray(this.videos)) {
+            console.warn('Videos data is not an array:', this.videos);
+            this.videos = [];
+        }
         
         if (totalVideos) totalVideos.textContent = this.videos.length;
         if (publishedVideos) publishedVideos.textContent = this.videos.filter(v => v.status === 'published' || v.status === 'active').length;
@@ -1123,38 +1198,50 @@ class AdminManager {
     async showUserDetails(userId) {
         try {
             // Find user in local data first
-            let user = this.users.find(u => u.id === userId);
+            let user = this.users.find(u => u.id == userId);
             
             // If not found locally, fetch from API
-            if (!user && window.apiService) {
-                const response = await window.apiService.get(`/api/users/${userId}`);
-                if (response.success) {
-                    user = response.data;
+            if (!user) {
+                try {
+                    const response = await fetch(`/api/admin/users?id=${userId}`);
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        user = result.data;
+                    }
+                } catch (apiError) {
+                    console.warn('API fetch failed, using local data');
                 }
             }
 
             if (user) {
                 // Populate user details modal
                 document.getElementById('detailUserId').textContent = user.id;
-                document.getElementById('detailUserName').textContent = `${user.firstName || user.name || 'Unknown'} ${user.lastName || ''}`.trim();
+                document.getElementById('detailUserName').textContent = user.name || 'Unknown User';
                 document.getElementById('detailUserEmail').textContent = user.email || 'No email';
-                document.getElementById('detailUserRole').textContent = (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1);
-                document.getElementById('detailUserRole').className = `badge bg-${this.getUserRoleBadgeClass(user.role)}`;
+                
+                // Role badge
+                const roleEl = document.getElementById('detailUserRole');
+                roleEl.textContent = (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1);
+                roleEl.className = `badge bg-${this.getUserRoleBadgeClass(user.role)}`;
                 
                 // Status badge
                 const statusEl = document.getElementById('detailUserStatus');
                 statusEl.textContent = (user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1);
                 statusEl.className = `badge bg-${user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'revoked' ? 'dark' : 'warning'}`;
                 
-                document.getElementById('detailJoinDate').textContent = user.joinDate ? new Date(user.joinDate).toLocaleDateString() : 'Unknown';
-                document.getElementById('detailEmailVerified').textContent = user.email_verified_at ? 'Verified' : 'Not Verified';
-                document.getElementById('detailEmailVerified').className = `badge bg-${user.email_verified_at ? 'success' : 'warning'}`;
-                document.getElementById('detailLastLogin').textContent = 'Recently'; // Mock data
+                // Date formatting
+                const joinDate = user.created_at || user.joinDate;
+                document.getElementById('detailJoinDate').textContent = joinDate ? new Date(joinDate).toLocaleDateString() : 'Unknown';
                 
-                // Mock additional data
-                document.getElementById('detailVideoCount').textContent = Math.floor(Math.random() * 10);
-                document.getElementById('detailPurchaseCount').textContent = Math.floor(Math.random() * 20);
-                document.getElementById('detailTotalSpent').textContent = `$${(Math.random() * 500).toFixed(2)}`;
+                // Email verification status
+                const verifiedEl = document.getElementById('detailEmailVerified');
+                verifiedEl.textContent = user.email_verified_at ? 'Verified' : 'Not Verified';
+                verifiedEl.className = `badge bg-${user.email_verified_at ? 'success' : 'warning'}`;
+                
+                document.getElementById('detailLastLogin').textContent = user.lastActive || 'Recently';
+                
+                // Load additional stats from API
+                this.loadUserStats(userId);
                 
                 // Store current user ID
                 this.currentUserId = userId;
@@ -1163,11 +1250,58 @@ class AdminManager {
                 const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
                 modal.show();
             } else {
-                window.apiService?.showErrorMessage('User not found');
+                this.showAlert('User not found', 'danger');
             }
         } catch (error) {
             console.error('Error showing user details:', error);
+            this.showAlert('Error loading user details', 'danger');
             window.apiService?.showErrorMessage('Failed to load user details');
+        }
+    }
+
+    async loadUserStats(userId) {
+        try {
+            // Get user's video count if they're a creator
+            const user = this.users.find(u => u.id == userId);
+            let videoCount = 0;
+            let purchaseCount = 0;
+            let totalSpent = 0;
+            
+            if (user && user.role === 'creator') {
+                try {
+                    const videosResponse = await fetch(`/api/creator/videos?creator_id=${userId}`);
+                    const videosResult = await videosResponse.json();
+                    if (videosResult.success && videosResult.data) {
+                        videoCount = videosResult.data.length || 0;
+                    }
+                } catch (error) {
+                    console.log('Could not load creator videos');
+                }
+            }
+            
+            if (user && user.role === 'viewer') {
+                try {
+                    const purchasesResponse = await fetch(`/api/purchases?user_id=${userId}`);
+                    const purchasesResult = await purchasesResponse.json();
+                    if (purchasesResult.success && purchasesResult.data) {
+                        purchaseCount = purchasesResult.data.length || 0;
+                        totalSpent = purchasesResult.data.reduce((sum, purchase) => sum + (parseFloat(purchase.price) || 0), 0);
+                    }
+                } catch (error) {
+                    console.log('Could not load user purchases');
+                }
+            }
+            
+            // Update the modal with real data
+            document.getElementById('detailVideoCount').textContent = videoCount;
+            document.getElementById('detailPurchaseCount').textContent = purchaseCount;
+            document.getElementById('detailTotalSpent').textContent = `$${totalSpent.toFixed(2)}`;
+        } catch (error) {
+            console.error('Error loading user stats:', error);
+            // Fallback to default values
+            document.getElementById('detailVideoCount').textContent = '0';
+            document.getElementById('detailPurchaseCount').textContent = '0';
+            document.getElementById('detailTotalSpent').textContent = '$0.00';
         }
     }
 
@@ -1457,6 +1591,22 @@ window.editUserFromDetails = function() {
 
 window.viewUserDetailsPage = function(userId) {
     window.location.href = `user-detail.html?id=${userId}`;
+};
+
+// Helper function for editing user from details modal
+window.editUserFromDetails = function() {
+    if (window.adminManager && window.adminManager.currentUserId) {
+        // Hide the details modal first
+        const detailsModal = bootstrap.Modal.getInstance(document.getElementById('userDetailsModal'));
+        if (detailsModal) {
+            detailsModal.hide();
+        }
+        
+        // Small delay to ensure modal is closed before opening edit modal
+        setTimeout(() => {
+            window.adminManager.editUser(window.adminManager.currentUserId);
+        }, 200);
+    }
 };
 
 window.exportUsers = function() {
