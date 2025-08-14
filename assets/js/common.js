@@ -44,6 +44,11 @@ class CommonUtils {
                 e.preventDefault();
                 this.handleLogout();
             }
+            // Also handle logout class
+            if (e.target.matches('.logout-btn') || e.target.closest('.logout-btn')) {
+                e.preventDefault();
+                this.handleLogout();
+            }
         });
 
         // Handle demo mode notifications
@@ -112,11 +117,13 @@ class CommonUtils {
         this.showToast('Logged out successfully!', 'success');
 
         setTimeout(() => {
-            // Get the current path up to the subfolder
-            const basePath = window.location.pathname.split('/')[1]; 
-            const redirectPath = `/${basePath}/auth/login.html`;
-
-            window.location.href = redirectPath;
+            // Use config-aware redirect if available
+            if (window.videoHubConfig) {
+                window.location.href = window.videoHubConfig.getUrl('/auth/login.html');
+            } else {
+                // Fallback for environments without deployment config
+                window.location.href = '/auth/login.html';
+            }
         }, 1000);
     }
 

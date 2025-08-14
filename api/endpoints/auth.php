@@ -389,13 +389,13 @@ try {
                 }
 
                 // Check if user exists and password is correct
-                $stmt = $db->prepare("SELECT id, name, email, role, password, email_verified, status FROM users WHERE email = ?");
+                $stmt = $db->prepare("SELECT id, name, email, role, password, email_verified, email_verified_at, status FROM users WHERE email = ?");
                 $stmt->execute([$data['email']]);
                 $userData = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($userData && password_verify($data['password'], $userData['password'])) {
                     // Check if email is verified and user is not revoked
-                    $emailVerified = $userData['email_verified'] !== null;
+                    $emailVerified = $userData['email_verified'] == 1 || $userData['email_verified_at'] !== null;
                     $userStatus = $userData['status'] ?? 'active';
                     
                     if (!$emailVerified) {
@@ -843,7 +843,67 @@ try {
             break;
 
         case 'GET':
-            if (isset($path_parts[2]) && $path_parts[2] === 'verify-email') {
+            if ((isset($path_parts[0]) && $path_parts[0] === 'verify') || (isset($path_parts[1]) && $path_parts[1] === 'verify')) {
+                // Handle session verification for auth guard
+                $headers = getallheaders();
+                $authHeader = $headers['Authorization'] ?? '';
+
+                if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                    $token = $matches[1];
+
+                    // Verify session token
+                    $stmt = $db->prepare("
+                        SELECT u.id, u.name, u.email, u.role, u.status, s.expires_at 
+                        FROM user_sessions s 
+                        JOIN users u ON s.user_id = u.id 
+                        WHERE s.token = ? AND s.expires_at > NOW()
+                    ");
+                    $stmt->execute([$token]);
+                    $sessionData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if ($sessionData) {
+                        // Check if user is active
+                        $userStatus = $sessionData['status'] ?? 'active';
+                        if ($userStatus === 'revoked' || $userStatus === 'banned') {
+                            http_response_code(403);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Account suspended'
+                            ]);
+                            break;
+                        }
+
+                        // Return user data
+                        http_response_code(200);
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Session valid',
+                            'data' => [
+                                'user' => [
+                                    'id' => $sessionData['id'],
+                                    'name' => $sessionData['name'],
+                                    'email' => $sessionData['email'],
+                                    'role' => $sessionData['role']
+                                ]
+                            ]
+                        ]);
+                    } else {
+                        http_response_code(401);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Invalid or expired session'
+                        ]);
+                    }
+                } else {
+                    http_response_code(401);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Authorization token required'
+                    ]);
+                }
+                break;
+
+            } elseif (isset($path_parts[2]) && $path_parts[2] === 'verify-email') {
                 // Handle email verification via GET (for URL clicks)
                 $token = $_GET['token'] ?? '';
 

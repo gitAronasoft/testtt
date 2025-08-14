@@ -175,17 +175,28 @@ class AuthManager {
                 const userData = response.data.user;
                 const token = response.data.token;
 
-                this.setUserSession({
-                    email: userData.email,
-                    userType: userData.role,
-                    name: userData.name,
-                    id: userData.id,
-                    rememberMe: rememberMe
-                });
+                // Use AuthManager for centralized auth handling
+                if (window.authManager) {
+                    window.authManager.setAuthentication({
+                        email: userData.email,
+                        userType: userData.role,
+                        name: userData.name,
+                        id: userData.id
+                    }, token, rememberMe);
+                } else {
+                    // Fallback to old method
+                    this.setUserSession({
+                        email: userData.email,
+                        userType: userData.role,
+                        name: userData.name,
+                        id: userData.id,
+                        rememberMe: rememberMe
+                    });
 
-                // Store auth token with remember me preference
-                if (window.apiService) {
-                    window.apiService.setAuthToken(token, rememberMe);
+                    // Store auth token with remember me preference
+                    if (window.apiService) {
+                        window.apiService.setAuthToken(token, rememberMe);
+                    }
                 }
 
                 if (window.commonUtils) {

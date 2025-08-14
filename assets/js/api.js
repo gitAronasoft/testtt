@@ -176,8 +176,16 @@
 
     // Authentication
     getAuthToken() {
-        // Prefer session storage, fallback to local storage if not found or if authToken is null
-        return this.authToken || this.getStoredToken();
+        // Get token from AuthManager if available for perfect sync
+        if (window.authManager && window.authManager.getToken()) {
+            this.authToken = window.authManager.getToken();
+            return this.authToken;
+        }
+        
+        // Fallback to storage
+        const token = this.getStoredToken();
+        this.authToken = token;
+        return token;
     }
 
     setAuthToken(token, rememberMe = false) {

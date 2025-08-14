@@ -6,10 +6,17 @@
 
 class AuthGuard {
     constructor() {
+        this.isInitialized = false;
         this.init();
     }
 
     init() {
+        if (this.isInitialized) {
+            console.log('Auth guard already initialized, skipping...');
+            return;
+        }
+        
+        this.isInitialized = true;
         this.checkAuthStatus();
         this.setupLogoutHandlers();
         this.validateTokenPeriodically();
@@ -20,22 +27,44 @@ class AuthGuard {
         const isAuthPage = this.isAuthenticationPage(currentPath);
         const isProtectedPage = this.isProtectedPage(currentPath);
 
+        // Immediately show loading overlay for protected pages to prevent content flash
+        if (isProtectedPage) {
+            this.showAuthCheckLoader();
+        }
+
         try {
             const isAuthenticated = await this.validateSession();
             
             if (isAuthenticated) {
-                if (isAuthPage) {
+                const userSession = this.getUserSession();
+                if (isAuthPage && userSession) {
                     // Redirect authenticated users away from auth pages
-                    const userSession = this.getUserSession();
-                    if (userSession) {
-                        this.redirectToUserDashboard(userSession.userType);
-                    }
+                    this.redirectToUserDashboard(userSession.userType);
+                    return;
                 }
+                
+                if (isProtectedPage && userSession) {
+                    // Check role-based access
+                    const requiredRole = this.getRequiredRole(currentPath);
+                    if (requiredRole && userSession.userType !== requiredRole) {
+                        console.log(`Role mismatch: required ${requiredRole}, user has ${userSession.userType}`);
+                        this.redirectToUserDashboard(userSession.userType);
+                        return;
+                    }
+                    // User is authenticated and has correct role - allow access
+                    this.hideAuthCheckLoader();
+                    return;
+                }
+                
+                // Not a protected page, allow access
+                this.hideAuthCheckLoader();
             } else {
                 if (isProtectedPage) {
                     // Redirect unauthenticated users to login
+                    console.log('User not authenticated, redirecting to login');
                     this.clearUserSession();
                     this.redirectToLogin();
+                    return;
                 }
             }
         } catch (error) {
@@ -43,15 +72,22 @@ class AuthGuard {
             if (isProtectedPage) {
                 this.clearUserSession();
                 this.redirectToLogin();
+                return;
             }
         }
+        
+        // Always hide loader at the end
+        this.hideAuthCheckLoader();
     }
 
     async validateSession() {
         const userSession = this.getUserSession();
         const token = this.getAuthToken();
 
+        console.log('Auth guard validation - User session:', !!userSession, 'Token:', !!token);
+
         if (!userSession || !token) {
+            console.log('No user session or token found');
             return false;
         }
 
@@ -59,10 +95,15 @@ class AuthGuard {
             // Wait for API service to be available
             await this.waitForAPIService();
             
+            // Ensure API service has the current token
+            if (window.apiService && window.apiService.setAuthToken) {
+                window.apiService.setAuthToken(token);
+            }
+            
             const response = await window.apiService.get('/api/auth/verify');
             
             if (response.success && response.data) {
-                // Update user session with fresh data
+                // Update user session with fresh data from API
                 const userData = response.data.user;
                 this.updateUserSession({
                     id: userData.id,
@@ -70,8 +111,10 @@ class AuthGuard {
                     email: userData.email,
                     userType: userData.role
                 });
+                console.log('Session validation successful for user:', userData.role);
                 return true;
             } else {
+                console.log('Session validation failed:', response.message);
                 this.clearUserSession();
                 return false;
             }
@@ -127,100 +170,131 @@ class AuthGuard {
             if (isProtectedPage) {
                 const isValid = await this.validateSession();
                 if (!isValid) {
+                    this.clearUserSession();
                     this.redirectToLogin();
                 }
             }
-        }, 5 * 60 * 1000);
+        }, 5 * 60 * 1000); // 5 minutes
+        
+        // Also check on browser focus/visibility change
+        document.addEventListener('visibilitychange', async () => {
+            if (!document.hidden) {
+                const isProtectedPage = this.isProtectedPage(window.location.pathname);
+                if (isProtectedPage) {
+                    const isValid = await this.validateSession();
+                    if (!isValid) {
+                        this.clearUserSession();
+                        this.redirectToLogin();
+                    }
+                }
+            }
+        });
     }
-
+    
+    showAuthCheckLoader() {
+        // Prevent content flash during auth check
+        const loader = document.createElement('div');
+        loader.id = 'auth-check-loader';
+        loader.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        loader.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div>Checking authentication...</div>
+            </div>
+        `;
+        document.body.appendChild(loader);
+    }
+    
+    hideAuthCheckLoader() {
+        const loader = document.getElementById('auth-check-loader');
+        if (loader) {
+            loader.remove();
+        }
+    }
+    
     isAuthenticationPage(path) {
-        const authPages = ['/auth/login.html', '/auth/signup.html', '/auth/forgot-password.html', '/auth/set-password.html'];
-        return authPages.some(page => path.includes(page));
+        return path.includes('/auth/') || path.endsWith('login.html') || path.endsWith('signup.html');
     }
-
+    
     isProtectedPage(path) {
-        const protectedPaths = ['/admin/', '/creator/', '/viewer/'];
-        return protectedPaths.some(protectedPath => path.includes(protectedPath));
+        return path.includes('/admin/') || path.includes('/creator/') || path.includes('/viewer/');
     }
-
+    
+    getRequiredRole(path) {
+        if (path.includes('/admin/')) return 'admin';
+        if (path.includes('/creator/')) return 'creator';
+        if (path.includes('/viewer/')) return 'viewer';
+        return null;
+    }
+    
+    redirectToLogin() {
+        if (window.videoHubConfig) {
+            window.location.href = window.videoHubConfig.getUrl('/auth/login.html');
+        } else {
+            window.location.href = '/auth/login.html';
+        }
+    }
+    
+    redirectToUserDashboard(userType) {
+        const dashboards = {
+            admin: '/admin/dashboard.html',
+            creator: '/creator/dashboard.html',
+            viewer: '/viewer/dashboard.html'
+        };
+        
+        const dashboardUrl = dashboards[userType];
+        if (dashboardUrl) {
+            if (window.videoHubConfig) {
+                window.location.href = window.videoHubConfig.getUrl(dashboardUrl);
+            } else {
+                window.location.href = dashboardUrl;
+            }
+        }
+    }
+    
     getUserSession() {
         const localSession = localStorage.getItem('userSession');
         const sessionSession = sessionStorage.getItem('userSession');
-        
         const session = localSession || sessionSession;
         return session ? JSON.parse(session) : null;
     }
-
+    
     updateUserSession(userData) {
-        const currentSession = this.getUserSession();
-        if (currentSession) {
-            const updatedSession = {
-                ...currentSession,
-                ...userData,
-                timestamp: new Date().toISOString()
-            };
-            
-            if (currentSession.rememberMe) {
+        const existingSession = this.getUserSession();
+        if (existingSession) {
+            const updatedSession = { ...existingSession, ...userData };
+            if (localStorage.getItem('userSession')) {
                 localStorage.setItem('userSession', JSON.stringify(updatedSession));
             } else {
                 sessionStorage.setItem('userSession', JSON.stringify(updatedSession));
             }
         }
     }
-
+    
     clearUserSession() {
         localStorage.removeItem('userSession');
         sessionStorage.removeItem('userSession');
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
-        
-        // Clear API service token
-        if (window.apiService) {
-            window.apiService.clearAuthToken();
-        }
     }
-
+    
     getAuthToken() {
         return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     }
-
-    redirectToLogin() {
-        const currentPath = window.location.pathname;
-        const returnUrl = encodeURIComponent(currentPath);
-        const loginUrl = window.videoHubConfig ? 
-            window.videoHubConfig.getUrl('/auth/login.html') : 
-            '/auth/login.html';
-        window.location.href = `${loginUrl}?returnUrl=${returnUrl}`;
-    }
-
-    redirectToUserDashboard(userType) {
-        const baseDashboardUrls = {
-            admin: '/admin/dashboard.html',
-            creator: '/creator/dashboard.html',
-            viewer: '/viewer/dashboard.html'
-        };
-        
-        // Make URLs compatible with subfolder deployments
-        const dashboardUrls = {};
-        if (window.videoHubConfig) {
-            for (const [role, url] of Object.entries(baseDashboardUrls)) {
-                dashboardUrls[role] = window.videoHubConfig.getUrl(url);
-            }
-        } else {
-            dashboardUrls = baseDashboardUrls;
-        }
-        
-        const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
-        if (returnUrl && this.isProtectedPage(returnUrl)) {
-            window.location.href = decodeURIComponent(returnUrl);
-        } else {
-            const fallbackUrl = window.videoHubConfig ? 
-                window.videoHubConfig.getUrl('/auth/login.html') : 
-                '/auth/login.html';
-            window.location.href = dashboardUrls[userType] || fallbackUrl;
-        }
-    }
-
+    
     async waitForAPIService() {
         let retries = 0;
         const maxRetries = 50;
@@ -236,10 +310,27 @@ class AuthGuard {
     }
 }
 
-// Initialize auth guard when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.authGuard = new AuthGuard();
+// Enhanced browser security measures
+window.addEventListener('load', () => {
+    // Prevent back button access to protected pages after logout
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            // Page was loaded from cache (back button)
+            const isProtectedPage = window.location.pathname.includes('/admin/') || 
+                                   window.location.pathname.includes('/creator/') || 
+                                   window.location.pathname.includes('/viewer/');
+            
+            if (isProtectedPage) {
+                const authGuard = new AuthGuard();
+                authGuard.checkAuthStatus();
+            }
+        }
+    });
 });
 
-// Export for other modules
-window.AuthGuard = AuthGuard;
+// Initialize auth guard globally - prevent multiple instances
+if (!window.authGuard) {
+    window.authGuard = new AuthGuard();
+} else {
+    console.log('Auth guard already initialized');
+}
