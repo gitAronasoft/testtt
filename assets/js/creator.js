@@ -9,10 +9,13 @@ class CreatorManager {
         this.videos = [];
         this.earnings = [];
         this.isLoading = false;
+        this.uploadValidator = null;
+        this.editVideoValidator = null;
         this.init();
     }
 
     async init() {
+        this.setupFormValidation();
         this.bindEvents();
         this.loadPageSpecificHandlers();
         
@@ -20,6 +23,51 @@ class CreatorManager {
         if (!this.stats || Object.keys(this.stats).length === 0) {
             await this.loadDashboardData();
         }
+    }
+
+    setupFormValidation() {
+        // Setup validation after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            // Initialize upload form validation
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm && window.FormValidator) {
+                this.uploadValidator = new FormValidator(uploadForm);
+                this.uploadValidator
+                    .addRule('videoTitle', [
+                        { validator: FormValidator.rules.required, message: 'Video title is required' },
+                        { validator: FormValidator.rules.minLength(3), message: 'Title must be at least 3 characters' },
+                        { validator: FormValidator.rules.maxLength(100), message: 'Title must be less than 100 characters' }
+                    ])
+                    .addRule('videoDescription', [
+                        { validator: FormValidator.rules.maxLength(5000), message: 'Description must be less than 5000 characters' }
+                    ])
+                    .addRule('videoPrice', [
+                        { validator: FormValidator.rules.required, message: 'Price is required' },
+                        { validator: FormValidator.rules.decimal, message: 'Price must be a valid number' },
+                        { validator: (value) => parseFloat(value) >= 0, message: 'Price must be 0 or greater' }
+                    ]);
+            }
+
+            // Initialize edit form validation  
+            const editForm = document.getElementById('editVideoForm');
+            if (editForm && window.FormValidator) {
+                this.editVideoValidator = new FormValidator(editForm);
+                this.editVideoValidator
+                    .addRule('editTitle', [
+                        { validator: FormValidator.rules.required, message: 'Video title is required' },
+                        { validator: FormValidator.rules.minLength(3), message: 'Title must be at least 3 characters' },
+                        { validator: FormValidator.rules.maxLength(100), message: 'Title must be less than 100 characters' }
+                    ])
+                    .addRule('editDescription', [
+                        { validator: FormValidator.rules.maxLength(5000), message: 'Description must be less than 5000 characters' }
+                    ])
+                    .addRule('editPrice', [
+                        { validator: FormValidator.rules.required, message: 'Price is required' },
+                        { validator: FormValidator.rules.decimal, message: 'Price must be a valid number' },
+                        { validator: (value) => parseFloat(value) >= 0, message: 'Price must be 0 or greater' }
+                    ]);
+            }
+        }, 500);
     }
 
     async loadDashboardData() {
@@ -515,7 +563,9 @@ class CreatorManager {
         const video = this.videos.find(v => String(v.id) === String(videoId));
         if (!video) {
             console.error('Video not found. Looking for ID:', videoId, 'Available IDs:', this.videos.map(v => v.id));
-            if (window.commonUtils) {
+            if (window.notificationManager) {
+                window.notificationManager.showError('Video not found');
+            } else if (window.commonUtils) {
                 window.commonUtils.showToast('Video not found', 'error');
             } else {
                 alert('Video not found');
@@ -624,14 +674,24 @@ class CreatorManager {
     }
 
     async saveVideoChanges(videoId) {
-        const saveButton = document.querySelector('#editVideoModal .btn-primary');
+        // Validate form first
+        if (this.editVideoValidator && !this.editVideoValidator.validateForm()) {
+            if (window.notificationManager) {
+                window.notificationManager.showError('Please fix the errors below');
+            }
+            return;
+        }
+        
+        const saveButton = document.querySelector('#editVideoModal .btn-success');
         const title = document.getElementById('editTitle').value;
         const description = document.getElementById('editDescription').value;
         const price = document.getElementById('editPrice').value;
         const status = document.getElementById('editStatus').value;
 
         if (!title.trim()) {
-            if (window.commonUtils) {
+            if (window.notificationManager) {
+                window.notificationManager.showWarning('Title is required');
+            } else if (window.commonUtils) {
                 window.commonUtils.showToast('Title is required', 'warning');
             } else {
                 alert('Title is required');
@@ -641,7 +701,9 @@ class CreatorManager {
 
         try {
             // Set button loading state
-            if (window.commonUtils) {
+            if (window.ButtonLoader) {
+                window.ButtonLoader.setLoading(saveButton, 'Saving...');
+            } else if (window.commonUtils) {
                 window.commonUtils.setButtonLoading(saveButton, true, 'Saving...');
             }
             // Update video in our database first
@@ -685,14 +747,26 @@ class CreatorManager {
                         
                         if (youtubeResult.success) {
                             console.log('Video successfully updated on YouTube');
-                            this.showNotification('✓ Video updated successfully in VideoHub and YouTube!', 'success');
+                            if (window.notificationManager) {
+                                window.notificationManager.showSuccess('✓ Video updated successfully in VideoHub and YouTube!');
+                            } else {
+                                this.showNotification('✓ Video updated successfully in VideoHub and YouTube!', 'success');
+                            }
                         } else {
                             console.warn('Video updated in VideoHub but YouTube sync failed:', youtubeResult.error);
                             if (youtubeResult.needsAuth) {
-                                this.showNotification('Video updated in VideoHub. YouTube sync requires authentication. Please connect your YouTube account.', 'warning');
+                                if (window.notificationManager) {
+                                    window.notificationManager.showWarning('Video updated in VideoHub. YouTube sync requires authentication. Please connect your YouTube account.');
+                                } else {
+                                    this.showNotification('Video updated in VideoHub. YouTube sync requires authentication. Please connect your YouTube account.', 'warning');
+                                }
                                 this.showYouTubeConnectOption();
                             } else {
-                                this.showNotification('Video updated in VideoHub. YouTube sync failed: ' + youtubeResult.error, 'warning');
+                                if (window.notificationManager) {
+                                    window.notificationManager.showWarning('Video updated in VideoHub. YouTube sync failed: ' + youtubeResult.error);
+                                } else {
+                                    this.showNotification('Video updated in VideoHub. YouTube sync failed: ' + youtubeResult.error, 'warning');
+                                }
                             }
                         }
                     } catch (youtubeError) {
@@ -982,10 +1056,30 @@ class VideoHubUploadManager {
         this.uploadModal = document.getElementById('uploadModal');
         this.uploadForm = document.getElementById('uploadForm');
         this.uploadBtn = document.getElementById('uploadBtn');
-        this.progressDiv = document.getElementById('uploadProgress');
-        this.progressBar = document.getElementById('progressBar');
-        this.progressText = document.getElementById('progressText');
-        this.progressStatus = document.getElementById('progressStatus');
+        this.cancelBtn = document.getElementById('cancelBtn');
+        
+        // Upload area elements
+        this.uploadArea = document.getElementById('uploadArea');
+        this.fileSelectedArea = document.getElementById('fileSelectedArea');
+        this.uploadProgressArea = document.getElementById('uploadProgressArea');
+        this.uploadSuccess = document.getElementById('uploadSuccess');
+        
+        // File display elements
+        this.selectedFileName = document.getElementById('selectedFileName');
+        this.selectedFileSize = document.getElementById('selectedFileSize');
+        this.uploadingFileName = document.getElementById('uploadingFileName');
+        
+        // Progress elements
+        this.uploadProgressBar = document.getElementById('uploadProgressBar');
+        this.uploadPercentage = document.getElementById('uploadPercentage');
+        this.uploadStatus = document.getElementById('uploadStatus');
+        this.uploadSpeed = document.getElementById('uploadSpeed');
+        this.uploadTimeRemaining = document.getElementById('uploadTimeRemaining');
+        
+        // Upload state
+        this.selectedFile = null;
+        this.uploadStartTime = null;
+        this.uploadBytesUploaded = 0;
         
         this.init();
     }
@@ -993,6 +1087,7 @@ class VideoHubUploadManager {
     async init() {
         this.bindEvents();
         this.setupCharacterCounters();
+        this.setupDragAndDrop();
     }
     
     bindEvents() {
@@ -1011,6 +1106,59 @@ class VideoHubUploadManager {
         const fileInput = document.getElementById('videoFile');
         if (fileInput) {
             fileInput.addEventListener('change', (e) => this.onFileSelect(e));
+        }
+    }
+    
+    setupDragAndDrop() {
+        if (!this.uploadArea) return;
+        
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            this.uploadArea.addEventListener(eventName, this.preventDefaults, false);
+            document.body.addEventListener(eventName, this.preventDefaults, false);
+        });
+        
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            this.uploadArea.addEventListener(eventName, () => this.highlight(), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            this.uploadArea.addEventListener(eventName, () => this.unhighlight(), false);
+        });
+        
+        // Handle dropped files
+        this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e), false);
+    }
+    
+    preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    highlight() {
+        this.uploadArea.style.borderColor = '#198754';
+        this.uploadArea.style.background = '#f8fffe';
+        this.uploadArea.style.transform = 'scale(1.02)';
+    }
+    
+    unhighlight() {
+        this.uploadArea.style.borderColor = '#dee2e6';
+        this.uploadArea.style.background = '#f8f9fa';
+        this.uploadArea.style.transform = 'scale(1)';
+    }
+    
+    handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('video/')) {
+                this.setSelectedFile(file);
+            } else {
+                this.showError('Please select a valid video file (MP4, MOV, AVI, WMV)');
+            }
         }
     }
     
@@ -1036,13 +1184,49 @@ class VideoHubUploadManager {
     
     onFileSelect(e) {
         const file = e.target.files[0];
-        const fileInfo = document.getElementById('fileInfo');
-        
-        if (file && fileInfo) {
-            const fileSize = (file.size / (1024 * 1024)).toFixed(2); // Convert to MB
-            fileInfo.innerHTML = `<i class="fas fa-file-video text-success me-2"></i>${file.name} (${fileSize} MB)`;
-            fileInfo.style.display = 'block';
+        if (file) {
+            this.setSelectedFile(file);
         }
+    }
+    
+    setSelectedFile(file) {
+        // Validate file type
+        if (!file.type.startsWith('video/')) {
+            this.showError('Please select a valid video file (MP4, MOV, AVI, WMV)');
+            return;
+        }
+        
+        // Validate file size (2GB max)
+        const maxSize = 2 * 1024 * 1024 * 1024; // 2GB in bytes
+        if (file.size > maxSize) {
+            this.showError('File size exceeds 2GB limit. Please choose a smaller file.');
+            return;
+        }
+        
+        this.selectedFile = file;
+        
+        // Update UI to show selected file
+        const fileSize = this.formatFileSize(file.size);
+        this.selectedFileName.textContent = file.name;
+        this.selectedFileSize.textContent = fileSize;
+        
+        // Show file selected state
+        this.uploadArea.style.display = 'none';
+        this.fileSelectedArea.style.display = 'block';
+        
+        // Update file input
+        const fileInput = document.getElementById('videoFile');
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+    }
+    
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
     onModalShow() {
@@ -1054,6 +1238,19 @@ class VideoHubUploadManager {
         // Clean up when modal is hidden
         this.hideProgress();
         this.resetForm();
+    }
+    
+    clearFileSelection() {
+        this.selectedFile = null;
+        this.uploadArea.style.display = 'block';
+        this.fileSelectedArea.style.display = 'none';
+        this.uploadProgressArea.style.display = 'none';
+        
+        // Clear file input
+        const fileInput = document.getElementById('videoFile');
+        if (fileInput) {
+            fileInput.value = '';
+        }
     }
     
     async handleUpload(e) {
@@ -1069,8 +1266,8 @@ class VideoHubUploadManager {
             const formData = this.getFormData();
             
             // Show progress
-            this.showProgress();
-            this.updateProgress(10);
+            this.showUploadProgress();
+            this.updateUploadProgress(10, 'Preparing upload...');
             
             // Get current user session
             const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
@@ -1081,17 +1278,17 @@ class VideoHubUploadManager {
                 return;
             }
             
-            this.updateProgress(20);
+            this.updateUploadProgress(20, 'Authenticating with YouTube...');
             
             // Upload video directly to YouTube using JavaScript API
             const youtubeResult = await window.youtubeAPI.uploadVideo(
                 formData.file, 
                 formData.metadata, 
-                (progress) => this.updateProgress(Math.min(progress, 80))
+                (progress) => this.updateUploadProgress(Math.min(progress, 80), 'Uploading to YouTube...')
             );
             
             if (youtubeResult.success) {
-                this.updateProgress(85);
+                this.updateUploadProgress(85, 'Syncing with VideoHub...');
                 
                 // Sync with database after successful YouTube upload (fixed fields to match schema)
                 const syncData = {
@@ -1116,12 +1313,12 @@ class VideoHubUploadManager {
                     body: JSON.stringify(syncData)
                 });
                 
-                this.updateProgress(100);
+                this.updateUploadProgress(100, 'Upload complete!');
                 
                 const syncResult = await syncResponse.json();
                 
                 if (syncResult.success) {
-                    this.showSuccess('Video uploaded successfully!');
+                    this.showUploadSuccess();
                     
                     // Wait a moment for user to see success
                     setTimeout(() => {
@@ -1137,7 +1334,7 @@ class VideoHubUploadManager {
                             window.creatorManager.loadDashboardData();
                         }
                         setTimeout(() => window.location.reload(), 500);
-                    }, 1500);
+                    }, 2000);
                 } else {
                     throw new Error('Video uploaded to YouTube but failed to sync with database: ' + syncResult.message);
                 }
@@ -1198,42 +1395,128 @@ class VideoHubUploadManager {
         };
     }
     
-    showProgress() {
-        this.uploadForm.style.display = 'none';
-        this.progressDiv.style.display = 'block';
-        this.uploadBtn.disabled = true;
+    resetForm() {
+        if (this.uploadForm) {
+            this.uploadForm.reset();
+        }
+        
+        // Reset upload states
+        this.clearFileSelection();
+        this.selectedFile = null;
+        this.uploadStartTime = null;
+        this.uploadBytesUploaded = 0;
+        
+        // Reset character counters
+        const titleCount = document.getElementById('titleCount');
+        const descCount = document.getElementById('descCount');
+        if (titleCount) titleCount.textContent = '0';
+        if (descCount) descCount.textContent = '0';
+        
+        // Hide all upload areas except default
+        if (this.uploadArea) this.uploadArea.style.display = 'block';
+        if (this.fileSelectedArea) this.fileSelectedArea.style.display = 'none';
+        if (this.uploadProgressArea) this.uploadProgressArea.style.display = 'none';
+        if (this.uploadSuccess) this.uploadSuccess.style.display = 'none';
+    }
+    
+    showUploadProgress() {
+        // Set up file name for upload
+        if (this.selectedFile && this.uploadingFileName) {
+            this.uploadingFileName.textContent = this.selectedFile.name;
+        }
+        
+        // Show upload progress area
+        if (this.fileSelectedArea) this.fileSelectedArea.style.display = 'none';
+        if (this.uploadProgressArea) this.uploadProgressArea.style.display = 'block';
+        
+        // Disable upload button and show uploading state
+        if (this.uploadBtn) {
+            this.uploadBtn.disabled = true;
+            this.uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+        }
+        
+        // Track upload start time
+        this.uploadStartTime = Date.now();
     }
     
     hideProgress() {
-        this.uploadForm.style.display = 'block';
-        this.progressDiv.style.display = 'none';
-        this.uploadBtn.disabled = false;
-    }
-    
-    updateProgress(progress) {
-        this.progressBar.style.width = progress + '%';
-        this.progressText.textContent = progress + '%';
-        
-        if (progress < 30) {
-            this.progressStatus.textContent = 'Preparing upload...';
-        } else if (progress < 75) {
-            this.progressStatus.textContent = 'Uploading to YouTube...';
-        } else if (progress < 90) {
-            this.progressStatus.textContent = 'Processing video...';
-        } else {
-            this.progressStatus.textContent = 'Syncing with VideoHub...';
+        // Re-enable upload button
+        if (this.uploadBtn) {
+            this.uploadBtn.disabled = false;
+            this.uploadBtn.innerHTML = '<i class="fas fa-cloud-upload-alt me-2"></i>Upload to YouTube';
         }
     }
     
-    resetForm() {
-        this.uploadForm.reset();
-        const titleCount = document.getElementById('titleCount');
-        const descCount = document.getElementById('descCount');
-        const fileInfo = document.getElementById('fileInfo');
+    updateUploadProgress(percentage, status = 'Uploading...') {
+        // Update progress bar
+        if (this.uploadProgressBar) {
+            this.uploadProgressBar.style.width = percentage + '%';
+        }
         
-        if (titleCount) titleCount.textContent = '0';
-        if (descCount) descCount.textContent = '0';
-        if (fileInfo) fileInfo.style.display = 'none';
+        // Update percentage badge
+        if (this.uploadPercentage) {
+            this.uploadPercentage.textContent = Math.round(percentage) + '%';
+        }
+        
+        // Update status
+        if (this.uploadStatus) {
+            this.uploadStatus.textContent = status;
+        }
+        
+        // Calculate and update upload speed and time remaining
+        if (this.selectedFile && this.uploadStartTime) {
+            const now = Date.now();
+            const elapsed = (now - this.uploadStartTime) / 1000; // seconds
+            const bytesUploaded = (percentage / 100) * this.selectedFile.size;
+            
+            if (elapsed > 1 && bytesUploaded > 0) {
+                const speed = bytesUploaded / elapsed; // bytes per second
+                const remaining = this.selectedFile.size - bytesUploaded;
+                const timeRemaining = remaining / speed; // seconds
+                
+                // Update speed display
+                if (this.uploadSpeed) {
+                    this.uploadSpeed.textContent = this.formatSpeed(speed);
+                }
+                
+                // Update time remaining
+                if (this.uploadTimeRemaining && percentage < 99) {
+                    this.uploadTimeRemaining.textContent = this.formatTime(timeRemaining);
+                } else if (this.uploadTimeRemaining) {
+                    this.uploadTimeRemaining.textContent = 'Almost done...';
+                }
+            }
+        }
+    }
+    
+    showUploadSuccess() {
+        // Hide progress area and show success
+        if (this.uploadProgressArea) this.uploadProgressArea.style.display = 'none';
+        if (this.uploadSuccess) {
+            this.uploadSuccess.style.display = 'block';
+        }
+    }
+    
+    formatSpeed(bytesPerSecond) {
+        const mbps = bytesPerSecond / (1024 * 1024);
+        if (mbps >= 1) {
+            return mbps.toFixed(1) + ' MB/s';
+        } else {
+            const kbps = bytesPerSecond / 1024;
+            return kbps.toFixed(1) + ' KB/s';
+        }
+    }
+    
+    formatTime(seconds) {
+        if (seconds < 60) {
+            return Math.round(seconds) + ' seconds left';
+        } else if (seconds < 3600) {
+            const minutes = Math.round(seconds / 60);
+            return minutes + ' minute' + (minutes !== 1 ? 's' : '') + ' left';
+        } else {
+            const hours = Math.round(seconds / 3600);
+            return hours + ' hour' + (hours !== 1 ? 's' : '') + ' left';
+        }
     }
     
     showSuccess(message) {
@@ -1252,3 +1535,17 @@ class VideoHubUploadManager {
         }
     }
 }
+
+// Global function to clear file selection
+window.clearFileSelection = function() {
+    // Find the upload manager instance and call its clearFileSelection method
+    const uploadArea = document.getElementById('uploadArea');
+    const fileSelectedArea = document.getElementById('fileSelectedArea');
+    const uploadProgressArea = document.getElementById('uploadProgressArea');
+    const fileInput = document.getElementById('videoFile');
+    
+    if (uploadArea) uploadArea.style.display = 'block';
+    if (fileSelectedArea) fileSelectedArea.style.display = 'none';
+    if (uploadProgressArea) uploadProgressArea.style.display = 'none';
+    if (fileInput) fileInput.value = '';
+};

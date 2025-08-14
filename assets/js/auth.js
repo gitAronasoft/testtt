@@ -19,24 +19,32 @@ class AuthManager {
         // Login form
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
+            this.loginValidator = new FormValidator(loginForm);
+            this.setupLoginValidation();
             loginForm.addEventListener('submit', this.handleLogin.bind(this));
         }
 
         // Signup form
         const signupForm = document.getElementById('signupForm');
         if (signupForm) {
+            this.signupValidator = new FormValidator(signupForm);
+            this.setupSignupValidation();
             signupForm.addEventListener('submit', this.handleSignup.bind(this));
         }
 
         // Forgot password form
         const forgotPasswordForm = document.getElementById('forgotPasswordForm');
         if (forgotPasswordForm) {
+            this.forgotPasswordValidator = new FormValidator(forgotPasswordForm);
+            this.setupForgotPasswordValidation();
             forgotPasswordForm.addEventListener('submit', this.handleForgotPassword.bind(this));
         }
 
         // Set password form
         const setPasswordForm = document.getElementById('setPasswordForm');
         if (setPasswordForm) {
+            this.setPasswordValidator = new FormValidator(setPasswordForm);
+            this.setupSetPasswordValidation();
             setPasswordForm.addEventListener('submit', this.handleSetPassword.bind(this));
         }
 
@@ -86,6 +94,66 @@ class AuthManager {
         if (googleSignUpBtn) {
             googleSignUpBtn.addEventListener('click', this.handleGoogleSignUp.bind(this));
         }
+    }
+
+    setupLoginValidation() {
+        if (!this.loginValidator) return;
+        
+        this.loginValidator
+            .addRule('email', [
+                { validator: FormValidator.rules.required, message: 'Email is required' },
+                { validator: FormValidator.rules.email, message: 'Please enter a valid email address' }
+            ])
+            .addRule('password', [
+                { validator: FormValidator.rules.required, message: 'Password is required' },
+                { validator: FormValidator.rules.minLength(6), message: 'Password must be at least 6 characters' }
+            ]);
+    }
+
+    setupSignupValidation() {
+        if (!this.signupValidator) return;
+        
+        this.signupValidator
+            .addRule('name', [
+                { validator: FormValidator.rules.required, message: 'Name is required' },
+                { validator: FormValidator.rules.minLength(2), message: 'Name must be at least 2 characters' }
+            ])
+            .addRule('email', [
+                { validator: FormValidator.rules.required, message: 'Email is required' },
+                { validator: FormValidator.rules.email, message: 'Please enter a valid email address' }
+            ])
+            .addRule('password', [
+                { validator: FormValidator.rules.required, message: 'Password is required' },
+                { validator: FormValidator.rules.password, message: 'Password must be at least 8 characters with uppercase, lowercase, and number' }
+            ])
+            .addRule('confirmPassword', [
+                { validator: FormValidator.rules.required, message: 'Please confirm your password' },
+                { validator: FormValidator.rules.match('password'), message: 'Passwords do not match' }
+            ]);
+    }
+
+    setupForgotPasswordValidation() {
+        if (!this.forgotPasswordValidator) return;
+        
+        this.forgotPasswordValidator
+            .addRule('email', [
+                { validator: FormValidator.rules.required, message: 'Email is required' },
+                { validator: FormValidator.rules.email, message: 'Please enter a valid email address' }
+            ]);
+    }
+
+    setupSetPasswordValidation() {
+        if (!this.setPasswordValidator) return;
+        
+        this.setPasswordValidator
+            .addRule('newPassword', [
+                { validator: FormValidator.rules.required, message: 'New password is required' },
+                { validator: FormValidator.rules.password, message: 'Password must be at least 8 characters with uppercase, lowercase, and number' }
+            ])
+            .addRule('confirmPassword', [
+                { validator: FormValidator.rules.required, message: 'Please confirm your password' },
+                { validator: FormValidator.rules.match('newPassword'), message: 'Passwords do not match' }
+            ]);
     }
 
     loadPageSpecificHandlers() {
@@ -150,14 +218,24 @@ class AuthManager {
     async handleLogin(e) {
         e.preventDefault();
 
-        const submitButton = e.target.querySelector('button[type="submit"]');
+        // Validate form
+        if (this.loginValidator && !this.loginValidator.validateForm()) {
+            if (window.notificationManager) {
+                window.notificationManager.showError('Please fix the errors below');
+            }
+            return;
+        }
+
+        const submitButton = e.target.querySelector('button[type="submit"]') || document.getElementById('loginBtn');
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('rememberMe').checked;
 
         try {
             // Set button loading state
-            if (window.commonUtils) {
+            if (window.ButtonLoader) {
+                window.ButtonLoader.setLoading(submitButton, 'Signing in...');
+            } else if (window.commonUtils) {
                 window.commonUtils.setButtonLoading(submitButton, true, 'Signing in...');
             }
 
@@ -199,7 +277,9 @@ class AuthManager {
                     }
                 }
 
-                if (window.commonUtils) {
+                if (window.notificationManager) {
+                    window.notificationManager.showSuccess('Login successful! Redirecting...');
+                } else if (window.commonUtils) {
                     window.commonUtils.showToast('Login successful! Redirecting...', 'success');
                 }
 
@@ -213,7 +293,9 @@ class AuthManager {
 
         } catch (error) {
             console.error('Login error:', error);
-            if (window.commonUtils) {
+            if (window.notificationManager) {
+                window.notificationManager.showError(error.message || 'Invalid email or password. Please try again.');
+            } else if (window.commonUtils) {
                 window.commonUtils.handleAPIError(error, 'Login');
             } else {
                 this.showError(error.message || 'Invalid email or password. Please try again.');

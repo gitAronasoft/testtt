@@ -504,34 +504,66 @@ class AdminManager {
             }
 
             if (user) {
-                // Populate user details modal
-                document.getElementById('detailUserId').textContent = user.id;
-                document.getElementById('detailUserName').textContent = user.name || 'Unknown User';
-                document.getElementById('detailUserEmail').textContent = user.email || 'No email';
-                document.getElementById('detailUserRole').textContent = (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1);
-                document.getElementById('detailUserRole').className = `badge bg-${this.getUserRoleBadgeClass(user.role)}`;
+                // Helper function to safely set element content
+                const safeSetContent = (elementId, content) => {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.textContent = content;
+                    } else {
+                        console.warn(`Element with ID '${elementId}' not found`);
+                    }
+                };
+
+                const safeSetClass = (elementId, className) => {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.className = className;
+                    } else {
+                        console.warn(`Element with ID '${elementId}' not found`);
+                    }
+                };
+
+                // Populate user details modal safely
+                safeSetContent('detailUserId', user.id);
+                safeSetContent('detailUserName', user.name || 'Unknown User');
+                safeSetContent('detailUserEmail', user.email || 'No email');
+                safeSetContent('detailUserRole', (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1));
+                safeSetClass('detailUserRole', `badge bg-${this.getUserRoleBadgeClass(user.role)}`);
                 
                 // Status badge
                 const statusEl = document.getElementById('detailUserStatus');
-                statusEl.textContent = (user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1);
-                statusEl.className = `badge bg-${user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'revoked' ? 'dark' : 'warning'}`;
+                if (statusEl) {
+                    statusEl.textContent = (user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1);
+                    statusEl.className = `badge bg-${user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'revoked' ? 'dark' : 'warning'}`;
+                }
                 
-                document.getElementById('detailJoinDate').textContent = user.joinDate ? new Date(user.joinDate).toLocaleDateString() : (user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown');
-                document.getElementById('detailEmailVerified').textContent = user.email_verified_at ? 'Verified' : 'Not Verified';
-                document.getElementById('detailEmailVerified').className = `badge bg-${user.email_verified_at ? 'success' : 'warning'}`;
-                document.getElementById('detailLastLogin').textContent = 'Recently'; // Mock data for now
+                safeSetContent('detailJoinDate', user.joinDate ? new Date(user.joinDate).toLocaleDateString() : (user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'));
+                safeSetContent('detailLastSeen', user.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'Recently');
                 
-                // Mock additional data - in production, you'd fetch this from API
-                document.getElementById('detailVideoCount').textContent = Math.floor(Math.random() * 10);
-                document.getElementById('detailPurchaseCount').textContent = Math.floor(Math.random() * 20);
-                document.getElementById('detailTotalSpent').textContent = `$${(Math.random() * 500).toFixed(2)}`;
+                const emailVerifiedEl = document.getElementById('detailEmailVerified');
+                if (emailVerifiedEl) {
+                    emailVerifiedEl.textContent = user.email_verified_at ? 'Verified' : 'Not Verified';
+                    emailVerifiedEl.className = `badge bg-${user.email_verified_at ? 'success' : 'warning'}`;
+                }
+
+                // Optional elements that might not exist on all pages
+                safeSetContent('detailLastLogin', 'Recently'); // Mock data for now
+                safeSetContent('detailVideoCount', Math.floor(Math.random() * 10));
+                safeSetContent('detailPurchaseCount', Math.floor(Math.random() * 20));
+                safeSetContent('detailTotalSpent', `$${(Math.random() * 500).toFixed(2)}`);
                 
                 // Store current user ID for editing
                 this.currentUserId = userId;
                 
                 // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
-                modal.show();
+                const modalElement = document.getElementById('userDetailsModal');
+                if (modalElement) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                } else {
+                    console.error('User details modal not found');
+                    this.showAlert('Modal not available', 'danger');
+                }
             } else {
                 this.showAlert('User not found', 'danger');
             }

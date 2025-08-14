@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Management - VideoHub Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/app.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">
+    <link href="../assets/css/modal.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -381,7 +382,7 @@
                                     class="w-100 h-100">
                             </iframe>
                         </div>
-                        
+
                         <!-- Loading Overlay -->
                         <div id="playerLoading" class="position-absolute top-50 start-50 translate-middle text-white text-center">
                             <div class="spinner-border text-primary mb-3" role="status">
@@ -415,17 +416,17 @@
     <script src="../assets/js/auth-manager.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/admin.js"></script>
-    
+
     <script>
         // Initialize admin manager for videos page
         let adminManager;
-        
+
         document.addEventListener('DOMContentLoaded', function() {
             adminManager = new AdminManager();
-            
+
             // Load videos grid
             adminManager.loadVideosGrid();
-            
+
             // Add search functionality
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {
@@ -433,7 +434,7 @@
                     filterVideos();
                 });
             }
-            
+
             // Add filter functionality
             const applyFiltersBtn = document.getElementById('applyFilters');
             if (applyFiltersBtn) {
@@ -442,16 +443,16 @@
                 });
             }
         });
-        
+
         function filterVideos() {
             const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
             const statusFilter = document.getElementById('statusFilter')?.value || '';
             const creatorFilter = document.getElementById('creatorFilter')?.value || '';
-            
+
             if (!adminManager || !adminManager.videos) return;
-            
+
             let filteredVideos = adminManager.videos;
-            
+
             // Apply search filter
             if (searchTerm) {
                 filteredVideos = filteredVideos.filter(video => 
@@ -460,14 +461,14 @@
                     video.description.toLowerCase().includes(searchTerm)
                 );
             }
-            
+
             // Apply status filter
             if (statusFilter) {
                 filteredVideos = filteredVideos.filter(video => 
                     (video.status || 'active') === statusFilter
                 );
             }
-            
+
             // Apply creator filter
             if (creatorFilter) {
                 filteredVideos = filteredVideos.filter(video => 
@@ -475,35 +476,35 @@
                 );
             }
         }
-        
+
         // Watch video function for admin panel
         window.watchVideo = function(youtubeId, title) {
             if (!youtubeId) {
                 alert('Video not available for playback - missing YouTube ID');
                 return;
             }
-            
+
             // Set modal title
             document.getElementById('videoTitle').textContent = title || 'Watch Video';
-            
+
             // Set YouTube iframe source
             const iframe = document.getElementById('youtubePlayer');
             const loading = document.getElementById('playerLoading');
-            
+
             // Show loading
             if (loading) loading.style.display = 'block';
-            
+
             iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
-            
+
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('videoPlayerModal'));
             modal.show();
-            
+
             // Hide loading after iframe loads
             iframe.onload = function() {
                 if (loading) loading.style.display = 'none';
             };
-            
+
             // Clean up when modal is closed
             document.getElementById('videoPlayerModal').addEventListener('hidden.bs.modal', function () {
                 iframe.src = '';

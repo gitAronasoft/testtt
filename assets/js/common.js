@@ -56,14 +56,7 @@ class CommonUtils {
     }
 
     showDemoModeNotification() {
-        if (window.location.pathname.includes('admin/') ||
-            window.location.pathname.includes('creator/') ||
-            window.location.pathname.includes('viewer/')) {
-
-            setTimeout(() => {
-                this.showToast('You are in demo mode. All data and actions are simulated.', 'info', 8000);
-            }, 2000);
-        }
+        // Demo mode notification removed per user request
     }
 
     checkUserSession() {
