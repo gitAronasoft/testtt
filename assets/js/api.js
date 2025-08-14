@@ -17,6 +17,7 @@
         this.baseURL = '/api';
         this.timeout = 10000;
         this.useDataService = false; // Now using PHP backend
+        this.authToken = this.getStoredToken(); // Initialize stored token on service creation
         this.init();
     }
 
@@ -66,7 +67,7 @@
 
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-                
+
                 // Try to get more detailed error from response
                 try {
                     const errorData = await response.json();
@@ -78,7 +79,7 @@
                 } catch (e) {
                     // If can't parse JSON, use default error message
                 }
-                
+
                 throw new Error(errorMessage);
             }
 
@@ -91,10 +92,10 @@
             return { success: true, data: result };
         } catch (error) {
             console.error(`API Error [${method} ${endpoint}]:`, error);
-            
+
             let errorMessage = error.message;
             let isNetworkError = false;
-            
+
             if (error.name === 'AbortError') {
                 errorMessage = 'Request timed out. Please try again.';
                 isNetworkError = true;
@@ -102,7 +103,7 @@
                 errorMessage = 'Network error. Please check your connection.';
                 isNetworkError = true;
             }
-            
+
             return {
                 success: false,
                 error: errorMessage,
@@ -131,15 +132,31 @@
 
     // Authentication
     getAuthToken() {
-        return localStorage.getItem('authToken');
+        // Prefer session storage, fallback to local storage if not found or if authToken is null
+        return this.authToken || this.getStoredToken();
     }
 
-    setAuthToken(token) {
-        localStorage.setItem('authToken', token);
+    setAuthToken(token, rememberMe = false) {
+        this.authToken = token;
+
+        // Store token based on remember me preference
+        if (rememberMe) {
+            localStorage.setItem('authToken', token);
+            sessionStorage.removeItem('authToken');
+        } else {
+            sessionStorage.setItem('authToken', token);
+            localStorage.removeItem('authToken');
+        }
     }
 
     clearAuthToken() {
+        this.authToken = null;
         localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+    }
+
+    getStoredToken() {
+        return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     }
 
     // Auth API endpoints

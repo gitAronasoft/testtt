@@ -58,6 +58,12 @@ class AuthManager {
             resendEmail.addEventListener('click', this.handleResendEmail.bind(this));
         }
 
+        // Resend link in forgot password page
+        const resendLink = document.getElementById('resendLink');
+        if (resendLink) {
+            resendLink.addEventListener('click', this.handleResendForgotPassword.bind(this));
+        }
+
         // Password strength checker
         const newPasswordInput = document.getElementById('newPassword');
         if (newPasswordInput) {
@@ -85,10 +91,10 @@ class AuthManager {
     loadPageSpecificHandlers() {
         // Handle demo login prefill
         this.setupDemoLogin();
-        
+
         // Handle URL parameters for verification
         this.handleUrlParameters();
-        
+
         // Initialize Google Sign-In
         this.initializeGoogleSignIn();
     }
@@ -106,7 +112,7 @@ class AuthManager {
     prefillDemoCredentials(userType) {
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-        
+
         if (!emailInput || !passwordInput) return;
 
         const credentials = {
@@ -143,7 +149,7 @@ class AuthManager {
 
     async handleLogin(e) {
         e.preventDefault();
-        
+
         const submitButton = e.target.querySelector('button[type="submit"]');
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -154,21 +160,21 @@ class AuthManager {
             if (window.commonUtils) {
                 window.commonUtils.setButtonLoading(submitButton, true, 'Signing in...');
             }
-            
+
             // Wait for API service to be available
             await this.waitForAPIService();
-            
+
             // Make API call to login endpoint
             const response = await window.apiService.post('/auth/login', {
                 email: email,
                 password: password
             });
-            
+
             if (response.success && response.data) {
                 // Store user session and token
                 const userData = response.data.user;
                 const token = response.data.token;
-                
+
                 this.setUserSession({
                     email: userData.email,
                     userType: userData.role,
@@ -176,16 +182,16 @@ class AuthManager {
                     id: userData.id,
                     rememberMe: rememberMe
                 });
-                
-                // Store auth token
+
+                // Store auth token with remember me preference
                 if (window.apiService) {
-                    window.apiService.setAuthToken(token);
+                    window.apiService.setAuthToken(token, rememberMe);
                 }
-                
+
                 if (window.commonUtils) {
                     window.commonUtils.showToast('Login successful! Redirecting...', 'success');
                 }
-                
+
                 // Redirect based on user type
                 setTimeout(() => {
                     this.redirectToUserDashboard(userData.role);
@@ -193,7 +199,7 @@ class AuthManager {
             } else {
                 throw new Error(response.error || 'Login failed');
             }
-            
+
         } catch (error) {
             console.error('Login error:', error);
             if (window.commonUtils) {
@@ -210,7 +216,7 @@ class AuthManager {
 
     async handleSignup(e) {
         e.preventDefault();
-        
+
         const submitButton = e.target.querySelector('button[type="submit"]');
         const formData = {
             firstName: document.getElementById('firstName').value,
@@ -225,28 +231,28 @@ class AuthManager {
         try {
             // Validate form
             this.validateSignupForm(formData);
-            
+
             // Set button loading state
             if (window.commonUtils) {
                 window.commonUtils.setButtonLoading(submitButton, true, 'Creating account...');
             }
-            
+
             // Wait for API service to be available
             await this.waitForAPIService();
-            
+
             // Make API call to register endpoint
             const response = await window.apiService.post('/auth/register', formData);
-            
+
             if (response.success && response.data) {
                 if (response.data.verification_required) {
                     // Show email verification message
                     if (window.commonUtils) {
                         window.commonUtils.showToast(response.message || 'Account created! Please check your email to verify.', 'success');
                     }
-                    
+
                     // Store email for verification page
                     sessionStorage.setItem('pendingVerificationEmail', formData.email);
-                    
+
                     // Redirect to email verification page
                     setTimeout(() => {
                         window.location.href = `email-verification.html?email=${encodeURIComponent(formData.email)}`;
@@ -256,7 +262,7 @@ class AuthManager {
                     if (window.commonUtils) {
                         window.commonUtils.showToast('Account created successfully! You can now log in.', 'success');
                     }
-                    
+
                     // Redirect to login page
                     setTimeout(() => {
                         window.location.href = 'login.html';
@@ -265,7 +271,7 @@ class AuthManager {
             } else {
                 throw new Error(response.error || 'Registration failed');
             }
-            
+
         } catch (error) {
             console.error('Registration error:', error);
             if (window.commonUtils) {
@@ -282,38 +288,86 @@ class AuthManager {
 
     async handleForgotPassword(e) {
         e.preventDefault();
-        
+
+        const submitButton = e.target.querySelector('button[type="submit"]');
         const email = document.getElementById('email').value;
 
+        if (!email) {
+            this.showError('Please enter your email address.');
+            return;
+        }
+
         try {
-            this.showLoading('Sending reset link...');
-            
-            // Simulate API call
-            await this.delay(1500);
-            
-            // Hide form and show success message
-            document.getElementById('emailForm').style.display = 'none';
-            document.getElementById('successMessage').classList.remove('d-none');
-            
+            // Set button loading state
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(submitButton, true, 'Sending reset link...');
+            } else {
+                this.showLoading('Sending reset link...');
+            }
+
+            // Make direct API call for forgot password endpoint
+            const response = await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Hide form and show success message
+                document.getElementById('emailForm').style.display = 'none';
+                document.getElementById('successMessage').classList.remove('d-none');
+
+                if (window.commonUtils) {
+                    window.commonUtils.showToast(result.message || 'Password reset link sent successfully!', 'success');
+                }
+            } else {
+                throw new Error(result.error || result.message || 'Failed to send reset email');
+            }
+
         } catch (error) {
-            this.showError('Failed to send reset email. Please try again.');
+            console.error('Forgot password error:', error);
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Password Reset');
+            } else {
+                this.showError(error.message || 'Failed to send reset email. Please try again.');
+            }
         } finally {
-            this.hideLoading();
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(submitButton, false);
+            } else {
+                this.hideLoading();
+            }
+        }
+    }
+
+    async handleResendForgotPassword(e) {
+        e.preventDefault();
+
+        // Hide success message and show form again
+        document.getElementById('successMessage').classList.add('d-none');
+        document.getElementById('emailForm').style.display = 'block';
+
+        if (window.commonUtils) {
+            window.commonUtils.showToast('Please enter your email again to resend the reset link.', 'info');
         }
     }
 
     async handleEmailVerification() {
         try {
             this.showLoading('Verifying email...');
-            
+
             // Get token from URL parameters
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
-            
+
             if (!token) {
                 throw new Error('No verification token provided');
             }
-            
+
             // Make direct API call without waiting for API service
             const response = await fetch('/api/endpoints/auth.php', {
                 method: 'POST',
@@ -325,19 +379,19 @@ class AuthManager {
                     token: token 
                 })
             });
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 // Hide pending verification and show success
                 const pendingVerification = document.getElementById('pendingVerification');
                 const verificationSuccess = document.getElementById('verificationSuccess');
-                
+
                 if (pendingVerification) pendingVerification.style.display = 'none';
                 if (verificationSuccess) verificationSuccess.classList.remove('d-none');
-                
+
                 this.showSuccess('Email verified successfully! You can now log in.');
-                
+
                 // Redirect to login page after success
                 setTimeout(() => {
                     window.location.href = 'login.html';
@@ -345,7 +399,7 @@ class AuthManager {
             } else {
                 throw new Error(result.message || 'Verification failed');
             }
-            
+
         } catch (error) {
             console.error('Email verification error:', error);
             this.showError(error.message || 'Verification failed. Please try again.');
@@ -357,15 +411,15 @@ class AuthManager {
     async handleResendEmail() {
         try {
             this.showLoading('Resending verification email...');
-            
+
             // Get email from URL parameters or session storage
             const urlParams = new URLSearchParams(window.location.search);
             const email = urlParams.get('email') || sessionStorage.getItem('pendingVerificationEmail');
-            
+
             if (!email) {
                 throw new Error('No email address available for resending');
             }
-            
+
             // Make direct API call without waiting for API service  
             const response = await fetch('/api/endpoints/auth.php', {
                 method: 'POST',
@@ -377,15 +431,15 @@ class AuthManager {
                     email: email 
                 })
             });
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 this.showSuccess('Verification email sent successfully!');
             } else {
                 throw new Error(result.message || 'Failed to resend email');
             }
-            
+
         } catch (error) {
             console.error('Resend email error:', error);
             this.showError(error.message || 'Failed to resend email. Please try again.');
@@ -396,7 +450,8 @@ class AuthManager {
 
     async handleSetPassword(e) {
         e.preventDefault();
-        
+
+        const submitButton = e.target.querySelector('button[type="submit"]');
         const newPassword = document.getElementById('newPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
@@ -405,27 +460,68 @@ class AuthManager {
             if (newPassword !== confirmPassword) {
                 throw new Error('Passwords do not match');
             }
-            
+
             if (!this.isPasswordStrong(newPassword)) {
                 throw new Error('Password does not meet strength requirements');
             }
-            
-            this.showLoading('Setting password...');
-            
-            // Simulate API call
-            await this.delay(1500);
-            
-            this.showSuccess('Password set successfully! You can now log in.');
-            
-            // Redirect to login
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 1500);
-            
+
+            // Get token from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (!token) {
+                throw new Error('Invalid or missing reset token');
+            }
+
+            // Set button loading state
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(submitButton, true, 'Setting password...');
+            } else {
+                this.showLoading('Setting password...');
+            }
+
+            // Make direct API call for reset password endpoint
+            const response = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    token: token,
+                    password: newPassword 
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (window.commonUtils) {
+                    window.commonUtils.showToast('Password reset successfully! You can now log in.', 'success');
+                } else {
+                    this.showSuccess('Password set successfully! You can now log in.');
+                }
+
+                // Redirect to login
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+            } else {
+                throw new Error(result.error || result.message || 'Failed to reset password');
+            }
+
         } catch (error) {
-            this.showError(error.message);
+            console.error('Set password error:', error);
+            if (window.commonUtils) {
+                window.commonUtils.handleAPIError(error, 'Password Reset');
+            } else {
+                this.showError(error.message || 'Failed to set password. Please try again.');
+            }
         } finally {
-            this.hideLoading();
+            if (window.commonUtils) {
+                window.commonUtils.setButtonLoading(submitButton, false);
+            } else {
+                this.hideLoading();
+            }
         }
     }
 
@@ -433,27 +529,27 @@ class AuthManager {
         if (!formData.firstName.trim()) {
             throw new Error('First name is required');
         }
-        
+
         if (!formData.lastName.trim()) {
             throw new Error('Last name is required');
         }
-        
+
         if (!this.isValidEmail(formData.email)) {
             throw new Error('Please enter a valid email address');
         }
-        
+
         if (!formData.userType) {
             throw new Error('Please select an account type');
         }
-        
+
         if (formData.password.length < 8) {
             throw new Error('Password must be at least 8 characters long');
         }
-        
+
         if (formData.password !== formData.confirmPassword) {
             throw new Error('Passwords do not match');
         }
-        
+
         if (!formData.agreeTerms) {
             throw new Error('You must agree to the Terms of Service');
         }
@@ -463,21 +559,21 @@ class AuthManager {
         const password = e.target.value;
         const strengthBars = document.querySelectorAll('.strength-bar');
         const strengthText = document.getElementById('strengthText');
-        
+
         if (!strengthBars.length || !strengthText) return;
 
         const strength = this.calculatePasswordStrength(password);
-        
+
         // Reset all bars
         strengthBars.forEach(bar => {
             bar.className = 'strength-bar';
         });
-        
+
         // Fill bars based on strength
         for (let i = 0; i < strength.score; i++) {
             strengthBars[i].classList.add(strength.class);
         }
-        
+
         strengthText.textContent = strength.text;
         strengthText.className = `text-${strength.class}`;
     }
@@ -485,13 +581,13 @@ class AuthManager {
     calculatePasswordStrength(password) {
         let score = 0;
         let feedback = [];
-        
+
         if (password.length >= 8) score++;
         if (/[a-z]/.test(password)) score++;
         if (/[A-Z]/.test(password)) score++;
         if (/[0-9]/.test(password)) score++;
         if (/[^A-Za-z0-9]/.test(password)) score++;
-        
+
         const strengthLevels = {
             0: { class: 'muted', text: 'Enter a password' },
             1: { class: 'danger', text: 'Very weak' },
@@ -500,7 +596,7 @@ class AuthManager {
             4: { class: 'success', text: 'Good' },
             5: { class: 'success', text: 'Strong' }
         };
-        
+
         return { score, ...strengthLevels[score] };
     }
 
@@ -514,7 +610,7 @@ class AuthManager {
     togglePasswordVisibility() {
         const passwordInput = document.getElementById('newPassword');
         const toggleButton = document.getElementById('togglePassword');
-        
+
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
             toggleButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
@@ -537,7 +633,7 @@ class AuthManager {
             creator: '../creator/dashboard.html',
             viewer: '../viewer/dashboard.html'
         };
-        
+
         window.location.href = dashboardUrls[userType];
     }
 
@@ -546,7 +642,7 @@ class AuthManager {
             ...userData,
             timestamp: new Date().toISOString()
         };
-        
+
         if (userData.rememberMe) {
             localStorage.setItem('userSession', JSON.stringify(sessionData));
         } else {
@@ -557,7 +653,7 @@ class AuthManager {
     getUserSession() {
         const localSession = localStorage.getItem('userSession');
         const sessionSession = sessionStorage.getItem('userSession');
-        
+
         const session = localSession || sessionSession;
         return session ? JSON.parse(session) : null;
     }
@@ -575,12 +671,12 @@ class AuthManager {
     async waitForAPIService() {
         let retries = 0;
         const maxRetries = 50;
-        
+
         while (retries < maxRetries && !window.apiService) {
             await new Promise(resolve => setTimeout(resolve, 100));
             retries++;
         }
-        
+
         if (!window.apiService) {
             throw new Error('API service not available');
         }
@@ -596,7 +692,7 @@ class AuthManager {
             loader.style.zIndex = '9999';
             document.body.appendChild(loader);
         }
-        
+
         loader.innerHTML = `
             <div class="bg-white p-4 rounded shadow text-center">
                 <div class="spinner-border text-primary mb-2" role="status">
@@ -626,7 +722,7 @@ class AuthManager {
     showMessage(message, type = 'info') {
         // Create toast notification
         const toastContainer = document.getElementById('toastContainer') || this.createToastContainer();
-        
+
         const toast = document.createElement('div');
         toast.className = `toast align-items-center text-bg-${type} border-0`;
         toast.setAttribute('role', 'alert');
@@ -636,13 +732,13 @@ class AuthManager {
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
         `;
-        
+
         toastContainer.appendChild(toast);
-        
+
         // Initialize and show toast
         const bsToast = new bootstrap.Toast(toast);
         bsToast.show();
-        
+
         // Remove toast after it's hidden
         toast.addEventListener('hidden.bs.toast', () => {
             toast.remove();
@@ -662,69 +758,23 @@ class AuthManager {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    hideLoading() {
-        const loader = document.getElementById('globalLoader');
-        if (loader) {
-            loader.style.display = 'none';
+    isValidReturnUrl(url) {
+        try {
+            const decodedUrl = decodeURIComponent(url);
+            // Only allow internal URLs to dashboard pages
+            return decodedUrl.startsWith('/admin/') || 
+                   decodedUrl.startsWith('/creator/') || 
+                   decodedUrl.startsWith('/viewer/');
+        } catch {
+            return false;
         }
-    }
-
-    showSuccess(message) {
-        this.showToast(message, 'success');
-    }
-
-    showError(message) {
-        this.showToast(message, 'danger');
-    }
-
-    showToast(message, type = 'info') {
-        // Create toast container if it doesn't exist
-        let toastContainer = document.getElementById('toastContainer');
-        if (!toastContainer) {
-            toastContainer = document.createElement('div');
-            toastContainer.id = 'toastContainer';
-            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-            toastContainer.style.zIndex = '9999';
-            document.body.appendChild(toastContainer);
-        }
-
-        // Create toast element
-        const toastId = 'toast-' + Date.now();
-        const toastElement = document.createElement('div');
-        toastElement.id = toastId;
-        toastElement.className = `toast align-items-center text-bg-${type} border-0`;
-        toastElement.setAttribute('role', 'alert');
-        toastElement.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-
-        toastContainer.appendChild(toastElement);
-
-        // Initialize and show toast
-        const toast = new bootstrap.Toast(toastElement, {
-            autohide: true,
-            delay: 5000
-        });
-        toast.show();
-
-        // Remove toast element after it's hidden
-        toastElement.addEventListener('hidden.bs.toast', () => {
-            toastElement.remove();
-        });
-    }
-
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     initializeGoogleSignIn() {
         // Wait for Google Sign-In API to load with retry limit
         let retries = 0;
         const maxRetries = 50;
-        
+
         const checkAndInit = () => {
             if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
                 try {
@@ -745,7 +795,7 @@ class AuthManager {
                 console.error('Google Sign-In API failed to load after maximum retries');
             }
         };
-        
+
         checkAndInit();
     }
 
@@ -756,13 +806,13 @@ class AuthManager {
                 const buttonContainer = document.createElement('div');
                 buttonContainer.style.display = 'none';
                 document.body.appendChild(buttonContainer);
-                
+
                 google.accounts.id.renderButton(buttonContainer, {
                     theme: 'outline',
                     size: 'large',
                     width: 250
                 });
-                
+
                 // Trigger click programmatically
                 setTimeout(() => {
                     const googleButton = buttonContainer.querySelector('div[role="button"]');
@@ -774,7 +824,7 @@ class AuthManager {
                     }
                     document.body.removeChild(buttonContainer);
                 }, 100);
-                
+
             } catch (error) {
                 console.error('Google Sign-In error:', error);
                 this.showError('Google Sign-In encountered an error. Please try again.');
@@ -793,27 +843,27 @@ class AuthManager {
         try {
             console.log('Google credential response received');
             this.showLoading('Authenticating with Google...');
-            
+
             if (!response || !response.credential) {
                 throw new Error('No credential received from Google');
             }
-            
+
             // Wait for API service to be available
             await this.waitForAPIService();
-            
+
             const isSignupPage = window.location.pathname.includes('signup.html');
             const action = isSignupPage ? 'google-signup' : 'google-login';
-            
+
             // Send Google credential to backend using action-based endpoint
             const apiResponse = await window.apiService.post('/auth', {
                 action: action,
                 credential: response.credential
             });
-            
+
             if (apiResponse.success && apiResponse.data) {
                 const userData = apiResponse.data.user;
                 const token = apiResponse.data.token;
-                
+
                 this.setUserSession({
                     email: userData.email,
                     userType: userData.role,
@@ -821,18 +871,18 @@ class AuthManager {
                     id: userData.id,
                     rememberMe: true
                 });
-                
-                // Store auth token
+
+                // Store auth token (Google auth defaults to remember me)
                 if (window.apiService) {
-                    window.apiService.setAuthToken(token);
+                    window.apiService.setAuthToken(token, true);
                 }
-                
+
                 const successMessage = isSignupPage ? 
                     'Account created successfully with Google!' : 
                     'Google Sign-In successful! Redirecting...';
-                    
+
                 this.showSuccess(successMessage);
-                
+
                 // Redirect based on user type
                 setTimeout(() => {
                     this.redirectToUserDashboard(userData.role);
@@ -840,7 +890,7 @@ class AuthManager {
             } else {
                 throw new Error(apiResponse.message || 'Google authentication failed');
             }
-            
+
         } catch (error) {
             console.error('Google authentication error:', error);
             this.showError(error.message || 'Google authentication failed. Please try again.');

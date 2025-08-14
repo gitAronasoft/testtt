@@ -46,7 +46,7 @@ class EmailService {
         
         $body = $this->getPasswordResetEmailTemplate($name, $resetUrl);
         
-        return $this->sendEmail($email, $name, $subject, $body);
+        return $this->sendEmailSMTP($email, $name, $subject, $body);
     }
     
     /**

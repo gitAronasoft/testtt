@@ -176,6 +176,72 @@ class EmailVerification {
     }
     
     /**
+     * Create password reset token
+     */
+    public function createPasswordResetToken($user_id, $email) {
+        // Delete any existing tokens for this user
+        $this->deleteUserTokens($user_id);
+        
+        // Generate new token
+        $token = bin2hex(random_bytes(32));
+        
+        // Set expiry (1 hour from now for password reset)
+        $expires_at = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        
+        $query = "
+            INSERT INTO " . $this->table_name . " 
+            (user_id, email, token, expires_at) 
+            VALUES (?, ?, ?, ?)
+        ";
+        
+        $stmt = $this->conn->prepare($query);
+        
+        if ($stmt->execute([$user_id, $email, $token, $expires_at])) {
+            return $token;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Verify password reset token
+     */
+    public function verifyPasswordResetToken($token) {
+        $query = "
+            SELECT * FROM " . $this->table_name . " 
+            WHERE token = ? AND expires_at > NOW() AND verified_at IS NULL
+        ";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$token]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($row) {
+            return [
+                'user_id' => $row['user_id'],
+                'email' => $row['email'],
+                'token_id' => $row['id']
+            ];
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Mark token as used
+     */
+    public function markTokenAsUsed($token) {
+        $query = "
+            UPDATE " . $this->table_name . " 
+            SET verified_at = NOW() 
+            WHERE token = ?
+        ";
+        
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([$token]);
+    }
+    
+    /**
      * Delete expired tokens
      */
     public function deleteExpiredTokens() {
