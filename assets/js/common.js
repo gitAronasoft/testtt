@@ -51,10 +51,10 @@ class CommonUtils {
     }
 
     showDemoModeNotification() {
-        if (window.location.pathname.includes('admin/') || 
-            window.location.pathname.includes('creator/') || 
+        if (window.location.pathname.includes('admin/') ||
+            window.location.pathname.includes('creator/') ||
             window.location.pathname.includes('viewer/')) {
-            
+
             setTimeout(() => {
                 this.showToast('You are in demo mode. All data and actions are simulated.', 'info', 8000);
             }, 2000);
@@ -78,7 +78,7 @@ class CommonUtils {
     getUserSession() {
         const localSession = localStorage.getItem('userSession');
         const sessionSession = sessionStorage.getItem('userSession');
-        
+
         const session = localSession || sessionSession;
         return session ? JSON.parse(session) : null;
     }
@@ -89,7 +89,7 @@ class CommonUtils {
             timestamp: new Date().toISOString(),
             expires: new Date(Date.now() + (24 * 60 * 60 * 1000)).toISOString() // 24 hours
         };
-        
+
         if (userData.rememberMe) {
             localStorage.setItem('userSession', JSON.stringify(sessionData));
         } else {
@@ -125,7 +125,7 @@ class CommonUtils {
         toastElement.id = toastId;
         toastElement.className = `toast align-items-center text-bg-${type} border-0`;
         toastElement.setAttribute('role', 'alert');
-        
+
         const iconMap = {
             success: 'fas fa-check-circle',
             danger: 'fas fa-exclamation-circle',
@@ -203,7 +203,7 @@ class CommonUtils {
             // Store original content
             button.dataset.originalContent = button.innerHTML;
             button.dataset.originalDisabled = button.disabled;
-            
+
             // Set loading state
             button.disabled = true;
             button.innerHTML = `
@@ -217,7 +217,7 @@ class CommonUtils {
                 button.innerHTML = button.dataset.originalContent;
                 delete button.dataset.originalContent;
             }
-            
+
             button.disabled = button.dataset.originalDisabled === 'true';
             delete button.dataset.originalDisabled;
             button.classList.remove('btn-loading');
@@ -230,7 +230,7 @@ class CommonUtils {
 
         const loaderId = 'section-loader-' + Date.now();
         const existingLoader = sectionElement.querySelector('.section-loader');
-        
+
         if (existingLoader) {
             existingLoader.remove();
         }
@@ -279,10 +279,10 @@ class CommonUtils {
     // Enhanced Error Handling
     handleAPIError(error, context = '', showToast = true) {
         console.error(`API Error in ${context}:`, error);
-        
+
         let message = 'An unexpected error occurred. Please try again.';
         let type = 'danger';
-        
+
         if (error) {
             if (error.isNetworkError) {
                 message = 'Network error. Please check your connection and try again.';
@@ -444,14 +444,14 @@ class CommonUtils {
         };
 
         const mergedOptions = { ...defaultOptions, ...options };
-        
+
         try {
             const response = await fetch(url, mergedOptions);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             return await response.json();
         } catch (error) {
             console.error('Request failed:', error);
@@ -481,18 +481,18 @@ class CommonUtils {
     fadeIn(element, duration = 300) {
         element.style.opacity = '0';
         element.style.display = 'block';
-        
+
         let start = null;
         const animate = (timestamp) => {
             if (!start) start = timestamp;
             const progress = timestamp - start;
             element.style.opacity = Math.min(progress / duration, 1);
-            
+
             if (progress < duration) {
                 requestAnimationFrame(animate);
             }
         };
-        
+
         requestAnimationFrame(animate);
     }
 
@@ -502,14 +502,14 @@ class CommonUtils {
             if (!start) start = timestamp;
             const progress = timestamp - start;
             element.style.opacity = Math.max(1 - (progress / duration), 0);
-            
+
             if (progress < duration) {
                 requestAnimationFrame(animate);
             } else {
                 element.style.display = 'none';
             }
         };
-        
+
         requestAnimationFrame(animate);
     }
 
@@ -589,25 +589,47 @@ class CommonUtils {
     // Event Emitter
     createEventEmitter() {
         const events = {};
-        
+
         return {
             on(event, callback) {
                 if (!events[event]) events[event] = [];
                 events[event].push(callback);
             },
-            
+
             emit(event, data) {
                 if (events[event]) {
                     events[event].forEach(callback => callback(data));
                 }
             },
-            
+
             off(event, callback) {
                 if (events[event]) {
                     events[event] = events[event].filter(cb => cb !== callback);
                 }
             }
         };
+    }
+
+    // Logout functionality
+    static async logout() {
+        try {
+            if (window.authGuard) {
+                await window.authGuard.logout();
+            } else {
+                // Fallback logout
+                if (window.apiService) {
+                    await window.apiService.post('/auth/logout');
+                }
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/auth/login.html';
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/auth/login.html';
+        }
     }
 }
 

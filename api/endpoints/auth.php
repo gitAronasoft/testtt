@@ -637,6 +637,115 @@ try {
                     ]);
                 }
 
+            } elseif (isset($path_parts[2]) && $path_parts[2] === 'forgot-password') {
+                // Handle forgot password
+                $data = json_decode(file_get_contents("php://input"), true);
+
+                if (empty($data['email'])) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Email is required'
+                    ]);
+                    break;
+                }
+
+                // Find user by email
+                $stmt = $db->prepare("SELECT id, name, email FROM users WHERE email = ?");
+                $stmt->execute([$data['email']]);
+                $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$userData) {
+                    // Don't reveal if email exists - return success for security
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'If this email is registered, you will receive a password reset link.'
+                    ]);
+                    break;
+                }
+
+                // Create password reset token (using same token system as email verification)
+                $resetToken = $emailVerification->createPasswordResetToken($userData['id'], $userData['email']);
+
+                if ($resetToken) {
+                    // Send password reset email
+                    $emailSent = $emailService->sendPasswordResetEmail($userData['email'], $userData['name'], $resetToken);
+
+                    if ($emailSent) {
+                        http_response_code(200);
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Password reset link sent to your email address.'
+                        ]);
+                    } else {
+                        http_response_code(200);
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'If this email is registered, you will receive a password reset link.'
+                        ]);
+                    }
+                } else {
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'If this email is registered, you will receive a password reset link.'
+                    ]);
+                }
+
+            } elseif (isset($path_parts[2]) && $path_parts[2] === 'reset-password') {
+                // Handle password reset
+                $data = json_decode(file_get_contents("php://input"), true);
+
+                if (empty($data['token']) || empty($data['password'])) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Reset token and new password are required'
+                    ]);
+                    break;
+                }
+
+                // Verify reset token
+                $resetResult = $emailVerification->verifyPasswordResetToken($data['token']);
+
+                if ($resetResult) {
+                    // Update user password
+                    $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+                    $stmt = $db->prepare("UPDATE users SET password = ? WHERE id = ?");
+                    
+                    if ($stmt->execute([$hashedPassword, $resetResult['user_id']])) {
+                        // Invalidate all existing sessions for this user
+                        $sessionStmt = $db->prepare("DELETE FROM user_sessions WHERE user_id = ?");
+                        $sessionStmt->execute([$resetResult['user_id']]);
+
+                        // Mark reset token as used
+                        $emailVerification->markTokenAsUsed($data['token']);
+
+                        http_response_code(200);
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Password reset successfully! You can now log in with your new password.',
+                            'data' => [
+                                'user_id' => $resetResult['user_id'],
+                                'email' => $resetResult['email']
+                            ]
+                        ]);
+                    } else {
+                        http_response_code(500);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Failed to update password'
+                        ]);
+                    }
+                } else {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid or expired reset token'
+                    ]);
+                }
+
             } elseif (isset($path_parts[2]) && $path_parts[2] === 'logout') {
                 // Handle logout
                 $headers = getallheaders();
@@ -648,6 +757,10 @@ try {
                     // Delete session from database
                     $stmt = $db->prepare("DELETE FROM user_sessions WHERE token = ?");
                     $stmt->execute([$token]);
+                    
+                    // Also delete any expired sessions for cleanup
+                    $cleanupStmt = $db->prepare("DELETE FROM user_sessions WHERE expires_at < NOW()");
+                    $cleanupStmt->execute();
                 }
 
                 http_response_code(200);

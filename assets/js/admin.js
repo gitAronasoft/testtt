@@ -751,6 +751,7 @@ class AdminManager {
                     description: video.description,
                     price: video.price,
                     thumbnail: video.thumbnail,
+                    youtube_id: video.youtube_id || video.youtubeId,
                     creator_name: video.creatorName,
                     creator_email: '',
                     upload_date: video.uploadDate,
@@ -828,7 +829,7 @@ class AdminManager {
                              video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Unknown';
             
             // Get YouTube ID from various possible fields  
-            const youtubeId = video.youtube_id || video.youtube_video_id || video.video_id;
+            const youtubeId = video.youtube_id || video.youtube_video_id || video.video_id || video.youtubeId;
             
 
             
@@ -960,7 +961,7 @@ class AdminManager {
                     description: video.description,
                     price: video.price,
                     thumbnail: video.thumbnail,
-                    youtube_id: video.youtube_id,
+                    youtube_id: video.youtube_id || video.youtubeId,
                     creator_name: video.creatorName,
                     creator_email: '',
                     upload_date: video.uploadDate,
