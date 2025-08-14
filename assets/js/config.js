@@ -1,6 +1,6 @@
 /**
  * VideoHub Configuration
- * Handles base path detection for subfolder deployments
+ * Handles base path configuration for different deployment scenarios
  */
 
 (function() {
@@ -12,12 +12,32 @@
 
     class VideoHubConfig {
         constructor() {
-            this.basePath = this.detectBasePath();
+            // Use external deployment config if available, otherwise use auto-detection
+            this.basePath = this.getConfiguredBasePath();
+        }
+        
+        /**
+         * Get the configured base path from deployment config or auto-detect
+         */
+        getConfiguredBasePath() {
+            // Check if deployment config is loaded
+            if (window.VIDEOHUB_DEPLOYMENT_CONFIG && window.VIDEOHUB_DEPLOYMENT_CONFIG.BASE_PATH !== undefined) {
+                const configPath = window.VIDEOHUB_DEPLOYMENT_CONFIG.BASE_PATH;
+                
+                if (configPath === 'auto') {
+                    return this.detectBasePath();
+                }
+                
+                return configPath;
+            }
+            
+            // Fallback to auto-detection if no config found
+            return this.detectBasePath();
         }
 
         /**
-         * Detect the base path where the app is deployed
-         * This allows the app to work in subfolders
+         * Auto-detect the base path where the app is deployed
+         * This allows the app to work in subfolders automatically
          */
         detectBasePath() {
             const currentPath = window.location.pathname;

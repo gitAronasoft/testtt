@@ -186,7 +186,8 @@ class SimpleProfileManager {
             }
 
             // Simple API call
-            const response = await fetch(`/video-platform/api/users/${userSession.id}`, {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/users/${userSession.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -224,7 +225,8 @@ class SimpleProfileManager {
 
         try {
             const userSession = this.getUserSession();
-            const response = await fetch('/video-platform/api/auth/change-password', {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/auth/change-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

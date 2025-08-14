@@ -63,7 +63,8 @@ class AdminManager {
         if (window.apiService && !this.dataLoaded && currentPage !== 'users.html') {
             try {
                 if (currentPage === 'user-detail.html') {
-                    const usersResponse = await window.apiService.get('/video-platform/admin/users');
+                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                    const usersResponse = await window.apiService.get(`${apiUrl}/admin/users`);
                     this.users = usersResponse.data || usersResponse.users || [];
                     this.dataLoaded = true;
                 }
@@ -287,7 +288,8 @@ class AdminManager {
             if (!this.users.length && !this.dataLoaded) {
                 try {
                     console.log('Loading users data from API...');
-                    const response = await fetch('/video-platform/api/admin/users');
+                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                    const response = await fetch(`${apiUrl}/admin/users`);
                     const result = await response.json();
                     if (result.success) {
                         this.users = result.data || [];
@@ -493,7 +495,8 @@ class AdminManager {
             
             // If not found locally, fetch from API
             if (!user) {
-                const response = await fetch(`/video-platform/api/admin/users?id=${userId}`);
+                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                const response = await fetch(`${apiUrl}/admin/users?id=${userId}`);
                 const result = await response.json();
                 if (result.success) {
                     user = result.data;
@@ -540,7 +543,8 @@ class AdminManager {
 
     async editUser(userId) {
         try {
-            const response = await fetch(`/video-platform/api/admin/users?id=${userId}`);
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/admin/users?id=${userId}`);
             const result = await response.json();
             
             if (result.success && result.data) {
@@ -567,7 +571,8 @@ class AdminManager {
     async revokeUser(userId) {
         if (confirm('Are you sure you want to revoke access for this user?')) {
             try {
-                const response = await fetch('/video-platform/api/admin/users', {
+                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                const response = await fetch(`${apiUrl}/admin/users`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -596,7 +601,8 @@ class AdminManager {
     async deleteUser(userId) {
         if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
             try {
-                const response = await fetch('/video-platform/api/admin/users', {
+                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                const response = await fetch(`${apiUrl}/admin/users`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
@@ -621,7 +627,8 @@ class AdminManager {
 
     async createUser(userData) {
         try {
-            const response = await fetch('/video-platform/api/admin/users', {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/admin/users`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -648,7 +655,8 @@ class AdminManager {
 
     async updateUser(userData) {
         try {
-            const response = await fetch('/video-platform/api/admin/users', {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/admin/users`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -677,7 +685,8 @@ class AdminManager {
         if (this.usersTable && $.fn.DataTable.isDataTable('#usersTable')) {
             // Reload data
             try {
-                const response = await fetch('/video-platform/api/admin/users');
+                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                const response = await fetch(`${apiUrl}/admin/users`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -739,7 +748,8 @@ class AdminManager {
             }
             
             // Load videos from API
-            let response = await fetch('/video-platform/api/videos');
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            let response = await fetch(`${apiUrl}/endpoints/videos.php`);
             let result = await response.json();
             console.log('Videos API response:', result);
             
@@ -944,12 +954,13 @@ class AdminManager {
             }
             
             // Try to load from admin videos endpoint first, fallback to regular videos endpoint
-            let response = await fetch('/video-platform/api/admin/videos');
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            let response = await fetch(`${apiUrl}/endpoints/videos.php`);
             let result = await response.json();
             
             if (!result.success) {
-                // Fallback to regular videos API
-                response = await fetch('/video-platform/api/videos');
+                // Fallback to regular videos API  
+                response = await fetch(`${apiUrl}/videos`);
                 result = await response.json();
             }
             
@@ -1121,7 +1132,8 @@ class AdminManager {
             if (!video) return;
             
             // Update video status to published
-            const response = await fetch(`/video-platform/api/endpoints/videos.php/${videoId}`, {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/endpoints/videos.php/${videoId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1158,7 +1170,8 @@ class AdminManager {
                 if (!video) return;
                 
                 // Update video status to rejected
-                const response = await fetch(`/video-platform/api/endpoints/videos.php/${videoId}`, {
+                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                const response = await fetch(`${apiUrl}/endpoints/videos.php/${videoId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1221,7 +1234,8 @@ class AdminManager {
     async deleteVideo(videoId) {
         if (confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
             try {
-                const response = await fetch(`/video-platform/api/endpoints/videos.php/${videoId}`, {
+                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                const response = await fetch(`${apiUrl}/endpoints/videos.php/${videoId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1265,7 +1279,8 @@ class AdminManager {
             // If not found locally, fetch from API
             if (!user) {
                 try {
-                    const response = await fetch(`/video-platform/api/admin/users?id=${userId}`);
+                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                    const response = await fetch(`${apiUrl}/admin/users?id=${userId}`);
                     const result = await response.json();
                     if (result.success && result.data) {
                         user = result.data;
@@ -1331,7 +1346,8 @@ class AdminManager {
             
             if (user && user.role === 'creator') {
                 try {
-                    const videosResponse = await fetch(`/video-platform/api/creator/videos?creator_id=${userId}`);
+                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                    const videosResponse = await fetch(`${apiUrl}/creator/videos?creator_id=${userId}`);
                     const videosResult = await videosResponse.json();
                     if (videosResult.success && videosResult.data) {
                         videoCount = videosResult.data.length || 0;
@@ -1343,7 +1359,8 @@ class AdminManager {
             
             if (user && user.role === 'viewer') {
                 try {
-                    const purchasesResponse = await fetch(`/video-platform/api/purchases?user_id=${userId}`);
+                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                    const purchasesResponse = await fetch(`${apiUrl}/purchases?user_id=${userId}`);
                     const purchasesResult = await purchasesResponse.json();
                     if (purchasesResult.success && purchasesResult.data) {
                         purchaseCount = purchasesResult.data.length || 0;

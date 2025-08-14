@@ -1120,7 +1120,9 @@ class VideoHubUploadManager {
                     // Removed duration and file_size as they don't exist in the database
                 };
                 
-                const syncResponse = await fetch('/api/videos', {
+                // Use configured API base URL
+                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                const syncResponse = await fetch(`${apiUrl}/videos`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

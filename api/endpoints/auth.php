@@ -26,7 +26,15 @@ $user->createEmailVerifiedColumnIfNotExists();
 // Get request method and path
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$path_parts = explode('/', trim($path, '/'));
+
+// Handle subfolder deployments - extract path after /api/auth
+if (preg_match('/.*\/api\/auth(.*)/', $path, $matches)) {
+    $auth_path = $matches[1] ?: '/';
+} else {
+    $auth_path = $path;
+}
+
+$path_parts = explode('/', trim($auth_path, '/'));
 
 // Subfolder-compatible path parsing completed
 
@@ -367,7 +375,7 @@ try {
                 }
             }
 
-            if (isset($path_parts[1]) && $path_parts[1] === 'login') {
+            if ((isset($path_parts[0]) && $path_parts[0] === 'login') || (isset($path_parts[1]) && $path_parts[1] === 'login')) {
                 // Handle login
                 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -462,7 +470,7 @@ try {
                     ]);
                 }
 
-            } elseif (isset($path_parts[1]) && $path_parts[1] === 'register') {
+            } elseif ((isset($path_parts[0]) && $path_parts[0] === 'register') || (isset($path_parts[1]) && $path_parts[1] === 'register')) {
                 // Handle registration
                 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -541,7 +549,7 @@ try {
                     ]);
                 }
 
-            } elseif (isset($path_parts[2]) && $path_parts[2] === 'verify-email') {
+            } elseif ((isset($path_parts[0]) && $path_parts[0] === 'verify-email') || (isset($path_parts[1]) && $path_parts[1] === 'verify-email') || (isset($path_parts[2]) && $path_parts[2] === 'verify-email')) {
                 // Handle email verification
                 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -639,7 +647,7 @@ try {
                     ]);
                 }
 
-            } elseif (isset($path_parts[2]) && $path_parts[2] === 'forgot-password') {
+            } elseif ((isset($path_parts[0]) && $path_parts[0] === 'forgot-password') || (isset($path_parts[1]) && $path_parts[1] === 'forgot-password') || (isset($path_parts[2]) && $path_parts[2] === 'forgot-password')) {
                 // Handle forgot password
                 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -695,7 +703,7 @@ try {
                     ]);
                 }
 
-            } elseif (isset($path_parts[2]) && $path_parts[2] === 'reset-password') {
+            } elseif ((isset($path_parts[0]) && $path_parts[0] === 'reset-password') || (isset($path_parts[1]) && $path_parts[1] === 'reset-password') || (isset($path_parts[2]) && $path_parts[2] === 'reset-password')) {
                 // Handle password reset
                 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -748,7 +756,7 @@ try {
                     ]);
                 }
 
-            } elseif (isset($path_parts[2]) && $path_parts[2] === 'logout') {
+            } elseif ((isset($path_parts[0]) && $path_parts[0] === 'logout') || (isset($path_parts[1]) && $path_parts[1] === 'logout') || (isset($path_parts[2]) && $path_parts[2] === 'logout')) {
                 // Handle logout
                 $headers = getallheaders();
                 $authHeader = $headers['Authorization'] ?? '';

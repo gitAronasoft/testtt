@@ -53,8 +53,10 @@ class YouTubeAPIClient {
         this.initializingTokens = true;
 
         try {
+            // Use configured base URL for YouTube tokens API
+            const basePath = window.videoHubConfig ? window.videoHubConfig.basePath : '';
             const response = await fetch(
-                "/video-platform/api/youtube_tokens.php?action=get_tokens",
+                `${basePath}/api/youtube_tokens.php?action=get_tokens`,
                 {
                     credentials: "include",
                 },
@@ -160,7 +162,9 @@ class YouTubeAPIClient {
      */
     async refreshAccessToken(refreshToken) {
         try {
-            const response = await fetch("/video-platform/api/youtube_tokens.php", {
+            // Use configured base URL for YouTube tokens API
+            const basePath = window.videoHubConfig ? window.videoHubConfig.basePath : '';
+            const response = await fetch(`${basePath}/api/youtube_tokens.php`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -495,7 +499,8 @@ class YouTubeAPIClient {
                 uploader_id: uploaderId,
             };
 
-            const response = await fetch("/video-platform/api/endpoints/videos.php", {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/endpoints/videos.php`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

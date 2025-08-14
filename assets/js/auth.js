@@ -305,8 +305,9 @@ class AuthManager {
                 this.showLoading('Sending reset link...');
             }
 
-            // Make direct API call for forgot password endpoint
-            const response = await fetch('/api/auth/forgot-password', {
+            // Make direct API call for forgot password endpoint using configured base URL
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/auth/forgot-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -368,8 +369,9 @@ class AuthManager {
                 throw new Error('No verification token provided');
             }
 
-            // Make direct API call without waiting for API service
-            const response = await fetch('/api/endpoints/auth.php', {
+            // Make direct API call without waiting for API service using configured base URL
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/endpoints/auth.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -422,8 +424,9 @@ class AuthManager {
                 throw new Error('No email address available for resending');
             }
 
-            // Make direct API call without waiting for API service  
-            const response = await fetch('/api/endpoints/auth.php', {
+            // Make direct API call without waiting for API service using configured base URL
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/endpoints/auth.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -482,8 +485,9 @@ class AuthManager {
                 this.showLoading('Setting password...');
             }
 
-            // Make direct API call for reset password endpoint
-            const response = await fetch('/api/auth/reset-password', {
+            // Make direct API call for reset password endpoint using configured base URL
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/auth/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -14,7 +14,7 @@
 
     class APIService {
     constructor() {
-        // Auto-detect base URL from current page location
+        // Use VideoHubConfig for consistent base path handling
         this.baseURL = this.getBaseURL();
         this.timeout = 10000;
         this.useDataService = false; // Now using PHP backend
@@ -35,11 +35,16 @@
     }
 
     /**
-     * Auto-detect the correct base URL for API calls
+     * Get the correct base URL for API calls using VideoHubConfig
      * This ensures the app works whether deployed at root or in a subfolder
      */
     getBaseURL() {
-        // Get the current page path
+        // Use VideoHubConfig if available, otherwise fallback to auto-detection
+        if (window.videoHubConfig) {
+            return window.videoHubConfig.getApiUrl();
+        }
+        
+        // Fallback to auto-detection if config not loaded yet
         const currentPath = window.location.pathname;
         
         // If we're on index.html or root, use current directory
