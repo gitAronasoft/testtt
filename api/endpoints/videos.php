@@ -194,13 +194,56 @@ try {
             break;
 
         case 'PUT':
-            // Update video
+            // Update video - handle both path formats: /api/endpoints/videos.php/123 and /api/endpoints/videos.php?id=123
+            $videoId = null;
+            
+            // Try to get video ID from path
             if (isset($path_parts[4]) && is_numeric($path_parts[4])) {
+                $videoId = $path_parts[4];
+            } elseif (isset($path_parts[3]) && is_numeric($path_parts[3])) {
+                $videoId = $path_parts[3];
+            }
+            
+            // Also check for ID in query parameters or request body
+            if (!$videoId) {
+                $data = json_decode(file_get_contents("php://input"), true);
+                $videoId = $_GET['id'] ?? $data['id'] ?? null;
+            }
+            
+            // Extract video ID from end of path if it's in format /123
+            if (!$videoId && preg_match('/\/(\d+)$/', $_SERVER['REQUEST_URI'], $matches)) {
+                $videoId = $matches[1];
+            }
+            
+            if ($videoId && is_numeric($videoId)) {
                 $data = json_decode(file_get_contents("php://input"), true);
                 
-                $video->id = $path_parts[4];
+                $video->id = $videoId;
                 
-                if (!empty($data['title'])) {
+                // Handle status-only updates (for approve/reject functionality)
+                if (isset($data['status']) && !isset($data['title'])) {
+                    // Status-only update - just update the status
+                    $video->status = $data['status'];
+                    
+                    if ($video->updateStatus()) {
+                        http_response_code(200);
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Video status updated successfully',
+                            'data' => [
+                                'id' => $video->id,
+                                'status' => $video->status
+                            ]
+                        ]);
+                    } else {
+                        http_response_code(400);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Unable to update video status'
+                        ]);
+                    }
+                } elseif (!empty($data['title'])) {
+                    // Full video update
                     $video->title = $data['title'];
                     $video->description = $data['description'] ?? '';
                     $video->price = $data['price'] ?? 0;

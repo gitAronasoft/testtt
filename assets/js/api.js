@@ -68,8 +68,18 @@
 
     // Generic HTTP methods
     async request(method, endpoint, data = null, options = {}) {
-        
-        const url = `${this.baseURL}${endpoint}`;
+        // Handle endpoint URL construction
+        let url;
+        if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+            // Absolute URL
+            url = endpoint;
+        } else if (endpoint.startsWith('/api/')) {
+            // Endpoint already includes /api/, use it directly
+            url = endpoint;
+        } else {
+            // Relative endpoint, prepend baseURL
+            url = `${this.baseURL}${endpoint}`;
+        }
         const config = {
             method,
             headers: {

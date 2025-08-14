@@ -191,6 +191,26 @@ class Video {
         return false;
     }
 
+    // Update video status only
+    public function updateStatus() {
+        $query = "UPDATE " . $this->table_name . " SET status = :status WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+
+        // Clean data
+        $this->status = htmlspecialchars(strip_tags($this->status ?? ''));
+        $this->id = htmlspecialchars(strip_tags($this->id ?? ''));
+
+        // Bind values
+        $stmt->bindParam(":status", $this->status);
+        $stmt->bindParam(":id", $this->id);
+
+        if ($stmt->execute()) {
+            return true;
+        }
+
+        return false;
+    }
+
     // Delete video
     public function delete() {
         $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";

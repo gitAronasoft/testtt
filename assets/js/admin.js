@@ -116,7 +116,7 @@ class AdminManager {
 
             if (window.apiService) {
                 // Load admin metrics from new metrics API
-                const metricsResponse = await window.apiService.get('/metrics/admin');
+                const metricsResponse = await window.apiService.get('/api/endpoints/metrics.php?type=admin');
                 if (metricsResponse.success) {
                     const metrics = metricsResponse.data;
                     this.updateDashboardMetrics(metrics);
@@ -1128,34 +1128,24 @@ class AdminManager {
 
     async approveVideo(videoId) {
         try {
-            const video = this.videos.find(v => v.id === videoId);
-            if (!video) return;
+            if (!confirm('Are you sure you want to approve this video?')) return;
             
-            // Update video status to published
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await fetch(`${apiUrl}/endpoints/videos.php/${videoId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    title: video.title,
-                    description: video.description,
-                    price: video.price,
-                    category: video.category,
-                    thumbnail: video.thumbnail,
-                    status: 'published'
-                })
+            const response = await window.apiService.put(`/api/endpoints/videos.php/${videoId}`, {
+                status: 'published'
             });
             
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showAlert('Video approved successfully', 'success');
-                // Reload the entire grid to reflect database changes
-                await this.loadVideosGrid();
+            if (response.success) {
+                this.showAlert('Video approved successfully!', 'success');
+                // Update local video status
+                const video = this.videos.find(v => v.id == videoId);
+                if (video) {
+                    video.status = 'published';
+                }
+                // Refresh the videos grid
+                this.renderVideosGrid();
+                this.updateVideoStats();
             } else {
-                this.showAlert('Failed to approve video: ' + (result.message || 'Unknown error'), 'danger');
+                this.showAlert(response.message || 'Failed to approve video', 'danger');
             }
         } catch (error) {
             console.error('Error approving video:', error);
@@ -1164,566 +1154,184 @@ class AdminManager {
     }
 
     async rejectVideo(videoId) {
-        if (confirm('Are you sure you want to reject this video?')) {
-            try {
-                const video = this.videos.find(v => v.id === videoId);
-                if (!video) return;
-                
-                // Update video status to rejected
-                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                const response = await fetch(`${apiUrl}/endpoints/videos.php/${videoId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        title: video.title,
-                        description: video.description,
-                        price: video.price,
-                        category: video.category,
-                        thumbnail: video.thumbnail,
-                        status: 'rejected'
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    this.showAlert('Video rejected', 'warning');
-                    // Reload the entire grid to reflect database changes
-                    await this.loadVideosGrid();
-                } else {
-                    this.showAlert('Failed to reject video: ' + (result.message || 'Unknown error'), 'danger');
+        try {
+            if (!confirm('Are you sure you want to reject this video?')) return;
+            
+            const response = await window.apiService.put(`/api/endpoints/videos.php/${videoId}`, {
+                status: 'rejected'
+            });
+            
+            if (response.success) {
+                this.showAlert('Video rejected successfully!', 'warning');
+                // Update local video status
+                const video = this.videos.find(v => v.id == videoId);
+                if (video) {
+                    video.status = 'rejected';
                 }
-            } catch (error) {
-                console.error('Error rejecting video:', error);
-                this.showAlert('Error rejecting video', 'danger');
+                // Refresh the videos grid
+                this.renderVideosGrid();
+                this.updateVideoStats();
+            } else {
+                this.showAlert(response.message || 'Failed to reject video', 'danger');
             }
+        } catch (error) {
+            console.error('Error rejecting video:', error);
+            this.showAlert('Error rejecting video', 'danger');
         }
     }
 
     async showVideoDetails(videoId) {
         try {
-            const video = this.videos.find(v => v.id === videoId);
+            const video = this.videos.find(v => v.id == videoId);
             if (!video) {
                 this.showAlert('Video not found', 'danger');
                 return;
             }
-            
+
             // Populate modal with video details
-            document.getElementById('modalVideoThumbnail').src = video.thumbnail || video.youtube_thumbnail || 'https://via.placeholder.com/300x200';
-            document.getElementById('modalVideoTitle').textContent = video.title;
-            document.getElementById('modalVideoCreator').textContent = video.creator_name || video.youtube_channel_title || 'Unknown Creator';
-            document.getElementById('modalVideoDuration').textContent = video.duration || '00:00';
-            document.getElementById('modalVideoDate').textContent = video.upload_date ? new Date(video.upload_date).toLocaleDateString() : 'Unknown';
-            document.getElementById('modalVideoViews').textContent = (video.views || video.youtube_views || 0).toLocaleString();
+            document.getElementById('modalVideoTitle').textContent = video.title || 'Unknown Title';
+            document.getElementById('modalVideoCreator').textContent = video.creator_name || video.creatorName || 'Unknown Creator';
+            document.getElementById('modalVideoDuration').textContent = video.duration || 'Unknown';
+            document.getElementById('modalVideoDate').textContent = video.upload_date || video.uploadDate || 'Unknown';
+            document.getElementById('modalVideoViews').textContent = (video.views || 0).toLocaleString();
             document.getElementById('modalVideoPrice').textContent = `$${parseFloat(video.price || 0).toFixed(2)}`;
-            document.getElementById('modalVideoStatus').textContent = (video.status || 'active').charAt(0).toUpperCase() + (video.status || 'active').slice(1);
-            document.getElementById('modalVideoStatus').className = `badge bg-${this.getVideoStatusBadgeColor(video.status)}`;
+            
+            const statusEl = document.getElementById('modalVideoStatus');
+            const statusClass = video.status === 'published' ? 'success' : video.status === 'pending' ? 'warning' : video.status === 'rejected' ? 'danger' : 'secondary';
+            statusEl.className = `badge bg-${statusClass}`;
+            statusEl.textContent = (video.status || 'published').charAt(0).toUpperCase() + (video.status || 'published').slice(1);
+            
             document.getElementById('modalVideoDescription').textContent = video.description || 'No description available';
             
+            // Set thumbnail
+            const thumbnailEl = document.getElementById('modalVideoThumbnail');
+            if (video.youtube_id) {
+                thumbnailEl.src = `https://img.youtube.com/vi/${video.youtube_id}/maxresdefault.jpg`;
+            } else if (video.thumbnail) {
+                thumbnailEl.src = video.thumbnail;
+            } else {
+                thumbnailEl.src = 'https://via.placeholder.com/300x200/007bff/ffffff?text=Video+Preview';
+            }
+
+            // Set up modal action buttons
+            const approveBtn = document.getElementById('approveVideo');
+            const rejectBtn = document.getElementById('rejectVideo');
+            const flagBtn = document.getElementById('flagVideo');
+
+            // Remove existing event listeners
+            approveBtn.replaceWith(approveBtn.cloneNode(true));
+            rejectBtn.replaceWith(rejectBtn.cloneNode(true));
+            flagBtn.replaceWith(flagBtn.cloneNode(true));
+
+            // Re-get the new elements after cloning
+            const newApproveBtn = document.getElementById('approveVideo');
+            const newRejectBtn = document.getElementById('rejectVideo');
+            const newFlagBtn = document.getElementById('flagVideo');
+
+            newApproveBtn.addEventListener('click', () => {
+                bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal')).hide();
+                this.approveVideo(videoId);
+            });
+
+            newRejectBtn.addEventListener('click', () => {
+                bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal')).hide();
+                this.rejectVideo(videoId);
+            });
+
+            newFlagBtn.addEventListener('click', () => {
+                bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal')).hide();
+                this.flagVideo(videoId);
+            });
+
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('videoDetailsModal'));
             modal.show();
+
         } catch (error) {
             console.error('Error showing video details:', error);
             this.showAlert('Error loading video details', 'danger');
         }
     }
 
-    async deleteVideo(videoId) {
-        if (confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
-            try {
-                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                const response = await fetch(`${apiUrl}/endpoints/videos.php/${videoId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Remove from local data
-                    this.videos = this.videos.filter(v => v.id !== videoId);
-                    
-                    this.showAlert('Video deleted successfully', 'success');
-                    this.renderVideosGrid();
-                    this.updateVideoStats();
-                } else {
-                    this.showAlert('Failed to delete video', 'danger');
+    async flagVideo(videoId) {
+        try {
+            if (!confirm('Are you sure you want to flag this video?')) return;
+            
+            const response = await window.apiService.put(`/api/endpoints/videos.php/${videoId}`, {
+                status: 'flagged'
+            });
+            
+            if (response.success) {
+                this.showAlert('Video flagged successfully!', 'danger');
+                // Update local video status
+                const video = this.videos.find(v => v.id == videoId);
+                if (video) {
+                    video.status = 'flagged';
                 }
-            } catch (error) {
-                console.error('Error deleting video:', error);
-                this.showAlert('Error deleting video', 'danger');
+                // Refresh the videos grid
+                this.renderVideosGrid();
+                this.updateVideoStats();
+            } else {
+                this.showAlert(response.message || 'Failed to flag video', 'danger');
             }
+        } catch (error) {
+            console.error('Error flagging video:', error);
+            this.showAlert('Error flagging video', 'danger');
         }
     }
 
+    // Video stats update method
+    updateVideoStats() {
+        const totalVideos = document.getElementById('totalVideos');
+        const publishedVideos = document.getElementById('publishedVideos');
+        const pendingVideos = document.getElementById('pendingVideos'); 
+        const flaggedVideos = document.getElementById('flaggedVideos');
+        
+        if (totalVideos) totalVideos.textContent = this.videos.length;
+        if (publishedVideos) publishedVideos.textContent = this.videos.filter(v => v.status === 'published' || v.status === 'active').length;
+        if (pendingVideos) pendingVideos.textContent = this.videos.filter(v => v.status === 'pending').length;
+        if (flaggedVideos) flaggedVideos.textContent = this.videos.filter(v => v.status === 'flagged').length;
+    }
+
+    // Utility methods
     getUserRoleBadgeClass(role) {
-        switch(role) {
-            case 'admin': return 'danger';
-            case 'creator': return 'success';
-            case 'viewer': return 'primary';
-            default: return 'secondary';
-        }
-    }
-
-    // User Management Methods
-    async showUserDetails(userId) {
-        try {
-            // Find user in local data first
-            let user = this.users.find(u => u.id == userId);
-            
-            // If not found locally, fetch from API
-            if (!user) {
-                try {
-                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                    const response = await fetch(`${apiUrl}/admin/users?id=${userId}`);
-                    const result = await response.json();
-                    if (result.success && result.data) {
-                        user = result.data;
-                    }
-                } catch (apiError) {
-                    console.warn('API fetch failed, using local data');
-                }
-            }
-
-            if (user) {
-                // Populate user details modal
-                document.getElementById('detailUserId').textContent = user.id;
-                document.getElementById('detailUserName').textContent = user.name || 'Unknown User';
-                document.getElementById('detailUserEmail').textContent = user.email || 'No email';
-                
-                // Role badge
-                const roleEl = document.getElementById('detailUserRole');
-                roleEl.textContent = (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1);
-                roleEl.className = `badge bg-${this.getUserRoleBadgeClass(user.role)}`;
-                
-                // Status badge
-                const statusEl = document.getElementById('detailUserStatus');
-                statusEl.textContent = (user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1);
-                statusEl.className = `badge bg-${user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'revoked' ? 'dark' : 'warning'}`;
-                
-                // Date formatting
-                const joinDate = user.created_at || user.joinDate;
-                document.getElementById('detailJoinDate').textContent = joinDate ? new Date(joinDate).toLocaleDateString() : 'Unknown';
-                
-                // Email verification status
-                const verifiedEl = document.getElementById('detailEmailVerified');
-                verifiedEl.textContent = user.email_verified_at ? 'Verified' : 'Not Verified';
-                verifiedEl.className = `badge bg-${user.email_verified_at ? 'success' : 'warning'}`;
-                
-                document.getElementById('detailLastLogin').textContent = user.lastActive || 'Recently';
-                
-                // Load additional stats from API
-                this.loadUserStats(userId);
-                
-                // Store current user ID
-                this.currentUserId = userId;
-                
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
-                modal.show();
-            } else {
-                this.showAlert('User not found', 'danger');
-            }
-        } catch (error) {
-            console.error('Error showing user details:', error);
-            this.showAlert('Error loading user details', 'danger');
-            window.apiService?.showErrorMessage('Failed to load user details');
-        }
-    }
-
-    async loadUserStats(userId) {
-        try {
-            // Get user's video count if they're a creator
-            const user = this.users.find(u => u.id == userId);
-            let videoCount = 0;
-            let purchaseCount = 0;
-            let totalSpent = 0;
-            
-            if (user && user.role === 'creator') {
-                try {
-                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                    const videosResponse = await fetch(`${apiUrl}/creator/videos?creator_id=${userId}`);
-                    const videosResult = await videosResponse.json();
-                    if (videosResult.success && videosResult.data) {
-                        videoCount = videosResult.data.length || 0;
-                    }
-                } catch (error) {
-                    console.log('Could not load creator videos');
-                }
-            }
-            
-            if (user && user.role === 'viewer') {
-                try {
-                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                    const purchasesResponse = await fetch(`${apiUrl}/purchases?user_id=${userId}`);
-                    const purchasesResult = await purchasesResponse.json();
-                    if (purchasesResult.success && purchasesResult.data) {
-                        purchaseCount = purchasesResult.data.length || 0;
-                        totalSpent = purchasesResult.data.reduce((sum, purchase) => sum + (parseFloat(purchase.price) || 0), 0);
-                    }
-                } catch (error) {
-                    console.log('Could not load user purchases');
-                }
-            }
-            
-            // Update the modal with real data
-            document.getElementById('detailVideoCount').textContent = videoCount;
-            document.getElementById('detailPurchaseCount').textContent = purchaseCount;
-            document.getElementById('detailTotalSpent').textContent = `$${totalSpent.toFixed(2)}`;
-        } catch (error) {
-            console.error('Error loading user stats:', error);
-            // Fallback to default values
-            document.getElementById('detailVideoCount').textContent = '0';
-            document.getElementById('detailPurchaseCount').textContent = '0';
-            document.getElementById('detailTotalSpent').textContent = '$0.00';
-        }
-    }
-
-    editUser(userId) {
-        try {
-            const user = this.users.find(u => u.id === userId);
-            if (!user) {
-                window.apiService?.showErrorMessage('User not found');
-                return;
-            }
-
-            // Populate edit form
-            document.getElementById('editUserId').value = user.id;
-            document.getElementById('editFirstName').value = user.firstName || user.name || '';
-            document.getElementById('editLastName').value = user.lastName || '';
-            document.getElementById('editEmail').value = user.email || '';
-            document.getElementById('editUserType').value = user.role || 'viewer';
-            document.getElementById('editStatus').value = user.status || 'active';
-
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
-            modal.show();
-        } catch (error) {
-            console.error('Error editing user:', error);
-            window.apiService?.showErrorMessage('Failed to load user for editing');
-        }
-    }
-
-    async revokeUser(userId) {
-        if (confirm('Are you sure you want to revoke access for this user? They will no longer be able to access their dashboard.')) {
-            try {
-                // Update user status to revoked
-                const response = await window.apiService.put(`/api/users/${userId}`, {
-                    status: 'revoked'
-                });
-
-                if (response.success) {
-                    // Update local data
-                    const userIndex = this.users.findIndex(u => u.id === userId);
-                    if (userIndex !== -1) {
-                        this.users[userIndex].status = 'revoked';
-                    }
-                    
-                    // Refresh DataTable
-                    this.usersTable.clear().rows.add(this.users).draw();
-                    
-                    window.apiService.showSuccessMessage('User access revoked successfully');
-                } else {
-                    window.apiService.handleApiError(response, 'Failed to revoke user access');
-                }
-            } catch (error) {
-                console.error('Error revoking user:', error);
-                // Demo mode - update locally
-                const userIndex = this.users.findIndex(u => u.id === userId);
-                if (userIndex !== -1) {
-                    this.users[userIndex].status = 'revoked';
-                    this.usersTable.clear().rows.add(this.users).draw();
-                    window.apiService.showSuccessMessage('User access revoked successfully (demo mode)');
-                }
-            }
-        }
-    }
-
-    deleteUser(userId) {
-        this.currentUserId = userId;
-        const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-        modal.show();
-    }
-
-    async handleConfirmDelete() {
-        if (!this.currentUserId) return;
-
-        try {
-            const response = await window.apiService.delete(`/api/users/${this.currentUserId}`);
-            
-            if (response.success) {
-                // Remove from local data
-                this.users = this.users.filter(u => u.id !== this.currentUserId);
-                
-                // Refresh DataTable
-                this.usersTable.clear().rows.add(this.users).draw();
-                
-                // Update count
-                const totalUsersCount = document.getElementById('totalUsersCount');
-                if (totalUsersCount) {
-                    totalUsersCount.textContent = this.users.length;
-                }
-                
-                // Hide modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
-                modal.hide();
-                
-                window.apiService.showSuccessMessage('User deleted successfully');
-            } else {
-                window.apiService.handleApiError(response, 'Failed to delete user');
-            }
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            // Demo mode - remove locally
-            this.users = this.users.filter(u => u.id !== this.currentUserId);
-            this.usersTable.clear().rows.add(this.users).draw();
-            
-            const totalUsersCount = document.getElementById('totalUsersCount');
-            if (totalUsersCount) {
-                totalUsersCount.textContent = this.users.length;
-            }
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
-            modal.hide();
-            
-            window.apiService.showSuccessMessage('User deleted successfully (demo mode)');
-        }
-        
-        this.currentUserId = null;
-    }
-
-    async handleAddUser() {
-        const form = document.getElementById('addUserForm');
-        const formData = new FormData(form);
-        
-        const userData = {
-            name: `${formData.get('firstName')} ${formData.get('lastName')}`.trim(),
-            email: formData.get('email'),
-            role: formData.get('userType'),
-            status: formData.get('status') || 'active'
+        const badgeClass = {
+            'admin': 'danger', 
+            'creator': 'success', 
+            'viewer': 'primary'
         };
-
-        if (!userData.name || !userData.email || !userData.role) {
-            window.apiService?.showErrorMessage('Please fill in all required fields');
-            return;
-        }
-
-        try {
-            const response = await window.apiService.post('/api/users', userData);
-            
-            if (response.success) {
-                // Add to local data
-                const newUser = {
-                    id: response.data.id || Date.now(),
-                    firstName: formData.get('firstName'),
-                    lastName: formData.get('lastName'),
-                    name: userData.name,
-                    email: userData.email,
-                    role: userData.role,
-                    status: userData.status,
-                    joinDate: new Date().toISOString()
-                };
-                
-                this.users.push(newUser);
-                
-                // Refresh DataTable
-                this.usersTable.clear().rows.add(this.users).draw();
-                
-                // Update count
-                const totalUsersCount = document.getElementById('totalUsersCount');
-                if (totalUsersCount) {
-                    totalUsersCount.textContent = this.users.length;
-                }
-                
-                // Hide modal and reset form
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
-                modal.hide();
-                form.reset();
-                
-                window.apiService.showSuccessMessage('User created successfully');
-            } else {
-                window.apiService.handleApiError(response, 'Failed to create user');
-            }
-        } catch (error) {
-            console.error('Error creating user:', error);
-            // Demo mode
-            const newUser = {
-                id: Date.now(),
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                name: userData.name,
-                email: userData.email,
-                role: userData.role,
-                status: userData.status,
-                joinDate: new Date().toISOString()
-            };
-            
-            this.users.push(newUser);
-            this.usersTable.clear().rows.add(this.users).draw();
-            
-            const totalUsersCount = document.getElementById('totalUsersCount');
-            if (totalUsersCount) {
-                totalUsersCount.textContent = this.users.length;
-            }
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
-            modal.hide();
-            form.reset();
-            
-            window.apiService.showSuccessMessage('User created successfully (demo mode)');
-        }
+        return badgeClass[role] || 'secondary';
     }
 
-    async handleUpdateUser() {
-        const form = document.getElementById('editUserForm');
-        const formData = new FormData(form);
-        const userId = parseInt(formData.get('editUserId'));
+    showAlert(message, type = 'info') {
+        // Simple alert implementation
+        console.log(`${type.toUpperCase()}: ${message}`);
         
-        const userData = {
-            name: `${formData.get('editFirstName')} ${formData.get('editLastName')}`.trim(),
-            email: formData.get('editEmail'),
-            role: formData.get('editUserType'),
-            status: formData.get('editStatus')
-        };
-
-        try {
-            const response = await window.apiService.put(`/api/users/${userId}`, userData);
-            
-            if (response.success) {
-                // Update local data
-                const userIndex = this.users.findIndex(u => u.id === userId);
-                if (userIndex !== -1) {
-                    this.users[userIndex] = {
-                        ...this.users[userIndex],
-                        firstName: formData.get('editFirstName'),
-                        lastName: formData.get('editLastName'),
-                        name: userData.name,
-                        email: userData.email,
-                        role: userData.role,
-                        status: userData.status
-                    };
-                }
-                
-                // Refresh DataTable
-                this.usersTable.clear().rows.add(this.users).draw();
-                
-                // Hide modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
-                modal.hide();
-                
-                window.apiService.showSuccessMessage('User updated successfully');
-            } else {
-                window.apiService.handleApiError(response, 'Failed to update user');
-            }
-        } catch (error) {
-            console.error('Error updating user:', error);
-            // Demo mode
-            const userIndex = this.users.findIndex(u => u.id === userId);
-            if (userIndex !== -1) {
-                this.users[userIndex] = {
-                    ...this.users[userIndex],
-                    firstName: formData.get('editFirstName'),
-                    lastName: formData.get('editLastName'),
-                    name: userData.name,
-                    email: userData.email,
-                    role: userData.role,
-                    status: userData.status
-                };
-                
-                this.usersTable.clear().rows.add(this.users).draw();
-                
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
-                modal.hide();
-                
-                window.apiService.showSuccessMessage('User updated successfully (demo mode)');
-            }
+        // Create toast notification if possible
+        if (window.commonUtils && window.commonUtils.showToast) {
+            window.commonUtils.showToast(message, type);
+        } else {
+            // Fallback to browser alert
+            alert(message);
         }
     }
 
-    editVideo(videoId) {
-        console.log('Edit video:', videoId);
+    refreshUsersTable() {
+        if (this.usersTable) {
+            this.loadUsersData();
+        }
     }
 
-    deleteVideo(videoId) {
-        if (confirm('Are you sure you want to delete this video?')) {
-            console.log('Delete video:', videoId);
+    // Helper method for getting video status badge color
+    getVideoStatusBadgeColor(status) {
+        switch(status) {
+            case 'published':
+            case 'active': return 'success';
+            case 'pending': return 'warning';
+            case 'flagged': return 'danger';
+            case 'rejected': return 'dark';
+            case 'draft': return 'secondary';
+            default: return 'primary';
         }
     }
 }
-
-// Global functions for user detail modal integration
-window.editUserFromDetails = function() {
-    if (window.adminManager && window.adminManager.currentUserId) {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('userDetailsModal'));
-        modal.hide();
-        
-        setTimeout(() => {
-            window.adminManager.editUser(window.adminManager.currentUserId);
-        }, 300);
-    }
-};
-
-window.viewUserDetailsPage = function(userId) {
-    window.location.href = `user-detail.html?id=${userId}`;
-};
-
-// Helper function for editing user from details modal
-window.editUserFromDetails = function() {
-    if (window.adminManager && window.adminManager.currentUserId) {
-        // Hide the details modal first
-        const detailsModal = bootstrap.Modal.getInstance(document.getElementById('userDetailsModal'));
-        if (detailsModal) {
-            detailsModal.hide();
-        }
-        
-        // Small delay to ensure modal is closed before opening edit modal
-        setTimeout(() => {
-            window.adminManager.editUser(window.adminManager.currentUserId);
-        }, 200);
-    }
-};
-
-window.exportUsers = function() {
-    if (window.adminManager.users.length === 0) {
-        window.apiService?.showErrorMessage('No users to export');
-        return;
-    }
-    
-    // Create CSV content
-    const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Join Date'];
-    const csvContent = [
-        headers.join(','),
-        ...window.adminManager.users.map(user => [
-            user.id,
-            `"${(user.firstName || user.name || '') + ' ' + (user.lastName || '')}".trim()`,
-            `"${user.email || ''}"`,
-            user.role || 'viewer',
-            user.status || 'active',
-            user.joinDate ? new Date(user.joinDate).toLocaleDateString() : 'Unknown'
-        ].join(','))
-    ].join('\n');
-    
-    // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = `videohub_users_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    
-    window.apiService?.showSuccessMessage('Users exported successfully');
-};
-
-// Initialize admin manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.adminManager = new AdminManager();
-});

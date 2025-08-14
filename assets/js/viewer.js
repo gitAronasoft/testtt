@@ -60,8 +60,8 @@ class ViewerManager {
                 if (currentPage === 'dashboard.html') {
                     // Load metrics and videos for dashboard
                     const [metricsResponse, videosResponse] = await Promise.all([
-                        window.apiService.get(`/metrics/viewer?user_id=${userId}`),
-                        window.apiService.get('/videos')
+                        window.apiService.get(`/api/endpoints/metrics.php?type=viewer&user_id=${userId}`),
+                        window.apiService.get('/api/videos')
                     ]);
                     
                     if (metricsResponse.success) {
@@ -256,7 +256,7 @@ class ViewerManager {
         
         try {
             // Get user-specific purchases for card display
-            const purchasesResponse = await window.apiService.get(`/purchases?user_id=${userId}`);
+            const purchasesResponse = await window.apiService.get(`/api/purchases?user_id=${userId}`);
             
             if (purchasesResponse.success) {
                 this.purchases = Array.isArray(purchasesResponse.purchases) ? purchasesResponse.purchases : 
@@ -291,7 +291,7 @@ class ViewerManager {
         
         try {
             // Get user-specific purchases ONLY on purchases page
-            const purchasesResponse = await window.apiService.get(`/purchases?user_id=${userId}`);
+            const purchasesResponse = await window.apiService.get(`/api/purchases?user_id=${userId}`);
             console.log('Purchases API response:', purchasesResponse);
             
             if (purchasesResponse.success) {

@@ -29,7 +29,7 @@ class SimpleProfileManager {
             let userData = null;
             if (window.apiService) {
                 try {
-                    const result = await window.apiService.get(`/users/${userSession.id}`);
+                    const result = await window.apiService.get(`/api/users/${userSession.id}`);
                     // console.log('API response:', result);
                     if (result.success && result.data) {
                         userData = result.data;
@@ -106,6 +106,7 @@ class SimpleProfileManager {
         }
 
         // Update additional profile elements (viewer/admin specific)
+        this.setFieldValue('displayName', userData.name);
         this.setFieldValue('DisplayName', userData.name);
         this.setFieldValue('userRole', this.getMembershipType(userData.role));
         this.setFieldValue('memberSince', userData.joinDate || 'Recent');
@@ -185,19 +186,18 @@ class SimpleProfileManager {
                 return;
             }
 
-            // Simple API call
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await fetch(`${apiUrl}/users/${userSession.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
+            // Use API service for profile updates
+            if (!window.apiService) {
+                this.showAlert('API service not available. Please refresh the page.', 'danger');
+                return;
+            }
 
-            if (response.ok) {
+            const response = await window.apiService.put(`/api/users/${userSession.id}`, formData);
+
+            if (response.success) {
                 // Update session with new data
                 const updatedSession = { ...userSession, ...formData };
+                localStorage.setItem('userSession', JSON.stringify(updatedSession));
                 sessionStorage.setItem('userSession', JSON.stringify(updatedSession));
                 
                 this.showAlert('Profile updated successfully!', 'success');
@@ -225,20 +225,19 @@ class SimpleProfileManager {
 
         try {
             const userSession = this.getUserSession();
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await fetch(`${apiUrl}/auth/change-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: userSession.id,
-                    current_password: currentPassword,
-                    new_password: newPassword
-                })
+            
+            if (!window.apiService) {
+                this.showAlert('API service not available. Please refresh the page.', 'danger');
+                return;
+            }
+
+            const response = await window.apiService.post('/api/auth/change-password', {
+                user_id: userSession.id,
+                current_password: currentPassword,
+                new_password: newPassword
             });
 
-            if (response.ok) {
+            if (response.success) {
                 document.getElementById('changePasswordForm').reset();
                 this.showAlert('Password updated successfully!', 'success');
             } else {

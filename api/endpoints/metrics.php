@@ -19,7 +19,10 @@ $path_parts = explode('/', trim($path, '/'));
 try {
     switch ($method) {
         case 'GET':
-            if (isset($path_parts[1]) && $path_parts[1] === 'admin') {
+            // Check for type parameter in URL
+            $type = $_GET['type'] ?? null;
+            
+            if ($type === 'admin' || (isset($path_parts[1]) && $path_parts[1] === 'admin')) {
                 // Admin dashboard metrics
                 $metrics = [];
                 
@@ -60,7 +63,7 @@ try {
                     'data' => $metrics
                 ]);
                 
-            } elseif (isset($path_parts[1]) && $path_parts[1] === 'creator') {
+            } elseif ($type === 'creator' || (isset($path_parts[1]) && $path_parts[1] === 'creator')) {
                 // Creator dashboard metrics
                 $creatorId = $_GET['creator_id'] ?? null;
                 
@@ -150,6 +153,46 @@ try {
                     $metrics['userPurchases'] = 0;
                     $metrics['userSpent'] = '0.00';
                 }
+                
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'data' => $metrics
+                ]);
+                
+            } elseif ($type === 'viewer' || (isset($path_parts[1]) && $path_parts[1] === 'viewer')) {
+                // Viewer dashboard metrics
+                $userId = $_GET['user_id'] ?? null;
+                
+                if (!$userId) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'User ID is required for viewer metrics'
+                    ]);
+                    return;
+                }
+                
+                // Get viewer metrics (purchases, watched videos, etc.)
+                $query = "SELECT 
+                            COUNT(DISTINCT p.id) as totalPurchases,
+                            COALESCE(SUM(CAST(p.amount AS DECIMAL(10,2))), 0) as totalSpent,
+                            COUNT(DISTINCT v.id) as totalWatched
+                          FROM purchases p
+                          LEFT JOIN videos v ON p.video_id = v.id
+                          WHERE p.user_id_new = :user_id";
+                
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(':user_id', $userId);
+                $stmt->execute();
+                $viewerStats = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                $metrics = [
+                    'totalPurchases' => (int)$viewerStats['totalPurchases'],
+                    'totalSpent' => (float)$viewerStats['totalSpent'],
+                    'totalWatched' => (int)$viewerStats['totalWatched'],
+                    'favoriteVideos' => 0 // Can be enhanced later
+                ];
                 
                 http_response_code(200);
                 echo json_encode([

@@ -59,7 +59,7 @@ class AuthGuard {
             // Wait for API service to be available
             await this.waitForAPIService();
             
-            const response = await window.apiService.get('/auth/verify');
+            const response = await window.apiService.get('/api/auth/verify');
             
             if (response.success && response.data) {
                 // Update user session with fresh data
@@ -88,7 +88,7 @@ class AuthGuard {
             await this.waitForAPIService();
             
             // Call logout endpoint
-            await window.apiService.post('/auth/logout');
+            await window.apiService.post('/api/auth/logout');
         } catch (error) {
             console.error('Logout API call failed:', error);
         } finally {

@@ -756,6 +756,49 @@ try {
                     ]);
                 }
 
+            } elseif ((isset($path_parts[0]) && $path_parts[0] === 'change-password') || (isset($path_parts[1]) && $path_parts[1] === 'change-password') || (isset($path_parts[2]) && $path_parts[2] === 'change-password')) {
+                // Handle password change
+                if (!isset($data['user_id']) || !isset($data['current_password']) || !isset($data['new_password'])) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Missing required fields'
+                    ]);
+                    exit;
+                }
+
+                // Verify current password
+                $stmt = $db->prepare("SELECT password FROM users WHERE id = ?");
+                $stmt->execute([$data['user_id']]);
+                $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$user_data || !password_verify($data['current_password'], $user_data['password'])) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Current password is incorrect'
+                    ]);
+                    exit;
+                }
+
+                // Update password
+                $new_password_hash = password_hash($data['new_password'], PASSWORD_DEFAULT);
+                $stmt = $db->prepare("UPDATE users SET password = ? WHERE id = ?");
+                
+                if ($stmt->execute([$new_password_hash, $data['user_id']])) {
+                    http_response_code(200);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Password updated successfully'
+                    ]);
+                } else {
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to update password'
+                    ]);
+                }
+
             } elseif ((isset($path_parts[0]) && $path_parts[0] === 'logout') || (isset($path_parts[1]) && $path_parts[1] === 'logout') || (isset($path_parts[2]) && $path_parts[2] === 'logout')) {
                 // Handle logout
                 $headers = getallheaders();

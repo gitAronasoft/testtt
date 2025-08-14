@@ -215,11 +215,28 @@ try {
             break;
 
         case 'PUT':
-            // Update user
-            if (isset($path_parts[1]) && is_numeric($path_parts[1])) {
-                $data = json_decode(file_get_contents("php://input"), true);
+            // Update user - support both /api/users/{id} and /users/{id} patterns
+            $data = json_decode(file_get_contents("php://input"), true);
+            
+            // Extract user ID from URL path - handle subfolder deployments
+            $userId = null;
+            
+            // Check different possible positions for the user ID in the path
+            if (preg_match('/.*\/api\/users\/(\d+)/', $path, $matches)) {
+                $userId = $matches[1];
+            } elseif (preg_match('/.*\/users\/(\d+)/', $path, $matches)) {
+                $userId = $matches[1];
+            } elseif (isset($path_parts[1]) && is_numeric($path_parts[1])) {
+                $userId = $path_parts[1];
+            } elseif (isset($path_parts[2]) && is_numeric($path_parts[2])) {
+                $userId = $path_parts[2];
+            } elseif (isset($path_parts[3]) && is_numeric($path_parts[3])) {
+                $userId = $path_parts[3];
+            }
+            
+            if ($userId) {
                 
-                $user->id = $path_parts[1];
+                $user->id = $userId;
                 
                 // Check if user exists first
                 if (!$user->readOne()) {
