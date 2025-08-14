@@ -60,10 +60,7 @@ class AuthManager {
 
         console.log('Checking authentication - Path:', currentPath, 'Protected:', isProtectedPage, 'Auth Page:', isAuthPage);
 
-        // Show loader for protected pages
-        if (isProtectedPage) {
-            this.showAuthLoader();
-        }
+        // Silent verification for protected pages - no visual loader
 
         try {
             // Validate current session
@@ -89,7 +86,6 @@ class AuthManager {
                 }
                 
                 // Authentication successful - allow access
-                this.hideAuthLoader();
                 return;
             }
             
@@ -102,7 +98,6 @@ class AuthManager {
             }
             
             // Not protected page, allow access
-            this.hideAuthLoader();
             
         } catch (error) {
             console.error('Authentication check failed:', error);
@@ -114,7 +109,7 @@ class AuthManager {
                 return;
             }
             
-            this.hideAuthLoader();
+            // Silent error handling - no visual feedback
         }
     }
 
@@ -369,8 +364,14 @@ class AuthManager {
         // Validate every 5 minutes
         setInterval(() => {
             if (this.currentUser && this.authToken && this.isProtectedPage(window.location.pathname)) {
-                this.validateSession().catch(error => {
+                this.validateSession().then(isValid => {
+                    if (!isValid) {
+                        console.log('Periodic validation failed, auto-logout');
+                        this.performAutoLogout();
+                    }
+                }).catch(error => {
                     console.error('Periodic validation failed:', error);
+                    this.performAutoLogout();
                 });
             }
         }, 5 * 60 * 1000);
@@ -398,8 +399,14 @@ class AuthManager {
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && this.currentUser && this.isProtectedPage(window.location.pathname)) {
                 // Page became visible, validate session
-                this.validateSession().catch(error => {
+                this.validateSession().then(isValid => {
+                    if (!isValid) {
+                        console.log('Visibility validation failed, auto-logout');
+                        this.performAutoLogout();
+                    }
+                }).catch(error => {
                     console.error('Visibility validation failed:', error);
+                    this.performAutoLogout();
                 });
             }
         });
@@ -451,6 +458,12 @@ class AuthManager {
 
     hasRole(role) {
         return this.currentUser && this.currentUser.userType === role;
+    }
+
+    performAutoLogout() {
+        console.log('Auto-logout triggered due to failed verification');
+        this.clearAuth();
+        this.redirectToLogin();
     }
 }
 

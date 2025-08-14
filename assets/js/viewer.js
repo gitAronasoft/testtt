@@ -979,49 +979,36 @@ class ViewerManager {
         modal.className = 'modal fade';
         modal.id = 'purchaseModal';
         modal.innerHTML = `
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content border-0 shadow-lg">
-                    <div class="modal-header bg-success text-white border-0">
-                        <h5 class="modal-title fw-bold">
-                            <i class="fas fa-shopping-cart me-2"></i>Purchase Video
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-credit-card me-2"></i>Purchase Video
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body p-0">
-                        <!-- Video Preview Section -->
-                        <div class="bg-gradient-success p-4 text-white">
+                    <div class="modal-body">
+                        <!-- Video Info Section -->
+                        <div class="bg-light p-3 rounded mb-4">
                             <div class="row align-items-center">
-                                <div class="col-md-3">
-                                    <div class="position-relative">
-                                        <img src="${video.thumbnail || 'https://via.placeholder.com/400x225/666/fff?text=Video'}" 
-                                             class="img-fluid rounded shadow" alt="${video.title}">
-                                        <div class="position-absolute top-50 start-50 translate-middle">
-                                            <i class="fas fa-play-circle fa-3x text-white opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h4 class="mb-2">${video.title}</h4>
-                                    <p class="mb-2 opacity-75">
+                                <div class="col-md-8">
+                                    <h5 class="mb-2 text-dark">${video.title}</h5>
+                                    <p class="mb-1 text-muted">
                                         <i class="fas fa-user me-1"></i>
-                                        By ${video.creatorName || video.creator_name || 'Unknown Creator'}
+                                        ${video.creatorName || video.creator_name || 'Unknown Creator'}
                                     </p>
-                                    <p class="mb-0 small opacity-75">${video.description || 'No description available'}</p>
+                                    <p class="mb-0 small text-muted">${video.description || 'No description available'}</p>
                                 </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="bg-white text-success rounded p-3 shadow">
-                                        <h3 class="mb-1 fw-bold">$${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}</h3>
-                                        <small class="text-muted">One-time purchase</small>
-                                        <br><small class="text-muted">Lifetime access</small>
-                                    </div>
+                                <div class="col-md-4 text-end">
+                                    <h3 class="mb-0 text-primary">$${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}</h3>
+                                    <small class="text-muted">One-time purchase</small>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Payment Form Section -->
-                        <div class="p-4">
-                            <form id="paymentForm">
-                                <div class="row g-4">
+                        <!-- Payment Form -->
+                        <form id="paymentForm">
+                            <div class="row g-3">
                                     <!-- Payment Methods -->
                                     <div class="col-md-6">
                                         <div class="card border-0 bg-light-subtle h-100">
@@ -1130,23 +1117,16 @@ class ViewerManager {
                                 </div>
                             </form>
                             
-                            <div class="alert alert-warning border-0 bg-warning-subtle mt-4">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-info-circle text-warning fa-2x me-3"></i>
-                                    <div>
-                                        <h6 class="alert-heading mb-1">Demo Payment System</h6>
-                                        <small class="mb-0">This is a demonstration. No real charges will be made to your account.</small>
-                                    </div>
-                                </div>
+                            <div class="alert alert-warning mt-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Demo Mode:</strong> No real charges will be made.
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light border-0 px-4 py-3">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-2"></i>Cancel
-                        </button>
-                        <button type="button" class="btn btn-success btn-lg px-4" onclick="viewerManager.processPayment(${video.id}, ${userId})">
-                            <i class="fas fa-shopping-cart me-2"></i>Complete Purchase - $${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="viewerManager.processPayment(${video.id}, ${userId})">
+                            <i class="fas fa-credit-card me-1"></i>Purchase for $${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}
                         </button>
                     </div>
                 </div>

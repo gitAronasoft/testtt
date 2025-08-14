@@ -529,49 +529,37 @@ class CreatorManager {
         modal.id = 'editVideoModal';
         modal.innerHTML = `
             <div class="modal-dialog modal-lg">
-                <div class="modal-content border-0 shadow-lg">
-                    <div class="modal-header bg-warning text-dark border-0">
-                        <h5 class="modal-title fw-bold">
-                            <i class="fas fa-edit me-2"></i>Edit Video Details
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-edit me-2"></i>Edit Video
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body p-4">
-                        <div class="alert alert-info border-0 bg-info-subtle mb-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-info-circle text-info me-3"></i>
-                                <div>
-                                    <h6 class="alert-heading mb-1">Video Information</h6>
-                                    <small>Update your video details. Changes will be reflected across the platform.</small>
-                                </div>
-                            </div>
+                    <div class="modal-body">
+                        <div class="alert alert-light">
+                            <i class="fas fa-info-circle text-success me-2"></i>
+                            Update your video details and settings.
                         </div>
                         
                         <form id="editVideoForm">
                             <div class="row g-4">
                                 <div class="col-12">
-                                    <label for="editTitle" class="form-label fw-semibold">Video Title *</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">
-                                            <i class="fas fa-heading text-muted"></i>
-                                        </span>
-                                        <input type="text" class="form-control border-start-0 ps-0" id="editTitle" value="${video.title}" placeholder="Enter video title..." required>
-                                    </div>
+                                    <label for="editTitle" class="form-label">Video Title *</label>
+                                    <input type="text" class="form-control" id="editTitle" value="${video.title}" placeholder="Enter video title..." required>
                                 </div>
                                 
                                 <div class="col-12">
-                                    <label for="editDescription" class="form-label fw-semibold">Description</label>
-                                    <textarea class="form-control" id="editDescription" rows="4" placeholder="Describe your video content...">${video.description || ''}</textarea>
-                                    <small class="text-muted">Help viewers understand what your video is about</small>
+                                    <label for="editDescription" class="form-label">Description</label>
+                                    <textarea class="form-control" id="editDescription" rows="3" placeholder="Describe your video...">${video.description || ''}</textarea>
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <label for="editPrice" class="form-label fw-semibold">Price ($) *</label>
+                                    <label for="editPrice" class="form-label">Price ($) *</label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0">$</span>
-                                        <input type="number" class="form-control border-start-0" id="editPrice" value="${video.price}" min="0" step="0.01" placeholder="0.00" required>
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="editPrice" value="${video.price}" min="0" step="0.01" placeholder="0.00" required>
                                     </div>
-                                    <small class="text-muted">Set to $0.00 for free viewing</small>
                                 </div>
                                 
                                 <div class="col-md-6">
@@ -615,12 +603,10 @@ class CreatorManager {
                             </div>
                         </form>
                     </div>
-                    <div class="modal-footer bg-light border-0 px-4 py-3">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-2"></i>Cancel
-                        </button>
-                        <button type="button" class="btn btn-warning px-4" onclick="window.creatorManager.saveVideoChanges('${videoId}')">
-                            <i class="fas fa-save me-2"></i>Save Changes
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" onclick="window.creatorManager.saveVideoChanges('${videoId}')">
+                            <i class="fas fa-save me-1"></i>Save Changes
                         </button>
                     </div>
                 </div>
