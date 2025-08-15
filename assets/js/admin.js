@@ -124,8 +124,8 @@ class AdminManager {
                 
                 // Load additional data for dashboard
                 const [usersResponse, videosResponse] = await Promise.all([
-                    window.apiService.get('/admin/users'),
-                    window.apiService.get('/videos')
+                    window.apiService.get('/api/admin/users'),
+                    window.apiService.get('/api/videos')
                 ]);
                 
                 this.users = usersResponse.data || usersResponse.users || [];

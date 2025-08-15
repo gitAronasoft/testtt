@@ -15,7 +15,7 @@
     class APIService {
     constructor() {
         // Use VideoHubConfig for consistent base path handling
-        this.baseURL = this.getBaseURL();
+        this.baseURL = '/video-platform';
         this.timeout = 10000;
         this.useDataService = false; // Now using PHP backend
         this.authToken = this.getStoredToken(); // Initialize stored token on service creation
@@ -75,7 +75,7 @@
             url = endpoint;
         } else if (endpoint.startsWith('/api/')) {
             // Endpoint already includes /api/, use it directly
-            url = endpoint;
+            url = `${this.baseURL}${endpoint}`;
         } else {
             // Relative endpoint, prepend baseURL
             url = `${this.baseURL}${endpoint}`;

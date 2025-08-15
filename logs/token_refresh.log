@@ -1,0 +1,5 @@
+[2025-08-14 21:10:55] [INFO] Starting YouTube token refresh cron job
+[2025-08-14 21:10:55] [INFO] Successfully refreshed token for record ID: 2
+[2025-08-14 21:10:55] [INFO] Cron job completed. Refreshed: 1, Failed: 0
+[2025-08-14 21:12:10] [INFO] Starting YouTube token refresh cron job
+[2025-08-14 21:12:10] [INFO] No tokens need refresh at this time

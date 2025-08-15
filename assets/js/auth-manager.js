@@ -27,16 +27,16 @@ class AuthManager {
         this.loadStoredAuth();
         
         // Start authentication check
-        await this.checkAuthentication();
+        //await this.checkAuthentication();
         
         // Setup periodic validation
-        this.setupPeriodicValidation();
+        //this.setupPeriodicValidation();
         
         // Setup logout handlers
-        this.setupLogoutHandlers();
+         this.setupLogoutHandlers();
         
         // Handle browser back/forward
-        this.setupBrowserHandlers();
+        // this.setupBrowserHandlers();
         
         console.log('AuthManager initialized successfully');
     }
@@ -137,7 +137,8 @@ class AuthManager {
             await this.waitForAPIService();
             
             // Make validation request
-            const response = await this.makeAuthRequest('/api/auth/verify');
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await this.makeAuthRequest(`${apiUrl}/auth/verify`);
             
             if (response.success && response.data && response.data.user) {
                 // Update user data with fresh info
@@ -229,7 +230,8 @@ class AuthManager {
         try {
             // Attempt to call logout endpoint
             if (this.authToken) {
-                await this.makeAuthRequest('/api/auth/logout');
+                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+                await this.makeAuthRequest(`${apiUrl}/api/auth/logout`);
             }
         } catch (error) {
             console.error('Logout API call failed:', error);

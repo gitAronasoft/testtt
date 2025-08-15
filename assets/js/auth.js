@@ -240,10 +240,9 @@ class AuthManager {
             }
 
             // Wait for API service to be available
-            await this.waitForAPIService();
-
+            await this.waitForAPIService();          
             // Make API call to login endpoint
-            const response = await window.apiService.post('/auth/login', {
+            const response = await window.apiService.post(`/api/auth/login`, {
                 email: email,
                 password: password
             });
@@ -334,7 +333,8 @@ class AuthManager {
             await this.waitForAPIService();
 
             // Make API call to register endpoint
-            const response = await window.apiService.post('/auth/register', formData);
+         
+            const response = await window.apiService.post(`/api/auth/register`, formData);
 
             if (response.success && response.data) {
                 if (response.data.verification_required) {
@@ -954,7 +954,7 @@ class AuthManager {
             const action = isSignupPage ? 'google-signup' : 'google-login';
 
             // Send Google credential to backend using action-based endpoint
-            const apiResponse = await window.apiService.post('/auth', {
+            const apiResponse = await window.apiService.post('/api/auth', {
                 action: action,
                 credential: response.credential
             });

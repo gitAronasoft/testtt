@@ -267,7 +267,7 @@
 
                 if (userId) {
                     try {
-                        const response = await window.apiService.get(`/purchases?user_id=${userId}`);
+                        const response = await window.apiService.get(`/api/purchases?user_id=${userId}`);
                         const purchases = response.data || response.purchases || [];
 
                         // Update stats
