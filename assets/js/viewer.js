@@ -62,7 +62,7 @@ class ViewerManager {
                 if (currentPage === 'dashboard.html') {
                     // Load metrics and videos for dashboard
                     const [metricsResponse, videosResponse] = await Promise.all([
-                        window.apiService.get(`/api/endpoints/metrics.php?type=viewer&user_id=${userId}`),
+                        window.apiService.get(`/api/metrics?type=viewer&user_id=${userId}`),
                         window.apiService.get('/api/videos')
                     ]);
                     
@@ -715,10 +715,20 @@ class ViewerManager {
                     
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted">${video.views || 0} views</small>
-                        <button class="btn btn-sm ${isPurchased ? 'btn-success' : 'btn-primary'}" 
-                                onclick="${isPurchased ? `watchVideo('${youtubeId}', '${video.title}')` : `viewerManager.showPurchaseModal(${video.id})`}">
-                            ${isPurchased ? 'Watch' : 'Purchase'}
-                        </button>
+                        ${isPurchased ? `
+                            <div class="btn-group">
+                                <button class="btn btn-success btn-sm" onclick="watchVideo('${youtubeId}', '${video.title}')" title="Watch in modal">
+                                    <i class="fas fa-play me-1"></i>Watch
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="viewerManager.openVideoInNewTab(${video.id})" title="Open in new tab">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </button>
+                            </div>
+                        ` : `
+                            <button class="btn btn-primary btn-sm" onclick="viewerManager.showPurchaseModal(${video.id})">
+                                <i class="fas fa-shopping-cart me-1"></i>Purchase
+                            </button>
+                        `}
                     </div>
                 </div>
             </div>
@@ -808,21 +818,34 @@ class ViewerManager {
                     <div class="position-absolute bottom-0 start-0 end-0 p-3" style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
                         <div class="d-flex justify-content-between align-items-end">
                             <span class="badge bg-dark">${purchase.video.duration || '0:00'}</span>
-                            <button class="btn btn-success btn-sm" onclick="event.stopPropagation(); viewerManager.playVideo(${videoId})">
-                                <i class="fas fa-play me-1"></i>Watch Now
-                            </button>
+                            <div class="btn-group">
+                                <button class="btn btn-success btn-sm" onclick="event.stopPropagation(); viewerManager.playVideo(${videoId})" title="Watch in modal">
+                                    <i class="fas fa-play me-1"></i>Watch
+                                </button>
+                                <button class="btn btn-outline-light btn-sm" onclick="event.stopPropagation(); viewerManager.openVideoInNewTab(${videoId})" title="Open in new tab">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
                     <h6 class="card-title mb-2">${purchase.video.title || 'Untitled Video'}</h6>
                     <p class="card-text text-muted small mb-2">${purchase.video.description || purchase.description || 'No description available'}</p>
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="text-success fw-bold">$${amount.toFixed(2)}</span>
                         <small class="text-muted">by ${purchase.video.creator || purchase.creator_name || 'Unknown Creator'}</small>
                     </div>
-                    <div class="mt-2">
+                    <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted">Purchased: ${purchaseDate}</small>
+                        <div class="btn-group">
+                            <button class="btn btn-success btn-sm" onclick="viewerManager.playVideo(${videoId})" title="Watch in modal">
+                                <i class="fas fa-play me-1"></i>Watch
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="viewerManager.openVideoInNewTab(${videoId})" title="Open in new tab">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1011,6 +1034,47 @@ class ViewerManager {
         }
     }
 
+    openVideoInNewTab(videoId) {
+        const video = this.videos.find(v => v.id == videoId) || 
+                     this.purchases.find(p => p.video_id == videoId || p.video.id == videoId)?.video;
+        
+        if (!video) {
+            this.showNotification('Video not found', 'error');
+            return;
+        }
+        
+        // Get YouTube ID
+        let youtubeVideoId = video.youtube_id;
+        
+        if (!youtubeVideoId && video.thumbnail) {
+            // Try to extract from thumbnail URL as fallback
+            const patterns = [
+                /\/vi\/([^/]+)\//, // YouTube thumbnail URL format
+                /youtu\.be\/([^?]+)/, // Short URL format
+                /embed\/([^?]+)/ // Embed URL format
+            ];
+            
+            for (const pattern of patterns) {
+                const match = video.thumbnail.match(pattern);
+                if (match) {
+                    youtubeVideoId = match[1];
+                    break;
+                }
+            }
+        }
+        
+        if (!youtubeVideoId) {
+            this.showNotification('YouTube video ID not available', 'error');
+            return;
+        }
+        
+        // Open YouTube video in new tab
+        const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+        window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+        
+        this.showNotification(`Opening "${video.title}" in new tab`, 'info');
+    }
+
     shareVideo(videoId) {
         const video = this.videos.find(v => v.id == videoId);
         if (video) {
@@ -1062,258 +1126,473 @@ class ViewerManager {
     showPurchaseModal(videoId) {
         const video = this.videos.find(v => v.id == videoId);
         if (!video) {
-            alert('Video not found');
+            console.error('Video not found for ID:', videoId);
+            this.showNotification('Video not found', 'error');
             return;
         }
         
         // Get current user ID
-        const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
-        const userId = userSession.userId || 8;
+        const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+        const userId = userSession.id || userSession.userId || 8;
         
-        // Create payment modal
+        // Check if already purchased
+        const alreadyPurchased = this.purchases.some(p => p.video_id == videoId);
+        if (alreadyPurchased) {
+            this.showNotification('You have already purchased this video', 'info');
+            return;
+        }
+        
+        // Remove any existing modal
+        const existingModal = document.getElementById('purchaseModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Create new modal
         const modal = document.createElement('div');
         modal.className = 'modal fade';
         modal.id = 'purchaseModal';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-labelledby', 'purchaseModalLabel');
+        modal.setAttribute('aria-hidden', 'true');
+        
+        const price = parseFloat(video.price || 0);
+        
         modal.innerHTML = `
             <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-credit-card me-2"></i>Purchase Video
+                <div class="modal-content shadow-lg border-0">
+                    <div class="modal-header bg-gradient" style="background: linear-gradient(135deg, #007bff, #0056b3);">
+                        <h5 class="modal-title text-white fw-bold" id="purchaseModalLabel">
+                            <i class="fas fa-shopping-cart me-2"></i>Purchase Video
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <!-- Video Info Section -->
-                        <div class="bg-light p-3 rounded mb-4">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <h5 class="mb-2 text-dark">${video.title}</h5>
-                                    <p class="mb-1 text-muted">
-                                        <i class="fas fa-user me-1"></i>
-                                        ${video.creatorName || video.creator_name || 'Unknown Creator'}
-                                    </p>
-                                    <p class="mb-0 small text-muted">${video.description || 'No description available'}</p>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <h3 class="mb-0 text-primary">$${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}</h3>
-                                    <small class="text-muted">One-time purchase</small>
+                    
+                    <div class="modal-body p-4">
+                        <!-- Video Information -->
+                        <div class="card border-0 bg-light mb-4">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="fw-bold text-dark mb-2">${video.title}</h6>
+                                        <p class="text-muted mb-1">
+                                            <i class="fas fa-user-circle me-1"></i>
+                                            ${video.creatorName || video.creator_name || video.youtube_channel_title || 'Content Creator'}
+                                        </p>
+                                        <p class="text-muted small mb-0">${(video.description || 'High-quality video content').substring(0, 80)}...</p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <h3 class="text-primary fw-bold mb-0">$${price.toFixed(2)}</h3>
+                                        <small class="text-muted">One-time purchase</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Payment Form -->
-                        <form id="paymentForm">
-                            <div class="row g-3">
-                                    <!-- Payment Methods -->
-                                    <div class="col-md-6">
-                                        <div class="card border-0 bg-light-subtle h-100">
-                                            <div class="card-body p-4">
-                                                <h6 class="card-title mb-3">
-                                                    <i class="fas fa-credit-card text-primary me-2"></i>Payment Method
-                                                </h6>
-                                                <div class="d-grid gap-3">
-                                                    <div class="form-check p-3 border rounded">
-                                                        <input class="form-check-input" type="radio" name="paymentMethod" value="card" id="cardPayment" checked>
-                                                        <label class="form-check-label fw-semibold w-100" for="cardPayment">
-                                                            <i class="fas fa-credit-card text-primary me-2"></i>Credit/Debit Card
-                                                            <small class="d-block text-muted">Visa, Mastercard, American Express</small>
-                                                        </label>
-                                                    </div>
-                                                    <div class="form-check p-3 border rounded">
-                                                        <input class="form-check-input" type="radio" name="paymentMethod" value="paypal" id="paypalPayment">
-                                                        <label class="form-check-label fw-semibold w-100" for="paypalPayment">
-                                                            <i class="fab fa-paypal text-primary me-2"></i>PayPal
-                                                            <small class="d-block text-muted">Pay with your PayPal account</small>
-                                                        </label>
-                                                    </div>
-                                                    <div class="form-check p-3 border rounded">
-                                                        <input class="form-check-input" type="radio" name="paymentMethod" value="crypto" id="cryptoPayment">
-                                                        <label class="form-check-label fw-semibold w-100" for="cryptoPayment">
-                                                            <i class="fab fa-bitcoin text-warning me-2"></i>Cryptocurrency
-                                                            <small class="d-block text-muted">Bitcoin, Ethereum supported</small>
-                                                        </label>
+                        <form id="purchaseForm" novalidate>
+                            <div class="row g-4">
+                                <!-- Payment Methods -->
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold mb-3">
+                                        <i class="fas fa-credit-card text-primary me-2"></i>Payment Method
+                                    </h6>
+                                    
+                                    <div class="payment-methods">
+                                        <div class="form-check payment-option mb-3 p-3 border rounded" style="cursor: pointer;">
+                                            <input class="form-check-input" type="radio" name="paymentMethod" value="card" id="cardMethod" checked>
+                                            <label class="form-check-label w-100" for="cardMethod" style="cursor: pointer;">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-credit-card text-primary me-3 fs-5"></i>
+                                                    <div>
+                                                        <div class="fw-semibold">Credit/Debit Card</div>
+                                                        <small class="text-muted">Visa, Mastercard, Amex</small>
                                                     </div>
                                                 </div>
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="form-check payment-option mb-3 p-3 border rounded" style="cursor: pointer;">
+                                            <input class="form-check-input" type="radio" name="paymentMethod" value="paypal" id="paypalMethod">
+                                            <label class="form-check-label w-100" for="paypalMethod" style="cursor: pointer;">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fab fa-paypal text-primary me-3 fs-5"></i>
+                                                    <div>
+                                                        <div class="fw-semibold">PayPal</div>
+                                                        <small class="text-muted">Pay with PayPal account</small>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Payment Details -->
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold mb-3">
+                                        <i class="fas fa-lock text-success me-2"></i>Payment Details
+                                    </h6>
+                                    
+                                    <!-- Card Details -->
+                                    <div id="cardDetails" class="payment-details">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Card Number</label>
+                                            <input type="text" class="form-control" name="cardNumber" placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" maxlength="19" required>
+                                            <div class="invalid-feedback">Please enter a valid card number</div>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <label class="form-label fw-semibold">Expiry Date</label>
+                                                <input type="text" class="form-control" name="expiry" placeholder="MM/YY" value="12/26" maxlength="5" required>
+                                                <div class="invalid-feedback">Enter MM/YY format</div>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-semibold">CVV</label>
+                                                <input type="text" class="form-control" name="cvv" placeholder="123" value="123" maxlength="4" required>
+                                                <div class="invalid-feedback">Enter CVV code</div>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    <!-- Payment Details -->
-                                    <div class="col-md-6">
-                                        <div class="card border-0 bg-light-subtle h-100">
-                                            <div class="card-body p-4">
-                                                <h6 class="card-title mb-3">
-                                                    <i class="fas fa-lock text-success me-2"></i>Payment Details
-                                                </h6>
-                                                
-                                                <div id="cardDetails">
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-semibold">Card Number</label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text bg-white border-end-0">
-                                                                <i class="fas fa-credit-card text-muted"></i>
-                                                            </span>
-                                                            <input type="text" class="form-control border-start-0 ps-0" placeholder="1234 5678 9012 3456" name="cardNumber" value="4242 4242 4242 4242">
-                                                        </div>
-                                                    </div>
-                                                    <div class="row g-3">
-                                                        <div class="col-6">
-                                                            <label class="form-label fw-semibold">Expiry</label>
-                                                            <div class="input-group">
-                                                                <span class="input-group-text bg-white border-end-0">
-                                                                    <i class="fas fa-calendar text-muted"></i>
-                                                                </span>
-                                                                <input type="text" class="form-control border-start-0 ps-0" placeholder="MM/YY" name="expiry" value="12/26">
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <label class="form-label fw-semibold">CVV</label>
-                                                            <div class="input-group">
-                                                                <span class="input-group-text bg-white border-end-0">
-                                                                    <i class="fas fa-shield-alt text-muted"></i>
-                                                                </span>
-                                                                <input type="text" class="form-control border-start-0 ps-0" placeholder="123" name="cvv" value="123">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div id="paypalDetails" style="display: none;">
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-semibold">PayPal Email</label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text bg-white border-end-0">
-                                                                <i class="fab fa-paypal text-muted"></i>
-                                                            </span>
-                                                            <input type="email" class="form-control border-start-0 ps-0" placeholder="your@paypal.com" name="paypalEmail" value="demo@example.com">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div id="cryptoDetails" style="display: none;">
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-semibold">Wallet Address</label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text bg-white border-end-0">
-                                                                <i class="fab fa-bitcoin text-muted"></i>
-                                                            </span>
-                                                            <input type="text" class="form-control border-start-0 ps-0" placeholder="Wallet address..." name="walletAddress" value="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="alert alert-info border-0 bg-info-subtle mt-3">
-                                                    <i class="fas fa-shield-check text-info me-2"></i>
-                                                    <small>Your payment is secured with SSL encryption</small>
-                                                </div>
-                                            </div>
+                                    <!-- PayPal Details -->
+                                    <div id="paypalDetails" class="payment-details" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">PayPal Email</label>
+                                            <input type="email" class="form-control" name="paypalEmail" placeholder="your@email.com" value="demo@example.com">
+                                            <div class="invalid-feedback">Please enter a valid email address</div>
                                         </div>
                                     </div>
+                                    
+                                    <div class="alert alert-info border-0 mt-3">
+                                        <i class="fas fa-shield-check me-2"></i>
+                                        <small>Payments are secured with 256-bit SSL encryption</small>
+                                    </div>
                                 </div>
-                            </form>
-                            
-                            <div class="alert alert-warning mt-4">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Demo Mode:</strong> No real charges will be made.
                             </div>
+                        </form>
+                        
+                        <!-- Demo Notice -->
+                        <div class="alert alert-warning border-0 mt-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Demo Mode:</strong> This is a demonstration. No real charges will be made.
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="viewerManager.processPayment(${video.id}, ${userId})">
-                            <i class="fas fa-credit-card me-1"></i>Purchase for $${video.price ? parseFloat(video.price).toFixed(2) : '0.00'}
+                    
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="purchaseBtn">
+                            <i class="fas fa-credit-card me-2"></i>Purchase for $${price.toFixed(2)}
                         </button>
                     </div>
                 </div>
             </div>
         `;
         
+        // Add to document
         document.body.appendChild(modal);
-        const bootstrapModal = new bootstrap.Modal(modal);
+        
+        // Initialize Bootstrap modal
+        const bootstrapModal = new bootstrap.Modal(modal, {
+            backdrop: 'static',
+            keyboard: false
+        });
+        
+        // Show modal
         bootstrapModal.show();
         
-        // Handle payment method change
+        // Setup event handlers
+        this.setupModalEventHandlers(modal, video, userId, bootstrapModal);
+    }
+    
+    setupModalEventHandlers(modal, video, userId, bootstrapModal) {
+        const form = modal.querySelector('#purchaseForm');
+        const purchaseBtn = modal.querySelector('#purchaseBtn');
+        
+        // Payment method change handler
         modal.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                modal.querySelectorAll('#cardDetails, #paypalDetails, #cryptoDetails').forEach(detail => {
-                    detail.style.display = 'none';
+            radio.addEventListener('change', () => {
+                // Hide all payment details
+                modal.querySelectorAll('.payment-details').forEach(details => {
+                    details.style.display = 'none';
                 });
-                modal.querySelector('#' + this.value + 'Details').style.display = 'block';
+                
+                // Show selected payment details
+                const selectedMethod = radio.value;
+                const detailsElement = modal.querySelector(`#${selectedMethod}Details`);
+                if (detailsElement) {
+                    detailsElement.style.display = 'block';
+                }
+                
+                // Update payment option styling
+                modal.querySelectorAll('.payment-option').forEach(option => {
+                    option.classList.remove('border-primary', 'bg-light');
+                });
+                radio.closest('.payment-option').classList.add('border-primary', 'bg-light');
             });
         });
         
-        // Clean up when closed
-        modal.addEventListener('hidden.bs.modal', () => {
-            document.body.removeChild(modal);
-        });
-    }
-
-    async processPayment(videoId, userId) {
-        const modal = document.querySelector('.modal.show');
-        const form = modal.querySelector('#paymentForm');
-        const paymentMethod = form.querySelector('input[name="paymentMethod"]:checked').value;
-        
-        // Get payment details based on method
-        let paymentDetails = {};
-        switch (paymentMethod) {
-            case 'card':
-                paymentDetails = {
-                    card_number: form.querySelector('input[name="cardNumber"]').value,
-                    expiry: form.querySelector('input[name="expiry"]').value,
-                    cvv: form.querySelector('input[name="cvv"]').value
-                };
-                break;
-            case 'paypal':
-                paymentDetails = {
-                    paypal_email: form.querySelector('input[name="paypalEmail"]').value
-                };
-                break;
-            case 'crypto':
-                paymentDetails = {
-                    wallet_address: form.querySelector('input[name="walletAddress"]').value
-                };
-                break;
+        // Set initial payment method styling
+        const initialMethod = modal.querySelector('input[name="paymentMethod"]:checked');
+        if (initialMethod) {
+            initialMethod.closest('.payment-option').classList.add('border-primary', 'bg-light');
         }
         
+        // Purchase button click handler
+        purchaseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.processPurchase(modal, video, userId, bootstrapModal);
+        });
+        
+        // Form submission handler
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.processPurchase(modal, video, userId, bootstrapModal);
+        });
+        
+        // Cleanup on modal close
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+        
+        // Card number formatting
+        const cardNumberInput = modal.querySelector('input[name="cardNumber"]');
+        if (cardNumberInput) {
+            cardNumberInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+                e.target.value = value;
+            });
+        }
+        
+        // Expiry date formatting
+        const expiryInput = modal.querySelector('input[name="expiry"]');
+        if (expiryInput) {
+            expiryInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                }
+                e.target.value = value;
+            });
+        }
+        
+        // CVV number only
+        const cvvInput = modal.querySelector('input[name="cvv"]');
+        if (cvvInput) {
+            cvvInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '');
+            });
+        }
+    }
+
+    async processPurchase(modal, video, userId, bootstrapModal) {
+        const form = modal.querySelector('#purchaseForm');
+        const purchaseBtn = modal.querySelector('#purchaseBtn');
+        const paymentMethod = form.querySelector('input[name="paymentMethod"]:checked').value;
+        
+        // Validate form
+        if (!this.validatePaymentForm(form, paymentMethod)) {
+            return;
+        }
+        
+        // Get payment details
+        const paymentDetails = this.collectPaymentDetails(form, paymentMethod);
+        
         try {
-            // Show loading
-            const purchaseBtn = modal.querySelector('button[onclick*="processPayment"]');
-            purchaseBtn.disabled = true;
-            purchaseBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+            // Show loading state
+            this.showPaymentLoading(modal, purchaseBtn);
             
-            const response = await window.apiService.post('/payments/purchase', {
-                video_id: videoId,
+            // Make payment request  
+            const response = await window.apiService.post('/api/payments/purchase', {
+                video_id: video.id,
                 user_id: userId,
                 payment_method: paymentMethod,
                 payment_details: paymentDetails
             });
             
             if (response.success) {
-                // Close modal
-                bootstrap.Modal.getInstance(modal).hide();
-                
-                // Show success message
-                alert(`Purchase successful! You now have access to "${response.data.video_title}"`);
-                
-                // Refresh data to show purchased video
-                await this.loadDataFromAPI();
-                this.loadPageSpecificHandlers();
-                
+                await this.handlePaymentSuccess(modal, response, bootstrapModal);
             } else {
-                alert('Payment failed: ' + response.message);
+                this.handlePaymentError(modal, response.message || 'Payment failed');
             }
             
         } catch (error) {
-            console.error('Payment error:', error);
-            alert('Payment failed. Please try again.');
-        } finally {
-            const purchaseBtn = modal.querySelector('button[onclick*="processPayment"]');
-            if (purchaseBtn) {
-                purchaseBtn.disabled = false;
-                purchaseBtn.innerHTML = '<i class="fas fa-shopping-cart me-2"></i>Purchase for $' + (this.videos.find(v => v.id === videoId)?.price || '0.00');
+            console.error('Payment processing error:', error);
+            this.handlePaymentError(modal, 'Connection error. Please try again.');
+        }
+    }
+    
+    validatePaymentForm(form, paymentMethod) {
+        let isValid = true;
+        
+        // Clear previous validation states
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        if (paymentMethod === 'card') {
+            const cardNumber = form.querySelector('input[name="cardNumber"]').value.replace(/\s/g, '');
+            const expiry = form.querySelector('input[name="expiry"]').value;
+            const cvv = form.querySelector('input[name="cvv"]').value;
+            
+            // Validate card number
+            if (cardNumber.length < 13 || cardNumber.length > 19) {
+                form.querySelector('input[name="cardNumber"]').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Validate expiry
+            if (!/^\d{2}\/\d{2}$/.test(expiry)) {
+                form.querySelector('input[name="expiry"]').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Validate CVV
+            if (cvv.length < 3 || cvv.length > 4) {
+                form.querySelector('input[name="cvv"]').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+        } else if (paymentMethod === 'paypal') {
+            const email = form.querySelector('input[name="paypalEmail"]').value;
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                form.querySelector('input[name="paypalEmail"]').classList.add('is-invalid');
+                isValid = false;
             }
         }
+        
+        if (!isValid) {
+            this.showNotification('Please correct the highlighted fields', 'error');
+        }
+        
+        return isValid;
+    }
+    
+    collectPaymentDetails(form, paymentMethod) {
+        let details = {};
+        
+        switch (paymentMethod) {
+            case 'card':
+                details = {
+                    card_number: form.querySelector('input[name="cardNumber"]').value.replace(/\s/g, ''),
+                    expiry: form.querySelector('input[name="expiry"]').value,
+                    cvv: form.querySelector('input[name="cvv"]').value
+                };
+                break;
+            case 'paypal':
+                details = {
+                    paypal_email: form.querySelector('input[name="paypalEmail"]').value
+                };
+                break;
+        }
+        
+        return details;
+    }
+    
+    showPaymentLoading(modal, purchaseBtn) {
+        // Disable purchase button with loading state
+        purchaseBtn.disabled = true;
+        purchaseBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing Payment...';
+        
+        // Create loading overlay
+        const modalBody = modal.querySelector('.modal-body');
+        const overlay = document.createElement('div');
+        overlay.id = 'paymentOverlay';
+        overlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+        overlay.style.cssText = 'background: rgba(255,255,255,0.95); z-index: 1050; border-radius: 0.375rem;';
+        overlay.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Processing...</span>
+                </div>
+                <h5 class="mb-2">Processing Payment</h5>
+                <p class="text-muted mb-0">Please wait while we process your payment...</p>
+            </div>
+        `;
+        
+        modalBody.style.position = 'relative';
+        modalBody.appendChild(overlay);
+    }
+    
+    async handlePaymentSuccess(modal, response, bootstrapModal) {
+        const overlay = modal.querySelector('#paymentOverlay');
+        
+        // Show success message
+        overlay.innerHTML = `
+            <div class="text-center">
+                <div class="text-success mb-3">
+                    <i class="fas fa-check-circle" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-success mb-2">Payment Successful!</h4>
+                <p class="mb-3">You now have access to "<strong>${response.data.video_title}</strong>"</p>
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                <small class="text-muted">Updating your library...</small>
+            </div>
+        `;
+        
+        // Wait a moment, then refresh data and close modal
+        setTimeout(async () => {
+            try {
+                await this.loadDataFromAPI();
+                this.loadPageSpecificHandlers();
+                bootstrapModal.hide();
+                this.showNotification(`Successfully purchased "${response.data.video_title}"!`, 'success');
+            } catch (error) {
+                console.error('Error refreshing data after purchase:', error);
+                bootstrapModal.hide();
+                this.showNotification('Purchase successful! Please refresh the page to see your new video.', 'success');
+            }
+        }, 1500);
+    }
+    
+    handlePaymentError(modal, errorMessage) {
+        const overlay = modal.querySelector('#paymentOverlay');
+        const purchaseBtn = modal.querySelector('#purchaseBtn');
+        
+        // Show error message
+        overlay.innerHTML = `
+            <div class="text-center">
+                <div class="text-danger mb-3">
+                    <i class="fas fa-times-circle" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-danger mb-2">Payment Failed</h4>
+                <p class="mb-3">${errorMessage}</p>
+                <button class="btn btn-primary" onclick="this.closest('#paymentOverlay').remove(); document.querySelector('#purchaseBtn').disabled = false; document.querySelector('#purchaseBtn').innerHTML = '<i class=\\"fas fa-credit-card me-2\\"></i>Try Again';">
+                    <i class="fas fa-redo me-2"></i>Try Again
+                </button>
+            </div>
+        `;
+        
+        // Reset button after 5 seconds if user doesn't click try again
+        setTimeout(() => {
+            if (overlay && overlay.parentNode) {
+                overlay.remove();
+                if (purchaseBtn) {
+                    purchaseBtn.disabled = false;
+                    purchaseBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>Try Again';
+                }
+            }
+        }, 5000);
+    }
+    
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
     }
 
     async playVideo(videoId) {

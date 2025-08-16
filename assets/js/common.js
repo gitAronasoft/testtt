@@ -368,6 +368,72 @@ class CommonUtils {
         return `${minutes}:${secs.toString().padStart(2, '0')}`;
     }
 
+    // Video Playback Utilities
+    openVideoInNewTab(videoId, youtubeId = null) {
+        // If youtubeId is directly provided, use it
+        if (youtubeId) {
+            const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
+            window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+            this.showToast(`Opening video in new tab`, 'info');
+            return;
+        }
+        
+        // Otherwise, try to find the video in available data
+        let video = null;
+        
+        // Check viewer data
+        if (window.viewerManager && window.viewerManager.videos) {
+            video = window.viewerManager.videos.find(v => v.id == videoId);
+        }
+        
+        // Check creator data
+        if (!video && window.creatorManager && window.creatorManager.videos) {
+            video = window.creatorManager.videos.find(v => v.id == videoId);
+        }
+        
+        // Check admin data
+        if (!video && window.adminManager && window.adminManager.videos) {
+            video = window.adminManager.videos.find(v => v.id == videoId);
+        }
+        
+        if (!video) {
+            this.showToast('Video not found', 'error');
+            return;
+        }
+        
+        // Get YouTube ID
+        let youtubeVideoId = video.youtube_id;
+        
+        if (!youtubeVideoId && (video.thumbnail || video.youtube_thumbnail)) {
+            // Try to extract from thumbnail URL as fallback
+            const thumbnailUrl = video.thumbnail || video.youtube_thumbnail;
+            const patterns = [
+                /\/vi\/([^/]+)\//, // YouTube thumbnail URL format
+                /youtu\.be\/([^?]+)/, // Short URL format
+                /embed\/([^?]+)/ // Embed URL format
+            ];
+            
+            for (const pattern of patterns) {
+                const match = thumbnailUrl.match(pattern);
+                if (match) {
+                    youtubeVideoId = match[1];
+                    break;
+                }
+            }
+        }
+        
+        if (!youtubeVideoId) {
+            this.showToast('YouTube video ID not available', 'error');
+            return;
+        }
+        
+        // Open YouTube video in new tab
+        const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+        window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+        
+        this.showToast(`Opening "${video.title}" in new tab`, 'info');
+    }
+
     timeAgo(date) {
         const now = new Date();
         const past = new Date(date);

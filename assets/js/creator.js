@@ -538,9 +538,15 @@ class CreatorManager {
                         <div class="p-3">
                             <h6>${video.title}</h6>
                             <p class="text-muted">${video.description || 'No description available'}</p>
-                            <div class="d-flex justify-content-between">
-                                <span>Views: ${video.youtube_views || video.views || 0}</span>
-                                <span>Price: $${video.price}</span>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span>Views: ${video.youtube_views || video.views || 0}</span>
+                                    <span class="mx-2">•</span>
+                                    <span>Price: $${video.price}</span>
+                                </div>
+                                <button class="btn btn-outline-success btn-sm" onclick="window.creatorManager.openVideoInNewTab('${video.id}')" title="Open in new tab">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in YouTube
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -556,6 +562,37 @@ class CreatorManager {
         modal.addEventListener('hidden.bs.modal', () => {
             modal.remove();
         });
+    }
+
+    openVideoInNewTab(videoId) {
+        const video = this.videos.find(v => v.id == videoId);
+        
+        if (!video) {
+            this.showNotification('Video not found', 'error');
+            return;
+        }
+        
+        // Get YouTube ID
+        let youtubeVideoId = video.youtube_id;
+        
+        if (!youtubeVideoId && video.youtube_thumbnail) {
+            // Try to extract from thumbnail URL as fallback
+            const match = video.youtube_thumbnail.match(/\/vi\/([^\/]+)\//);
+            if (match) {
+                youtubeVideoId = match[1];
+            }
+        }
+        
+        if (!youtubeVideoId) {
+            this.showNotification('YouTube video ID not available', 'error');
+            return;
+        }
+        
+        // Open YouTube video in new tab
+        const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+        window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+        
+        this.showNotification(`Opening "${video.title}" in new tab`, 'info');
     }
 
     editVideo(videoId) {
@@ -1096,6 +1133,16 @@ class CreatorManager {
                             </div>
                         </div>
                         <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="btn-group">
+                                    <button class="btn btn-success btn-sm" onclick="window.creatorManager.playVideo('${video.id}')" title="Watch in modal">
+                                        <i class="fas fa-play me-1"></i>Watch
+                                    </button>
+                                    <button class="btn btn-outline-success btn-sm" onclick="window.creatorManager.openVideoInNewTab('${video.id}')" title="Open in new tab">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
                             <div class="btn-group w-100">
                                 <button class="btn btn-outline-primary btn-sm edit-video-btn" data-video-id="${video.id}">
                                     <i class="fas fa-edit me-1"></i>Edit

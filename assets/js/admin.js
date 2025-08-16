@@ -935,10 +935,20 @@ class AdminManager {
                         
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <small class="text-muted">${uploadDate}</small>
-                            <button class="btn btn-sm ${youtubeId ? 'btn-primary' : 'btn-outline-secondary'}" 
-                                    onclick="${youtubeId ? `watchVideo('${youtubeId}', '${video.title}')` : `alert('Video not available')`}">
-                                ${youtubeId ? '<i class="fas fa-play me-1"></i>Watch' : '<i class="fas fa-ban me-1"></i>Unavailable'}
-                            </button>
+                            ${youtubeId ? `
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm" onclick="watchVideo('${youtubeId}', '${video.title}')" title="Watch in modal">
+                                        <i class="fas fa-play me-1"></i>Watch
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="window.commonUtils.openVideoInNewTab('${video.id}', '${youtubeId}')" title="Open in new tab">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            ` : `
+                                <button class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-ban me-1"></i>Unavailable
+                                </button>
+                            `}
                         </div>
                         
                         <div class="d-flex gap-2">
@@ -1312,6 +1322,51 @@ class AdminManager {
         }
     }
 
+    // Video Playback Functions
+    watchVideo(youtubeId, title) {
+        // Create video player modal
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'videoPlayerModal';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <div class="ratio ratio-16x9">
+                            <iframe src="https://www.youtube.com/embed/${youtubeId}?autoplay=1" 
+                                    title="${title}" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen></iframe>
+                        </div>
+                        <div class="p-3">
+                            <h6>${title}</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Admin Preview</span>
+                                <button class="btn btn-outline-primary btn-sm" onclick="window.commonUtils.openVideoInNewTab(null, '${youtubeId}')" title="Open in new tab">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in YouTube
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+
+        // Remove modal after it's hidden
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+    }
+
     // Video stats update method
     updateVideoStats() {
         const totalVideos = document.getElementById('totalVideos');
@@ -1529,6 +1584,55 @@ class AdminManager {
         `).join('');
     }
 }
+
+// Global video playback function for admin
+function watchVideo(youtubeId, title) {
+    if (window.adminManager && typeof window.adminManager.watchVideo === 'function') {
+        window.adminManager.watchVideo(youtubeId, title);
+    } else {
+        // Fallback implementation
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'videoPlayerModal';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <div class="ratio ratio-16x9">
+                            <iframe src="https://www.youtube.com/embed/${youtubeId}?autoplay=1" 
+                                    title="${title}" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen></iframe>
+                        </div>
+                        <div class="p-3">
+                            <h6>${title}</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Admin Preview</span>
+                                <button class="btn btn-outline-primary btn-sm" onclick="window.commonUtils.openVideoInNewTab(null, '${youtubeId}')" title="Open in new tab">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in YouTube
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+    }
+}
+
 // Setup video filters if on videos page
 setTimeout(() => {
     if (window.location.pathname.includes('videos.html') && window.adminManager) {

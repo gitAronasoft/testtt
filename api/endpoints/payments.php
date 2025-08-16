@@ -216,7 +216,13 @@ function processPayment($method, $details, $amount) {
                 return ['success' => false, 'message' => 'Invalid card details'];
             }
             
-            // Simulate card processing (always success for demo)
+            // Basic validation for demo card
+            $cardNumber = str_replace(' ', '', $details['card_number']);
+            if ($cardNumber !== '4242424242424242' && strlen($cardNumber) < 13) {
+                return ['success' => false, 'message' => 'Please use test card: 4242 4242 4242 4242'];
+            }
+            
+            // Simulate card processing (always success for demo with valid test card)
             return ['success' => true, 'message' => 'Card payment processed successfully'];
             
         case 'paypal':
