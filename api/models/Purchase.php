@@ -104,7 +104,7 @@ class Purchase {
     // Create purchase
     public function create() {
         $query = "INSERT INTO " . $this->table_name . " 
-                  SET viewer_id=:viewer_id, video_id=:video_id, amount=:amount, 
+                  SET user_id_new=:viewer_id, video_id=:video_id, amount=:amount, 
                       payment_method=:payment_method, transaction_id=:transaction_id, 
                       status=:status, purchase_date=NOW(), created_at=NOW(), updated_at=NOW()";
 
@@ -137,7 +137,7 @@ class Purchase {
     // Check if user has purchased a video
     public function hasPurchased($viewer_id, $video_id) {
         $query = "SELECT id FROM " . $this->table_name . " 
-                  WHERE viewer_id = :viewer_id AND video_id = :video_id AND status = 'completed' 
+                  WHERE user_id_new = :viewer_id AND video_id = :video_id AND status = 'completed' 
                   LIMIT 1";
         
         $stmt = $this->conn->prepare($query);

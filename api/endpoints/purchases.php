@@ -100,6 +100,16 @@ try {
             $data = json_decode(file_get_contents("php://input"), true);
             
             if (!empty($data['viewer_id']) && !empty($data['video_id']) && !empty($data['amount'])) {
+                // Check if user has already purchased this video
+                if ($purchase->hasPurchased($data['viewer_id'], $data['video_id'])) {
+                    http_response_code(409);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'You have already purchased this video'
+                    ]);
+                    break;
+                }
+                
                 $purchase->viewer_id = $data['viewer_id'];
                 $purchase->video_id = $data['video_id'];
                 $purchase->amount = $data['amount'];

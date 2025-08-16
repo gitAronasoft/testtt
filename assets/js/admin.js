@@ -116,10 +116,18 @@ class AdminManager {
 
             if (window.apiService) {
                 // Load admin metrics from new metrics API
-                const metricsResponse = await window.apiService.get('/api/endpoints/metrics.php?type=admin');
-                if (metricsResponse.success) {
-                    const metrics = metricsResponse.data;
-                    this.updateDashboardMetrics(metrics);
+                try {
+                    const metricsResponse = await window.apiService.get('/api/endpoints/metrics.php?type=admin');
+                    if (metricsResponse.success) {
+                        const metrics = metricsResponse.data;
+                        this.updateDashboardMetrics(metrics);
+                    } else {
+                        // Calculate metrics manually if endpoint fails
+                        this.calculateMetricsManually();
+                    }
+                } catch (error) {
+                    console.log('Metrics endpoint not available, calculating manually');
+                    this.calculateMetricsManually();
                 }
                 
                 // Load additional data for dashboard
@@ -178,6 +186,22 @@ class AdminManager {
         if (totalVideosEl) totalVideosEl.textContent = metrics.totalVideos || 0;
         if (totalViewsEl) totalViewsEl.textContent = metrics.totalViews || 0;
         if (pendingVideosEl) pendingVideosEl.textContent = metrics.pendingVideos || 0;
+    }
+
+    calculateMetricsManually() {
+        // Calculate metrics from loaded data
+        const metrics = {
+            totalUsers: this.users.length || 0,
+            totalVideos: this.videos.length || 0,
+            totalViews: this.videos.reduce((sum, video) => sum + (parseInt(video.views) || 0), 0),
+            pendingVideos: this.videos.filter(video => video.status === 'pending').length || 0
+        };
+        this.updateDashboardMetrics(metrics);
+    }
+
+    // Add the missing viewUserDetailsPage function
+    viewUserDetailsPage(userId) {
+        window.location.href = `user-detail.html?id=${userId}`;
     }
 
     updateSidebarBadges() {
@@ -495,8 +519,7 @@ class AdminManager {
             
             // If not found locally, fetch from API
             if (!user) {
-                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                const response = await fetch(`${apiUrl}/admin/users?id=${userId}`);
+                const response = await fetch(`/api/endpoints/users.php/${userId}`);
                 const result = await response.json();
                 if (result.success) {
                     user = result.data;

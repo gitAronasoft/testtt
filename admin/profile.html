@@ -231,75 +231,67 @@
     <!-- Change Password Modal -->
     <div class="modal fade" id="changePasswordModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white border-0">
+                    <h5 class="modal-title fw-bold">
                         <i class="fas fa-key me-2"></i>Change Password
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="changePasswordForm">
+                <div class="modal-body p-4">
+                    <form id="changePasswordForm" novalidate>
                         <div class="mb-3">
-                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <label for="currentPassword" class="form-label fw-semibold">
+                                <i class="fas fa-lock me-1"></i>Current Password
+                            </label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('currentPassword', this)">
+                                <button class="btn btn-outline-secondary password-toggle" type="button" tabindex="-1">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
-                            <div class="invalid-feedback">
-                                Please enter your current password.
-                            </div>
+                            <div class="invalid-feedback"></div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="newPassword" class="form-label">New Password</label>
+                            <label for="newPassword" class="form-label fw-semibold">
+                                <i class="fas fa-key me-1"></i>New Password
+                            </label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="newPassword" name="newPassword" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword', this)">
+                                <button class="btn btn-outline-secondary password-toggle" type="button" tabindex="-1">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
                             <div class="form-text">
-                                Password must be at least 8 characters with letters, numbers, and symbols.
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Must be 8+ characters with uppercase, lowercase, numbers, and symbols
+                                </small>
                             </div>
-                            <div class="invalid-feedback">
-                                Please enter a valid new password.
-                            </div>
+                            <div class="invalid-feedback"></div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <label for="confirmPassword" class="form-label fw-semibold">
+                                <i class="fas fa-check-double me-1"></i>Confirm New Password
+                            </label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword', this)">
+                                <button class="btn btn-outline-secondary password-toggle" type="button" tabindex="-1">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
-                            <div class="invalid-feedback">
-                                Passwords do not match.
-                            </div>
-                        </div>
-
-                        <!-- Password Strength Indicator -->
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold">Password Strength</span>
-                                <span id="strengthText" class="badge bg-secondary">Enter password</span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div id="strengthBar" class="progress-bar" style="width: 0%; transition: all 0.3s ease;"></div>
-                            </div>
+                            <div class="invalid-feedback"></div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        Cancel
+                        <i class="fas fa-times me-2"></i>Cancel
                     </button>
                     <button type="submit" form="changePasswordForm" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i>Update Password
+                        <i class="fas fa-key me-2"></i>Update Password
                     </button>
                 </div>
             </div>
@@ -315,5 +307,6 @@
     <script src="../assets/js/auth-manager.js"></script>
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/simple-profile.js"></script>
+    <script src="../assets/js/change-password.js"></script>
 </body>
 </html>

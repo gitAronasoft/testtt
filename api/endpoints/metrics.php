@@ -118,50 +118,7 @@ try {
                 ]);
                 
             } elseif ($type === 'viewer' || (isset($path_parts[1]) && $path_parts[1] === 'viewer')) {
-                // Viewer dashboard metrics - General platform metrics (not user-specific)
-                $metrics = [];
-                
-                // Total available videos for browsing
-                $stmt = $db->query("SELECT COUNT(*) as count FROM videos");
-                $metrics['totalVideosCount'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
-                
-                // Total platform purchases (shows activity)
-                $stmt = $db->query("SELECT COUNT(*) as count FROM purchases");
-                $metrics['totalPurchases'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
-                
-                // Total platform revenue (shows platform success)
-                $stmt = $db->query("SELECT COALESCE(SUM(amount), 0) as total FROM purchases");
-                $metrics['platformRevenue'] = number_format($stmt->fetch(PDO::FETCH_ASSOC)['total'], 2);
-                
-                // Total creators on platform
-                $stmt = $db->query("SELECT COUNT(DISTINCT user_id) as count FROM videos WHERE user_id IS NOT NULL AND user_id != ''");
-                $metrics['totalCreators'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
-                
-                // Get user-specific data if user ID provided
-                $userId = $_GET['user_id'] ?? null;
-                if ($userId) {
-                    // User's purchased videos
-                    $stmt = $db->prepare("SELECT COUNT(*) as count FROM purchases WHERE user_id_new = ?");
-                    $stmt->execute([$userId]);
-                    $metrics['userPurchases'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
-                    
-                    // User's total spent
-                    $stmt = $db->prepare("SELECT COALESCE(SUM(amount), 0) as total FROM purchases WHERE user_id_new = ?");
-                    $stmt->execute([$userId]);
-                    $metrics['userSpent'] = number_format($stmt->fetch(PDO::FETCH_ASSOC)['total'], 2);
-                } else {
-                    $metrics['userPurchases'] = 0;
-                    $metrics['userSpent'] = '0.00';
-                }
-                
-                http_response_code(200);
-                echo json_encode([
-                    'success' => true,
-                    'data' => $metrics
-                ]);
-                
-            } elseif ($type === 'vieweer' || (isset($path_parts[1]) && $path_parts[1] === 'viewer')) {
-                // Viewer dashboard metrics
+                // Viewer dashboard metrics - User-specific metrics
                 $userId = $_GET['user_id'] ?? null;
                 
                 if (!$userId) {
@@ -173,26 +130,32 @@ try {
                     return;
                 }
                 
-                // Get viewer metrics (purchases, watched videos, etc.)
-                $query = "SELECT 
-                            COUNT(DISTINCT p.id) as totalPurchases,
-                            COALESCE(SUM(CAST(p.amount AS DECIMAL(10,2))), 0) as totalSpent,
-                            COUNT(DISTINCT v.id) as totalWatched
-                          FROM purchases p
-                          LEFT JOIN videos v ON p.video_id = v.id
-                          WHERE p.user_id_new = :user_id";
+                $metrics = [];
                 
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':user_id', $userId);
-                $stmt->execute();
-                $viewerStats = $stmt->fetch(PDO::FETCH_ASSOC);
+                // Total available videos for browsing
+                $stmt = $db->query("SELECT COUNT(*) as count FROM videos");
+                $metrics['totalVideosCount'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
-                $metrics = [
-                    'totalPurchases' => (int)$viewerStats['totalPurchases'],
-                    'totalSpent' => (float)$viewerStats['totalSpent'],
-                    'totalWatched' => (int)$viewerStats['totalWatched'],
-                    'favoriteVideos' => 0 // Can be enhanced later
-                ];
+                // User-specific purchased videos count (status can be empty, null, or 'completed')
+                $stmt = $db->prepare("SELECT COUNT(*) as count FROM purchases WHERE user_id_new = ? AND (status IS NULL OR status = '' OR status = 'completed')");
+                $stmt->execute([$userId]);
+                $metrics['purchasedVideosCount'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+                
+                // User's total spending (status can be empty, null, or 'completed')
+                $stmt = $db->prepare("SELECT COALESCE(SUM(CAST(amount AS DECIMAL(10,2))), 0) as total FROM purchases WHERE user_id_new = ? AND (status IS NULL OR status = '' OR status = 'completed')");
+                $stmt->execute([$userId]);
+                $metrics['totalSpentAmount'] = number_format($stmt->fetch(PDO::FETCH_ASSOC)['total'], 2);
+                
+                // Recent videos count (platform-wide)
+                $stmt = $db->query("SELECT COUNT(*) as count FROM videos WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+                $metrics['recentVideosCount'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+                
+                // Total creators on platform
+                $stmt = $db->query("SELECT COUNT(DISTINCT user_id) as count FROM videos WHERE user_id IS NOT NULL AND user_id != ''");
+                $metrics['totalCreators'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+                
+                // User's favorites count (placeholder for now)
+                $metrics['favoritesCount'] = 0;
                 
                 http_response_code(200);
                 echo json_encode([

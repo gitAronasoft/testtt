@@ -167,11 +167,7 @@ class SimpleProfileManager {
             profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
         }
 
-        // Password form submission
-        const passwordForm = document.getElementById('changePasswordForm');
-        if (passwordForm) {
-            passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
-        }
+        // Password form submission is now handled by change-password.js
     }
 
     async handleProfileUpdate(e) {
@@ -211,44 +207,8 @@ class SimpleProfileManager {
         }
     }
 
-    async handlePasswordChange(e) {
-        e.preventDefault();
-        
-        const currentPassword = document.getElementById('currentPassword')?.value;
-        const newPassword = document.getElementById('newPassword')?.value;
-        const confirmPassword = document.getElementById('confirmPassword')?.value;
-
-        if (newPassword !== confirmPassword) {
-            this.showAlert('Passwords do not match', 'danger');
-            return;
-        }
-
-        try {
-            const userSession = this.getUserSession();
-            
-            if (!window.apiService) {
-                this.showAlert('API service not available. Please refresh the page.', 'danger');
-                return;
-            }
-
-            const response = await window.apiService.post('/api/auth/change-password', {
-                user_id: userSession.id,
-                current_password: currentPassword,
-                new_password: newPassword
-            });
-
-            if (response.success) {
-                document.getElementById('changePasswordForm').reset();
-                this.showAlert('Password updated successfully!', 'success');
-            } else {
-                this.showAlert('Failed to update password', 'danger');
-            }
-            
-        } catch (error) {
-            console.error('Error updating password:', error);
-            this.showAlert('Error updating password', 'danger');
-        }
-    }
+    // Password change is now handled by change-password.js
+    // This method is deprecated and replaced
 
     getFormData() {
         const firstName = document.getElementById('firstName')?.value || '';

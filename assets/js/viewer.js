@@ -74,7 +74,14 @@ class ViewerManager {
                                  Array.isArray(videosResponse.data?.videos) ? videosResponse.data.videos : 
                                  Array.isArray(videosResponse.data) ? videosResponse.data : [];
                 } else if (currentPage === 'purchases.html') {
-                    // Load only purchases for purchases page
+                    // Load purchases data for purchases page
+                    const purchasesResponse = await window.apiService.get(`/api/purchases?user_id=${userId}`);
+                    
+                    if (purchasesResponse.success && purchasesResponse.data) {
+                        this.purchases = purchasesResponse.data;
+                        // Calculate and update purchase metrics
+                        this.updatePurchaseMetrics();
+                    }
                     this.videos = [];
                 } else {
                     // Minimal loading for other pages
@@ -122,29 +129,63 @@ class ViewerManager {
     }
 
     updateDashboardMetrics(metrics) {
-        // Update dashboard with general platform metrics
-        const totalVideosCountEl = document.getElementById('totalVideosCount');
-        const totalPurchasesCountEl = document.getElementById('totalPurchasesCount');
-        const platformRevenueEl = document.getElementById('platformRevenue');
-        const totalCreatorsEl = document.getElementById('totalCreators');
+        console.log('Updating dashboard metrics:', metrics);
         
-        // Update purchase page metrics
+        // Update dashboard with user-specific metrics
+        const totalVideosCountEl = document.getElementById('totalVideosCount');
         const purchasedVideosCountEl = document.getElementById('purchasedVideosCount');
         const totalSpentAmountEl = document.getElementById('totalSpentAmount');
+        const totalCreatorsEl = document.getElementById('totalCreators');
+        
+        // Legacy element IDs for backward compatibility
+        const totalPurchasesCountEl = document.getElementById('totalPurchasesCount');
+        const platformRevenueEl = document.getElementById('platformRevenue');
+        
+        // Purchase page metrics
         const totalPurchasesEl = document.getElementById('totalPurchases');
         const totalSpentEl = document.getElementById('totalSpent');
         
-        // Dashboard metrics (general platform stats)
+        // Dashboard metrics - map to correct HTML elements
         if (totalVideosCountEl) totalVideosCountEl.textContent = metrics.totalVideosCount || 0;
-        if (totalPurchasesCountEl) totalPurchasesCountEl.textContent = metrics.totalPurchases || 0;
-        if (platformRevenueEl) platformRevenueEl.textContent = '$' + (metrics.platformRevenue || '0.00');
+        if (purchasedVideosCountEl) purchasedVideosCountEl.textContent = metrics.purchasedVideosCount || 0;
+        if (totalSpentAmountEl) totalSpentAmountEl.textContent = '$' + (metrics.totalSpentAmount || '0.00');
         if (totalCreatorsEl) totalCreatorsEl.textContent = metrics.totalCreators || 0;
         
+        // Legacy elements for backward compatibility
+        if (totalPurchasesCountEl) totalPurchasesCountEl.textContent = metrics.purchasedVideosCount || 0;
+        if (platformRevenueEl) platformRevenueEl.textContent = '$' + (metrics.totalSpentAmount || '0.00');
+        
         // Purchase page metrics (user-specific)
-        if (purchasedVideosCountEl) purchasedVideosCountEl.textContent = metrics.userPurchases || 0;
-        if (totalSpentAmountEl) totalSpentAmountEl.textContent = '$' + (metrics.userSpent || '0.00');
-        if (totalPurchasesEl) totalPurchasesEl.textContent = metrics.userPurchases || 0;
-        if (totalSpentEl) totalSpentEl.textContent = '$' + (metrics.userSpent || '0.00');
+        if (totalPurchasesEl) totalPurchasesEl.textContent = metrics.purchasedVideosCount || 0;
+        if (totalSpentEl) totalSpentEl.textContent = '$' + (metrics.totalSpentAmount || '0.00');
+    }
+
+    updatePurchaseMetrics() {
+        // Calculate metrics from purchases data
+        const totalPurchases = this.purchases.length;
+        const totalSpent = this.purchases.reduce((sum, purchase) => sum + parseFloat(purchase.amount || 0), 0);
+        
+        // Calculate this month's purchases
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const thisMonthPurchases = this.purchases.filter(purchase => {
+            const purchaseDate = new Date(purchase.purchase_date || purchase.purchased_at);
+            return purchaseDate.getMonth() === currentMonth && purchaseDate.getFullYear() === currentYear;
+        }).length;
+        
+        // Calculate average price
+        const avgPrice = totalPurchases > 0 ? totalSpent / totalPurchases : 0;
+        
+        // Update purchase page elements
+        const totalPurchasesEl = document.getElementById('totalPurchases');
+        const totalSpentEl = document.getElementById('totalSpent');
+        const thisMonthEl = document.getElementById('thisMonth');
+        const avgPriceEl = document.getElementById('avgPrice');
+        
+        if (totalPurchasesEl) totalPurchasesEl.textContent = totalPurchases;
+        if (totalSpentEl) totalSpentEl.textContent = '$' + totalSpent.toFixed(2);
+        if (thisMonthEl) thisMonthEl.textContent = thisMonthPurchases;
+        if (avgPriceEl) avgPriceEl.textContent = '$' + avgPrice.toFixed(2);
     }
 
     async loadRemainingData() {
