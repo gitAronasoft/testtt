@@ -1350,7 +1350,7 @@ class AdminManager {
 
     refreshUsersTable() {
         if (this.usersTable) {
-            this.loadUsersData();
+            this.loadUsersDataTable();
         }
     }
 
@@ -1366,4 +1366,172 @@ class AdminManager {
             default: return 'primary';
         }
     }
+
+    // Add filter functionality for admin videos page
+    setupVideoFilters() {
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', () => {
+                this.applyVideoFilters();
+            });
+        }
+
+        // Also bind to individual filter changes
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const creatorFilter = document.getElementById('creatorFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const dateFilter = document.getElementById('dateFilter');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', () => this.applyVideoFilters());
+        }
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => this.applyVideoFilters());
+        }
+        if (creatorFilter) {
+            creatorFilter.addEventListener('change', () => this.applyVideoFilters());
+        }
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', () => this.applyVideoFilters());
+        }
+        if (dateFilter) {
+            dateFilter.addEventListener('change', () => this.applyVideoFilters());
+        }
+    }
+
+    applyVideoFilters() {
+        if (!this.videos || this.videos.length === 0) return;
+
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const creatorFilter = document.getElementById('creatorFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const dateFilter = document.getElementById('dateFilter');
+
+        let filteredVideos = [...this.videos];
+
+        // Apply search filter
+        if (searchInput && searchInput.value) {
+            const searchTerm = searchInput.value.toLowerCase();
+            filteredVideos = filteredVideos.filter(video => 
+                video.title.toLowerCase().includes(searchTerm) ||
+                (video.description && video.description.toLowerCase().includes(searchTerm)) ||
+                (video.creator_name && video.creator_name.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        // Apply status filter
+        if (statusFilter && statusFilter.value) {
+            filteredVideos = filteredVideos.filter(video => 
+                (video.status || 'published') === statusFilter.value
+            );
+        }
+
+        // Apply creator filter
+        if (creatorFilter && creatorFilter.value) {
+            filteredVideos = filteredVideos.filter(video => 
+                video.creator_name === creatorFilter.value || video.uploader_id == creatorFilter.value
+            );
+        }
+
+        // Apply category filter
+        if (categoryFilter && categoryFilter.value) {
+            filteredVideos = filteredVideos.filter(video => 
+                video.category === categoryFilter.value
+            );
+        }
+
+        // Apply date filter
+        if (dateFilter && dateFilter.value) {
+            const now = new Date();
+            const dateThreshold = new Date();
+            
+            switch (dateFilter.value) {
+                case 'today':
+                    dateThreshold.setHours(0, 0, 0, 0);
+                    break;
+                case 'week':
+                    dateThreshold.setDate(now.getDate() - 7);
+                    break;
+                case 'month':
+                    dateThreshold.setMonth(now.getMonth() - 1);
+                    break;
+            }
+            
+            if (dateFilter.value !== '') {
+                filteredVideos = filteredVideos.filter(video => {
+                    const videoDate = new Date(video.created_at || video.uploadDate);
+                    return videoDate >= dateThreshold;
+                });
+            }
+        }
+
+        // Update display with filtered videos
+        this.displayFilteredVideos(filteredVideos);
+    }
+
+    displayFilteredVideos(filteredVideos) {
+        const videosGrid = document.getElementById('videosGrid');
+        if (!videosGrid) return;
+
+        if (filteredVideos.length === 0) {
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) {
+                emptyState.classList.remove('d-none');
+            }
+            videosGrid.innerHTML = '';
+            return;
+        }
+
+        const emptyState = document.getElementById('emptyState');
+        if (emptyState) {
+            emptyState.classList.add('d-none');
+        }
+
+        videosGrid.innerHTML = filteredVideos.map(video => `
+            <div class="col-md-6 col-lg-4 col-xl-3">
+                <div class="card h-100">
+                    <div class="position-relative">
+                        <div class="video-thumbnail bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                            ${video.thumbnail ? 
+                                `<img src="${video.thumbnail}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="${video.title}">` :
+                                `<i class="fas fa-play-circle fa-3x text-muted"></i>`
+                            }
+                        </div>
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-${this.getVideoStatusBadgeColor(video.status)}">${video.status || 'published'}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate" title="${video.title}">${video.title}</h6>
+                        <p class="card-text text-muted small">${(video.description || '').substring(0, 80)}...</p>
+                        <div class="d-flex justify-content-between align-items-center small text-muted">
+                            <span><i class="fas fa-user me-1"></i>${video.creator_name || 'Unknown'}</span>
+                            <span><i class="fas fa-eye me-1"></i>${video.views || 0}</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-primary btn-sm" onclick="adminManager.viewVideo('${video.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="adminManager.approveVideo('${video.id}')">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="adminManager.flagVideo('${video.id}')">
+                                <i class="fas fa-flag"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
 }
+// Setup video filters if on videos page
+setTimeout(() => {
+    if (window.location.pathname.includes('videos.html') && window.adminManager) {
+        window.adminManager.setupVideoFilters();
+    }
+}, 1000);

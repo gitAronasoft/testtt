@@ -236,7 +236,7 @@ class User {
      * Mark email as verified
      */
     public function markEmailVerified() {
-        $query = "UPDATE " . $this->table_name . " SET email_verified_at = NOW() WHERE id = ?";
+        $query = "UPDATE " . $this->table_name . " SET email_verified_at = NOW(), status = 'active' WHERE id = ?";
         $stmt = $this->conn->prepare($query);
         
         if ($stmt->execute([$this->id])) {

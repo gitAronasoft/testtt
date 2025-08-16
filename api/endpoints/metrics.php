@@ -117,7 +117,7 @@ try {
                     'data' => $metrics
                 ]);
                 
-            } elseif (isset($path_parts[1]) && $path_parts[1] === 'viewer') {
+            } elseif ($type === 'viewer' || (isset($path_parts[1]) && $path_parts[1] === 'viewer')) {
                 // Viewer dashboard metrics - General platform metrics (not user-specific)
                 $metrics = [];
                 
@@ -160,7 +160,7 @@ try {
                     'data' => $metrics
                 ]);
                 
-            } elseif ($type === 'viewer' || (isset($path_parts[1]) && $path_parts[1] === 'viewer')) {
+            } elseif ($type === 'vieweer' || (isset($path_parts[1]) && $path_parts[1] === 'viewer')) {
                 // Viewer dashboard metrics
                 $userId = $_GET['user_id'] ?? null;
                 

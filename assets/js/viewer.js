@@ -11,6 +11,8 @@ class ViewerManager {
         this.currentVideo = null;
         this.player = null;
         this.filteredVideos = [];
+        this.currentPage = 1;
+        this.videosPerPage = 6;
         this.currentViewerId = null; // Will be set from session
         this.favorites = []; // Will be loaded from API
         this.init();
@@ -385,15 +387,23 @@ class ViewerManager {
                     <p class="text-muted">Try adjusting your search filters</p>
                 </div>
             `;
+            this.updatePagination();
             return;
         }
 
-        this.filteredVideos.forEach(video => {
+        // Calculate pagination
+        const startIndex = (this.currentPage - 1) * this.videosPerPage;
+        const endIndex = startIndex + this.videosPerPage;
+        const videosToShow = this.filteredVideos.slice(startIndex, endIndex);
+
+        videosToShow.forEach(video => {
             const col = document.createElement('div');
             col.className = 'col-lg-4 col-md-6 mb-4';
             col.innerHTML = this.createVideoCard(video);
             container.appendChild(col);
         });
+        
+        this.updatePagination();
     }
 
     bindAllVideosEvents() {
@@ -448,14 +458,17 @@ class ViewerManager {
 
         this.filteredVideos = this.videos.filter(video => {
             const matchesSearch = video.title.toLowerCase().includes(searchTerm) ||
-                                video.description.toLowerCase().includes(searchTerm) ||
-                                video.creatorName.toLowerCase().includes(searchTerm);
+                                (video.description && video.description.toLowerCase().includes(searchTerm)) ||
+                                (video.creatorName && video.creatorName.toLowerCase().includes(searchTerm)) ||
+                                (video.creator_name && video.creator_name.toLowerCase().includes(searchTerm)) ||
+                                (video.youtube_channel_title && video.youtube_channel_title.toLowerCase().includes(searchTerm));
             
             const matchesCategory = !selectedCategory || video.category === selectedCategory;
 
             return matchesSearch && matchesCategory;
         });
 
+        this.currentPage = 1; // Reset to first page when filtering
         this.sortVideos();
     }
 
@@ -464,19 +477,19 @@ class ViewerManager {
 
         switch (sortBy) {
             case 'newest':
-                this.filteredVideos.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+                this.filteredVideos.sort((a, b) => new Date(b.uploadDate || b.created_at || 0) - new Date(a.uploadDate || a.created_at || 0));
                 break;
             case 'oldest':
-                this.filteredVideos.sort((a, b) => new Date(a.uploadDate) - new Date(b.uploadDate));
+                this.filteredVideos.sort((a, b) => new Date(a.uploadDate || a.created_at || 0) - new Date(b.uploadDate || b.created_at || 0));
                 break;
             case 'price-low':
-                this.filteredVideos.sort((a, b) => a.price - b.price);
+                this.filteredVideos.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
                 break;
             case 'price-high':
-                this.filteredVideos.sort((a, b) => b.price - a.price);
+                this.filteredVideos.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
                 break;
             case 'rating':
-                this.filteredVideos.sort((a, b) => (b.rating || 4.5) - (a.rating || 4.5));
+                this.filteredVideos.sort((a, b) => (parseFloat(b.rating) || 4.5) - (parseFloat(a.rating) || 4.5));
                 break;
         }
 
@@ -569,6 +582,89 @@ class ViewerManager {
             container.className = 'row';
             this.displayVideos();
         }
+    }
+
+    updatePagination() {
+        const paginationContainer = document.getElementById('paginationContainer');
+        const paginationList = document.getElementById('paginationList');
+        
+        if (!paginationContainer || !paginationList) return;
+
+        const totalPages = Math.ceil(this.filteredVideos.length / this.videosPerPage);
+        
+        if (totalPages <= 1) {
+            paginationContainer.classList.add('d-none');
+            return;
+        }
+
+        paginationContainer.classList.remove('d-none');
+        
+        let paginationHTML = '';
+        
+        // Previous button
+        paginationHTML += `
+            <li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${this.currentPage - 1}">Previous</a>
+            </li>
+        `;
+        
+        // Page numbers
+        const startPage = Math.max(1, this.currentPage - 2);
+        const endPage = Math.min(totalPages, this.currentPage + 2);
+        
+        if (startPage > 1) {
+            paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+            if (startPage > 2) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+                <li class="page-item ${i === this.currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
+        }
+        
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+            paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+        }
+        
+        // Next button
+        paginationHTML += `
+            <li class="page-item ${this.currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${this.currentPage + 1}">Next</a>
+            </li>
+        `;
+        
+        paginationList.innerHTML = paginationHTML;
+        
+        // Remove existing event listeners to prevent duplicates
+        const existingHandler = paginationList._paginationHandler;
+        if (existingHandler) {
+            paginationList.removeEventListener('click', existingHandler);
+        }
+        
+        // Add click handlers for pagination
+        const paginationHandler = (e) => {
+            e.preventDefault();
+            if (e.target.classList.contains('page-link') && !e.target.parentElement.classList.contains('disabled')) {
+                const page = parseInt(e.target.dataset.page);
+                if (page && page !== this.currentPage && page >= 1 && page <= totalPages) {
+                    this.currentPage = page;
+                    this.displayVideos();
+                    // Scroll to top of videos section
+                    document.getElementById('allVideos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        };
+        
+        paginationList._paginationHandler = paginationHandler;
+        paginationList.addEventListener('click', paginationHandler);
     }
 
     createVideoCard(video) {

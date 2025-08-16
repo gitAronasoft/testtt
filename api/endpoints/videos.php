@@ -292,8 +292,8 @@ try {
 
         case 'DELETE':
             // Delete video
-            if (isset($path_parts[4]) && is_numeric($path_parts[4])) {
-                $video->id = $path_parts[4];
+            if (isset($path_parts[1]) && is_numeric($path_parts[1])) {
+                $video->id = $path_parts[1];
                 
                 if ($video->delete()) {
                     http_response_code(200);

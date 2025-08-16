@@ -7,10 +7,12 @@ class CreatorManager {
     constructor() {
         this.stats = {};
         this.videos = [];
+        this.filteredVideos = [];
         this.earnings = [];
         this.isLoading = false;
         this.uploadValidator = null;
         this.editVideoValidator = null;
+        this.currentPage = 1;
         this.init();
     }
 
@@ -23,6 +25,14 @@ class CreatorManager {
         if (!this.stats || Object.keys(this.stats).length === 0) {
             await this.loadDashboardData();
         }
+        
+        // Initialize filters after data loads
+        setTimeout(() => {
+            if (this.videos.length > 0) {
+                this.filteredVideos = [...this.videos];
+                this.updatePagination();
+            }
+        }, 1000);
     }
 
     setupFormValidation() {
@@ -277,6 +287,35 @@ class CreatorManager {
             uploadBtn.addEventListener('click', () => this.showUploadModal());
         }
 
+        // Filter and search events
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                this.applyVideoFilters();
+            });
+        }
+
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                this.applyVideoFilters();
+            });
+        }
+
+        const categoryFilter = document.getElementById('categoryFilter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', () => {
+                this.applyVideoFilters();
+            });
+        }
+
+        const sortFilter = document.getElementById('sortFilter');
+        if (sortFilter) {
+            sortFilter.addEventListener('change', () => {
+                this.applyVideoFilters();
+            });
+        }
+
         // Video management events - use more specific targeting to prevent duplicates
         document.addEventListener('click', (e) => {
             // Check for edit video button
@@ -397,55 +436,18 @@ class CreatorManager {
 
         if (!this.videos.length) {
             videosGrid.innerHTML = '<div class="col-12 text-center text-muted"><p>No videos found. Upload your first video to get started!</p></div>';
+            const pagination = document.querySelector('.pagination');
+            if (pagination) pagination.parentElement.style.display = 'none';
             return;
         }
 
-        videosGrid.innerHTML = this.videos.map(video => {
-            const status = video.status || 'published'; // Default to published if no status
-            const statusClass = status === 'published' ? 'bg-success' : 
-                               status === 'pending' ? 'bg-warning' : 'bg-secondary';
-            
-            return `
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card">
-                        <div class="video-thumbnail cursor-pointer" style="background-image: url('${video.youtube_thumbnail || video.thumbnail || 'https://via.placeholder.com/300x169'}'); background-size: cover; background-position: center; height: 180px; position: relative;" onclick="window.creatorManager.playVideo('${video.id}')">
-                            <div class="video-overlay d-flex align-items-center justify-content-center" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s;">
-                                <i class="fas fa-play fa-3x text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">${video.title}</h6>
-                            <p class="card-text text-muted small">${(video.description || '').substring(0, 50)}...</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge ${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
-                                <span class="text-muted small">$${video.price || '0.00'}</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <small class="text-muted">${video.youtube_views || video.views || 0} views</small>
-                                <div>
-                                    <button class="btn btn-sm btn-outline-primary edit-video-btn" data-video-id="${video.id}">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger delete-video-btn" data-video-id="${video.id}">Delete</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        // Initialize filtered videos and apply initial filters
+        this.filteredVideos = [...this.videos];
+        this.currentPage = 1;
+        this.applyVideoFilters();
+        return;
 
-        // Add hover effect for play overlay
-        document.querySelectorAll('.video-thumbnail').forEach(thumbnail => {
-            const overlay = thumbnail.querySelector('.video-overlay');
-            thumbnail.addEventListener('mouseenter', () => {
-                overlay.style.opacity = '1';
-            });
-            thumbnail.addEventListener('mouseleave', () => {
-                overlay.style.opacity = '0';
-            });
-        });
-
-        // Ensure edit and delete buttons are properly bound
-        this.bindVideoButtons();
+        // Filters and pagination will handle the display
     }
 
     updateVideoPageStats() {
@@ -707,7 +709,7 @@ class CreatorManager {
                 window.commonUtils.setButtonLoading(saveButton, true, 'Saving...');
             }
             // Update video in our database first
-            const response = await window.apiService.put(`/videos/${videoId}`, {
+            const response = await window.apiService.put(`/api/videos/${videoId}`, {
                 title: title.trim(),
                 description: description.trim(),
                 price: parseFloat(price),
@@ -890,7 +892,7 @@ class CreatorManager {
                 }
             }
 
-            const response = await window.apiService.delete(`/videos/${videoId}`);
+            const response = await window.apiService.delete(`/api/videos/${videoId}`);
 
             if (response.success) {
                 // Remove from local videos array
@@ -1029,11 +1031,165 @@ class CreatorManager {
             }
         }
 
-        // Store original videos and update with filtered
-        const originalVideos = this.videos;
-        this.videos = filteredVideos;
-        this.loadVideosGrid();
-        this.videos = originalVideos; // Restore original array
+        // Store filtered videos and update display
+        this.filteredVideos = filteredVideos;
+        this.currentPage = 1;
+        this.displayFilteredVideos();
+        this.updatePagination();
+    }
+
+    displayFilteredVideos() {
+        const videosGrid = document.getElementById('videosGrid');
+        if (!videosGrid) return;
+
+        const videosPerPage = 6;
+        const startIndex = (this.currentPage - 1) * videosPerPage;
+        const endIndex = startIndex + videosPerPage;
+        const videosToShow = this.filteredVideos.slice(startIndex, endIndex);
+
+        if (videosToShow.length === 0) {
+            videosGrid.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-video fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No videos found</h5>
+                    <p class="text-muted">Try adjusting your filters</p>
+                </div>
+            `;
+            return;
+        }
+
+        videosGrid.innerHTML = videosToShow.map(video => {
+            const status = video.status || 'published';
+            const statusClass = status === 'published' ? 'bg-success' : 
+                               status === 'pending' ? 'bg-warning' : 'bg-secondary';
+            const statusIcon = status === 'published' ? 'fa-check-circle' : 
+                              status === 'pending' ? 'fa-clock' : 'fa-pause-circle';
+            
+            return `
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 video-card">
+                        <div class="video-thumbnail cursor-pointer" 
+                             style="background-image: url('${video.youtube_thumbnail || video.thumbnail || 'https://via.placeholder.com/300x169'}'); 
+                                    background-size: cover; background-position: center; height: 180px; position: relative;" 
+                             onclick="window.creatorManager.playVideo('${video.id}')">
+                            <div class="video-overlay d-flex align-items-center justify-content-center" 
+                                 style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
+                                        background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s;">
+                                <i class="fas fa-play fa-3x text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);"></i>
+                            </div>
+                            <div class="position-absolute top-0 end-0 m-2">
+                                <span class="badge ${statusClass}">
+                                    <i class="fas ${statusIcon} me-1"></i>${status.charAt(0).toUpperCase() + status.slice(1)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">${video.title}</h6>
+                            <p class="card-text text-muted small">${(video.description || '').substring(0, 100)}...</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-eye me-1"></i>${video.youtube_views || video.views || 0} views
+                                </small>
+                                <small class="text-muted">
+                                    $${video.price || '0.00'}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="btn-group w-100">
+                                <button class="btn btn-outline-primary btn-sm edit-video-btn" data-video-id="${video.id}">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm delete-video-btn" data-video-id="${video.id}">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Add hover effect for play overlay
+        setTimeout(() => {
+            document.querySelectorAll('.video-thumbnail').forEach(thumbnail => {
+                const overlay = thumbnail.querySelector('.video-overlay');
+                if (overlay) {
+                    thumbnail.addEventListener('mouseenter', () => {
+                        overlay.style.opacity = '1';
+                    });
+                    thumbnail.addEventListener('mouseleave', () => {
+                        overlay.style.opacity = '0';
+                    });
+                }
+            });
+        }, 100);
+    }
+
+    updatePagination() {
+        const pagination = document.querySelector('.pagination');
+        if (!pagination) return;
+
+        const videosPerPage = 6;
+        const totalPages = Math.ceil(this.filteredVideos.length / videosPerPage);
+        
+        if (totalPages <= 1) {
+            pagination.parentElement.style.display = 'none';
+            return;
+        }
+
+        pagination.parentElement.style.display = 'block';
+        
+        let paginationHTML = '';
+        
+        // Previous button
+        paginationHTML += `
+            <li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${this.currentPage - 1}">Previous</a>
+            </li>
+        `;
+        
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            paginationHTML += `
+                <li class="page-item ${i === this.currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
+        }
+        
+        // Next button
+        paginationHTML += `
+            <li class="page-item ${this.currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${this.currentPage + 1}">Next</a>
+            </li>
+        `;
+        
+        pagination.innerHTML = paginationHTML;
+        
+        // Remove existing event listeners to prevent duplicates
+        const existingHandler = pagination._paginationHandler;
+        if (existingHandler) {
+            pagination.removeEventListener('click', existingHandler);
+        }
+        
+        // Add click handlers for pagination
+        const paginationHandler = (e) => {
+            e.preventDefault();
+            if (e.target.classList.contains('page-link') && !e.target.parentElement.classList.contains('disabled')) {
+                const page = parseInt(e.target.dataset.page);
+                if (page && page !== this.currentPage && page >= 1 && page <= totalPages) {
+                    this.currentPage = page;
+                    this.displayFilteredVideos();
+                    this.updatePagination();
+                    // Scroll to top of videos section
+                    document.getElementById('videosGrid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        };
+        
+        pagination._paginationHandler = paginationHandler;
+        pagination.addEventListener('click', paginationHandler);
     }
 }
 

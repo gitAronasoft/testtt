@@ -489,9 +489,7 @@ class AuthManager {
 
                 // Redirect to login page after success
                 setTimeout(() => {
-                    window.location.href = window.videoHubConfig ? 
-                        window.videoHubConfig.getRelativeUrl('auth/login.html') : 
-                        'login.html';
+                    window.location.href = 'login.html';
                 }, 3000);
             } else {
                 throw new Error(result.message || 'Verification failed');

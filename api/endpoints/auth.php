@@ -395,7 +395,7 @@ try {
 
                 if ($userData && password_verify($data['password'], $userData['password'])) {
                     // Check if email is verified and user is not revoked
-                    $emailVerified = $userData['email_verified'] == 1 || $userData['email_verified_at'] !== null;
+                    $emailVerified = $userData['email_verified'] == 1 && $userData['status'] !== 'inactive';
                     $userStatus = $userData['status'] ?? 'active';
                     
                     if (!$emailVerified) {
@@ -408,7 +408,7 @@ try {
                         break;
                     }
                     
-                    if ($userStatus === 'revoked' || $userStatus === 'banned') {
+                    if ($userStatus === 'revoked' || $userStatus === 'suspended') {
                         http_response_code(403);
                         echo json_encode([
                             'success' => false,

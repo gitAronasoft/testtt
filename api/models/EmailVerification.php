@@ -98,7 +98,8 @@ class EmailVerification {
             // Mark token as verified
             $updateQuery = "
                 UPDATE " . $this->table_name . " 
-                SET verified_at = NOW() 
+                SET verified_at = NOW(),
+                status = 'active'
                 WHERE id = ?
             ";
             

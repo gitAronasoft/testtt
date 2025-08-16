@@ -332,7 +332,7 @@ class YouTubeAPIClient {
                 categoryId: metadata.categoryId || "22",
             },
             status: {
-                privacyStatus: metadata.privacy || "unlisted",
+                privacyStatus: "private",
                 embeddable: true,
                 license: "youtube",
             },
