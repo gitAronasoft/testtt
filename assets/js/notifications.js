@@ -5,120 +5,251 @@
 
 class NotificationManager {
     constructor() {
+        this.container = null;
         this.init();
     }
 
     init() {
-        this.createToastContainer();
-        this.setupGlobalErrorHandling();
+        this.createContainer();
     }
 
-    createToastContainer() {
-        // Check if toast container already exists
-        if (document.getElementById('toast-container')) return;
+    createContainer() {
+        if (!this.container) {
+            this.container = document.createElement('div');
+            this.container.id = 'notification-container';
+            this.container.className = 'notification-container';
+            this.container.innerHTML = `
+                <style>
+                .notification-container {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                    max-width: 400px;
+                }
 
-        const container = document.createElement('div');
-        container.id = 'toast-container';
-        container.className = 'toast-container position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '9999';
-        document.body.appendChild(container);
+                .notification {
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    margin-bottom: 12px;
+                    padding: 16px 20px;
+                    border-left: 4px solid;
+                    display: flex;
+                    align-items: center;
+                    animation: slideIn 0.3s ease-out;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .notification.success {
+                    border-left-color: #28a745;
+                    background: #f8fff9;
+                }
+
+                .notification.error {
+                    border-left-color: #dc3545;
+                    background: #fff8f8;
+                }
+
+                .notification.info {
+                    border-left-color: #007bff;
+                    background: #f8fbff;
+                }
+
+                .notification.warning {
+                    border-left-color: #ffc107;
+                    background: #fffdf8;
+                }
+
+                .notification-icon {
+                    margin-right: 12px;
+                    font-size: 18px;
+                }
+
+                .notification.success .notification-icon {
+                    color: #28a745;
+                }
+
+                .notification.error .notification-icon {
+                    color: #dc3545;
+                }
+
+                .notification.info .notification-icon {
+                    color: #007bff;
+                }
+
+                .notification.warning .notification-icon {
+                    color: #ffc107;
+                }
+
+                .notification-content {
+                    flex: 1;
+                    font-weight: 500;
+                    color: #333;
+                    line-height: 1.4;
+                }
+
+                .notification-close {
+                    background: none;
+                    border: none;
+                    font-size: 18px;
+                    color: #999;
+                    cursor: pointer;
+                    padding: 0;
+                    margin-left: 12px;
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .notification-close:hover {
+                    color: #666;
+                }
+
+                .notification-progress {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    height: 3px;
+                    background: rgba(0,0,0,0.1);
+                    animation: progress linear;
+                }
+
+                .notification.success .notification-progress {
+                    background: #28a745;
+                }
+
+                .notification.error .notification-progress {
+                    background: #dc3545;
+                }
+
+                .notification.info .notification-progress {
+                    background: #007bff;
+                }
+
+                .notification.warning .notification-progress {
+                    background: #ffc107;
+                }
+
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+
+                @keyframes slideOut {
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes progress {
+                    from { width: 100%; }
+                    to { width: 0%; }
+                }
+                </style>
+            `;
+            document.body.appendChild(this.container);
+        }
     }
 
-    showToast(message, type = 'info', duration = 4000) {
-        const toastContainer = document.getElementById('toast-container');
-        if (!toastContainer) return;
-
-        // Create toast element
-        const toastId = 'toast-' + Date.now();
-        const toast = document.createElement('div');
-        toast.id = toastId;
-        toast.className = `toast align-items-center border-0`;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-
-        // Set toast styling based on type
-        const typeClasses = {
-            success: 'text-bg-success',
-            error: 'text-bg-danger',
-            warning: 'text-bg-warning',
-            info: 'text-bg-primary'
+    show(message, type = 'info', duration = 5000, persistent = false) {
+        const icons = {
+            success: 'fas fa-check-circle',
+            error: 'fas fa-exclamation-circle', 
+            info: 'fas fa-info-circle',
+            warning: 'fas fa-exclamation-triangle'
         };
-        toast.classList.add(typeClasses[type] || typeClasses.info);
 
-        // Set toast content
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body fw-medium">
-                    <i class="fas ${this.getIconForType(type)} me-2"></i>
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+
+        const progressDuration = persistent ? 0 : duration;
+
+        notification.innerHTML = `
+            <i class="notification-icon ${icons[type] || icons.info}"></i>
+            <div class="notification-content">${message}</div>
+            <button class="notification-close" type="button">&times;</button>
+            ${!persistent ? `<div class="notification-progress" style="animation-duration: ${progressDuration}ms;"></div>` : ''}
         `;
 
-        // Add toast to container
-        toastContainer.appendChild(toast);
+        this.container.appendChild(notification);
 
-        // Initialize and show toast
-        const bsToast = new bootstrap.Toast(toast, {
-            autohide: duration > 0,
-            delay: duration
-        });
-        
-        bsToast.show();
-
-        // Remove toast from DOM after it's hidden
-        toast.addEventListener('hidden.bs.toast', () => {
-            toast.remove();
+        // Handle close button
+        const closeBtn = notification.querySelector('.notification-close');
+        closeBtn.addEventListener('click', () => {
+            this.remove(notification);
         });
 
-        return toastId;
+        // Auto remove after duration (unless persistent)
+        if (!persistent && duration > 0) {
+            setTimeout(() => {
+                this.remove(notification);
+            }, duration);
+        }
+
+        return notification;
     }
 
-    getIconForType(type) {
-        const icons = {
-            success: 'fa-check-circle',
-            error: 'fa-exclamation-triangle',
-            warning: 'fa-exclamation-circle',
-            info: 'fa-info-circle'
-        };
-        return icons[type] || icons.info;
+    remove(notification) {
+        if (notification && notification.parentNode) {
+            notification.style.animation = 'slideOut 0.3s ease-out forwards';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
     }
 
-    showSuccess(message) {
-        return this.showToast(message, 'success');
+    success(message, duration = 4000) {
+        return this.show(message, 'success', duration);
     }
 
-    showError(message) {
-        return this.showToast(message, 'error', 6000);
+    error(message, duration = 7000) {
+        return this.show(message, 'error', duration);
     }
 
-    showWarning(message) {
-        return this.showToast(message, 'warning', 5000);
+    info(message, duration = 5000) {
+        return this.show(message, 'info', duration);
     }
 
-    showInfo(message) {
-        return this.showToast(message, 'info');
+    warning(message, duration = 6000) {
+        return this.show(message, 'warning', duration);
     }
 
-    setupGlobalErrorHandling() {
-        // Handle unhandled promise rejections
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('Unhandled promise rejection:', event.reason);
-            this.showError('An unexpected error occurred. Please try again.');
-        });
+    processing(message) {
+        return this.show(message, 'info', 0, true); // Persistent notification
+    }
 
-        // Handle JavaScript errors
-        window.addEventListener('error', (event) => {
-            console.error('JavaScript error:', event.error);
-            // Only show user-friendly errors for non-development environments
-            if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
-                this.showError('Something went wrong. Please refresh the page and try again.');
-            }
+    clearAll() {
+        const notifications = this.container.querySelectorAll('.notification');
+        notifications.forEach(notification => {
+            this.remove(notification);
         });
     }
 }
+
+// Global instance
+window.notificationManager = new NotificationManager();
+
+// Backward compatibility
+if (!window.commonUtils) {
+    window.commonUtils = {};
+}
+
+window.commonUtils.showNotification = function(message, type, duration) {
+    return window.notificationManager.show(message, type, duration);
+};
 
 /**
  * Button Loading Manager
@@ -341,7 +472,10 @@ class LoadingOverlay {
 
 // Initialize notification system when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.notificationManager = new NotificationManager();
+    // Ensure notificationManager is initialized if not already
+    if (!window.notificationManager) {
+        window.notificationManager = new NotificationManager();
+    }
     
     // Make utilities globally available
     window.ButtonLoader = ButtonLoader;
@@ -349,11 +483,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.LoadingOverlay = LoadingOverlay;
     
     // Legacy compatibility
-    window.commonUtils = {
-        showToast: (message, type) => window.notificationManager.showToast(message, type),
-        showSuccess: (message) => window.notificationManager.showSuccess(message),
-        showError: (message) => window.notificationManager.showError(message),
-        showWarning: (message) => window.notificationManager.showWarning(message),
-        showInfo: (message) => window.notificationManager.showInfo(message)
-    };
+    if (!window.commonUtils) {
+        window.commonUtils = {};
+    }
+    window.commonUtils.showToast = function(message, type) { window.notificationManager.showToast(message, type); };
+    window.commonUtils.showSuccess = function(message) { window.notificationManager.showSuccess(message); };
+    window.commonUtils.showError = function(message) { window.notificationManager.showError(message); };
+    window.commonUtils.showWarning = function(message) { window.notificationManager.showWarning(message); };
+    window.commonUtils.showInfo = function(message) { window.notificationManager.showInfo(message); };
 });

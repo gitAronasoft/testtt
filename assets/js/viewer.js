@@ -28,18 +28,13 @@ class ViewerManager {
     async loadDataFromAPI() {
         const currentPage = window.location.pathname.split('/').pop();
 
-        // Show section loaders only for relevant sections
-        const dashboardSection = document.querySelector('.dashboard-stats');
-        const videosSection = document.querySelector('.videos-section');
-        const purchasesSection = document.querySelector('.purchases-section');
-
         try {
-            // Wait for API service to be available
+            // Wait for API service to be available - reduced timeout
             let retries = 0;
-            const maxRetries = 50;
+            const maxRetries = 20;
 
             while (retries < maxRetries && !window.apiService) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, 50));
                 retries++;
             }
 
@@ -58,31 +53,36 @@ class ViewerManager {
                     return;
                 }
 
-                // Load data based on current page
+                // Load data based on current page - optimized for performance
                 if (currentPage === 'dashboard.html') {
-                    // Load metrics and videos for dashboard
-                    const [metricsResponse, videosResponse] = await Promise.all([
-                        window.apiService.get(`/api/metrics?type=viewer&user_id=${userId}`),
-                        window.apiService.get('/api/videos')
-                    ]);
-
-                    if (metricsResponse.success) {
-                        this.updateDashboardMetrics(metricsResponse.data);
-                    }
-
+                    // Load videos only once, metrics loaded separately and cached
+                    const videosResponse = await window.apiService.get('/api/videos');
                     this.videos = Array.isArray(videosResponse.videos) ? videosResponse.videos :
                                  Array.isArray(videosResponse.data?.videos) ? videosResponse.data.videos :
                                  Array.isArray(videosResponse.data) ? videosResponse.data : [];
-                } else if (currentPage === 'purchases.html') {
-                    // Load purchases data for purchases page
-                    const purchasesResponse = await window.apiService.get(`/api/purchases?user_id=${userId}`);
 
-                    if (purchasesResponse.success && purchasesResponse.data) {
-                        this.purchases = purchasesResponse.data;
-                        // Calculate and update purchase metrics
-                        this.updatePurchaseMetrics();
+                    // Load metrics with debouncing
+                    this.loadMetricsWithDelay(userId);
+                } else if (currentPage === 'purchases.html') {
+                    // Load purchases for purchases page - cached for 30 seconds
+                    const cached = sessionStorage.getItem(`purchases_${userId}`);
+                    const cacheTime = sessionStorage.getItem(`purchases_time_${userId}`);
+
+                    if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < 30000) {
+                        this.purchases = JSON.parse(cached);
+                        this.displayPurchases();
+                    } else {
+                        const purchasesResponse = await window.apiService.get(`/api/purchases?user_id=${userId}`);
+                        this.purchases = Array.isArray(purchasesResponse.purchases) ? purchasesResponse.purchases :
+                                        Array.isArray(purchasesResponse.data?.purchases) ? purchasesResponse.data.purchases :
+                                        Array.isArray(purchasesResponse.data) ? purchasesResponse.data : [];
+
+                        // Cache the results
+                        sessionStorage.setItem(`purchases_${userId}`, JSON.stringify(this.purchases));
+                        sessionStorage.setItem(`purchases_time_${userId}`, Date.now().toString());
+
+                        this.displayPurchases();
                     }
-                    this.videos = [];
                 } else {
                     // Minimal loading for other pages
                     this.videos = [];
@@ -216,6 +216,26 @@ class ViewerManager {
     }
 
     bindEvents() {
+        // Handle purchase button clicks and card clicks for non-purchased videos
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('purchase-video-btn') || 
+                (e.target.hasAttribute('data-video-id') && e.target.hasAttribute('data-video-price'))) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const videoId = e.target.dataset.videoId;
+                const videoTitle = e.target.dataset.videoTitle;
+                const videoPrice = parseFloat(e.target.dataset.videoPrice);
+
+                // Use the global purchaseVideo function which handles Stripe payments
+                if (window.purchaseVideo) {
+                    window.purchaseVideo(videoId, videoTitle, videoPrice);
+                } else {
+                    this.showError('Payment system not available');
+                }
+            }
+        });
+
         // Filter and search events
         const categoryFilter = document.getElementById('categoryFilter');
         const statusFilter = document.getElementById('statusFilter');
@@ -609,8 +629,9 @@ class ViewerManager {
                     <td><span class="badge bg-secondary">${video.category || 'General'}</span></td>
                     <td>${video.views || 0} views</td>
                     <td>
-                        <button class="btn btn-sm ${isPurchased ? 'btn-success' : 'btn-primary'}"
-                                onclick="${isPurchased ? `watchVideo('${video.youtube_id}', '${video.title}')` : `viewerManager.showPurchaseModal(${video.id})`}">
+                        <button class="btn btn-sm ${isPurchased ? 'btn-success' : 'btn-primary'} ${isPurchased ? '' : 'purchase-video-btn'}"
+                                data-video-id="${video.id}" data-video-title="${video.title}" data-video-price="${video.price}"
+                                onclick="${isPurchased ? `watchVideo('${video.youtube_id}', '${video.title}')` : ''}">
                             <i class="fas fa-${isPurchased ? 'play' : 'shopping-cart'} me-1"></i>
                             ${isPurchased ? 'Watch' : 'Purchase'}
                         </button>
@@ -716,7 +737,8 @@ class ViewerManager {
         return `
             <div class="card h-100">
                 <div class="position-relative" style="height: 180px; background-color: #e9ecef; cursor: pointer;"
-                     onclick="${isPurchased ? `watchVideo('${youtubeId}', '${video.title}')` : `viewerManager.showPurchaseModal(${video.id})`}">
+                     onclick="${isPurchased ? `watchVideo('${youtubeId}', '${video.title}')` : ''}"
+                     ${!isPurchased ? `data-video-id="${video.id}" data-video-title="${video.title}" data-video-price="${video.price}" class="purchase-video-btn"` : ''}>
                     ${youtubeId ? `
                         <img src="https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg"
                              class="card-img-top w-100 h-100" alt="${video.title}" style="object-fit: cover;"
@@ -766,7 +788,10 @@ class ViewerManager {
                                 </button>
                             </div>
                         ` : `
-                            <button class="btn btn-primary btn-sm" onclick="viewerManager.showPurchaseModal(${video.id})">
+                            <button class="btn btn-primary btn-sm purchase-video-btn"
+                                    data-video-id="${video.id}"
+                                    data-video-title="${video.title}"
+                                    data-video-price="${video.price}">
                                 <i class="fas fa-shopping-cart me-1"></i>Purchase
                             </button>
                         `}
@@ -1120,374 +1145,63 @@ class ViewerManager {
                 modal.className = 'modal fade';
                 modal.id = 'viewerActionConfirmModal';
                 modal.setAttribute('tabindex', '-1');
-                modal.innerHTML = `
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content border-0 shadow-lg">
-                            <div class="modal-header bg-gradient text-white border-0">
-                                <h5 class="modal-title fw-bold" id="viewerActionModalTitle">
-                                    <i class="fas fa-question-circle me-2"></i>Confirm Action
-                                </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body p-4">
-                                <div class="alert border-0 mb-4" id="viewerActionDescription">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-info-circle fa-2x me-3" id="viewerActionIcon"></i>
-                                        <div>
-                                            <p class="mb-1 fw-semibold" id="viewerActionModalMessage">Are you sure?</p>
-                                            <small class="text-muted" id="viewerActionDescriptionText">This action requires confirmation.</small>
-                                        </div>
-                                    </div>
-                                </div>
+            }
 
-                                <div class="card border-0 bg-light">
-                                    <div class="card-body p-3">
-                                        <h6 class="fw-bold text-dark mb-2">
-                                            <i class="fas fa-video me-2 text-primary"></i>Video Details
-                                        </h6>
-                                        <div class="row align-items-center">
-                                            <div class="col-auto">
-                                                <img id="viewerActionVideoThumbnail" src="" alt="Video thumbnail"
-                                                     class="rounded shadow-sm" style="width: 60px; height: 34px; object-fit: cover;">
-                                            </div>
-                                            <div class="col">
-                                                <div class="fw-semibold text-dark" id="viewerActionModalVideoTitle">Video Title</div>
-                                                <small class="text-muted" id="viewerActionModalVideoCreator">Creator</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer border-0 pt-0">
-                                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
-                                    <i class="fas fa-times me-2"></i>Cancel
-                                </button>
-                                <button type="button" class="btn px-4" id="confirmViewerActionBtn">
-                                    <i class="fas fa-check me-2"></i>Confirm
-                                </button>
-                            </div>
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header border-bottom-0">
+                            <h5 class="modal-title"><i class="fas ${actionData.icon} text-${actionData.class} me-2"></i>${actionData.title}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center py-4">
+                            <h4>Are you sure you want to ${actionData.message}?</h4>
+                            <p class="text-muted">${actionData.description}</p>
+                        </div>
+                        <div class="modal-footer justify-content-center border-top-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-${actionData.class} confirm-action-btn" data-action="${action}" data-video-id="${videoId}">Confirm</button>
                         </div>
                     </div>
-                `;
-                document.body.appendChild(modal);
-            }
-
-            // Update modal content
-            document.getElementById('viewerActionModalTitle').innerHTML = `<i class="fas ${actionData.icon} me-2"></i>${actionData.title}`;
-            document.getElementById('viewerActionModalMessage').textContent = `Are you sure you want to ${actionData.message}?`;
-            document.getElementById('viewerActionDescriptionText').textContent = actionData.description;
-            document.getElementById('viewerActionModalVideoTitle').textContent = video.title;
-            document.getElementById('viewerActionModalVideoCreator').textContent = `by ${video.creatorName || video.creator_name || video.youtube_channel_title || 'Unknown Creator'}`;
-
-            // Set thumbnail
-            const thumbnailEl = document.getElementById('viewerActionVideoThumbnail');
-            if (video.youtube_id) {
-                thumbnailEl.src = `https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`;
-            } else if (video.thumbnail) {
-                thumbnailEl.src = video.thumbnail;
-            } else {
-                thumbnailEl.src = 'https://via.placeholder.com/60x34/6c757d/ffffff?text=Video';
-            }
-
-            const confirmBtn = document.getElementById('confirmViewerActionBtn');
-            const descriptionAlert = document.getElementById('viewerActionDescription');
-            const iconEl = document.getElementById('viewerActionIcon');
-            const headerEl = modal.querySelector('.modal-header');
-
-            confirmBtn.className = `btn btn-${actionData.class} px-4`;
-            confirmBtn.innerHTML = `<i class="fas ${actionData.icon} me-2"></i>${actionData.title}`;
-            descriptionAlert.className = `alert alert-${actionData.class === 'danger' ? 'danger' : 'info'} border-0 mb-4`;
-            iconEl.className = `fas ${actionData.icon} fa-2x me-3 text-${actionData.class}`;
-            headerEl.className = `modal-header text-white border-0 bg-${actionData.class}`;
-
-            // Set up confirm button action
-            confirmBtn.onclick = function() {
-                const bootstrapModal = bootstrap.Modal.getInstance(modal);
-                bootstrapModal.hide();
-                resolve(true);
-            };
-
-            // Set up cancel action
-            modal.addEventListener('hidden.bs.modal', function handler() {
-                modal.removeEventListener('hidden.bs.modal', handler);
-                resolve(false);
-            });
+                </div>
+            `;
+            document.body.appendChild(modal);
 
             const bootstrapModal = new bootstrap.Modal(modal);
             bootstrapModal.show();
-        });
-    }
 
-    openVideoInNewTab(videoId) {
-        const video = this.videos.find(v => v.id == videoId) ||
-                     this.purchases.find(p => p.video_id == videoId || p.video.id == videoId)?.video;
-
-        if (!video) {
-            this.showNotification('Video not found', 'error');
-            return;
-        }
-
-        // Get YouTube ID
-        let youtubeVideoId = video.youtube_id;
-
-        if (!youtubeVideoId && video.thumbnail) {
-            // Try to extract from thumbnail URL as fallback
-            const patterns = [
-                /\/vi\/([^/]+)\//, // YouTube thumbnail URL format
-                /youtu\.be\/([^?]+)/, // Short URL format
-                /embed\/([^?]+)/ // Embed URL format
-            ];
-
-            for (const pattern of patterns) {
-                const match = video.thumbnail.match(pattern);
-                if (match) {
-                    youtubeVideoId = match[1];
-                    break;
+            // Handle action confirmation
+            modal.querySelector('.confirm-action-btn').addEventListener('click', async () => {
+                bootstrapModal.hide();
+                let success = false;
+                if (action === 'purchase') {
+                    this.showPurchaseModal(videoId);
+                    success = true; // Assume modal will handle the actual purchase flow
+                } else if (action === 'removeFromFavorites') {
+                    this.toggleFavorite(videoId);
+                    success = true;
+                } else if (action === 'reportVideo') {
+                    try {
+                        const reportResponse = await window.apiService.post('/api/reports/video', { videoId: videoId, userId: this.currentViewerId });
+                        if (reportResponse.success) {
+                            this.showNotification('Video reported successfully!', 'success');
+                            success = true;
+                        } else {
+                            this.showNotification('Failed to report video.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error reporting video:', error);
+                        this.showNotification('Error reporting video.', 'error');
+                    }
                 }
-            }
-        }
+                resolve(success);
+            });
 
-        if (!youtubeVideoId) {
-            this.showNotification('YouTube video ID not available', 'error');
-            return;
-        }
-
-        // Open YouTube video in new tab
-        const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
-        window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
-
-        this.showNotification(`Opening "${video.title}" in new tab`, 'info');
-    }
-
-    shareVideo(videoId) {
-        const video = this.videos.find(v => v.id == videoId);
-        if (video) {
-            // Simple share functionality
-            if (navigator.share) {
-                navigator.share({
-                    title: video.title,
-                    text: `Check out this video: ${video.title}`,
-                    url: window.location.href
-                });
-            } else {
-                // Fallback to copying to clipboard
-                const shareText = `Check out this video: ${video.title} - ${window.location.href}`;
-                navigator.clipboard.writeText(shareText).then(() => {
-                    alert('Video link copied to clipboard!');
-                }).catch(() => {
-                    alert('Share link: ' + shareText);
-                });
-            }
-        }
-    }
-
-    // Event handlers
-    showVideoPreview(videoId) {
-        console.log('Showing preview for video:', videoId);
-    }
-
-    async purchaseVideo(videoId) {
-        const video = this.videos.find(v => v.id === videoId);
-        if (!video) {
-            this.showNotification('Video not found', 'error');
-            return;
-        }
-
-        // Check if already purchased
-        const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
-        const userId = userSession.userId || 8;
-        const alreadyPurchased = this.purchases.some(p => p.video_id === videoId);
-
-        if (alreadyPurchased) {
-            this.showNotification('You have already purchased this video', 'info');
-            return;
-        }
-
-        // Show purchase modal
-        this.showPurchaseModal(videoId);
-    }
-
-    showPurchaseModal(videoId) {
-        const video = this.videos.find(v => v.id == videoId);
-        if (!video) {
-            console.error('Video not found for ID:', videoId);
-            this.showNotification('Video not found', 'error');
-            return;
-        }
-
-        // Get current user ID
-        const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
-        const userId = userSession.id || userSession.userId || 8;
-
-        // Check if already purchased
-        const alreadyPurchased = this.purchases.some(p => p.video_id == videoId);
-        if (alreadyPurchased) {
-            this.showNotification('You have already purchased this video', 'info');
-            return;
-        }
-
-        // Remove any existing modal
-        const existingModal = document.getElementById('purchaseModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-
-        // Create new modal
-        const modal = document.createElement('div');
-        modal.className = 'modal fade';
-        modal.id = 'purchaseModal';
-        modal.setAttribute('tabindex', '-1');
-        modal.setAttribute('aria-labelledby', 'purchaseModalLabel');
-        modal.setAttribute('aria-hidden', 'true');
-
-        const price = parseFloat(video.price || 0);
-
-        modal.innerHTML = `
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content shadow-lg border-0">
-                    <div class="modal-header bg-gradient" style="background: linear-gradient(135deg, #007bff, #0056b3);">
-                        <h5 class="modal-title text-white fw-bold" id="purchaseModalLabel">
-                            <i class="fas fa-shopping-cart me-2"></i>Purchase Video
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-
-                    <div class="modal-body p-4">
-                        <!-- Video Information -->
-                        <div class="card border-0 bg-light mb-4">
-                            <div class="card-body">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <h6 class="fw-bold text-dark mb-2">${video.title}</h6>
-                                        <p class="text-muted mb-1">
-                                            <i class="fas fa-user-circle me-1"></i>
-                                            ${video.creatorName || video.creator_name || video.youtube_channel_title || 'Content Creator'}
-                                        </p>
-                                        <p class="text-muted small mb-0">${(video.description || 'High-quality video content').substring(0, 80)}...</p>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <h3 class="text-primary fw-bold mb-0">$${price.toFixed(2)}</h3>
-                                        <small class="text-muted">One-time purchase</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Payment Form -->
-                        <form id="purchaseForm" novalidate>
-                            <div class="row g-4">
-                                <!-- Payment Methods -->
-                                <div class="col-md-6">
-                                    <h6 class="fw-bold mb-3">
-                                        <i class="fas fa-credit-card text-primary me-2"></i>Payment Method
-                                    </h6>
-
-                                    <div class="payment-methods">
-                                        <div class="form-check payment-option mb-3 p-3 border rounded" style="cursor: pointer;">
-                                            <input class="form-check-input" type="radio" name="paymentMethod" value="card" id="cardMethod" checked>
-                                            <label class="form-check-label w-100" for="cardMethod" style="cursor: pointer;">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="fas fa-credit-card text-primary me-3 fs-5"></i>
-                                                    <div>
-                                                        <div class="fw-semibold">Credit/Debit Card</div>
-                                                        <small class="text-muted">Visa, Mastercard, Amex</small>
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        </div>
-
-                                        <div class="form-check payment-option mb-3 p-3 border rounded" style="cursor: pointer;">
-                                            <input class="form-check-input" type="radio" name="paymentMethod" value="paypal" id="paypalMethod">
-                                            <label class="form-check-label w-100" for="paypalMethod" style="cursor: pointer;">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="fab fa-paypal text-primary me-3 fs-5"></i>
-                                                    <div>
-                                                        <div class="fw-semibold">PayPal</div>
-                                                        <small class="text-muted">Pay with PayPal account</small>
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Payment Details -->
-                                <div class="col-md-6">
-                                    <h6 class="fw-bold mb-3">
-                                        <i class="fas fa-lock text-success me-2"></i>Payment Details
-                                    </h6>
-
-                                    <!-- Card Details -->
-                                    <div id="cardDetails" class="payment-details" style="display: block;">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Card Number</label>
-                                            <input type="text" class="form-control" name="cardNumber" placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" maxlength="19" required>
-                                            <div class="invalid-feedback">Please enter a valid card number</div>
-                                        </div>
-                                        <div class="row g-3">
-                                            <div class="col-6">
-                                                <label class="form-label fw-semibold">Expiry Date</label>
-                                                <input type="text" class="form-control" name="expiry" placeholder="MM/YY" value="12/26" maxlength="5" required>
-                                                <div class="invalid-feedback">Enter MM/YY format</div>
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label fw-semibold">CVV</label>
-                                                <input type="text" class="form-control" name="cvv" placeholder="123" value="123" maxlength="4" required>
-                                                <div class="invalid-feedback">Enter CVV code</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- PayPal Details -->
-                                    <div id="paypalDetails" class="payment-details" style="display: none;">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">PayPal Email</label>
-                                            <input type="email" class="form-control" name="paypalEmail" placeholder="your@email.com" value="demo@example.com">
-                                            <div class="invalid-feedback">Please enter a valid email address</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="alert alert-info border-0 mt-3">
-                                        <i class="fas fa-shield-check me-2"></i>
-                                        <small>Payments are secured with 256-bit SSL encryption</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-
-                        <!-- Demo Notice -->
-                        <div class="alert alert-warning border-0 mt-4">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Demo Mode:</strong> This is a demonstration. No real charges will be made.
-                        </div>
-                    </div>
-
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-2"></i>Cancel
-                        </button>
-                        <button type="button" class="btn btn-primary" id="purchaseBtn">
-                            <i class="fas fa-credit-card me-2"></i>Purchase for $${price.toFixed(2)}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Add to document
-        document.body.appendChild(modal);
-
-        // Initialize Bootstrap modal
-        const bootstrapModal = new bootstrap.Modal(modal, {
-            backdrop: 'static',
-            keyboard: false
+            // Cleanup modal element when closed
+            modal.addEventListener('hidden.bs.modal', () => {
+                modal.remove();
+            });
         });
-
-        // Show modal
-        bootstrapModal.show();
-
-        // Setup event handlers
-        this.setupModalEventHandlers(modal, video, userId, bootstrapModal);
     }
 
     setupModalEventHandlers(modal, video, userId, bootstrapModal) {
@@ -1811,94 +1525,62 @@ class ViewerManager {
         // Create video player modal
         const modal = document.createElement('div');
         modal.className = 'modal fade';
-        modal.innerHTML = `
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">${video.title}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-0">
-                        <div class="ratio ratio-16x9">
-                            <video controls class="w-100">
-                                <source src="${video.video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                        </div>
-                        <div class="p-3">
-                            <h6>${video.title}</h6>
-                            <p class="text-muted">By ${video.creatorName || video.creator_name || 'Unknown Creator'}</p>
-                            <p>${video.description || 'No description available'}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        const bootstrapModal = new bootstrap.Modal(modal);
-        bootstrapModal.show();
-
-        // Clean up when closed
-        modal.addEventListener('hidden.bs.modal', () => {
-            document.body.removeChild(modal);
-        });
     }
 
-    toggleFavorite(videoId) {
-        const index = this.favorites.indexOf(videoId);
-        if (index > -1) {
-            this.favorites.splice(index, 1);
-        } else {
-            this.favorites.push(videoId);
+    // Cache management functions for better performance
+    getCachedData(key, timeoutMs) {
+        try {
+            const cached = localStorage.getItem(`cache_${key}`);
+            if (!cached) return null;
+
+            const data = JSON.parse(cached);
+            if (Date.now() - data.timestamp > timeoutMs) {
+                localStorage.removeItem(`cache_${key}`);
+                return null;
+            }
+            return data.content;
+        } catch (error) {
+            console.error('Error reading cache:', error);
+            return null;
         }
-        // Refresh display
-        this.loadPageSpecificHandlers();
     }
 
-    showVideoOptions(videoId) {
-        console.log('Showing options for video:', videoId);
+    setCachedData(key, content) {
+        try {
+            const data = {
+                timestamp: Date.now(),
+                content: content
+            };
+            localStorage.setItem(`cache_${key}`, JSON.stringify(data));
+        } catch (error) {
+            console.error('Error setting cache:', error);
+        }
     }
 
-    handlePurchaseFromPreview() {
-        console.log('Handling purchase from preview');
+    // Performance optimization: Load metrics with delay to reduce initial load time
+    loadMetricsWithDelay(userId) {
+        setTimeout(async () => {
+            try {
+                const metricsResponse = await window.apiService.get(`/api/metrics?type=viewer&user_id=${userId}`);
+                if (metricsResponse.success) {
+                    this.updateDashboardMetrics(metricsResponse.data);
+                }
+            } catch (error) {
+                console.error('Failed to load metrics:', error);
+            }
+        }, 200); // Increased delay to further reduce initial load time
     }
 
-    handleConfirmPurchase() {
-        console.log('Handling confirm purchase');
-    }
+    // Legacy method removed - now using Stripe payment system only
 
-    handleProfileUpdate(event) {
-        event.preventDefault();
-        console.log('Handling profile update');
-    }
+    openVideoInNewTab(videoId) {
+        const video = this.videos.find(v => v.id == videoId);
+        if (!video || !video.youtube_id) {
+            alert('Video not available for playback');
+            return;
+        }
 
-    handlePasswordChange(event) {
-        event.preventDefault();
-        console.log('Handling password change');
-    }
-
-    loadProfileData() {
-        console.log('Loading profile data');
+        const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_id}`;
+        window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
     }
 }
-
-// Fallback logout confirmation function for viewer pages
-window.showLogoutConfirm = function() {
-    if (window.commonUtils) {
-        window.commonUtils.showLogoutConfirmModal();
-    } else {
-        // Simple fallback if CommonUtils not available
-        if (confirm('Are you sure you want to logout?')) {
-            // Clear session and redirect
-            localStorage.removeItem('userSession');
-            sessionStorage.removeItem('userSession');
-            window.location.href = '/auth/login.html';
-        }
-    }
-};
-
-// Initialize viewer manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.viewerManager = new ViewerManager();
-});

@@ -1,753 +1,605 @@
+
 /**
- * VideoHub Payment Module
- * Handles payment processing, validation, and transaction management
+ * VideoHub Stripe Payment Module
+ * Handles real Stripe payment processing for video purchases - Stripe ONLY
  */
 
-class PaymentManager {
+class StripePaymentManager {
     constructor() {
-        this.currentTransaction = null;
-        this.paymentMethods = [];
+        this.stripe = null;
+        this.elements = null;
+        this.cardElement = null;
+        this.currentPaymentIntent = null;
+        this.publishableKey = null;
+        this.isInitialized = false;
+        this.currentModal = null;
+        this.currentModalId = null;
         this.init();
     }
 
-    init() {
-        this.loadPaymentMethods();
-        this.bindEvents();
-        this.setupDemoMode();
+    async init() {
+        try {
+            await this.loadStripeKey();
+            this.initializeStripe();
+            this.bindEvents();
+            this.isInitialized = true;
+            console.log('Stripe Payment Manager initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize Stripe:', error);
+            this.showError('Payment system initialization failed. Please refresh the page.');
+        }
     }
 
-    loadPaymentMethods() {
-        // Mock payment methods
-        this.paymentMethods = [
-            {
-                id: 'card',
-                name: 'Credit/Debit Card',
-                icon: 'fas fa-credit-card',
-                enabled: true,
-                processingFee: 0.99
-            },
-            {
-                id: 'paypal',
-                name: 'PayPal',
-                icon: 'fab fa-paypal',
-                enabled: true,
-                processingFee: 0.50
-            },
-            {
-                id: 'apple_pay',
-                name: 'Apple Pay',
-                icon: 'fab fa-apple',
-                enabled: false,
-                processingFee: 0.30
-            },
-            {
-                id: 'google_pay',
-                name: 'Google Pay',
-                icon: 'fab fa-google',
-                enabled: false,
-                processingFee: 0.30
+    async loadStripeKey() {
+        try {
+            const response = await fetch(this.getApiUrl('/api/config/stripe-key'));
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: Failed to load Stripe configuration`);
             }
-        ];
+            
+            const data = await response.json();
+            if (!data.success || !data.publishable_key) {
+                throw new Error('Invalid Stripe configuration response');
+            }
+            
+            this.publishableKey = data.publishable_key;
+        } catch (error) {
+            console.error('Could not load Stripe key from API:', error);
+            throw new Error('Unable to load payment configuration');
+        }
+    }
+
+    initializeStripe() {
+        if (!this.publishableKey) {
+            throw new Error('Stripe publishable key not found');
+        }
+
+        try {
+            this.stripe = Stripe(this.publishableKey);
+            this.elements = this.stripe.elements();
+            console.log('Stripe initialized successfully');
+        } catch (error) {
+            console.error('Error initializing Stripe:', error);
+            throw new Error('Failed to initialize Stripe');
+        }
     }
 
     bindEvents() {
-        // Payment method selection
-        document.addEventListener('change', (e) => {
-            if (e.target.name === 'paymentMethod') {
-                this.handlePaymentMethodChange(e.target.value);
-            }
-        });
-
-        // Payment form submission
-        document.addEventListener('submit', (e) => {
-            if (e.target.id === 'paymentForm') {
+        // Handle purchase button clicks
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('purchase-video-btn')) {
                 e.preventDefault();
-                this.processPayment();
+                this.handlePurchaseClick(e.target);
             }
         });
 
-        // Card input formatting
-        document.addEventListener('input', (e) => {
-            if (e.target.id === 'cardNumber') {
-                this.formatCardNumber(e.target);
-            }
-            if (e.target.id === 'expiryDate') {
-                this.formatExpiryDate(e.target);
-            }
-            if (e.target.id === 'cvv') {
-                this.formatCVV(e.target);
-            }
-        });
-
-        // Real-time validation
-        document.addEventListener('blur', (e) => {
-            if (e.target.classList.contains('payment-input')) {
-                this.validateField(e.target);
+        // Handle payment form submissions
+        document.addEventListener('submit', (e) => {
+            if (e.target.id && e.target.id.startsWith('stripe-payment-form')) {
+                e.preventDefault();
+                this.processStripePayment(e.target);
             }
         });
     }
 
-    setupDemoMode() {
-        // Add demo mode notification to payment forms
-        const paymentForms = document.querySelectorAll('.payment-form, #paymentForm');
-        paymentForms.forEach(form => {
-            if (!form.querySelector('.demo-notice')) {
-                const demoNotice = document.createElement('div');
-                demoNotice.className = 'alert alert-info demo-notice';
-                demoNotice.innerHTML = `
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Demo Mode:</strong> No real payments will be processed. Use test card: 4242 4242 4242 4242
-                `;
-                form.insertBefore(demoNotice, form.firstChild);
-            }
-        });
-    }
+    async handlePurchaseClick(button) {
+        if (!this.isInitialized) {
+            this.showError('Payment system is not ready. Please refresh the page.');
+            return;
+        }
 
-    // Payment Processing Methods
-    async processPayment() {
-        const paymentData = this.collectPaymentData();
-        
-        if (!this.validatePaymentData(paymentData)) {
+        const videoId = button.dataset.videoId;
+        const videoTitle = button.dataset.videoTitle;
+        const videoPrice = parseFloat(button.dataset.videoPrice);
+
+        if (!videoId || isNaN(videoPrice) || videoPrice < 0) {
+            this.showError('Invalid video information');
             return;
         }
 
         try {
-            this.showPaymentProcessing();
-            
-            // Simulate payment processing
-            const result = await this.simulatePaymentProcessing(paymentData);
-            
-            if (result.success) {
-                this.handlePaymentSuccess(result);
-            } else {
-                this.handlePaymentError(result.error);
+            const userId = this.getCurrentUserId();
+            if (!userId) {
+                this.showError('Please log in to purchase videos');
+                return;
             }
-            
+
+            this.showStripePaymentModal(videoId, videoTitle, videoPrice);
         } catch (error) {
-            this.handlePaymentError('Payment processing failed. Please try again.');
-        } finally {
-            this.hidePaymentProcessing();
+            console.error('Error initiating purchase:', error);
+            this.showError('Failed to start purchase process');
         }
     }
 
-    async simulatePaymentProcessing(paymentData) {
-        // Simulate API call delay
-        await this.delay(2000 + Math.random() * 2000);
+    showStripePaymentModal(videoId, videoTitle, videoPrice) {
+        // Clean up any existing modals first
+        this.cleanupExistingModals();
+
+        // Create unique IDs to prevent conflicts
+        const timestamp = Date.now();
+        const modalId = `stripePaymentModal_${timestamp}`;
+        const formId = `stripe-payment-form-${timestamp}`;
+        const cardElementId = `card-element-${timestamp}`;
+        const cardErrorsId = `card-errors-${timestamp}`;
         
-        // Simulate different payment outcomes
-        const random = Math.random();
-        
-        if (random < 0.85) {
-            // Success (85% chance)
-            return {
-                success: true,
-                transactionId: this.generateTransactionId(),
-                amount: paymentData.amount,
-                currency: paymentData.currency,
-                paymentMethod: paymentData.paymentMethod,
-                timestamp: new Date().toISOString()
-            };
-        } else if (random < 0.95) {
-            // Decline (10% chance)
-            return {
-                success: false,
-                error: 'Payment declined. Please check your payment details or try a different payment method.'
-            };
-        } else {
-            // Error (5% chance)
-            return {
-                success: false,
-                error: 'Payment processing error. Please try again later.'
-            };
-        }
-    }
-
-    collectPaymentData() {
-        const form = document.getElementById('paymentForm') || document.querySelector('.payment-form');
-        if (!form) return null;
-
-        const paymentMethod = form.querySelector('input[name="paymentMethod"]:checked')?.value || 'card';
-        const amount = parseFloat(form.querySelector('#amount')?.value || document.getElementById('purchasePrice')?.textContent || 0);
-        
-        const data = {
-            paymentMethod: paymentMethod,
-            amount: amount,
-            currency: 'USD',
-            processingFee: this.getProcessingFee(paymentMethod),
-            total: amount + this.getProcessingFee(paymentMethod)
-        };
-
-        // Collect payment method specific data
-        if (paymentMethod === 'card') {
-            data.card = {
-                number: form.querySelector('#cardNumber')?.value?.replace(/\s/g, '') || '',
-                expiryDate: form.querySelector('#expiryDate')?.value || '',
-                cvv: form.querySelector('#cvv')?.value || '',
-                holderName: form.querySelector('#cardHolderName')?.value || ''
-            };
-        } else if (paymentMethod === 'paypal') {
-            data.paypal = {
-                email: form.querySelector('#paypalEmail')?.value || ''
-            };
-        }
-
-        return data;
-    }
-
-    validatePaymentData(data) {
-        if (!data) {
-            this.showPaymentError('Please fill in all required fields.');
-            return false;
-        }
-
-        if (!data.amount || data.amount <= 0) {
-            this.showPaymentError('Invalid payment amount.');
-            return false;
-        }
-
-        if (data.paymentMethod === 'card') {
-            return this.validateCardData(data.card);
-        } else if (data.paymentMethod === 'paypal') {
-            return this.validatePayPalData(data.paypal);
-        }
-
-        return true;
-    }
-
-    validateCardData(card) {
-        if (!this.validateCardNumber(card.number)) {
-            this.showPaymentError('Please enter a valid card number.');
-            return false;
-        }
-
-        if (!this.validateExpiryDate(card.expiryDate)) {
-            this.showPaymentError('Please enter a valid expiry date.');
-            return false;
-        }
-
-        if (!this.validateCVV(card.cvv)) {
-            this.showPaymentError('Please enter a valid CVV.');
-            return false;
-        }
-
-        if (!card.holderName.trim()) {
-            this.showPaymentError('Please enter the cardholder name.');
-            return false;
-        }
-
-        return true;
-    }
-
-    validatePayPalData(paypal) {
-        if (!this.validateEmail(paypal.email)) {
-            this.showPaymentError('Please enter a valid PayPal email address.');
-            return false;
-        }
-        return true;
-    }
-
-    // Card Validation Methods
-    validateCardNumber(cardNumber) {
-        // Remove spaces and check if it's numeric
-        const cleaned = cardNumber.replace(/\s/g, '');
-        
-        if (!/^\d+$/.test(cleaned) || cleaned.length < 13 || cleaned.length > 19) {
-            return false;
-        }
-
-        // Luhn algorithm
-        return this.luhnCheck(cleaned);
-    }
-
-    luhnCheck(cardNumber) {
-        let sum = 0;
-        let isEven = false;
-        
-        for (let i = cardNumber.length - 1; i >= 0; i--) {
-            let digit = parseInt(cardNumber.charAt(i));
-            
-            if (isEven) {
-                digit *= 2;
-                if (digit > 9) {
-                    digit -= 9;
-                }
-            }
-            
-            sum += digit;
-            isEven = !isEven;
-        }
-        
-        return sum % 10 === 0;
-    }
-
-    validateExpiryDate(expiryDate) {
-        if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
-            return false;
-        }
-
-        const [month, year] = expiryDate.split('/').map(num => parseInt(num, 10));
-        const currentDate = new Date();
-        const currentYear = currentDate.getFullYear() % 100;
-        const currentMonth = currentDate.getMonth() + 1;
-
-        if (month < 1 || month > 12) {
-            return false;
-        }
-
-        if (year < currentYear || (year === currentYear && month < currentMonth)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    validateCVV(cvv) {
-        return /^\d{3,4}$/.test(cvv);
-    }
-
-    validateEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-
-    // Card Type Detection
-    detectCardType(cardNumber) {
-        const cleaned = cardNumber.replace(/\s/g, '');
-        
-        const cardTypes = {
-            visa: /^4/,
-            mastercard: /^5[1-5]/,
-            amex: /^3[47]/,
-            discover: /^6(?:011|5)/,
-            dinersclub: /^3[0689]/,
-            jcb: /^35/
-        };
-
-        for (const [type, pattern] of Object.entries(cardTypes)) {
-            if (pattern.test(cleaned)) {
-                return type;
-            }
-        }
-
-        return 'unknown';
-    }
-
-    // Input Formatting Methods
-    formatCardNumber(input) {
-        let value = input.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
-        const matches = value.match(/\d{4,16}/g);
-        const match = matches && matches[0] || '';
-        const parts = [];
-
-        for (let i = 0, len = match.length; i < len; i += 4) {
-            parts.push(match.substring(i, i + 4));
-        }
-
-        if (parts.length) {
-            input.value = parts.join(' ');
-        } else {
-            input.value = value;
-        }
-
-        // Update card type icon
-        this.updateCardTypeIcon(input, value);
-    }
-
-    formatExpiryDate(input) {
-        let value = input.value.replace(/\D/g, '');
-        
-        if (value.length >= 2) {
-            value = value.substring(0, 2) + '/' + value.substring(2, 4);
-        }
-        
-        input.value = value;
-    }
-
-    formatCVV(input) {
-        input.value = input.value.replace(/\D/g, '').substring(0, 4);
-    }
-
-    updateCardTypeIcon(input, cardNumber) {
-        const cardType = this.detectCardType(cardNumber);
-        const iconElement = input.parentNode.querySelector('.card-type-icon');
-        
-        if (iconElement) {
-            const icons = {
-                visa: 'fab fa-cc-visa',
-                mastercard: 'fab fa-cc-mastercard',
-                amex: 'fab fa-cc-amex',
-                discover: 'fab fa-cc-discover',
-                dinersclub: 'fab fa-cc-diners-club',
-                jcb: 'fab fa-cc-jcb',
-                unknown: 'fas fa-credit-card'
-            };
-            
-            iconElement.className = `card-type-icon ${icons[cardType] || icons.unknown}`;
-        }
-    }
-
-    // Payment Method Management
-    handlePaymentMethodChange(method) {
-        this.showPaymentMethodForm(method);
-        this.updatePaymentSummary(method);
-    }
-
-    showPaymentMethodForm(method) {
-        // Hide all payment forms
-        const forms = document.querySelectorAll('.payment-method-form');
-        forms.forEach(form => form.style.display = 'none');
-
-        // Show selected payment method form
-        const selectedForm = document.getElementById(`${method}Form`);
-        if (selectedForm) {
-            selectedForm.style.display = 'block';
-        }
-    }
-
-    updatePaymentSummary(method) {
-        const processingFee = this.getProcessingFee(method);
-        const amount = parseFloat(document.getElementById('purchasePrice')?.textContent || 0);
-        const total = amount + processingFee;
-
-        const processingFeeElement = document.querySelector('.processing-fee');
-        const totalElement = document.querySelector('.total-amount');
-
-        if (processingFeeElement) {
-            processingFeeElement.textContent = `$${processingFee.toFixed(2)}`;
-        }
-
-        if (totalElement) {
-            totalElement.textContent = `$${total.toFixed(2)}`;
-        }
-    }
-
-    getProcessingFee(method) {
-        const paymentMethod = this.paymentMethods.find(pm => pm.id === method);
-        return paymentMethod ? paymentMethod.processingFee : 0.99;
-    }
-
-    // UI State Management
-    showPaymentProcessing() {
-        const submitButton = document.querySelector('#paymentForm button[type="submit"], .payment-submit');
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.innerHTML = `
-                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                Processing...
-            `;
-        }
-
-        // Show processing overlay
-        this.showProcessingOverlay();
-    }
-
-    hidePaymentProcessing() {
-        const submitButton = document.querySelector('#paymentForm button[type="submit"], .payment-submit');
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = `
-                <i class="fas fa-credit-card me-2"></i>Complete Payment
-            `;
-        }
-
-        this.hideProcessingOverlay();
-    }
-
-    showProcessingOverlay() {
-        const overlay = document.createElement('div');
-        overlay.id = 'paymentProcessingOverlay';
-        overlay.className = 'payment-processing-overlay';
-        overlay.innerHTML = `
-            <div class="processing-content">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Processing...</span>
-                </div>
-                <h5>Processing Payment</h5>
-                <p class="text-muted">Please do not refresh or close this page</p>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-    }
-
-    hideProcessingOverlay() {
-        const overlay = document.getElementById('paymentProcessingOverlay');
-        if (overlay) {
-            overlay.remove();
-        }
-    }
-
-    // Payment Result Handling
-    handlePaymentSuccess(result) {
-        this.currentTransaction = result;
-        
-        // Store transaction for receipt
-        this.storeTransaction(result);
-        
-        // Show success message
-        this.showPaymentSuccess(result);
-        
-        // Trigger success callback if available
-        if (window.onPaymentSuccess) {
-            window.onPaymentSuccess(result);
-        }
-        
-        // Redirect or update UI
-        setTimeout(() => {
-            this.redirectAfterPayment(result);
-        }, 3000);
-    }
-
-    handlePaymentError(error) {
-        this.showPaymentError(error);
-        
-        // Trigger error callback if available
-        if (window.onPaymentError) {
-            window.onPaymentError(error);
-        }
-    }
-
-    showPaymentSuccess(result) {
-        window.commonUtils?.showToast(`Payment successful! Transaction ID: ${result.transactionId}`, 'success', 8000);
-        
-        // Update modal content if in modal
-        const modal = document.querySelector('.modal.show');
-        if (modal) {
-            this.showSuccessInModal(modal, result);
-        }
-    }
-
-    showSuccessInModal(modal, result) {
-        const modalBody = modal.querySelector('.modal-body');
-        if (modalBody) {
-            modalBody.innerHTML = `
-                <div class="text-center">
-                    <i class="fas fa-check-circle fa-5x text-success mb-4"></i>
-                    <h4 class="text-success">Payment Successful!</h4>
-                    <p class="text-muted mb-4">Your purchase has been completed successfully.</p>
-                    <div class="card bg-light">
-                        <div class="card-body">
-                            <div class="row text-start">
-                                <div class="col-6"><strong>Transaction ID:</strong></div>
-                                <div class="col-6">${result.transactionId}</div>
-                                <div class="col-6"><strong>Amount:</strong></div>
-                                <div class="col-6">$${result.amount.toFixed(2)}</div>
-                                <div class="col-6"><strong>Date:</strong></div>
-                                <div class="col-6">${new Date(result.timestamp).toLocaleDateString()}</div>
+        const modalHtml = `
+            <div class="modal fade" id="${modalId}" tabindex="-1" aria-labelledby="${modalId}Label" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="${modalId}Label">
+                                <i class="fas fa-credit-card me-2"></i>Purchase Video
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3 p-3 bg-light rounded">
+                                <h6 class="mb-2">${this.escapeHtml(videoTitle)}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted">One-time purchase</span>
+                                    <span class="h4 text-primary mb-0">$${videoPrice.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            
+                            <form id="${formId}" novalidate>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Card Details</label>
+                                    <div id="${cardElementId}" class="form-control" style="height: 45px; padding: 10px; border: 2px solid #dee2e6; border-radius: 8px;"></div>
+                                    <div id="${cardErrorsId}" class="text-danger mt-2 small" style="display: none;"></div>
+                                </div>
+                                
+                                <input type="hidden" class="video-id-input" value="${videoId}">
+                                <input type="hidden" class="video-price-input" value="${videoPrice}">
+                                
+                                <button type="submit" class="submit-payment-btn btn btn-primary w-100 py-2" disabled>
+                                    <span class="spinner-border spinner-border-sm me-2" style="display: none;"></span>
+                                    <span class="button-text">Pay $${videoPrice.toFixed(2)}</span>
+                                </button>
+                            </form>
+                            
+                            <div class="mt-3 text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    Secured by Stripe • SSL Encrypted
+                                </small>
                             </div>
                         </div>
                     </div>
                 </div>
-            `;
-        }
+            </div>
+        `;
 
-        const modalFooter = modal.querySelector('.modal-footer');
-        if (modalFooter) {
-            modalFooter.innerHTML = `
-                <button type="button" class="btn btn-primary" onclick="window.location.reload()">
-                    Continue
-                </button>
-            `;
-        }
-    }
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-    showPaymentError(error) {
-        window.commonUtils?.showToast(error, 'danger', 8000);
-    }
-
-    // Transaction Management
-    storeTransaction(transaction) {
-        const transactions = this.getStoredTransactions();
-        transactions.push(transaction);
-        localStorage.setItem('videohub_transactions', JSON.stringify(transactions));
-    }
-
-    getStoredTransactions() {
-        const stored = localStorage.getItem('videohub_transactions');
-        return stored ? JSON.parse(stored) : [];
-    }
-
-    getTransaction(transactionId) {
-        const transactions = this.getStoredTransactions();
-        return transactions.find(t => t.transactionId === transactionId);
-    }
-
-    redirectAfterPayment(result) {
-        // Default redirect logic
-        const currentPage = window.location.pathname;
+        const modalElement = document.getElementById(modalId);
+        const modal = new bootstrap.Modal(modalElement);
         
-        if (currentPage.includes('browse.html')) {
-            // Refresh browse page to update purchased status
-            window.location.reload();
-        } else if (currentPage.includes('purchases.html')) {
-            // Refresh purchases page
-            window.location.reload();
-        } else {
-            // Go to purchases page
-            window.location.href = 'purchases.html';
-        }
-    }
-
-    // Field Validation
-    validateField(field) {
-        const fieldType = field.id || field.name;
-        let isValid = true;
-        let errorMessage = '';
-
-        switch (fieldType) {
-            case 'cardNumber':
-                isValid = this.validateCardNumber(field.value);
-                errorMessage = 'Please enter a valid card number';
-                break;
-            case 'expiryDate':
-                isValid = this.validateExpiryDate(field.value);
-                errorMessage = 'Please enter a valid expiry date (MM/YY)';
-                break;
-            case 'cvv':
-                isValid = this.validateCVV(field.value);
-                errorMessage = 'Please enter a valid CVV';
-                break;
-            case 'cardHolderName':
-                isValid = field.value.trim().length >= 2;
-                errorMessage = 'Please enter the cardholder name';
-                break;
-            case 'paypalEmail':
-                isValid = this.validateEmail(field.value);
-                errorMessage = 'Please enter a valid email address';
-                break;
-        }
-
-        this.updateFieldValidation(field, isValid, errorMessage);
-        return isValid;
-    }
-
-    updateFieldValidation(field, isValid, errorMessage) {
-        field.classList.remove('is-valid', 'is-invalid');
+        // Store current modal reference
+        this.currentModal = modal;
+        this.currentModalId = modalId;
         
-        // Remove existing feedback
-        const existingFeedback = field.parentNode.querySelector('.invalid-feedback');
-        if (existingFeedback) {
-            existingFeedback.remove();
-        }
+        // Clean up when modal is hidden
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            this.cleanupCurrentModal();
+        });
 
-        if (field.value.trim() === '') {
-            // Don't show validation for empty fields unless they've been focused
+        // Show modal with animation
+        modal.show();
+
+        // Mount card element after modal is fully shown
+        modalElement.addEventListener('shown.bs.modal', () => {
+            this.mountCardElement(modalId, cardElementId, cardErrorsId);
+        }, { once: true });
+    }
+
+    cleanupExistingModals() {
+        // Remove all existing payment modals
+        const existingModals = document.querySelectorAll('[id*="stripePaymentModal"]');
+        existingModals.forEach(modal => {
+            const modalInstance = bootstrap.Modal.getInstance(modal);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+            modal.remove();
+        });
+        
+        // Remove any modal backdrops
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // Clean up Stripe elements completely
+        this.destroyCardElement();
+        
+        // Reset body styles
+        document.body.classList.remove('modal-open');
+        document.body.style.paddingRight = '';
+        document.body.style.overflow = '';
+    }
+
+    destroyCardElement() {
+        // Unmount existing card element
+        if (this.cardElement) {
+            try {
+                this.cardElement.unmount();
+                this.cardElement.destroy();
+            } catch (e) {
+                // Element might not be mounted or already destroyed, ignore error
+            }
+            this.cardElement = null;
+        }
+        
+        // Reset elements instance to allow fresh card creation
+        if (this.stripe) {
+            this.elements = this.stripe.elements();
+        }
+    }
+
+    cleanupCurrentModal() {
+        if (this.currentModalId) {
+            const modalEl = document.getElementById(this.currentModalId);
+            if (modalEl) {
+                modalEl.remove();
+            }
+        }
+        
+        // Clean up Stripe elements
+        this.destroyCardElement();
+        
+        this.currentModal = null;
+        this.currentModalId = null;
+    }
+
+    mountCardElement(modalId, cardElementId, cardErrorsId) {
+        const cardElementContainer = document.getElementById(cardElementId);
+        const cardErrors = document.getElementById(cardErrorsId);
+        const submitButton = document.querySelector(`#${modalId} .submit-payment-btn`);
+
+        if (!cardElementContainer) {
+            console.error('Card element container not found');
+            this.showError('Payment form not ready. Please try again.');
             return;
         }
 
-        if (isValid) {
-            field.classList.add('is-valid');
-        } else {
-            field.classList.add('is-invalid');
+        if (!this.stripe) {
+            console.error('Stripe not properly initialized');
+            this.showError('Payment system not available. Please refresh the page.');
+            return;
+        }
+
+        try {
+            // Create fresh elements instance for this modal to avoid conflicts
+            this.elements = this.stripe.elements();
             
-            // Add error feedback
-            const feedback = document.createElement('div');
-            feedback.className = 'invalid-feedback';
-            feedback.textContent = errorMessage;
-            field.parentNode.appendChild(feedback);
+            // Create a fresh card element for this modal
+            const style = {
+                base: {
+                    fontSize: '16px',
+                    color: '#424770',
+                    fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                    fontSmoothing: 'antialiased',
+                    '::placeholder': {
+                        color: '#aab7c4',
+                    },
+                },
+                invalid: {
+                    color: '#fa755a',
+                    iconColor: '#fa755a'
+                },
+            };
+
+            this.cardElement = this.elements.create('card', { 
+                style: style,
+                hidePostalCode: true
+            });
+
+            // Mount the card element
+            this.cardElement.mount(cardElementContainer);
+
+            // Handle real-time validation
+            this.cardElement.on('change', (event) => {
+                if (event.error) {
+                    if (cardErrors) {
+                        cardErrors.textContent = event.error.message;
+                        cardErrors.style.display = 'block';
+                    }
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                    }
+                } else {
+                    if (cardErrors) {
+                        cardErrors.style.display = 'none';
+                    }
+                    if (submitButton) {
+                        // Enable button only if card is complete and valid
+                        submitButton.disabled = event.empty || !event.complete;
+                    }
+                }
+            });
+
+            // Handle card focus
+            this.cardElement.on('focus', () => {
+                cardElementContainer.style.borderColor = '#007bff';
+                cardElementContainer.style.boxShadow = '0 0 0 0.2rem rgba(0,123,255,.25)';
+            });
+
+            this.cardElement.on('blur', () => {
+                cardElementContainer.style.borderColor = '#dee2e6';
+                cardElementContainer.style.boxShadow = 'none';
+            });
+
+            console.log('Card element mounted successfully');
+        } catch (error) {
+            console.error('Error mounting card element:', error);
+            this.showError('Failed to load payment form. Please refresh the page and try again.');
         }
     }
 
-    // Utility Methods
-    generateTransactionId() {
-        const timestamp = Date.now().toString();
-        const random = Math.random().toString(36).substr(2, 5).toUpperCase();
-        return `TXN_${timestamp}_${random}`;
-    }
-
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    // Public API Methods
-    initializePayment(options = {}) {
-        this.currentTransaction = null;
+    async processStripePayment(form) {
+        const videoId = form.querySelector('.video-id-input').value;
+        const videoPrice = parseFloat(form.querySelector('.video-price-input').value);
+        const submitButton = form.querySelector('.submit-payment-btn');
+        const spinner = submitButton.querySelector('.spinner-border');
+        const buttonText = submitButton.querySelector('.button-text');
         
-        // Set up payment form with options
-        if (options.amount) {
-            const amountElement = document.getElementById('amount');
-            if (amountElement) {
-                amountElement.value = options.amount;
+        // Validate card element before processing
+        if (!this.cardElement) {
+            this.showError('Payment form not ready. Please refresh the page and try again.');
+            return;
+        }
+
+        // Check if card is complete
+        const cardElementState = this.cardElement._complete;
+        if (!cardElementState) {
+            this.showError('Please complete your card information before submitting.');
+            return;
+        }
+        
+        // Disable button and show loading
+        submitButton.disabled = true;
+        spinner.style.display = 'inline-block';
+        buttonText.textContent = 'Processing...';
+
+        let processingNotification = null;
+
+        try {
+            // Create payment intent
+            processingNotification = this.showProcessingNotification('Creating secure payment...');
+            const paymentIntentResponse = await this.createPaymentIntent(videoId, videoPrice);
+            
+            if (!paymentIntentResponse.success) {
+                throw new Error(paymentIntentResponse.message || 'Failed to create payment');
             }
-        }
 
-        if (options.currency) {
-            this.currency = options.currency;
-        }
+            // Update notification
+            this.hideProcessingNotification(processingNotification);
+            processingNotification = this.showProcessingNotification('Processing your payment...');
 
-        // Initialize default payment method
-        const defaultMethod = options.defaultMethod || 'card';
-        const methodRadio = document.querySelector(`input[name="paymentMethod"][value="${defaultMethod}"]`);
-        if (methodRadio) {
-            methodRadio.checked = true;
-            this.handlePaymentMethodChange(defaultMethod);
+            // Confirm payment with Stripe
+            const {error, paymentIntent} = await this.stripe.confirmCardPayment(
+                paymentIntentResponse.client_secret,
+                {
+                    payment_method: {
+                        card: this.cardElement,
+                    }
+                }
+            );
+
+            if (error) {
+                // Handle specific card errors
+                if (error.type === 'card_error' || error.type === 'validation_error') {
+                    throw new Error(error.message);
+                } else {
+                    throw new Error('Payment processing failed. Please try again.');
+                }
+            }
+
+            if (paymentIntent.status === 'succeeded') {
+                // Update notification
+                this.hideProcessingNotification(processingNotification);
+                processingNotification = this.showProcessingNotification('Finalizing your purchase...');
+
+                // Confirm payment on backend
+                await this.confirmPayment(paymentIntent.id, videoId);
+                
+                // Hide processing notification and show success
+                this.hideProcessingNotification(processingNotification);
+                this.showSuccess('🎉 Payment successful! You can now watch the video.');
+                
+                if (this.currentModal) {
+                    this.currentModal.hide();
+                }
+                
+                // Reload page after short delay to show updated purchase status
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                throw new Error('Payment was not completed successfully');
+            }
+
+        } catch (error) {
+            console.error('Payment failed:', error);
+            
+            // Hide processing notification
+            if (processingNotification) {
+                this.hideProcessingNotification(processingNotification);
+            }
+            
+            this.showError(this.getErrorMessage(error.message));
+        } finally {
+            // Reset button state
+            submitButton.disabled = false;
+            spinner.style.display = 'none';
+            buttonText.textContent = `Pay $${videoPrice.toFixed(2)}`;
         }
     }
 
-    getPaymentMethods() {
-        return this.paymentMethods.filter(method => method.enabled);
+    async createPaymentIntent(videoId, videoPrice) {
+        const userId = this.getCurrentUserId();
+        
+        try {
+            const response = await fetch(this.getApiUrl('/api/payments/create-payment-intent'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    video_id: videoId,
+                    user_id: userId,
+                    amount: videoPrice
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: Payment request failed`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating payment intent:', error);
+            throw new Error('Unable to process payment request');
+        }
     }
 
-    setPaymentCallback(onSuccess, onError) {
-        window.onPaymentSuccess = onSuccess;
-        window.onPaymentError = onError;
+    async confirmPayment(paymentIntentId, videoId) {
+        const userId = this.getCurrentUserId();
+        
+        try {
+            const response = await fetch(this.getApiUrl('/api/payments/confirm-payment'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    payment_intent_id: paymentIntentId,
+                    video_id: videoId,
+                    user_id: userId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: Payment confirmation failed`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error confirming payment:', error);
+            throw new Error('Payment confirmation failed');
+        }
+    }
+
+    getCurrentUserId() {
+        const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+        return userSession.id || userSession.userId;
+    }
+
+    getApiUrl(endpoint) {
+        const config = window.videoHubConfig;
+        if (config) {
+            return config.getUrl(`/api${endpoint}`);
+        }
+        return `/api${endpoint}`;
+    }
+
+    getErrorMessage(errorMessage) {
+        const errorMap = {
+            'Your card was declined.': '💳 Your card was declined. Please try a different payment method or contact your bank.',
+            'Your card has insufficient funds.': '💰 Insufficient funds. Please use a different card or add funds to your account.',
+            'Your card has expired.': '📅 Your card has expired. Please use a different payment method.',
+            'Your card number is incorrect.': '🔢 Please check your card number and try again.',
+            'Your card number is incomplete.': '🔢 Please complete your card number.',
+            'Your card\'s expiration date is incomplete.': '📅 Please complete your card\'s expiration date.',
+            'Your card\'s security code is incomplete.': '🔐 Please complete your card\'s security code (CVV).',
+            'Your card\'s security code is incorrect.': '🔐 Please check your security code (CVV) and try again.',
+            'Your card\'s expiration date is incorrect.': '📅 Please check your card\'s expiration date and try again.',
+            'Your card does not support this type of purchase.': '🚫 This card cannot be used for online purchases. Please try a different card.',
+            'Your card was not authorized.': '⚠️ Your card was not authorized. Please contact your bank or try a different card.',
+            'An error occurred while processing your card.': '❌ There was a problem processing your card. Please try again.',
+            'Your card number is not a valid credit card number.': '💳 Please enter a valid card number.',
+            'Your card\'s security code is invalid.': '🔐 Please enter a valid security code (CVV).',
+            'Processing error': '⚙️ There was a problem processing your payment. Please try again.',
+            'Network communication with Stripe failed': '🌐 Connection error. Please check your internet and try again.',
+            'Payment processing error': '💫 Payment processing temporarily unavailable. Please try again in a moment.'
+        };
+
+        // Check for partial matches for more specific error handling
+        const lowerErrorMessage = errorMessage.toLowerCase();
+        
+        if (lowerErrorMessage.includes('network') || lowerErrorMessage.includes('connection')) {
+            return '🌐 Connection error. Please check your internet connection and try again.';
+        }
+        
+        if (lowerErrorMessage.includes('timeout')) {
+            return '⏱️ Request timed out. Please try again.';
+        }
+        
+        if (lowerErrorMessage.includes('rate limit')) {
+            return '⚡ Too many attempts. Please wait a moment and try again.';
+        }
+
+        return errorMap[errorMessage] || `💫 ${errorMessage || 'Payment failed. Please check your card details and try again.'}`;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    showProcessingNotification(message) {
+        if (window.notificationManager) {
+            return window.notificationManager.processing(message);
+        } else if (window.commonUtils && window.commonUtils.showNotification) {
+            return window.commonUtils.showNotification(message, 'info', 0);
+        }
+    }
+
+    showError(message) {
+        if (window.notificationManager) {
+            return window.notificationManager.error(message);
+        } else if (window.commonUtils && window.commonUtils.showNotification) {
+            return window.commonUtils.showNotification(message, 'error');
+        } else {
+            alert('Error: ' + message);
+        }
+    }
+
+    showSuccess(message) {
+        if (window.notificationManager) {
+            return window.notificationManager.success(message);
+        } else if (window.commonUtils && window.commonUtils.showNotification) {
+            return window.commonUtils.showNotification(message, 'success');
+        } else {
+            alert(message);
+        }
+    }
+
+    hideProcessingNotification(notification) {
+        if (notification && window.notificationManager) {
+            window.notificationManager.remove(notification);
+        }
     }
 }
 
-// CSS for payment processing overlay
-const paymentStyles = `
-    .payment-processing-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.Stripe) {
+        window.stripePaymentManager = new StripePaymentManager();
+    } else {
+        console.error('Stripe.js not loaded - Payment functionality unavailable');
     }
-
-    .processing-content {
-        background: white;
-        padding: 2rem;
-        border-radius: 0.5rem;
-        text-align: center;
-        max-width: 300px;
-    }
-
-    .card-type-icon {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 1.2rem;
-        color: #6c757d;
-    }
-
-    .payment-method-form {
-        display: none;
-        margin-top: 1rem;
-    }
-
-    .payment-method-form.active {
-        display: block;
-    }
-
-    .payment-input {
-        position: relative;
-    }
-`;
-
-// Inject styles
-const styleSheet = document.createElement('style');
-styleSheet.textContent = paymentStyles;
-document.head.appendChild(styleSheet);
-
-// Initialize payment manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.paymentManager = new PaymentManager();
 });
 
-// Export for other modules
-window.PaymentManager = PaymentManager;
+// Global function for backward compatibility
+window.purchaseVideo = function(videoId, videoTitle, videoPrice) {
+    if (window.stripePaymentManager && window.stripePaymentManager.isInitialized) {
+        window.stripePaymentManager.showStripePaymentModal(videoId, videoTitle, videoPrice);
+    } else {
+        console.error('Stripe payment manager not initialized');
+        if (window.commonUtils && window.commonUtils.showNotification) {
+            window.commonUtils.showNotification('Payment system not ready. Please refresh the page.', 'error');
+        } else {
+            alert('Payment system not ready. Please refresh the page.');
+        }
+    }
+};

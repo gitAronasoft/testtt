@@ -1,0 +1,13 @@
+{
+    "name": "videohub/platform",
+    "description": "VideoHub - Video Management Platform with Stripe Integration",
+    "type": "project",
+    "require": {
+        "stripe/stripe-php": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "VideoHub\\": "api/"
+        }
+    }
+}
