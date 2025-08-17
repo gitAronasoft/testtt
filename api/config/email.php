@@ -19,6 +19,6 @@ define('PASSWORD_RESET_EMAIL_SUBJECT', 'Reset Your Password - VideoHub');
 define('PASSWORD_RESET_EMAIL_TEMPLATE', 'password_reset');
 
 // App configuration
-define('APP_URL', 'http://localhost:5000');
+define('APP_URL', 'https://taleoftriumph.com/video-platform');
 define('VERIFICATION_TOKEN_EXPIRY', 24); // hours
 ?>

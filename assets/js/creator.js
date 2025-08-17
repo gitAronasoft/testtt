@@ -916,7 +916,9 @@ class CreatorManager {
         this.isDeleting = true;
         
         try {
-            if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+            // Show confirm modal instead of browser confirm
+            const confirmed = await this.showCreatorConfirmModal('delete', videoId);
+            if (!confirmed) {
                 return;
             }
 
@@ -1019,6 +1021,149 @@ class CreatorManager {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    }
+
+    showCreatorConfirmModal(action, videoId) {
+        return new Promise((resolve) => {
+            const video = this.videos.find(v => v.id == videoId);
+            if (!video) {
+                resolve(false);
+                return;
+            }
+            
+            const actionTexts = {
+                delete: { 
+                    title: 'Delete Video', 
+                    message: 'delete this video permanently', 
+                    class: 'danger',
+                    description: 'This action cannot be undone. The video will be removed from VideoHub and YouTube.',
+                    icon: 'fa-trash'
+                },
+                edit: { 
+                    title: 'Edit Video', 
+                    message: 'save changes to this video', 
+                    class: 'success',
+                    description: 'Your changes will be updated on both VideoHub and YouTube.',
+                    icon: 'fa-edit'
+                },
+                publish: { 
+                    title: 'Publish Video', 
+                    message: 'publish this video', 
+                    class: 'success',
+                    description: 'This video will become available for purchase by viewers.',
+                    icon: 'fa-globe'
+                }
+            };
+            
+            const actionData = actionTexts[action];
+            if (!actionData) {
+                resolve(false);
+                return;
+            }
+            
+            // Create confirmation modal
+            let modal = document.getElementById('creatorActionConfirmModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'creatorActionConfirmModal';
+                modal.setAttribute('tabindex', '-1');
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg">
+                            <div class="modal-header bg-gradient text-white border-0">
+                                <h5 class="modal-title fw-bold" id="creatorActionModalTitle">
+                                    <i class="fas fa-question-circle me-2"></i>Confirm Action
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <div class="alert border-0 mb-4" id="creatorActionDescription">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-info-circle fa-2x me-3" id="creatorActionIcon"></i>
+                                        <div>
+                                            <p class="mb-1 fw-semibold" id="creatorActionModalMessage">Are you sure?</p>
+                                            <small class="text-muted" id="creatorActionDescriptionText">This action requires confirmation.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold text-dark mb-2">
+                                            <i class="fas fa-video me-2 text-primary"></i>Video Details
+                                        </h6>
+                                        <div class="row align-items-center">
+                                            <div class="col-auto">
+                                                <img id="creatorActionVideoThumbnail" src="" alt="Video thumbnail" 
+                                                     class="rounded shadow-sm" style="width: 60px; height: 34px; object-fit: cover;">
+                                            </div>
+                                            <div class="col">
+                                                <div class="fw-semibold text-dark" id="creatorActionModalVideoTitle">Video Title</div>
+                                                <small class="text-muted" id="creatorActionModalVideoCreator">Creator</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </button>
+                                <button type="button" class="btn px-4" id="confirmCreatorActionBtn">
+                                    <i class="fas fa-check me-2"></i>Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            
+            // Update modal content
+            document.getElementById('creatorActionModalTitle').innerHTML = `<i class="fas ${actionData.icon} me-2"></i>${actionData.title}`;
+            document.getElementById('creatorActionModalMessage').textContent = `Are you sure you want to ${actionData.message}?`;
+            document.getElementById('creatorActionDescriptionText').textContent = actionData.description;
+            document.getElementById('creatorActionModalVideoTitle').textContent = video.title;
+            document.getElementById('creatorActionModalVideoCreator').textContent = `by ${video.creatorName || video.creator_name || 'Unknown Creator'}`;
+            
+            // Set thumbnail
+            const thumbnailEl = document.getElementById('creatorActionVideoThumbnail');
+            if (video.youtube_id) {
+                thumbnailEl.src = `https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`;
+            } else if (video.thumbnail) {
+                thumbnailEl.src = video.thumbnail;
+            } else {
+                thumbnailEl.src = 'https://via.placeholder.com/60x34/6c757d/ffffff?text=Video';
+            }
+            
+            const confirmBtn = document.getElementById('confirmCreatorActionBtn');
+            const descriptionAlert = document.getElementById('creatorActionDescription');
+            const iconEl = document.getElementById('creatorActionIcon');
+            const headerEl = modal.querySelector('.modal-header');
+            
+            confirmBtn.className = `btn btn-${actionData.class} px-4`;
+            confirmBtn.innerHTML = `<i class="fas ${actionData.icon} me-2"></i>${actionData.title}`;
+            descriptionAlert.className = `alert alert-${actionData.class === 'danger' ? 'danger' : 'info'} border-0 mb-4`;
+            iconEl.className = `fas ${actionData.icon} fa-2x me-3 text-${actionData.class}`;
+            headerEl.className = `modal-header text-white border-0 bg-${actionData.class}`;
+            
+            // Set up confirm button action
+            confirmBtn.onclick = function() {
+                const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                bootstrapModal.hide();
+                resolve(true);
+            };
+            
+            // Set up cancel action
+            modal.addEventListener('hidden.bs.modal', function handler() {
+                modal.removeEventListener('hidden.bs.modal', handler);
+                resolve(false);
+            });
+            
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+        });
     }
 
     // Add missing filter functionality

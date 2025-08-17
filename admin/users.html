@@ -171,7 +171,7 @@
                             </li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>
-                                <a class="dropdown-item" href="#" data-logout
+                                <a class="dropdown-item logout-btn" href="#"
                                     ><i class="fas fa-sign-out-alt me-2"></i
                                     >Logout</a
                                 >
@@ -899,11 +899,103 @@
             }
 
             function revokeUser(userId) {
-                if (adminManager) adminManager.revokeUser(userId);
+                showUserActionModal('revoke', userId);
             }
 
             function deleteUser(userId) {
-                if (adminManager) adminManager.deleteUser(userId);
+                showUserActionModal('delete', userId);
+            }
+            
+            function showUserActionModal(action, userId) {
+                const user = adminManager?.users?.find(u => u.id == userId);
+                if (!user) return;
+                
+                const actionTexts = {
+                    revoke: { 
+                        title: 'Revoke User Access', 
+                        message: 'revoke access for', 
+                        class: 'warning',
+                        description: 'This will disable the user account but keep all data intact.'
+                    },
+                    delete: { 
+                        title: 'Delete User Account', 
+                        message: 'permanently delete', 
+                        class: 'danger',
+                        description: 'This will permanently delete the user account and all associated data. This action cannot be undone.'
+                    }
+                };
+                
+                const actionData = actionTexts[action];
+                if (!actionData) return;
+                
+                // Create confirmation modal
+                let modal = document.getElementById('userActionConfirmModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.className = 'modal fade';
+                    modal.id = 'userActionConfirmModal';
+                    modal.setAttribute('tabindex', '-1');
+                    modal.innerHTML = `
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="userActionModalTitle">Confirm Action</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p id="userActionModalMessage">Are you sure you want to perform this action?</p>
+                                    <div class="alert alert-warning" id="userActionDescription">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <span id="userActionDescriptionText"></span>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="card-title" id="userActionModalUserName">User Name</h6>
+                                            <p class="card-text text-muted" id="userActionModalUserEmail">Email</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn" id="confirmUserActionBtn">Confirm</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+                
+                // Update modal content
+                document.getElementById('userActionModalTitle').textContent = actionData.title;
+                document.getElementById('userActionModalMessage').textContent = `Are you sure you want to ${actionData.message} this user?`;
+                document.getElementById('userActionDescriptionText').textContent = actionData.description;
+                document.getElementById('userActionModalUserName').textContent = user.name || 'Unknown User';
+                document.getElementById('userActionModalUserEmail').textContent = user.email || 'No email';
+                
+                const confirmBtn = document.getElementById('confirmUserActionBtn');
+                const descriptionAlert = document.getElementById('userActionDescription');
+                
+                confirmBtn.className = `btn btn-${actionData.class}`;
+                confirmBtn.textContent = actionData.title.split(' ')[0];
+                descriptionAlert.className = `alert alert-${actionData.class}`;
+                
+                // Set up confirm button action
+                confirmBtn.onclick = function() {
+                    const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                    bootstrapModal.hide();
+                    performUserAction(action, userId);
+                };
+                
+                const bootstrapModal = new bootstrap.Modal(modal);
+                bootstrapModal.show();
+            }
+            
+            function performUserAction(action, userId) {
+                if (action === 'revoke') {
+                    if (adminManager) adminManager.revokeUser(userId);
+                } else if (action === 'delete') {
+                    if (adminManager) adminManager.deleteUser(userId);
+                }
             }
 
             function exportUsers() {

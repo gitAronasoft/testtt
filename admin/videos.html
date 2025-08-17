@@ -56,7 +56,7 @@
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" data-logout><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item logout-btn" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                     </ul>
                 </div>
             </div>
@@ -266,25 +266,11 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted">Showing 1-12 of 156 videos</span>
-                    <nav aria-label="Video pagination">
-                        <ul class="pagination mb-0">
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" tabindex="-1">Previous</a>
-                            </li>
-                            <li class="page-item active">
-                                <a class="page-link" href="#">1</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">2</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">3</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">Next</a>
-                            </li>
+                <div class="d-flex justify-content-between align-items-center" id="paginationContainer">
+                    <span class="text-muted" id="paginationInfo">No videos loaded</span>
+                    <nav aria-label="Video pagination" id="paginationNav" style="display: none;">
+                        <ul class="pagination mb-0" id="paginationList">
+                            <!-- Pagination will be dynamically generated -->
                         </ul>
                     </nav>
                 </div>
@@ -420,61 +406,782 @@
     <script>
         // Initialize admin manager for videos page
         let adminManager;
+        let currentPage = 1;
+        let itemsPerPage = 12;
+        let totalVideos = 0;
+        let filteredVideos = [];
+        let allVideos = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             adminManager = new AdminManager();
-
-            // Load videos grid
-            adminManager.loadVideosGrid();
-
-            // Add search functionality
+            initializeVideoFilters();
+            loadVideosData();
+        });
+        var apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+        function initializeVideoFilters() {
+            // Apply filters button
+            const applyBtn = document.getElementById('applyFilters');
+            if (applyBtn) applyBtn.addEventListener('click', applyFilters);
+            
+            // Search input with debounce
+            let searchTimeout;
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {
                 searchInput.addEventListener('input', function() {
-                    filterVideos();
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(applyFilters, 500);
                 });
             }
+            
+            // Filter select changes
+            const statusFilter = document.getElementById('statusFilter');
+            const creatorFilter = document.getElementById('creatorFilter');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const dateFilter = document.getElementById('dateFilter');
+            
+            if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+            if (creatorFilter) creatorFilter.addEventListener('change', applyFilters);
+            if (categoryFilter) categoryFilter.addEventListener('change', applyFilters);
+            if (dateFilter) dateFilter.addEventListener('change', applyFilters);
+        }
 
-            // Add filter functionality
-            const applyFiltersBtn = document.getElementById('applyFilters');
-            if (applyFiltersBtn) {
-                applyFiltersBtn.addEventListener('click', function() {
-                    filterVideos();
-                });
+        async function loadVideosData() {
+            try {
+                // Show loading state
+                const loadingElement = document.getElementById('videosLoadingIndicator');
+                if (loadingElement) loadingElement.style.display = 'block';
+                document.getElementById('emptyState').classList.add('d-none');
+                
+                // Load videos from API
+                const response = await fetch(`${apiUrl}/endpoints/videos.php`);
+                const result = await response.json();
+                
+                console.log('API Response:', result); // Debug log
+                
+                // Handle different response formats
+                let videos = [];
+                if (result.success && result.data) {
+                    if (Array.isArray(result.data)) {
+                        videos = result.data;
+                    } else if (result.data.videos && Array.isArray(result.data.videos)) {
+                        videos = result.data.videos;
+                    } else {
+                        videos = [];
+                    }
+                } else if (Array.isArray(result)) {
+                    videos = result;
+                } else if (result.videos && Array.isArray(result.videos)) {
+                    videos = result.videos;
+                } else {
+                    console.warn('Unexpected API response format:', result);
+                    videos = [];
+                }
+                
+                allVideos = videos;
+                filteredVideos = [...allVideos];
+                totalVideos = allVideos.length;
+                
+                if (allVideos.length > 0) {
+                    // Populate creator filter with unique creators
+                    populateCreatorFilter();
+                    
+                    // Apply initial display
+                    applyFilters();
+                } else {
+                    // Show empty state
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading videos:', error);
+                allVideos = [];
+                filteredVideos = [];
+                totalVideos = 0;
+                showEmptyState();
+            } finally {
+                const loadingElement = document.getElementById('videosLoadingIndicator');
+                if (loadingElement) loadingElement.style.display = 'none';
             }
-        });
+        }
 
-        function filterVideos() {
-            const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+        function populateCreatorFilter() {
+            const creatorFilter = document.getElementById('creatorFilter');
+            if (!creatorFilter || !Array.isArray(allVideos)) return;
+            
+            const creators = [...new Set(allVideos.map(video => 
+                video.creatorName || video.creator_name || video.creator
+            ))].filter(Boolean);
+            
+            // Clear existing options except "All Creators"
+            while (creatorFilter.children.length > 1) {
+                creatorFilter.removeChild(creatorFilter.lastChild);
+            }
+            
+            // Add creator options
+            creators.forEach(creator => {
+                const option = document.createElement('option');
+                option.value = creator;
+                option.textContent = creator;
+                creatorFilter.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            if (!Array.isArray(allVideos)) {
+                console.warn('allVideos is not an array:', allVideos);
+                showEmptyState();
+                return;
+            }
+            
+            const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase() || '';
             const statusFilter = document.getElementById('statusFilter')?.value || '';
             const creatorFilter = document.getElementById('creatorFilter')?.value || '';
+            const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+            const dateFilter = document.getElementById('dateFilter')?.value || '';
+            
+            // Filter videos based on criteria
+            filteredVideos = allVideos.filter(video => {
+                if (!video) return false;
+                
+                const creatorName = video.creatorName || video.creator_name || video.creator || '';
+                const title = video.title || '';
+                
+                // Search filter
+                if (searchTerm && !title.toLowerCase().includes(searchTerm) && 
+                    !creatorName.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                
+                // Status filter
+                if (statusFilter && video.status !== statusFilter) {
+                    return false;
+                }
+                
+                // Creator filter
+                if (creatorFilter && creatorName !== creatorFilter) {
+                    return false;
+                }
+                
+                // Category filter
+                if (categoryFilter && video.category !== categoryFilter) {
+                    return false;
+                }
+                
+                // Date filter
+                if (dateFilter) {
+                    const videoDate = new Date(video.uploadDate || video.upload_date || video.created_at);
+                    const now = new Date();
+                    let cutoffDate;
+                    
+                    switch (dateFilter) {
+                        case 'today':
+                            cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                            break;
+                        case 'week':
+                            cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            break;
+                        case 'month':
+                            cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                            break;
+                        default:
+                            cutoffDate = null;
+                    }
+                    
+                    if (cutoffDate && videoDate < cutoffDate) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            // Reset to first page when filters change
+            currentPage = 1;
+            
+            // Update display
+            displayVideos();
+            updatePagination();
+            updateVideoStats();
+        }
 
-            if (!adminManager || !adminManager.videos) return;
-
-            let filteredVideos = adminManager.videos;
-
-            // Apply search filter
-            if (searchTerm) {
-                filteredVideos = filteredVideos.filter(video => 
-                    video.title.toLowerCase().includes(searchTerm) ||
-                    video.creator_name.toLowerCase().includes(searchTerm) ||
-                    video.description.toLowerCase().includes(searchTerm)
-                );
+        function displayVideos() {
+            const videosGrid = document.getElementById('videosGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (filteredVideos.length === 0) {
+                videosGrid.innerHTML = '';
+                emptyState.classList.remove('d-none');
+                return;
             }
+            
+            emptyState.classList.add('d-none');
+            
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const videosToShow = filteredVideos.slice(startIndex, endIndex);
+            
+            // Generate video cards
+            const videoCards = videosToShow.map(video => generateVideoCard(video)).join('');
+            videosGrid.innerHTML = videoCards;
+            
+            // Add event listeners to video cards
+            addVideoCardListeners();
+        }
 
-            // Apply status filter
-            if (statusFilter) {
-                filteredVideos = filteredVideos.filter(video => 
-                    (video.status || 'active') === statusFilter
-                );
+        function generateVideoCard(video) {
+            const statusClass = getStatusClass(video.status);
+            // Use a more reliable thumbnail fallback strategy
+            let thumbnail = video.thumbnail;
+            if (!thumbnail || thumbnail.includes('placeholder')) {
+                thumbnail = video.youtube_id ? 
+                    `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg` :
+                    'https://via.placeholder.com/300x169/4f46e5/ffffff?text=No+Image';
             }
+            const creatorName = video.creatorName || video.creator_name || video.creator || 'Unknown';
+            const uploadDate = video.uploadDate || video.upload_date || video.created_at;
+            
+            // Generate action buttons based on current status
+            let actionButtons = '';
+            const currentStatus = video.status || 'pending';
+            
+            if (currentStatus === 'published') {
+                // If published, show only reject and flag buttons
+                actionButtons = `
+                    <button class="btn btn-danger btn-sm me-1 reject-video" data-video-id="${video.id}" title="Reject">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                    <button class="btn btn-warning btn-sm flag-video" data-video-id="${video.id}" title="Flag">
+                        <i class="fas fa-flag"></i> Flag
+                    </button>
+                `;
+            } else if (currentStatus === 'rejected') {
+                // If rejected, show only approve and flag buttons
+                actionButtons = `
+                    <button class="btn btn-success btn-sm me-1 approve-video" data-video-id="${video.id}" title="Approve">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="btn btn-warning btn-sm flag-video" data-video-id="${video.id}" title="Flag">
+                        <i class="fas fa-flag"></i> Flag
+                    </button>
+                `;
+            } else if (currentStatus === 'flagged') {
+                // If flagged, show approve and reject buttons
+                actionButtons = `
+                    <button class="btn btn-success btn-sm me-1 approve-video" data-video-id="${video.id}" title="Approve">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="btn btn-danger btn-sm reject-video" data-video-id="${video.id}" title="Reject">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                `;
+            } else {
+                // For pending or other statuses, show all buttons
+                actionButtons = `
+                    <button class="btn btn-success btn-sm me-1 approve-video" data-video-id="${video.id}" title="Approve">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="btn btn-danger btn-sm me-1 reject-video" data-video-id="${video.id}" title="Reject">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                    <button class="btn btn-warning btn-sm flag-video" data-video-id="${video.id}" title="Flag">
+                        <i class="fas fa-flag"></i> Flag
+                    </button>
+                `;
+            }
+            
+            return `
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 video-card" data-video-id="${video.id}" data-status="${currentStatus}">
+                        <div class="position-relative">
+                            <img src="${thumbnail}" class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300x169/4f46e5/ffffff?text=No+Image';">
+                            <span class="badge ${statusClass} position-absolute top-0 end-0 m-2" id="status-badge-${video.id}">${currentStatus}</span>
+                            <div class="video-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;">
+                                <button class="btn btn-primary btn-sm me-2 play-video" data-video-id="${video.id}">
+                                    <i class="fas fa-play"></i> Play
+                                </button>
+                                <button class="btn btn-outline-light btn-sm view-details" data-video-id="${video.id}">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">${video.title}</h6>
+                            <p class="card-text text-muted small mb-2">
+                                <i class="fas fa-user me-1"></i>${creatorName}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-eye me-1"></i>${video.views || 0} views
+                                </small>
+                                <small class="text-success fw-bold">
+                                    $${video.price || '0.00'}
+                                </small>
+                            </div>
+                            <div class="mt-2" id="action-buttons-${video.id}">
+                                ${actionButtons}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
-            // Apply creator filter
-            if (creatorFilter) {
-                filteredVideos = filteredVideos.filter(video => 
-                    video.creator_name.toLowerCase().includes(creatorFilter.toLowerCase())
-                );
+        function getStatusClass(status) {
+            switch (status) {
+                case 'published': return 'bg-success';
+                case 'pending': return 'bg-warning';
+                case 'rejected': return 'bg-danger';
+                case 'flagged': return 'bg-secondary';
+                default: return 'bg-secondary';
             }
+        }
+
+        function addVideoCardListeners() {
+            // Add hover effect to video cards
+            document.querySelectorAll('.video-card').forEach(card => {
+                const overlay = card.querySelector('.video-overlay');
+                card.addEventListener('mouseenter', () => overlay.style.opacity = '1');
+                card.addEventListener('mouseleave', () => overlay.style.opacity = '0');
+            });
+            
+            // Play video buttons
+            document.querySelectorAll('.play-video').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const videoId = this.getAttribute('data-video-id');
+                    playVideo(videoId);
+                });
+            });
+            
+            // View details buttons
+            document.querySelectorAll('.view-details').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const videoId = this.getAttribute('data-video-id');
+                    showVideoDetails(videoId);
+                });
+            });
+            
+            // Action buttons with confirmation modals
+            document.querySelectorAll('.approve-video').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const videoId = this.getAttribute('data-video-id');
+                    showActionConfirmModal('approve', videoId);
+                });
+            });
+            
+            document.querySelectorAll('.reject-video').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const videoId = this.getAttribute('data-video-id');
+                    showActionConfirmModal('reject', videoId);
+                });
+            });
+            
+            document.querySelectorAll('.flag-video').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const videoId = this.getAttribute('data-video-id');
+                    showActionConfirmModal('flag', videoId);
+                });
+            });
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredVideos.length / itemsPerPage);
+            const paginationInfo = document.getElementById('paginationInfo');
+            const paginationNav = document.getElementById('paginationNav');
+            const paginationList = document.getElementById('paginationList');
+            
+            if (totalPages <= 1) {
+                paginationNav.style.display = 'none';
+                const startItem = filteredVideos.length > 0 ? 1 : 0;
+                paginationInfo.textContent = `Showing ${startItem}-${filteredVideos.length} of ${filteredVideos.length} videos`;
+                return;
+            }
+            
+            paginationNav.style.display = 'block';
+            
+            // Update pagination info
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, filteredVideos.length);
+            paginationInfo.textContent = `Showing ${startItem}-${endItem} of ${filteredVideos.length} videos`;
+            
+            // Generate pagination links
+            let paginationHTML = '';
+            
+            // Previous button
+            paginationHTML += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
+                </li>
+            `;
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    paginationHTML += `
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+            }
+            
+            // Next button
+            paginationHTML += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+                </li>
+            `;
+            
+            paginationList.innerHTML = paginationHTML;
+            
+            // Add click listeners to pagination links
+            paginationList.querySelectorAll('a[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = parseInt(this.getAttribute('data-page'));
+                    if (page >= 1 && page <= totalPages && page !== currentPage) {
+                        currentPage = page;
+                        displayVideos();
+                        updatePagination();
+                        // Scroll to top of videos section
+                        document.getElementById('videosGrid').scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        }
+
+        function updateVideoStats() {
+            if (!Array.isArray(filteredVideos)) return;
+            
+            // Update the stats cards with current filtered data
+            const published = filteredVideos.filter(v => v && v.status === 'published').length;
+            const pending = filteredVideos.filter(v => v && v.status === 'pending').length;
+            const flagged = filteredVideos.filter(v => v && v.status === 'flagged').length;
+            
+            const totalElement = document.getElementById('totalVideos');
+            const publishedElement = document.getElementById('publishedVideos');
+            const pendingElement = document.getElementById('pendingVideos');
+            const flaggedElement = document.getElementById('flaggedVideos');
+            
+            if (totalElement) totalElement.textContent = filteredVideos.length;
+            if (publishedElement) publishedElement.textContent = published;
+            if (pendingElement) pendingElement.textContent = pending;
+            if (flaggedElement) flaggedElement.textContent = flagged;
+        }
+
+        function showEmptyState() {
+            const videosGrid = document.getElementById('videosGrid');
+            const emptyState = document.getElementById('emptyState');
+            const paginationNav = document.getElementById('paginationNav');
+            const paginationInfo = document.getElementById('paginationInfo');
+            
+            if (videosGrid) videosGrid.innerHTML = '';
+            if (emptyState) emptyState.classList.remove('d-none');
+            if (paginationNav) paginationNav.style.display = 'none';
+            if (paginationInfo) paginationInfo.textContent = 'No videos found';
+        }
+
+        function showActionConfirmModal(action, videoId) {
+            const video = allVideos.find(v => v.id == videoId);
+            if (!video) return;
+            
+            const actionTexts = {
+                approve: { title: 'Approve Video', message: 'approve', class: 'success' },
+                reject: { title: 'Reject Video', message: 'reject', class: 'danger' },
+                flag: { title: 'Flag Video', message: 'flag', class: 'warning' }
+            };
+            
+            const actionData = actionTexts[action];
+            if (!actionData) return;
+            
+            // Create confirmation modal
+            let modal = document.getElementById('actionConfirmModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'actionConfirmModal';
+                modal.setAttribute('tabindex', '-1');
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="actionModalTitle">Confirm Action</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p id="actionModalMessage">Are you sure you want to perform this action?</p>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title" id="actionModalVideoTitle">Video Title</h6>
+                                        <p class="card-text text-muted" id="actionModalVideoCreator">Creator</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn" id="confirmActionBtn">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            
+            // Update modal content
+            document.getElementById('actionModalTitle').textContent = actionData.title;
+            document.getElementById('actionModalMessage').textContent = `Are you sure you want to ${actionData.message} this video?`;
+            document.getElementById('actionModalVideoTitle').textContent = video.title;
+            document.getElementById('actionModalVideoCreator').textContent = `By ${video.creator_name || video.creator || 'Unknown'}`;
+            
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            confirmBtn.className = `btn btn-${actionData.class}`;
+            confirmBtn.textContent = `${actionData.title.split(' ')[0]}`;
+            
+            // Set up confirm button action
+            confirmBtn.onclick = function() {
+                const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                bootstrapModal.hide();
+                performVideoAction(action, videoId);
+            };
+            
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+        }
+
+        async function performVideoAction(action, videoId) {
+            try {
+                // Map action to status
+                const statusMap = {
+                    approve: 'published',
+                    reject: 'rejected', 
+                    flag: 'flagged'
+                };
+                
+                const status = statusMap[action];
+                if (!status) {
+                    throw new Error('Invalid action');
+                }
+                
+                const response = await fetch(`${apiUrl}/endpoints/videos.php/${videoId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: videoId,
+                        status: status
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update video in both local arrays
+                    const updateVideoStatus = (videoArray) => {
+                        const video = videoArray.find(v => v.id == videoId);
+                        if (video) {
+                            video.status = status;
+                            return video;
+                        }
+                        return null;
+                    };
+                    
+                    const updatedVideo = updateVideoStatus(allVideos);
+                    updateVideoStatus(filteredVideos);
+                    
+                    // Update the specific video card in the DOM without full refresh
+                    if (updatedVideo) {
+                        updateVideoCardInDOM(updatedVideo);
+                    }
+                    
+                    // Update stats
+                    updateVideoStats();
+                    
+                    // Show success message
+                    if (window.commonUtils) {
+                        window.commonUtils.showToast(`Video ${action}d successfully!`, 'success');
+                    } else {
+                        // Fallback alert
+                        alert(`Video ${action}d successfully!`);
+                    }
+                } else {
+                    throw new Error(result.message || 'Action failed');
+                }
+            } catch (error) {
+                console.error(`Error ${action}ing video:`, error);
+                if (window.commonUtils) {
+                    window.commonUtils.showToast(`Error ${action}ing video: ${error.message}`, 'danger');
+                } else {
+                    // Fallback alert
+                    alert(`Error ${action}ing video: ${error.message}`);
+                }
+            }
+        }
+
+        function updateVideoCardInDOM(video) {
+            const videoCard = document.querySelector(`[data-video-id="${video.id}"]`);
+            if (!videoCard) return;
+            
+            // Define currentStatus at the function level
+            const currentStatus = video.status || 'pending';
+            
+            // Update status badge
+            const statusBadge = document.getElementById(`status-badge-${video.id}`);
+            if (statusBadge) {
+                const statusClass = getStatusClass(video.status);
+                statusBadge.className = `badge ${statusClass} position-absolute top-0 end-0 m-2`;
+                statusBadge.textContent = video.status || 'unknown';
+            }
+            
+            // Update action buttons
+            const actionButtonsContainer = document.getElementById(`action-buttons-${video.id}`);
+            if (actionButtonsContainer) {
+                let actionButtons = '';
+                
+                if (currentStatus === 'published') {
+                    actionButtons = `
+                        <button class="btn btn-danger btn-sm me-1 reject-video" data-video-id="${video.id}" title="Reject">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                        <button class="btn btn-warning btn-sm flag-video" data-video-id="${video.id}" title="Flag">
+                            <i class="fas fa-flag"></i> Flag
+                        </button>
+                    `;
+                } else if (currentStatus === 'rejected') {
+                    actionButtons = `
+                        <button class="btn btn-success btn-sm me-1 approve-video" data-video-id="${video.id}" title="Approve">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-warning btn-sm flag-video" data-video-id="${video.id}" title="Flag">
+                            <i class="fas fa-flag"></i> Flag
+                        </button>
+                    `;
+                } else if (currentStatus === 'flagged') {
+                    actionButtons = `
+                        <button class="btn btn-success btn-sm me-1 approve-video" data-video-id="${video.id}" title="Approve">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-danger btn-sm reject-video" data-video-id="${video.id}" title="Reject">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    `;
+                } else {
+                    actionButtons = `
+                        <button class="btn btn-success btn-sm me-1 approve-video" data-video-id="${video.id}" title="Approve">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-danger btn-sm me-1 reject-video" data-video-id="${video.id}" title="Reject">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                        <button class="btn btn-warning btn-sm flag-video" data-video-id="${video.id}" title="Flag">
+                            <i class="fas fa-flag"></i> Flag
+                        </button>
+                    `;
+                }
+                
+                actionButtonsContainer.innerHTML = actionButtons;
+                
+                // Re-attach event listeners to new buttons
+                addVideoCardListeners();
+            }
+            
+            // Update the data-status attribute on the card
+            videoCard.setAttribute('data-status', currentStatus);
+        }
+
+        function playVideo(videoId) {
+            const video = allVideos.find(v => v.id == videoId);
+            if (!video || !video.youtube_id) return;
+            
+            const modal = document.getElementById('videoPlayerModal');
+            const iframe = document.getElementById('youtubePlayer');
+            const title = document.getElementById('videoTitle');
+            
+            title.textContent = video.title;
+            iframe.src = `https://www.youtube.com/embed/${video.youtube_id}?autoplay=1`;
+            
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+            
+            // Clean up when modal is hidden
+            modal.addEventListener('hidden.bs.modal', function() {
+                iframe.src = '';
+            });
+        }
+
+        function showVideoDetails(videoId) {
+            const video = allVideos.find(v => v.id == videoId);
+            if (!video) return;
+            
+            const modal = document.getElementById('videoDetailsModal');
+            if (!modal) {
+                console.warn('Video details modal not found');
+                return;
+            }
+            
+            const creatorName = video.creatorName || video.creator_name || video.creator || 'Unknown';
+            const uploadDate = video.uploadDate || video.upload_date || video.created_at;
+            
+            // Populate modal with video details - check if elements exist
+            const modalTitle = document.getElementById('modalVideoTitle');
+            const modalCreator = document.getElementById('modalVideoCreator');
+            const modalDuration = document.getElementById('modalVideoDuration');
+            const modalDate = document.getElementById('modalVideoDate');
+            const modalViews = document.getElementById('modalVideoViews');
+            const modalPrice = document.getElementById('modalVideoPrice');
+            const modalDescription = document.getElementById('modalVideoDescription');
+            const statusElement = document.getElementById('modalVideoStatus');
+            const thumbnail = document.getElementById('modalVideoThumbnail');
+            
+            if (modalTitle) modalTitle.textContent = video.title;
+            if (modalCreator) modalCreator.textContent = creatorName;
+            if (modalDuration) modalDuration.textContent = video.duration || 'Unknown';
+            if (modalDate) modalDate.textContent = uploadDate ? new Date(uploadDate).toLocaleDateString() : 'Unknown';
+            if (modalViews) modalViews.textContent = (video.views || 0).toLocaleString();
+            if (modalPrice) modalPrice.textContent = `$${video.price || '0.00'}`;
+            if (modalDescription) modalDescription.textContent = video.description || 'No description available';
+            
+            if (statusElement) {
+                statusElement.textContent = video.status || 'unknown';
+                statusElement.className = `badge ${getStatusClass(video.status)}`;
+            }
+            
+            if (thumbnail) {
+                let thumbnailSrc = video.thumbnail;
+                if (!thumbnailSrc || thumbnailSrc.includes('placeholder')) {
+                    thumbnailSrc = video.youtube_id ? 
+                        `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg` :
+                        'https://via.placeholder.com/300x169/4f46e5/ffffff?text=No+Image';
+                }
+                thumbnail.src = thumbnailSrc;
+                thumbnail.onerror = function() {
+                    this.onerror = null;
+                    this.src = 'https://via.placeholder.com/300x169/4f46e5/ffffff?text=No+Image';
+                };
+            }
+            
+            // Set up action buttons
+            document.getElementById('approveVideo').onclick = () => {
+                const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                bootstrapModal.hide();
+                showActionConfirmModal('approve', videoId);
+            };
+            
+            document.getElementById('rejectVideo').onclick = () => {
+                const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                bootstrapModal.hide();
+                showActionConfirmModal('reject', videoId);
+            };
+            
+            document.getElementById('flagVideo').onclick = () => {
+                const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                bootstrapModal.hide();
+                showActionConfirmModal('flag', videoId);
+            };
+            
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
         }
 
         // Watch video function for admin panel

@@ -456,10 +456,10 @@ class AdminManager {
                                 <button class="btn btn-sm btn-outline-primary" onclick="adminManager.editUser(${row.id})" title="Edit User">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-warning" onclick="adminManager.revokeUser(${row.id})" title="Revoke Access">
+                                <button class="btn btn-sm btn-outline-warning" onclick="revokeUser(${row.id})" title="Revoke Access">
                                     <i class="fas fa-ban"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="adminManager.deleteUser(${row.id})" title="Delete User">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${row.id})" title="Delete User">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -624,58 +624,75 @@ class AdminManager {
     }
 
     async revokeUser(userId) {
-        if (confirm('Are you sure you want to revoke access for this user?')) {
-            try {
-                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                const response = await fetch(`${apiUrl}/admin/users`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id: userId,
-                        status: 'revoked'
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    this.showAlert('User access revoked successfully', 'warning');
-                    this.refreshUsersTable();
-                } else {
-                    this.showAlert(result.message || 'Failed to revoke user access', 'danger');
+        try {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/admin/users`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: userId,
+                    status: 'revoked'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update user in local data
+                const user = this.users.find(u => u.id == userId);
+                if (user) {
+                    user.status = 'revoked';
                 }
-            } catch (error) {
-                console.error('Error revoking user:', error);
-                this.showAlert('Error revoking user access', 'danger');
+                
+                // Refresh the table
+                this.refreshUsersTable();
+                
+                if (window.commonUtils) {
+                    window.commonUtils.showToast('User access revoked successfully', 'warning');
+                }
+            } else {
+                throw new Error(result.message || 'Failed to revoke user access');
+            }
+        } catch (error) {
+            console.error('Error revoking user:', error);
+            if (window.commonUtils) {
+                window.commonUtils.showToast('Error revoking user access', 'danger');
             }
         }
     }
 
     async deleteUser(userId) {
-        if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-            try {
-                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                const response = await fetch(`${apiUrl}/admin/users`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id: userId })
-                });
+        try {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await fetch(`${apiUrl}/admin/users`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: userId })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Remove user from local data
+                this.users = this.users.filter(u => u.id != userId);
                 
-                const result = await response.json();
+                // Refresh the table
+                this.refreshUsersTable();
                 
-                if (result.success) {
-                    this.showAlert('User deleted successfully', 'success');
-                    this.refreshUsersTable();
-                } else {
-                    this.showAlert(result.message || 'Failed to delete user', 'danger');
+                if (window.commonUtils) {
+                    window.commonUtils.showToast('User deleted successfully', 'success');
                 }
-            } catch (error) {
-                console.error('Error deleting user:', error);
-                this.showAlert('Error deleting user', 'danger');
+            } else {
+                throw new Error(result.message || 'Failed to delete user');
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            if (window.commonUtils) {
+                window.commonUtils.showToast('Error deleting user', 'danger');
             }
         }
     }
@@ -976,12 +993,25 @@ class AdminManager {
                         
                         <div class="d-flex gap-2">
                             ${video.status === 'published' || video.status === 'active' ? 
-                                `<button class="btn btn-warning btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
+                                `<button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
                                     <i class="fas fa-times me-1"></i>Reject
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="adminManager.flagVideo(${video.id})" title="Flag Video">
+                                    <i class="fas fa-flag"></i>
                                 </button>` :
                                 video.status === 'rejected' ?
                                 `<button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
                                     <i class="fas fa-check me-1"></i>Approve
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="adminManager.flagVideo(${video.id})" title="Flag Video">
+                                    <i class="fas fa-flag"></i>
+                                </button>` :
+                                video.status === 'flagged' ?
+                                `<button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
+                                    <i class="fas fa-check me-1"></i>Approve
+                                </button>
+                                <button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
+                                    <i class="fas fa-times me-1"></i>Reject
                                 </button>` :
                                 `<button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
                                     <i class="fas fa-check me-1"></i>Approve
@@ -1206,7 +1236,7 @@ class AdminManager {
                 if (video) {
                     video.status = 'published';
                 }
-                // Refresh the videos grid
+                // Refresh the videos grid immediately to show updated buttons
                 this.renderVideosGrid();
                 this.updateVideoStats();
             } else {
@@ -1233,7 +1263,7 @@ class AdminManager {
                 if (video) {
                     video.status = 'rejected';
                 }
-                // Refresh the videos grid
+                // Refresh the videos grid immediately to show updated buttons
                 this.renderVideosGrid();
                 this.updateVideoStats();
             } else {
@@ -1242,6 +1272,33 @@ class AdminManager {
         } catch (error) {
             console.error('Error rejecting video:', error);
             this.showAlert('Error rejecting video', 'danger');
+        }
+    }
+
+    async flagVideo(videoId) {
+        try {
+            if (!confirm('Are you sure you want to flag this video?')) return;
+            
+            const response = await window.apiService.put(`/api/endpoints/videos.php/${videoId}`, {
+                status: 'flagged'
+            });
+            
+            if (response.success) {
+                this.showAlert('Video flagged successfully!', 'danger');
+                // Update local video status
+                const video = this.videos.find(v => v.id == videoId);
+                if (video) {
+                    video.status = 'flagged';
+                }
+                // Refresh the videos grid immediately to show updated buttons
+                this.renderVideosGrid();
+                this.updateVideoStats();
+            } else {
+                this.showAlert(response.message || 'Failed to flag video', 'danger');
+            }
+        } catch (error) {
+            console.error('Error flagging video:', error);
+            this.showAlert('Error flagging video', 'danger');
         }
     }
 

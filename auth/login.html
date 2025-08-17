@@ -21,36 +21,7 @@
                             <p class="text-muted">Sign in to your account</p>
                         </div>
                         
-                        <!-- Demo Accounts -->
-                        <div class="alert alert-info">
-                            <small><strong>Demo Accounts:</strong></small>
-                            <div class="row g-2 mt-2">
-                                <div class="col-4">
-                                    <div class="demo-account text-center p-2 bg-white rounded cursor-pointer">
-                                        <i class="fas fa-user-shield text-danger"></i>
-                                        <div class="small fw-bold">Admin</div>
-                                        <div class="small text-muted">admin@videohub.com</div>
-                                        <div class="small text-muted">admin123</div>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="demo-account text-center p-2 bg-white rounded cursor-pointer">
-                                        <i class="fas fa-video text-success"></i>
-                                        <div class="small fw-bold">Creator</div>
-                                        <div class="small text-muted">creator@videohub.com</div>
-                                        <div class="small text-muted">creator123</div>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="demo-account text-center p-2 bg-white rounded cursor-pointer">
-                                        <i class="fas fa-play-circle text-primary"></i>
-                                        <div class="small fw-bold">Viewer</div>
-                                        <div class="small text-muted">viewer@videohub.com</div>
-                                        <div class="small text-muted">viewer123</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                         
                         <!-- Login Form -->
                         <form id="loginForm">
@@ -114,16 +85,7 @@
     <script src="../assets/js/common.js"></script>
     <script src="../assets/js/auth.js"></script>
     <script>
-        // Demo account click handlers
-        document.querySelectorAll('.demo-account').forEach(account => {
-            account.addEventListener('click', function() {
-                const email = this.querySelector('.small.text-muted').textContent;
-                const password = this.querySelectorAll('.small.text-muted')[1].textContent;
-                
-                document.getElementById('email').value = email;
-                document.getElementById('password').value = password;
-            });
-        });
+        // Authentication handling is managed by auth.js
     </script>
 </body>
 </html>

@@ -56,7 +56,7 @@ class AuthManager {
                 this.verificationProcessed = true;
                 // Auto-verify email when token is present
                 setTimeout(() => {
-                    this.handleEmailVerification();
+                   // this.handleEmailVerification();
                 }, 1000);
             }
         }
@@ -210,7 +210,7 @@ class AuthManager {
         if (token) {
             // Auto-verify if token is present
             setTimeout(() => {
-                this.handleEmailVerification();
+                //this.handleEmailVerification();
             }, 1000);
         }
     }

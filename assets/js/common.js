@@ -106,6 +106,11 @@ class CommonUtils {
     }
 
     handleLogout() {
+        // Show confirmation modal instead of direct logout
+        this.showLogoutConfirmModal();
+    }
+
+    performLogout() {
         this.clearUserSession();
         this.showToast('Logged out successfully!', 'success');
 
@@ -118,6 +123,49 @@ class CommonUtils {
                 window.location.href = '/auth/login.html';
             }
         }, 1000);
+    }
+
+    showLogoutConfirmModal() {
+        // Create logout confirmation modal if it doesn't exist
+        let logoutModal = document.getElementById('logoutConfirmModal');
+        if (!logoutModal) {
+            logoutModal = document.createElement('div');
+            logoutModal.className = 'modal fade';
+            logoutModal.id = 'logoutConfirmModal';
+            logoutModal.setAttribute('tabindex', '-1');
+            logoutModal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-sign-out-alt me-2"></i>Confirm Logout
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to log out? You will need to sign in again to access your account.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-danger" id="confirmLogoutBtn">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(logoutModal);
+
+            // Add event listener to confirm button
+            document.getElementById('confirmLogoutBtn').addEventListener('click', () => {
+                const modal = bootstrap.Modal.getInstance(logoutModal);
+                modal.hide();
+                this.performLogout();
+            });
+        }
+
+        const modal = new bootstrap.Modal(logoutModal);
+        modal.show();
     }
 
     // Toast Notifications
@@ -377,33 +425,33 @@ class CommonUtils {
             this.showToast(`Opening video in new tab`, 'info');
             return;
         }
-        
+
         // Otherwise, try to find the video in available data
         let video = null;
-        
+
         // Check viewer data
         if (window.viewerManager && window.viewerManager.videos) {
             video = window.viewerManager.videos.find(v => v.id == videoId);
         }
-        
+
         // Check creator data
         if (!video && window.creatorManager && window.creatorManager.videos) {
             video = window.creatorManager.videos.find(v => v.id == videoId);
         }
-        
+
         // Check admin data
         if (!video && window.adminManager && window.adminManager.videos) {
             video = window.adminManager.videos.find(v => v.id == videoId);
         }
-        
+
         if (!video) {
             this.showToast('Video not found', 'error');
             return;
         }
-        
+
         // Get YouTube ID
         let youtubeVideoId = video.youtube_id;
-        
+
         if (!youtubeVideoId && (video.thumbnail || video.youtube_thumbnail)) {
             // Try to extract from thumbnail URL as fallback
             const thumbnailUrl = video.thumbnail || video.youtube_thumbnail;
@@ -412,7 +460,7 @@ class CommonUtils {
                 /youtu\.be\/([^?]+)/, // Short URL format
                 /embed\/([^?]+)/ // Embed URL format
             ];
-            
+
             for (const pattern of patterns) {
                 const match = thumbnailUrl.match(pattern);
                 if (match) {
@@ -421,16 +469,16 @@ class CommonUtils {
                 }
             }
         }
-        
+
         if (!youtubeVideoId) {
             this.showToast('YouTube video ID not available', 'error');
             return;
         }
-        
+
         // Open YouTube video in new tab
         const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
         window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
-        
+
         this.showToast(`Opening "${video.title}" in new tab`, 'info');
     }
 
@@ -703,6 +751,95 @@ class CommonUtils {
         }
     }
 }
+
+// Global logout confirmation function
+function showLogoutConfirm() {
+    if (window.commonUtils) {
+        window.commonUtils.showLogoutConfirmModal();
+    } else {
+        // Fallback if commonUtils not available
+        if (confirm('Are you sure you want to logout?')) {
+            logout();
+        }
+    }
+}
+
+// Enhanced logout confirmation with styled modal
+function showStyledLogoutConfirm() {
+    return new Promise((resolve) => {
+        // Create logout confirmation modal
+        let modal = document.getElementById('styledLogoutConfirmModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'styledLogoutConfirmModal';
+            modal.setAttribute('tabindex', '-1');
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-header bg-warning text-white border-0">
+                            <h5 class="modal-title fw-bold">
+                                <i class="fas fa-sign-out-alt me-2"></i>Confirm Logout
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div class="alert alert-warning border-0 mb-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x me-3 text-warning"></i>
+                                    <div>
+                                        <p class="mb-1 fw-semibold">Are you sure you want to logout?</p>
+                                        <small class="text-muted">You will need to sign in again to access your account.</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border-0 bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="fw-bold text-dark mb-2">
+                                        <i class="fas fa-info-circle me-2 text-info"></i>Before you go
+                                    </h6>
+                                    <ul class="list-unstyled mb-0 small text-muted">
+                                        <li><i class="fas fa-check text-success me-2"></i>Your work has been saved automatically</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>You can login anytime to continue</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Your session will be securely ended</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                            <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i>Stay Logged In
+                            </button>
+                            <button type="button" class="btn btn-warning px-4" id="confirmLogoutBtn">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Set up confirm button action
+        const confirmBtn = document.getElementById('confirmLogoutBtn');
+        confirmBtn.onclick = function() {
+            const bootstrapModal = bootstrap.Modal.getInstance(modal);
+            bootstrapModal.hide();
+            resolve(true);
+        };
+
+        // Set up cancel action
+        modal.addEventListener('hidden.bs.modal', function handler() {
+            modal.removeEventListener('hidden.bs.modal', handler);
+            resolve(false);
+        });
+
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+    });
+}
+
 
 // Global Toast Function
 window.showToast = function(message, type = 'info', delay = 5000) {
