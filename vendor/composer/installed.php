@@ -3,11 +3,11 @@
         'name' => 'videohub/platform',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '921d378c91ded47941c29d323b42b9855c333073',
+        'reference' => '326a46d7d220c19fae33fcda126954f3ca558443',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'dev' => true,
+        'dev' => false,
     ),
     'versions' => array(
         'stripe/stripe-php' => array(
@@ -22,7 +22,7 @@
         'videohub/platform' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '921d378c91ded47941c29d323b42b9855c333073',
+            'reference' => '326a46d7d220c19fae33fcda126954f3ca558443',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

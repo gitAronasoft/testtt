@@ -14,6 +14,7 @@ class StripePaymentManager {
         this.isInitialized = false;
         this.currentModal = null;
         this.currentModalId = null;
+        this.cardComplete = false; // Track card completion state
         this.init();
     }
 
@@ -226,6 +227,7 @@ class StripePaymentManager {
                 // Element might not be mounted or already destroyed, ignore error
             }
             this.cardElement = null;
+            this.cardComplete = false; // Reset completion state
         }
         
         // Reset elements instance to allow fresh card creation
@@ -267,6 +269,9 @@ class StripePaymentManager {
         }
 
         try {
+            // Reset card completion state for new element
+            this.cardComplete = false;
+            
             // Create fresh elements instance for this modal to avoid conflicts
             this.elements = this.stripe.elements();
             
@@ -297,6 +302,9 @@ class StripePaymentManager {
 
             // Handle real-time validation
             this.cardElement.on('change', (event) => {
+                // Update card completion state
+                this.cardComplete = event.complete && !event.error;
+                
                 if (event.error) {
                     if (cardErrors) {
                         cardErrors.textContent = event.error.message;
@@ -347,9 +355,8 @@ class StripePaymentManager {
             return;
         }
 
-        // Check if card is complete
-        const cardElementState = this.cardElement._complete;
-        if (!cardElementState) {
+        // Check if card is complete using tracked state
+        if (!this.cardComplete) {
             this.showError('Please complete your card information before submitting.');
             return;
         }
@@ -438,7 +445,7 @@ class StripePaymentManager {
         const userId = this.getCurrentUserId();
         
         try {
-            const response = await fetch(this.getApiUrl('/api/payments/create-payment-intent'), {
+            const response = await fetch(this.getApiUrl('/payments/create-payment-intent'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -465,7 +472,7 @@ class StripePaymentManager {
         const userId = this.getCurrentUserId();
         
         try {
-            const response = await fetch(this.getApiUrl('/api/payments/confirm-payment'), {
+            const response = await fetch(this.getApiUrl('/payments/confirm-payment'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -498,7 +505,8 @@ class StripePaymentManager {
         if (config) {
             return config.getUrl(`/api${endpoint}`);
         }
-        return `/api${endpoint}`;
+        // Fallback - use the same base path detection as other API calls
+        return `/video-platform/api${endpoint}`;
     }
 
     getErrorMessage(errorMessage) {

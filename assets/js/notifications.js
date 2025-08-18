@@ -242,6 +242,23 @@ class NotificationManager {
 // Global instance
 window.notificationManager = new NotificationManager();
 
+// Add backward compatibility methods
+window.notificationManager.showSuccess = function(message, duration) {
+    return this.success(message, duration);
+};
+
+window.notificationManager.showError = function(message, duration) {
+    return this.error(message, duration);
+};
+
+window.notificationManager.showInfo = function(message, duration) {
+    return this.info(message, duration);
+};
+
+window.notificationManager.showWarning = function(message, duration) {
+    return this.warning(message, duration);
+};
+
 // Backward compatibility
 if (!window.commonUtils) {
     window.commonUtils = {};

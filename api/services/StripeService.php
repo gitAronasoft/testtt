@@ -14,8 +14,15 @@ class StripeService {
     public function __construct($database) {
         $this->db = $database->getConnection();
         
+        // Get Stripe secret key from environment
+        $stripeSecretKey = $_ENV['STRIPE_SECRET_KEY'] ?? getenv('STRIPE_SECRET_KEY');
+        
+        if (!$stripeSecretKey) {
+            throw new Exception('Stripe secret key not configured');
+        }
+        
         // Initialize Stripe
-        \Stripe\Stripe::setApiKey($_ENV['STRIPE_SECRET_KEY'] ?? getenv('STRIPE_SECRET_KEY'));
+        \Stripe\Stripe::setApiKey($stripeSecretKey);
         
         // Initialize logging
         $this->initializeLogger();

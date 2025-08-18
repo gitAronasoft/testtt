@@ -86,7 +86,7 @@
          * Get API base URL
          */
         getApiUrl() {
-            return this.basePath + '/api';
+            return '/video-platform/api';
         }
 
         /**
