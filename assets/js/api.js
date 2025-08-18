@@ -245,10 +245,10 @@
 
         if (userSession && userSession.userType === 'viewer') {
             // For viewers, use the users/profile endpoint which is more generic
-            return this.get('/users/profile');
+            return this.get(`/api/users/profile?user_id=${userSession.id}`);
         } else {
             // For other roles (admin, creator)
-            return this.get('/users/profile');
+            return this.get(`/api/users/profile?user_id=${userSession.id}`);
         }
     }
 

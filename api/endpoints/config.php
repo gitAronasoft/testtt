@@ -19,7 +19,7 @@ if ($method === 'OPTIONS') {
 if ($method === 'GET' && strpos($path, '/config/stripe-key') !== false) {
     header('Content-Type: application/json');
 
-    $publishableKey = $_ENV['STRIPE_PUBLISHABLE_KEY'] ?? getenv('STRIPE_PUBLISHABLE_KEY');
+    $publishableKey = "pk_test_51MMBpLLzvpT6nLjbuQdmrKX05xmuzLUsQhnNUnUEEiiJC1NS7eHK8jSRKbueTlYzruYf7lSYOtBtsXiIDFtAs4FE004Wt7Zqg6";
 
     if (!$publishableKey) {
         echo json_encode([

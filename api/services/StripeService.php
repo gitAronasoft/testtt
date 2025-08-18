@@ -15,7 +15,7 @@ class StripeService {
         $this->db = $database->getConnection();
         
         // Get Stripe secret key from environment
-        $stripeSecretKey = $_ENV['STRIPE_SECRET_KEY'] ?? getenv('STRIPE_SECRET_KEY');
+        $stripeSecretKey = "sk_test_51MMBpLLzvpT6nLjbghXOEgosU07FYeXTUM5q4G5Q3lewgrQx0WZqVd5LsrLsuX80AL9xa6AJCeiXxyRynRLem33100J0m9m9Sf";
         
         if (!$stripeSecretKey) {
             throw new Exception('Stripe secret key not configured');

@@ -84,7 +84,7 @@ try {
                 }
             } elseif (end($pathSegments) === 'videos') {
                 // Get all videos for admin panel - use the same structure as /api/videos
-                $response = file_get_contents('http://localhost:5000/api/videos');
+                $response = file_get_contents('/api/videos');
                 $videosData = json_decode($response, true);
                 
                 if ($videosData && isset($videosData['data']['videos'])) {

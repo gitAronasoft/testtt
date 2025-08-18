@@ -43,3 +43,9 @@
 [2025-08-18 12:27:06] Payment confirmed | Data: {"payment_intent_id":"pi_3RxS9TLzvpT6nLjb0uHlfQ97","status":"succeeded"}
 [2025-08-18 12:27:08] Purchase record created | Data: {"purchase_id":"29","payment_intent_id":"pi_3RxS9TLzvpT6nLjb0uHlfQ97"}
 [2025-08-18 12:27:08] Payment status updated | Data: {"payment_intent_id":"pi_3RxS9TLzvpT6nLjb0uHlfQ97","status":"succeeded"}
+[2025-08-18 18:37:52] Creating Payment Intent | Data: {"amount":58,"currency":"usd"}
+[2025-08-18 18:37:53] Payment Intent created successfully | Data: {"id":"pi_3RxW4DLzvpT6nLjb0iYsszs8"}
+[2025-08-18 18:37:53] Payment record stored | Data: {"payment_id":"16","payment_intent_id":"pi_3RxW4DLzvpT6nLjb0iYsszs8"}
+[2025-08-18 18:39:22] Creating Payment Intent | Data: {"amount":58,"currency":"usd"}
+[2025-08-18 18:39:23] Payment Intent created successfully | Data: {"id":"pi_3RxW5fLzvpT6nLjb0h6KA9al"}
+[2025-08-18 18:39:23] Payment record stored | Data: {"payment_id":"17","payment_intent_id":"pi_3RxW5fLzvpT6nLjb0h6KA9al"}

@@ -1,13 +1,15 @@
 {
-    "name": "videohub/platform",
-    "description": "VideoHub - Video Management Platform with Stripe Integration",
-    "type": "project",
     "require": {
-        "stripe/stripe-php": "^10.0"
+        "phpmailer/phpmailer": "^6.10",
+        "google/apiclient": "^2.15.0",
+         "stripe/stripe-php": "^17.5"
     },
-    "autoload": {
-        "psr-4": {
-            "VideoHub\\": "api/"
-        }
+    "scripts": {
+        "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
+    },
+    "extra": {
+        "google/apiclient-services": [          
+            "YouTube"
+        ]
     }
 }
