@@ -24,6 +24,11 @@ if (empty($path)) {
 
 // Route requests
 switch (true) {
+    // Upload endpoints (must come before videos to catch /upload path)
+    case preg_match('/^\/upload/', $path):
+        require_once 'endpoints/upload.php';
+        break;
+        
     // Authentication endpoints
     case preg_match('/^\/auth/', $path):
         require_once 'endpoints/auth.php';
@@ -34,6 +39,11 @@ switch (true) {
         require_once 'endpoints/users.php';
         break;
         
+    // Video access control endpoints (must come before general videos)
+    case preg_match('/^\/video-access/', $path):
+        require_once 'endpoints/video-access.php';
+        break;
+        
     // Videos endpoints
     case preg_match('/^\/videos/', $path):
         require_once 'endpoints/videos.php';
@@ -42,6 +52,11 @@ switch (true) {
     // Purchases endpoints
     case preg_match('/^\/purchases/', $path):
         require_once 'endpoints/purchases.php';
+        break;
+        
+    // Transaction history endpoints
+    case preg_match('/^\/transactions/', $path):
+        require_once 'endpoints/transactions.php';
         break;
         
     // Creator endpoints

@@ -17,10 +17,10 @@ window.VIDEOHUB_DEPLOYMENT_CONFIG = {
     // ========================================
     
     // Option 1: Root domain deployment (e.g., https://yourdomain.com/)
-    //BASE_PATH: '',
+    BASE_PATH: '',
     
     // Option 2: Subfolder deployment (uncomment and modify as needed)
-    BASE_PATH: '/video-platform',
+    //BASE_PATH: '/video-platform',
     
     // Option 3: Auto-detect (works in most cases but manual is more reliable)
     // BASE_PATH: 'auto',

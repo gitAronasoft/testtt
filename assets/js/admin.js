@@ -1713,6 +1713,445 @@ function watchVideo(youtubeId, title) {
     }
 }
 
+    /**
+     * Initialize transaction history page
+     */
+    async initTransactionHistory() {
+        console.log('Initializing transaction history page');
+        
+        try {
+            // Load transaction statistics
+            await this.loadTransactionStats();
+            
+            // Load transactions
+            await this.loadTransactions();
+            
+            // Setup transaction filters
+            this.setupTransactionFilters();
+            
+        } catch (error) {
+            console.error('Error initializing transaction history:', error);
+            this.showNotification('Failed to load transaction data', 'error');
+        }
+    }
+
+    /**
+     * Load transaction statistics
+     */
+    async loadTransactionStats() {
+        try {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await window.apiService.get(`${apiUrl}/transactions/stats`);
+            
+            if (response.success) {
+                const stats = response.data;
+                
+                // Update stats cards
+                document.getElementById('totalTransactions').textContent = stats.total_transactions.toLocaleString();
+                document.getElementById('totalRevenue').textContent = stats.total_revenue_formatted;
+                document.getElementById('avgTransaction').textContent = stats.avg_transaction_formatted;
+                document.getElementById('successRate').textContent = stats.success_rate + '%';
+            }
+        } catch (error) {
+            console.error('Error loading transaction stats:', error);
+            // Set fallback values
+            document.getElementById('totalTransactions').textContent = '0';
+            document.getElementById('totalRevenue').textContent = '$0.00';
+            document.getElementById('avgTransaction').textContent = '$0.00';
+            document.getElementById('successRate').textContent = '0%';
+        }
+    }
+
+    /**
+     * Load transactions with current filters
+     */
+    async loadTransactions(page = 1) {
+        try {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const params = new URLSearchParams({
+                page: page,
+                limit: 25,
+                ...this.transactionFilters
+            });
+            
+            const response = await window.apiService.get(`${apiUrl}/transactions?${params}`);
+            
+            if (response.success) {
+                this.transactions = response.data.transactions;
+                this.renderTransactionsTable();
+                this.renderTransactionsPagination(response.data.pagination);
+            } else {
+                this.showNotification('Failed to load transactions', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading transactions:', error);
+            this.showNotification('Error loading transactions', 'error');
+        }
+    }
+
+    /**
+     * Render transactions table
+     */
+    renderTransactionsTable() {
+        const tbody = document.getElementById('transactionsTableBody');
+        
+        if (!this.transactions || this.transactions.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No transactions found</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = this.transactions.map(transaction => `
+            <tr>
+                <td>
+                    <span class="transaction-id" title="${transaction.transaction_id}">
+                        ${transaction.transaction_id}
+                    </span>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <div class="fw-semibold">${transaction.buyer_name}</div>
+                            <small class="text-muted">${transaction.buyer_email}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <div class="fw-semibold">${transaction.video_title}</div>
+                        <small class="text-muted">by ${transaction.creator_name}</small>
+                    </div>
+                </td>
+                <td>
+                    <span class="fw-bold">${transaction.amount_formatted}</span>
+                </td>
+                <td>
+                    <span class="badge bg-light text-dark">
+                        ${transaction.payment_method}
+                    </span>
+                    <br>
+                    <small class="text-muted">${transaction.payment_provider}</small>
+                </td>
+                <td>
+                    <span class="badge status-badge bg-${transaction.status_class}">
+                        ${transaction.status_display}
+                    </span>
+                </td>
+                <td>
+                    <div>${transaction.transaction_date_formatted}</div>
+                </td>
+                <td class="table-actions">
+                    <button class="btn btn-sm btn-outline-primary" onclick="window.adminManager.viewTransactionDetails('${transaction.transaction_id}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    /**
+     * Setup transaction filters
+     */
+    setupTransactionFilters() {
+        // Initialize transaction filters object
+        this.transactionFilters = {};
+        
+        // Apply filters button
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', () => {
+                this.applyTransactionFilters();
+            });
+        }
+        
+        // Clear filters button
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
+                this.clearTransactionFilters();
+            });
+        }
+        
+        // Refresh button
+        const refreshBtn = document.getElementById('refreshTransactions');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.loadTransactions();
+            });
+        }
+        
+        // Export button
+        const exportBtn = document.getElementById('exportTransactions');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.exportTransactions();
+            });
+        }
+        
+        // Search input with debounce
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.transactionFilters.search = e.target.value;
+                    this.loadTransactions();
+                }, 500);
+            });
+        }
+    }
+
+    /**
+     * Apply transaction filters
+     */
+    applyTransactionFilters() {
+        this.transactionFilters = {
+            date_from: document.getElementById('dateFrom')?.value || '',
+            date_to: document.getElementById('dateTo')?.value || '',
+            status: document.getElementById('statusFilter')?.value || '',
+            payment_provider: document.getElementById('providerFilter')?.value || '',
+            search: document.getElementById('searchInput')?.value || ''
+        };
+        
+        // Remove empty filters
+        Object.keys(this.transactionFilters).forEach(key => {
+            if (!this.transactionFilters[key]) {
+                delete this.transactionFilters[key];
+            }
+        });
+        
+        this.loadTransactions();
+    }
+
+    /**
+     * Clear transaction filters
+     */
+    clearTransactionFilters() {
+        this.transactionFilters = {};
+        
+        // Clear form inputs
+        const inputs = ['dateFrom', 'dateTo', 'statusFilter', 'providerFilter', 'searchInput'];
+        inputs.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.value = '';
+        });
+        
+        this.loadTransactions();
+    }
+
+    /**
+     * View transaction details
+     */
+    async viewTransactionDetails(transactionId) {
+        try {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
+            const response = await window.apiService.get(`${apiUrl}/transactions/${transactionId}`);
+            
+            if (response.success) {
+                const transaction = response.data;
+                this.showTransactionModal(transaction);
+            } else {
+                this.showAlert('Failed to load transaction details', 'danger');
+            }
+        } catch (error) {
+            console.error('Error loading transaction details:', error);
+            this.showAlert('Error loading transaction details', 'danger');
+        }
+    }
+
+    /**
+     * Show transaction details modal
+     */
+    showTransactionModal(transaction) {
+        const modalBody = document.getElementById('transactionDetails');
+        
+        modalBody.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Transaction Information</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Transaction ID:</strong></td>
+                            <td>${transaction.transaction_id}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Type:</strong></td>
+                            <td>${transaction.transaction_type_display}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td><span class="badge bg-${transaction.status_class}">${transaction.status_display}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Amount:</strong></td>
+                            <td>${transaction.amount_formatted}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Payment Method:</strong></td>
+                            <td>${transaction.payment_method} (${transaction.payment_provider})</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Date:</strong></td>
+                            <td>${transaction.transaction_date_formatted}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Customer Information</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>${transaction.buyer_name}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email:</strong></td>
+                            <td>${transaction.buyer_email}</td>
+                        </tr>
+                    </table>
+                    
+                    <h6>Video Information</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Title:</strong></td>
+                            <td>${transaction.video_title}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Creator:</strong></td>
+                            <td>${transaction.creator_name}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            ${transaction.stripe_payment_intent_id ? `
+                <div class="mt-3">
+                    <h6>Stripe Information</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Payment Intent:</strong></td>
+                            <td><code>${transaction.stripe_payment_intent_id}</code></td>
+                        </tr>
+                    </table>
+                </div>
+            ` : ''}
+            
+            ${transaction.metadata ? `
+                <div class="mt-3">
+                    <h6>Additional Data</h6>
+                    <pre class="bg-light p-2 rounded"><code>${JSON.stringify(JSON.parse(transaction.metadata), null, 2)}</code></pre>
+                </div>
+            ` : ''}
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('transactionModal'));
+        modal.show();
+    }
+
+    /**
+     * Export transactions
+     */
+    exportTransactions() {
+        if (!this.transactions || this.transactions.length === 0) {
+            this.showAlert('No transactions to export', 'warning');
+            return;
+        }
+        
+        // Create CSV content
+        const headers = ['Transaction ID', 'User', 'Email', 'Video', 'Creator', 'Amount', 'Status', 'Payment Method', 'Date'];
+        const csvContent = [
+            headers.join(','),
+            ...this.transactions.map(t => [
+                t.transaction_id,
+                `"${t.buyer_name}"`,
+                t.buyer_email,
+                `"${t.video_title}"`,
+                `"${t.creator_name}"`,
+                t.amount,
+                t.status,
+                t.payment_method,
+                t.transaction_date
+            ].join(','))
+        ].join('\n');
+        
+        // Download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        this.showAlert('Transactions exported successfully', 'success');
+    }
+
+    /**
+     * Render transactions pagination
+     */
+    renderTransactionsPagination(pagination) {
+        const paginationContainer = document.getElementById('transactionsPagination');
+        
+        if (!paginationContainer || !pagination || pagination.total <= pagination.limit) {
+            if (paginationContainer) paginationContainer.innerHTML = '';
+            return;
+        }
+        
+        const totalPages = Math.ceil(pagination.total / pagination.limit);
+        const currentPage = pagination.page;
+        
+        let paginationHtml = '';
+        
+        // Previous button
+        if (currentPage > 1) {
+            paginationHtml += `
+                <li class="page-item">
+                    <a class="page-link" href="#" onclick="window.adminManager.loadTransactions(${currentPage - 1})">Previous</a>
+                </li>
+            `;
+        }
+        
+        // Page numbers
+        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+            paginationHtml += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="window.adminManager.loadTransactions(${i})">${i}</a>
+                </li>
+            `;
+        }
+        
+        // Next button
+        if (currentPage < totalPages) {
+            paginationHtml += `
+                <li class="page-item">
+                    <a class="page-link" href="#" onclick="window.adminManager.loadTransactions(${currentPage + 1})">Next</a>
+                </li>
+            `;
+        }
+        
+        paginationContainer.innerHTML = paginationHtml;
+    }
+
+    /**
+     * Show notification/alert
+     */
+    showNotification(message, type = 'info') {
+        if (window.commonUtils && window.commonUtils.showToast) {
+            window.commonUtils.showToast(message, type);
+        } else {
+            this.showAlert(message, type);
+        }
+    }
+}
+
 // Setup video filters if on videos page
 setTimeout(() => {
     if (window.location.pathname.includes('videos.html') && window.adminManager) {

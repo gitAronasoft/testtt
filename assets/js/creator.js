@@ -861,6 +861,216 @@ class CreatorManager {
         }, 5000);
     }
 
+    showUploadModal() {
+        const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+        modal.show();
+        
+        // Initialize upload functionality
+        this.initializeUploadModal();
+    }
+
+    initializeUploadModal() {
+        const videoFile = document.getElementById('videoFile');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileSelectedArea = document.getElementById('fileSelectedArea');
+        const uploadProgressArea = document.getElementById('uploadProgressArea');
+        
+        // File selection handling
+        videoFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.handleFileSelection(file);
+            }
+        });
+        
+        // Drag and drop handling
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#0d6efd';
+            uploadArea.style.backgroundColor = '#f0f8ff';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#dee2e6';
+            uploadArea.style.backgroundColor = '#f8f9fa';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#dee2e6';
+            uploadArea.style.backgroundColor = '#f8f9fa';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (this.validateVideoFile(file)) {
+                    videoFile.files = files;
+                    this.handleFileSelection(file);
+                }
+            }
+        });
+        
+        // Upload button handling
+        uploadBtn.addEventListener('click', () => {
+            this.handleVideoUpload();
+        });
+        
+        // Clear file function
+        window.clearFileSelection = () => {
+            videoFile.value = '';
+            uploadArea.style.display = 'block';
+            fileSelectedArea.style.display = 'none';
+            uploadProgressArea.style.display = 'none';
+        };
+    }
+
+    handleFileSelection(file) {
+        if (!this.validateVideoFile(file)) {
+            return;
+        }
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileSelectedArea = document.getElementById('fileSelectedArea');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const selectedFileSize = document.getElementById('selectedFileSize');
+        
+        // Hide upload area, show file selected area
+        uploadArea.style.display = 'none';
+        fileSelectedArea.style.display = 'block';
+        
+        // Update file info
+        selectedFileName.textContent = file.name;
+        selectedFileSize.textContent = this.formatFileSize(file.size);
+    }
+
+    validateVideoFile(file) {
+        const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+        const allowedTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/wmv', 'video/quicktime'];
+        
+        if (!allowedTypes.includes(file.type)) {
+            this.showNotification('Please select a valid video file (MP4, MOV, AVI, WMV)', 'error');
+            return false;
+        }
+        
+        if (file.size > maxSize) {
+            this.showNotification('File size must be less than 2GB', 'error');
+            return false;
+        }
+        
+        return true;
+    }
+
+    async handleVideoUpload() {
+        const videoFile = document.getElementById('videoFile').files[0];
+        const title = document.getElementById('videoTitle').value;
+        const description = document.getElementById('videoDescription').value;
+        const price = document.getElementById('videoPrice').value;
+        const category = document.getElementById('videoCategory').value;
+        
+        if (!videoFile) {
+            this.showNotification('Please select a video file', 'error');
+            return;
+        }
+        
+        if (!title.trim()) {
+            this.showNotification('Please enter a video title', 'error');
+            return;
+        }
+        
+        if (!price || parseFloat(price) < 0) {
+            this.showNotification('Please enter a valid price', 'error');
+            return;
+        }
+        
+        try {
+            // Show upload progress area
+            const uploadArea = document.getElementById('uploadArea');
+            const fileSelectedArea = document.getElementById('fileSelectedArea');
+            const uploadProgressArea = document.getElementById('uploadProgressArea');
+            const uploadingFileName = document.getElementById('uploadingFileName');
+            
+            uploadArea.style.display = 'none';
+            fileSelectedArea.style.display = 'none';
+            uploadProgressArea.style.display = 'block';
+            uploadingFileName.textContent = videoFile.name;
+            
+            // Initialize YouTube upload manager if not already done
+            if (!this.youtubeUploader) {
+                this.youtubeUploader = new YouTubeUploadManager();
+            }
+            
+            // Prepare metadata
+            const metadata = {
+                title: title.trim(),
+                description: description.trim(),
+                price: parseFloat(price),
+                category: category,
+                tags: []
+            };
+            
+            // Start upload with progress tracking
+            const result = await this.youtubeUploader.uploadVideo(
+                videoFile, 
+                metadata, 
+                (progress) => this.updateUploadProgress(progress)
+            );
+            
+            if (result.success) {
+                // Show success message
+                const uploadSuccess = document.getElementById('uploadSuccess');
+                uploadSuccess.style.display = 'block';
+                uploadProgressArea.style.display = 'none';
+                
+                this.showNotification('Video uploaded successfully!', 'success');
+                
+                // Reload videos after upload
+                setTimeout(() => {
+                    this.loadVideosGrid();
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                    modal.hide();
+                }, 2000);
+            }
+            
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.showNotification('Upload failed: ' + error.message, 'error');
+            
+            // Reset upload UI
+            const uploadProgressArea = document.getElementById('uploadProgressArea');
+            const fileSelectedArea = document.getElementById('fileSelectedArea');
+            uploadProgressArea.style.display = 'none';
+            fileSelectedArea.style.display = 'block';
+        }
+    }
+
+    updateUploadProgress(progress) {
+        const uploadProgressBar = document.getElementById('uploadProgressBar');
+        const uploadPercentage = document.getElementById('uploadPercentage');
+        const uploadStatus = document.getElementById('uploadStatus');
+        
+        if (uploadProgressBar) {
+            uploadProgressBar.style.width = progress.percentage + '%';
+        }
+        
+        if (uploadPercentage) {
+            uploadPercentage.textContent = Math.round(progress.percentage) + '%';
+        }
+        
+        if (uploadStatus) {
+            uploadStatus.textContent = progress.message;
+        }
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
     showYouTubeConnectOption() {
         // Create YouTube connect notification
         const notification = document.createElement('div');

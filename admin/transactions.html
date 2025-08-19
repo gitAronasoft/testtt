@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History - VideoHub Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="../assets/css/modal.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background-color: white;
+            border-right: 1px solid #dee2e6;
+        }
+        .nav-link {
+            color: #495057;
+            border-radius: 5px;
+            margin: 2px 0;
+        }
+        .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .card {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .navbar {
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .transaction-table {
+            font-size: 0.9rem;
+        }
+        .transaction-table td {
+            vertical-align: middle;
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .filter-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .stat-card {
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .table-actions {
+            white-space: nowrap;
+        }
+        .transaction-id {
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-shield-alt me-2"></i>VideoHub Admin
+            </span>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-2"></i><span id="userName">Admin User</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="#" data-logout><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="users.html">
+                                <i class="fas fa-users me-2"></i>Users
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="videos.html">
+                                <i class="fas fa-video me-2"></i>Videos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="transactions.html">
+                                <i class="fas fa-credit-card me-2"></i>Transactions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="profile.html">
+                                <i class="fas fa-cog me-2"></i>Settings
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-3">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Transaction History</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn btn-outline-secondary" id="exportTransactions">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                        <button class="btn btn-outline-primary ms-2" id="refreshTransactions">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transaction Statistics -->
+                <div class="row mb-4" id="transactionStats">
+                    <div class="col-xl-3 col-md-6 mb-3">
+                        <div class="card stat-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-receipt fa-2x text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-0" id="totalTransactions">
+                                            <div class="spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </h5>
+                                        <small class="text-muted">Total Transactions</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-3">
+                        <div class="card stat-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-0" id="totalRevenue">
+                                            <div class="spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </h5>
+                                        <small class="text-muted">Total Revenue</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-3">
+                        <div class="card stat-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-chart-line fa-2x text-info"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-0" id="avgTransaction">
+                                            <div class="spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </h5>
+                                        <small class="text-muted">Avg Transaction</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-3">
+                        <div class="card stat-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-percentage fa-2x text-warning"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-0" id="successRate">
+                                            <div class="spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </h5>
+                                        <small class="text-muted">Success Rate</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-body p-3 filter-container">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Date From</label>
+                                <input type="date" class="form-control form-control-sm" id="dateFrom">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Date To</label>
+                                <input type="date" class="form-control form-control-sm" id="dateTo">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Status</label>
+                                <select class="form-select form-select-sm" id="statusFilter">
+                                    <option value="">All Status</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="refunded">Refunded</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Provider</label>
+                                <select class="form-select form-select-sm" id="providerFilter">
+                                    <option value="">All Providers</option>
+                                    <option value="stripe">Stripe</option>
+                                    <option value="legacy">Legacy</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button class="btn btn-primary btn-sm" id="applyFilters">
+                                        <i class="fas fa-filter me-1"></i>Apply
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search transactions, users, videos...">
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-secondary btn-sm" id="clearFilters">
+                                    <i class="fas fa-times me-1"></i>Clear All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">All Transactions</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover transaction-table mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>User</th>
+                                        <th>Video</th>
+                                        <th>Amount</th>
+                                        <th>Payment Method</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTableBody">
+                                    <!-- Loading rows -->
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">Loading transactions...</span>
+                                            </div>
+                                            <p class="mt-2 mb-0 text-muted">Loading transaction history...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center" id="transactionsPagination">
+                        <!-- Pagination will be dynamically generated -->
+                    </ul>
+                </nav>
+            </main>
+        </div>
+    </div>
+
+    <!-- Transaction Details Modal -->
+    <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="transactionModalLabel">
+                        <i class="fas fa-receipt me-2"></i>Transaction Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="transactionDetails">
+                    <!-- Transaction details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/notifications.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/auth-manager.js"></script>
+    <script src="../assets/js/common.js"></script>
+    <script src="../assets/js/admin.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof AdminManager !== 'undefined') {
+                window.adminManager = new AdminManager();
+                // Initialize transaction history page
+                if (window.adminManager.initTransactionHistory) {
+                    window.adminManager.initTransactionHistory();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -6,3 +6,11 @@
 [2025-08-19 06:44:12] Payment confirmed | Data: {"payment_intent_id":"pi_3RxhP2LzvpT6nLjb1drHYKd4","status":"succeeded"}
 [2025-08-19 06:44:13] Purchase record created | Data: {"purchase_id":"1","payment_intent_id":"pi_3RxhP2LzvpT6nLjb1drHYKd4"}
 [2025-08-19 06:44:13] Payment status updated | Data: {"payment_intent_id":"pi_3RxhP2LzvpT6nLjb1drHYKd4","status":"succeeded"}
+[2025-08-19 05:23:04] Retrieved existing customer | Data: {"customer_id":"cus_StUNnVhJKVVrKo","user_id":8}
+[2025-08-19 05:23:04] Creating Payment Intent | Data: {"amount":60,"currency":"usd"}
+[2025-08-19 05:23:04] Payment Intent with customer | Data: {"customer_id":"cus_StUNnVhJKVVrKo"}
+[2025-08-19 05:23:04] Payment Intent created successfully | Data: {"id":"pi_3Rxi0iLzvpT6nLjb0VQukxAU"}
+[2025-08-19 05:23:04] Payment record stored | Data: {"payment_id":"2","payment_intent_id":"pi_3Rxi0iLzvpT6nLjb0VQukxAU"}
+[2025-08-19 05:23:08] Payment confirmed | Data: {"payment_intent_id":"pi_3Rxi0iLzvpT6nLjb0VQukxAU","status":"succeeded"}
+[2025-08-19 05:23:09] Purchase record created | Data: {"purchase_id":"2","payment_intent_id":"pi_3Rxi0iLzvpT6nLjb0VQukxAU"}
+[2025-08-19 05:23:09] Payment status updated | Data: {"payment_intent_id":"pi_3Rxi0iLzvpT6nLjb0VQukxAU","status":"succeeded"}

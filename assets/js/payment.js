@@ -590,8 +590,8 @@ class StripePaymentManager {
         if (config) {
             return config.getUrl(`/api${endpoint}`);
         }
-        // Fallback - use the same base path detection as other API calls
-        return `/video-platform/api${endpoint}`;
+        // Fallback - use the correct API path
+        return `/api${endpoint}`;
     }
 
     getErrorMessage(errorMessage) {

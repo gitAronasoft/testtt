@@ -15,7 +15,7 @@
     class APIService {
     constructor() {
         // Use VideoHubConfig for consistent base path handling
-        this.baseURL = '/video-platform';
+        this.baseURL = '';
         this.timeout = 10000;
         this.useDataService = false; // Now using PHP backend
         this.authToken = this.getStoredToken(); // Initialize stored token on service creation

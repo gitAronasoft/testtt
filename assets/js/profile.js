@@ -71,8 +71,11 @@ class ProfileManager {
                     
                     // For other errors, fallback to session data
                     console.log('Using session data as fallback');
+                    const nameParts = (userSession.name || '').split(' ');
                     this.currentUser = {
                         name: userSession.name || '',
+                        firstName: nameParts[0] || '',
+                        lastName: nameParts.slice(1).join(' ') || '',
                         email: userSession.email || '',
                         role: userSession.userType || 'viewer'
                     };
@@ -80,8 +83,11 @@ class ProfileManager {
                 }
             } else {
                 // Use session data as fallback
+                const nameParts = (userSession.name || '').split(' ');
                 this.currentUser = {
                     name: userSession.name || '',
+                    firstName: nameParts[0] || '',
+                    lastName: nameParts.slice(1).join(' ') || '',
                     email: userSession.email || '',
                     role: userSession.userType || 'viewer'
                 };
@@ -109,8 +115,11 @@ class ProfileManager {
             }
 
             if (userSession && userSession.email) {
+                const nameParts = (userSession.name || '').split(' ');
                 this.currentUser = {
                     name: userSession.name || '',
+                    firstName: nameParts[0] || '',
+                    lastName: nameParts.slice(1).join(' ') || '',
                     email: userSession.email || '',
                     role: userSession.userType || 'viewer'
                 };
@@ -120,6 +129,11 @@ class ProfileManager {
     }
 
     populateProfileForm() {
+        // Ensure currentUser exists and has basic structure
+        if (!this.currentUser) {
+            this.currentUser = {};
+        }
+
         // Safely update form fields if they exist
         const firstNameEl = document.getElementById('firstName');
         const lastNameEl = document.getElementById('lastName');
@@ -127,8 +141,15 @@ class ProfileManager {
         const channelNameEl = document.getElementById('channelName');
         const channelDescriptionEl = document.getElementById('channelDescription');
 
-        if (firstNameEl) firstNameEl.value = this.currentUser.firstName || this.currentUser.name?.split(' ')[0] || '';
-        if (lastNameEl) lastNameEl.value = this.currentUser.lastName || this.currentUser.name?.split(' ')[1] || '';
+        // Split name if we have it but no firstName/lastName
+        if (!this.currentUser.firstName && !this.currentUser.lastName && this.currentUser.name) {
+            const nameParts = this.currentUser.name.split(' ');
+            this.currentUser.firstName = nameParts[0] || '';
+            this.currentUser.lastName = nameParts.slice(1).join(' ') || '';
+        }
+
+        if (firstNameEl) firstNameEl.value = this.currentUser.firstName || '';
+        if (lastNameEl) lastNameEl.value = this.currentUser.lastName || '';
         if (emailEl) emailEl.value = this.currentUser.email || '';
         if (channelNameEl) channelNameEl.value = this.currentUser.channelName || this.currentUser.name || '';
         if (channelDescriptionEl) channelDescriptionEl.value = this.currentUser.channelDescription || '';
