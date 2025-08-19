@@ -27,6 +27,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 try {
     // Get the raw POST body
     $payload = @file_get_contents('php://input');
+
+    $logFile = __DIR__ . "/payload.log";
+
+    // Add timestamp and payload
+    $logData = "[" . date("Y-m-d H:i:s") . "] " . $payload . "\n";
+
+    // Save (append) into file
+    file_put_contents($logFile, $logData, FILE_APPEND | LOCK_EX);
     $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
     
     if (!$payload || !$sig_header) {

@@ -70,13 +70,29 @@
 [2025-08-19 06:23:01] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
 [2025-08-19 07:46:54] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
 [2025-08-19 08:25:22] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
-[2025-08-19 10:06:11] Retrieved existing customer | Data: {"customer_id":"cus_StUNnVhJKVVrKo","user_id":8}
-[2025-08-19 10:06:11] Creating Payment Intent | Data: {"amount":40,"currency":"usd"}
-[2025-08-19 10:06:11] Payment Intent with customer | Data: {"customer_id":"cus_StUNnVhJKVVrKo"}
-[2025-08-19 10:06:11] Payment Intent created successfully | Data: {"id":"pi_3RxmQhLzvpT6nLjb162DUngk"}
-[2025-08-19 10:06:12] Payment record stored | Data: {"payment_id":"3","payment_intent_id":"pi_3RxmQhLzvpT6nLjb162DUngk"}
-[2025-08-19 10:09:44] Retrieved existing customer | Data: {"customer_id":"cus_StUNnVhJKVVrKo","user_id":8}
-[2025-08-19 10:09:44] Creating Payment Intent | Data: {"amount":40,"currency":"usd"}
-[2025-08-19 10:09:44] Payment Intent with customer | Data: {"customer_id":"cus_StUNnVhJKVVrKo"}
-[2025-08-19 10:09:45] Payment Intent created successfully | Data: {"id":"pi_3RxmU8LzvpT6nLjb1UMQaJ3f"}
-[2025-08-19 10:09:45] Payment record stored | Data: {"payment_id":"4","payment_intent_id":"pi_3RxmU8LzvpT6nLjb1UMQaJ3f"}
+[2025-08-19 10:06:14] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 10:06:31] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 11:51:55] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 11:51:57] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 11:52:04] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 11:52:09] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 11:53:16] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 11:55:30] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 12:22:44] Retrieved existing customer | Data: {"customer_id":"cus_StbHvH2YORdR2z","user_id":24}
+[2025-08-19 12:22:44] Creating Payment Intent | Data: {"amount":40,"currency":"usd"}
+[2025-08-19 12:22:44] Payment Intent with customer | Data: {"customer_id":"cus_StbHvH2YORdR2z"}
+[2025-08-19 12:22:44] Payment Intent created successfully | Data: {"id":"pi_3RxoYqLzvpT6nLjb1VPX0g4i"}
+[2025-08-19 12:22:44] Payment record stored | Data: {"payment_id":"9","payment_intent_id":"pi_3RxoYqLzvpT6nLjb1VPX0g4i"}
+[2025-08-19 12:22:51] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 12:22:52] Payment confirmed | Data: {"payment_intent_id":"pi_3RxoYqLzvpT6nLjb1VPX0g4i","status":"succeeded"}
+[2025-08-19 12:22:52] Purchase record created | Data: {"purchase_id":"3","payment_intent_id":"pi_3RxoYqLzvpT6nLjb1VPX0g4i"}
+[2025-08-19 12:22:52] Payment status updated | Data: {"payment_intent_id":"pi_3RxoYqLzvpT6nLjb1VPX0g4i","status":"succeeded"}
+[2025-08-19 12:41:21] Retrieved existing customer | Data: {"customer_id":"cus_StbHvH2YORdR2z","user_id":24}
+[2025-08-19 12:41:21] Creating Payment Intent | Data: {"amount":60,"currency":"usd"}
+[2025-08-19 12:41:21] Payment Intent with customer | Data: {"customer_id":"cus_StbHvH2YORdR2z"}
+[2025-08-19 12:41:21] Payment Intent created successfully | Data: {"id":"pi_3RxoqrLzvpT6nLjb0N31BYRe"}
+[2025-08-19 12:41:21] Payment record stored | Data: {"payment_id":"10","payment_intent_id":"pi_3RxoqrLzvpT6nLjb0N31BYRe"}
+[2025-08-19 12:41:23] Webhook signature error | Data: {"error":"No signatures found matching the expected signature for payload"}
+[2025-08-19 12:41:28] Payment confirmed | Data: {"payment_intent_id":"pi_3RxoqrLzvpT6nLjb0N31BYRe","status":"succeeded"}
+[2025-08-19 12:41:28] Purchase record created | Data: {"purchase_id":"4","payment_intent_id":"pi_3RxoqrLzvpT6nLjb0N31BYRe"}
+[2025-08-19 12:41:28] Payment status updated | Data: {"payment_intent_id":"pi_3RxoqrLzvpT6nLjb0N31BYRe","status":"succeeded"}

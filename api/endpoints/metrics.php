@@ -45,7 +45,7 @@ try {
                 $metrics['newUsersThisMonth'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
                 // Active users (simplified - count users with recent purchases)
-                $stmt = $db->query("SELECT COUNT(DISTINCT user_id_new) as count FROM purchases WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+                $stmt = $db->query("SELECT COUNT(DISTINCT user_id) as count FROM purchases WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
                 $metrics['activeUsers'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
                 // Total views across all videos
@@ -103,10 +103,10 @@ try {
                 
                 // Subscribers (for now, count unique purchasers of this creator's videos)
                 $stmt = $db->prepare("
-                    SELECT COUNT(DISTINCT p.user_id_new) as count 
+                    SELECT COUNT(DISTINCT p.user_id) as count 
                     FROM purchases p 
                     JOIN videos v ON p.video_id = v.id 
-                    WHERE CAST(v.user_id AS UNSIGNED) = ? AND p.user_id_new IS NOT NULL
+                    WHERE CAST(v.user_id AS UNSIGNED) = ? AND p.user_id IS NOT NULL
                 ");
                 $stmt->execute([$creatorId]);
                 $metrics['subscribers'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
@@ -137,12 +137,12 @@ try {
                 $metrics['totalVideosCount'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
                 // User-specific purchased videos count (status can be empty, null, or 'completed')
-                $stmt = $db->prepare("SELECT COUNT(*) as count FROM purchases WHERE user_id_new = ? AND (status IS NULL OR status = '' OR status = 'completed')");
+                $stmt = $db->prepare("SELECT COUNT(*) as count FROM purchases WHERE user_id = ? AND (status IS NULL OR status = '' OR status = 'completed')");
                 $stmt->execute([$userId]);
                 $metrics['purchasedVideosCount'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
                 // User's total spending (status can be empty, null, or 'completed')
-                $stmt = $db->prepare("SELECT COALESCE(SUM(CAST(amount AS DECIMAL(10,2))), 0) as total FROM purchases WHERE user_id_new = ? AND (status IS NULL OR status = '' OR status = 'completed')");
+                $stmt = $db->prepare("SELECT COALESCE(SUM(CAST(amount AS DECIMAL(10,2))), 0) as total FROM purchases WHERE user_id = ? AND (status IS NULL OR status = '' OR status = 'completed')");
                 $stmt->execute([$userId]);
                 $metrics['totalSpentAmount'] = number_format($stmt->fetch(PDO::FETCH_ASSOC)['total'], 2);
                 

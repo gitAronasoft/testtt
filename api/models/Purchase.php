@@ -8,7 +8,7 @@ class Purchase {
     private $table_name = "purchases";
 
     public $id;
-    public $viewer_id;
+    public $user_id;
     public $video_id;
     public $amount;
     public $payment_method;
@@ -86,7 +86,7 @@ class Purchase {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($row) {
-            $this->viewer_id = $row['viewer_id'];
+            $this->user_id = $row['user_id'];
             $this->video_id = $row['video_id'];
             $this->amount = $row['amount'];
             $this->payment_method = $row['payment_method'];
@@ -104,14 +104,14 @@ class Purchase {
     // Create purchase
     public function create() {
         $query = "INSERT INTO " . $this->table_name . " 
-                  SET user_id_new=:viewer_id, video_id=:video_id, amount=:amount, 
+                  SET user_id=:user_id, video_id=:video_id, amount=:amount, 
                       payment_method=:payment_method, transaction_id=:transaction_id, 
                       status=:status, purchase_date=NOW(), created_at=NOW(), updated_at=NOW()";
 
         $stmt = $this->conn->prepare($query);
 
         // Sanitize
-        $this->viewer_id = htmlspecialchars(strip_tags($this->viewer_id));
+        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
         $this->video_id = htmlspecialchars(strip_tags($this->video_id));
         $this->amount = htmlspecialchars(strip_tags($this->amount));
         $this->payment_method = htmlspecialchars(strip_tags($this->payment_method));
@@ -119,7 +119,7 @@ class Purchase {
         $this->status = htmlspecialchars(strip_tags($this->status));
 
         // Bind values
-        $stmt->bindParam(":viewer_id", $this->viewer_id);
+        $stmt->bindParam(":user_id", $this->user_id);
         $stmt->bindParam(":video_id", $this->video_id);
         $stmt->bindParam(":amount", $this->amount);
         $stmt->bindParam(":payment_method", $this->payment_method);
@@ -137,7 +137,7 @@ class Purchase {
     // Check if user has purchased a video
     public function hasPurchased($viewer_id, $video_id) {
         $query = "SELECT id FROM " . $this->table_name . " 
-                  WHERE user_id_new = :viewer_id AND video_id = :video_id AND status = 'completed' 
+                  WHERE user_id = :viewer_id AND video_id = :video_id AND status = 'completed' 
                   LIMIT 1";
         
         $stmt = $this->conn->prepare($query);

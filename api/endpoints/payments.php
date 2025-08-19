@@ -114,7 +114,7 @@ function handleCreatePaymentIntent($stripeService, $input, $database) {
     try {
         // Check if user already purchased this video
         $db = $database->getConnection();
-        $stmt = $db->prepare("SELECT id FROM purchases WHERE video_id = ? AND user_id_new = ?");
+        $stmt = $db->prepare("SELECT id FROM purchases WHERE video_id = ? AND user_id = ?");
         $stmt->execute([$videoId, $userId]);
         
         if ($stmt->fetch()) {

@@ -304,7 +304,7 @@ class StripeService {
             }
             
             // Check if purchase already exists
-            $stmt = $this->db->prepare("SELECT id FROM purchases WHERE video_id = ? AND user_id_new = ?");
+            $stmt = $this->db->prepare("SELECT id FROM purchases WHERE video_id = ? AND user_id = ?");
             $stmt->execute([$payment['video_id'], $payment['user_id']]);
             $existingPurchase = $stmt->fetch();
             
@@ -315,7 +315,7 @@ class StripeService {
             
             // Create new purchase record
             $stmt = $this->db->prepare("
-                INSERT INTO purchases (video_id, user_id_new, amount, purchased_at, payment_intent_id) 
+                INSERT INTO purchases (video_id, user_id, amount, purchased_at, payment_intent_id) 
                 VALUES (?, ?, ?, NOW(), ?)
             ");
             

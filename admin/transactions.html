@@ -360,13 +360,13 @@
 
             async loadTransactions() {
                 try {
-                    const response = await window.apiService.get('/admin/transactions');
-                    if (response.success) {
+                    const response = await window.apiService.get('/api/admin/transactions');
+                    if (response && response.success) {
                         this.transactions = response.data || [];
                         this.updateMetrics();
                         this.populateTransactionsTable();
                     } else {
-                        console.error('Failed to load transactions:', response.message);
+                        console.error('Failed to load transactions:', response?.message || 'Unknown error');
                         this.showNoTransactions();
                     }
                 } catch (error) {
@@ -423,7 +423,7 @@
 
                 tbody.innerHTML = this.transactions.map(transaction => `
                     <tr>
-                        <td>${new Date(transaction.created_at).toLocaleDateString()}</td>
+                        <td>${this.formatDate(transaction.transaction_date || transaction.created_at)}</td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <div>
@@ -500,6 +500,17 @@
             formatPaymentMethod(method) {
                 if (!method) return 'Unknown';
                 return method.charAt(0).toUpperCase() + method.slice(1);
+            }
+
+            formatDate(dateString) {
+                if (!dateString) return 'N/A';
+                try {
+                    const date = new Date(dateString);
+                    if (isNaN(date.getTime())) return 'Invalid Date';
+                    return date.toLocaleDateString();
+                } catch (error) {
+                    return 'Invalid Date';
+                }
             }
 
             showNoTransactions() {
@@ -639,8 +650,25 @@
             }
 
             async refreshTransactions() {
+                // Show loading indicator
+                const tbody = document.querySelector('#transactionsTable tbody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            Refreshing transactions...
+                        </td>
+                    </tr>
+                `;
+                
+                // Destroy existing DataTable
+                if (this.dataTable) {
+                    this.dataTable.destroy();
+                    this.dataTable = null;
+                }
+                
+                // Reload data and reinitialize table
                 await this.loadTransactions();
-                this.dataTable.clear().destroy();
                 this.initializeDataTable();
             }
 

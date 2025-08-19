@@ -464,10 +464,10 @@
                 showLoadingState();
                 
                 // Load user basic info
-                const response = await fetch(`/api/endpoints/users.php/${userId}`);
-                const result = await response.json();
+                const response = await window.apiService.get(`/api/admin/users?id=${userId}`);
+                const result = response;
                 
-                if (result.success && result.data) {
+                if (result && result.success && result.data) {
                     currentUserData = result.data;
                     populateUserDetails(result.data);
                     
@@ -476,7 +476,7 @@
                     
                     hideLoadingState();
                 } else {
-                    throw new Error(result.message || 'User not found');
+                    throw new Error(result?.message || 'User not found');
                 }
             } catch (error) {
                 console.error('Error loading user details:', error);
@@ -536,28 +536,31 @@
                 let videoCount = 0;
                 let totalViews = 0;
                 try {
-                    const videosResponse = await fetch(`/api/endpoints/videos.php?user_id=${userId}`);
-                    const videosResult = await videosResponse.json();
-                    if (videosResult.success && videosResult.data) {
-                        videoCount = videosResult.data.length;
-                        totalViews = videosResult.data.reduce((sum, video) => sum + (parseInt(video.views) || 0), 0);
+                    const videosResponse = await window.apiService.get(`/api/videos?user_id=${userId}`);
+                    if (videosResponse && videosResponse.success && videosResponse.data) {
+                        videoCount = videosResponse.data.length;
+                        totalViews = videosResponse.data.reduce((sum, video) => sum + (parseInt(video.views) || 0), 0);
                     }
                 } catch (e) {
                     console.log('Videos data not available');
                 }
                 
-                // Load user's purchases
+                // Load user's purchases/transactions
                 let purchaseCount = 0;
                 let totalSpent = 0;
                 try {
-                    const purchasesResponse = await fetch(`/api/endpoints/purchases.php?user_id=${userId}`);
-                    const purchasesResult = await purchasesResponse.json();
-                    if (purchasesResult.success && purchasesResult.data) {
-                        purchaseCount = purchasesResult.data.length;
-                        totalSpent = purchasesResult.data.reduce((sum, purchase) => sum + (parseFloat(purchase.amount) || 0), 0);
+                    const transactionsResponse = await window.apiService.get(`/api/admin/transactions?user_id=${userId}`);
+                    if (transactionsResponse && transactionsResponse.success && transactionsResponse.data) {
+                        const userTransactions = transactionsResponse.data.filter(t => 
+                            t.user_id == userId && t.status === 'succeeded'
+                        );
+                        purchaseCount = userTransactions.length;
+                        totalSpent = userTransactions.reduce((sum, transaction) => 
+                            sum + (parseFloat(transaction.amount) || 0), 0
+                        );
                     }
                 } catch (e) {
-                    console.log('Purchases data not available');
+                    console.log('Transactions data not available');
                 }
                 
                 // Update statistics

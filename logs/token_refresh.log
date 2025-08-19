@@ -116,3 +116,12 @@
 [2025-08-19 09:00:31] [INFO] Starting YouTube token refresh cron job
 [2025-08-19 09:00:31] [INFO] Successfully refreshed token for record ID: 2
 [2025-08-19 09:00:31] [INFO] Cron job completed. Refreshed: 1, Failed: 0
+[2025-08-19 10:00:25] [INFO] Starting YouTube token refresh cron job
+[2025-08-19 10:00:25] [INFO] Successfully refreshed token for record ID: 2
+[2025-08-19 10:00:26] [INFO] Cron job completed. Refreshed: 1, Failed: 0
+[2025-08-19 11:00:30] [INFO] Starting YouTube token refresh cron job
+[2025-08-19 11:00:30] [INFO] Successfully refreshed token for record ID: 2
+[2025-08-19 11:00:31] [INFO] Cron job completed. Refreshed: 1, Failed: 0
+[2025-08-19 12:00:31] [INFO] Starting YouTube token refresh cron job
+[2025-08-19 12:00:31] [INFO] Successfully refreshed token for record ID: 2
+[2025-08-19 12:00:31] [INFO] Cron job completed. Refreshed: 1, Failed: 0

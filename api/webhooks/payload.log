@@ -1,0 +1,75 @@
+[2025-08-19 12:41:23] {
+  "id": "evt_3RxoqrLzvpT6nLjb0JWZTviy",
+  "object": "event",
+  "api_version": "2022-11-15",
+  "created": 1755607282,
+  "data": {
+    "object": {
+      "id": "pi_3RxoqrLzvpT6nLjb0N31BYRe",
+      "object": "payment_intent",
+      "amount": 6000,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 6000,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": null,
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic",
+      "client_secret": "pi_3RxoqrLzvpT6nLjb0N31BYRe_secret_fRcmzGyNymKzqOTvgUDohEKOf",
+      "confirmation_method": "automatic",
+      "created": 1755607281,
+      "currency": "usd",
+      "customer": "cus_StbHvH2YORdR2z",
+      "description": null,
+      "excluded_payment_method_types": null,
+      "invoice": null,
+      "last_payment_error": null,
+      "latest_charge": "ch_3RxoqrLzvpT6nLjb0ld4Foas",
+      "livemode": false,
+      "metadata": {
+        "video_title": "Test 1",
+        "user_id": "24",
+        "video_id": "2",
+        "customer_id": "cus_StbHvH2YORdR2z",
+        "platform": "VideoHub"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": "pm_1RxoqrLzvpT6nLjbAHcEvarE",
+      "payment_method_configuration_details": null,
+      "payment_method_options": {
+        "card": {
+          "installments": null,
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        }
+      },
+      "payment_method_types": [
+        "card"
+      ],
+      "processing": null,
+      "receipt_email": null,
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "succeeded",
+      "transfer_data": null,
+      "transfer_group": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_LDZzsVgCIYkydP",
+    "idempotency_key": "061e1d09-7b74-4f9d-b492-b9a9984de650"
+  },
+  "type": "payment_intent.succeeded"
+}

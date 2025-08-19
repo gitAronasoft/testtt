@@ -279,7 +279,7 @@ class Video {
                     u.name as viewerName
                   FROM purchases p
                   JOIN videos v ON p.video_id = v.id
-                  LEFT JOIN users u ON p.user_id_new = u.id
+                  LEFT JOIN users u ON p.user_id = u.id
                   WHERE v.user_id = :creator_id
                   ORDER BY p.purchase_date DESC";
         
@@ -317,6 +317,48 @@ class Video {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $this->id);
         return $stmt->execute();
+    }
+
+    // Get total count for pagination
+    public function count($filters = []) {
+        $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " v";
+        $conditions = [];
+        $params = [];
+
+        if (isset($filters['uploader_id']) && !empty($filters['uploader_id'])) {
+            $conditions[] = "v.user_id = :uploader_id";
+            $params[':uploader_id'] = $filters['uploader_id'];
+        }
+
+        if (isset($filters['category']) && !empty($filters['category'])) {
+            $conditions[] = "v.category = :category";
+            $params[':category'] = $filters['category'];
+        }
+
+        if (isset($filters['status']) && !empty($filters['status'])) {
+            $conditions[] = "v.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        if (isset($filters['search']) && !empty($filters['search'])) {
+            $conditions[] = "(v.title LIKE :search OR v.description LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+
+        if (!empty($conditions)) {
+            $query .= " WHERE " . implode(" AND ", $conditions);
+        }
+
+        $stmt = $this->conn->prepare($query);
+        
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $row['total'] ?? 0;
     }
 }
 ?>

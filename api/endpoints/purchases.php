@@ -61,7 +61,7 @@ try {
                 $params = [];
                 
                 if ($userId) {
-                    $sql .= " AND p.user_id_new = ?";
+                    $sql .= " AND p.user_id = ?";
                     $params[] = $userId;
                 }
                 
