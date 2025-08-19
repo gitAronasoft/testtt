@@ -34,18 +34,18 @@ try {
                 $stmt = $db->query("SELECT COUNT(*) as count FROM videos");
                 $metrics['totalVideos'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
-                // Total purchases/sales
-                $stmt = $db->query("SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as revenue FROM purchases");
-                $purchaseData = $stmt->fetch(PDO::FETCH_ASSOC);
-                $metrics['totalPurchases'] = $purchaseData['count'];
-                $metrics['totalRevenue'] = number_format($purchaseData['revenue'], 2);
+                // Total purchases/sales from Stripe payments (real data)
+                $stmt = $db->query("SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as revenue FROM stripe_payments WHERE status = 'succeeded'");
+                $stripeData = $stmt->fetch(PDO::FETCH_ASSOC);
+                $metrics['totalPurchases'] = $stripeData['count'];
+                $metrics['totalRevenue'] = number_format($stripeData['revenue'], 2);
                 
                 // New users this month
                 $stmt = $db->query("SELECT COUNT(*) as count FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
                 $metrics['newUsersThisMonth'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
-                // Active users (simplified - count users with recent purchases)
-                $stmt = $db->query("SELECT COUNT(DISTINCT user_id) as count FROM purchases WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+                // Active users (simplified - count users with recent Stripe payments)
+                $stmt = $db->query("SELECT COUNT(DISTINCT user_id) as count FROM stripe_payments WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
                 $metrics['activeUsers'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                 
                 // Total views across all videos

@@ -107,6 +107,73 @@ try {
             }
             break;
             
+        case 'POST':
+            if (strpos($path, '/upload') !== false || strpos($path, '/videos') !== false) {
+                // Handle video upload via YouTube integration
+                $inputData = json_decode(file_get_contents('php://input'), true);
+                
+                if (!$inputData) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid JSON data'
+                    ]);
+                    return;
+                }
+                
+                // Extract video data
+                $title = $inputData['title'] ?? '';
+                $description = $inputData['description'] ?? '';
+                $price = $inputData['price'] ?? 0;
+                $category = $inputData['category'] ?? '';
+                $youtubeId = $inputData['youtube_id'] ?? '';
+                $creatorId = $inputData['creator_id'] ?? $inputData['user_id'] ?? null;
+                
+                if (!$title || !$creatorId) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Title and creator ID are required'
+                    ]);
+                    return;
+                }
+                
+                // Set video properties for creation
+                $video->title = $title;
+                $video->description = $description;
+                $video->user_id = $creatorId;
+                $video->price = $price;
+                $video->category = $category;
+                $video->youtube_id = $youtubeId;
+                $video->status = 'pending'; // Default status
+                
+                if ($video->create()) {
+                    http_response_code(201);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Video created successfully',
+                        'data' => [
+                            'id' => $video->id,
+                            'title' => $video->title,
+                            'status' => 'pending'
+                        ]
+                    ]);
+                } else {
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to create video'
+                    ]);
+                }
+            } else {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Endpoint not found'
+                ]);
+            }
+            break;
+            
         default:
             http_response_code(405);
             echo json_encode([

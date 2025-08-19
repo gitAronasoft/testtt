@@ -26,49 +26,59 @@ class Transaction {
         $this->conn = $db;
     }
 
-    // Get all transactions with optional filters
+    // Get all transactions with optional filters - ONLY Stripe transactions for admin
     public function read($filters = []) {
-        $query = "SELECT * FROM " . $this->view_name;
+        // For admin panel, show only Stripe transactions with complete user info
+        $query = "SELECT 
+            sp.id,
+            sp.payment_intent_id as transaction_id,
+            sp.video_id,
+            sp.user_id,
+            sp.amount,
+            sp.status,
+            sp.created_at as transaction_date,
+            sp.metadata,
+            u.name as user_name,
+            u.email as user_email,
+            v.title as video_title,
+            v.thumbnail as video_thumbnail,
+            'stripe' as transaction_type,
+            'card' as payment_method,
+            sp.payment_intent_id
+        FROM stripe_payments sp
+        LEFT JOIN users u ON sp.user_id = u.id
+        LEFT JOIN videos v ON sp.video_id = v.id";
+        
         $conditions = [];
         $params = [];
 
         if (isset($filters['user_id']) && !empty($filters['user_id'])) {
-            $conditions[] = "user_id = :user_id";
+            $conditions[] = "sp.user_id = :user_id";
             $params[':user_id'] = $filters['user_id'];
         }
 
         if (isset($filters['video_id']) && !empty($filters['video_id'])) {
-            $conditions[] = "video_id = :video_id";
+            $conditions[] = "sp.video_id = :video_id";
             $params[':video_id'] = $filters['video_id'];
         }
 
         if (isset($filters['status']) && !empty($filters['status'])) {
-            $conditions[] = "status = :status";
+            $conditions[] = "sp.status = :status";
             $params[':status'] = $filters['status'];
         }
 
-        if (isset($filters['payment_method']) && !empty($filters['payment_method'])) {
-            $conditions[] = "payment_method = :payment_method";
-            $params[':payment_method'] = $filters['payment_method'];
-        }
-
-        if (isset($filters['transaction_type']) && !empty($filters['transaction_type'])) {
-            $conditions[] = "transaction_type = :transaction_type";
-            $params[':transaction_type'] = $filters['transaction_type'];
-        }
-
         if (isset($filters['date_from']) && !empty($filters['date_from'])) {
-            $conditions[] = "transaction_date >= :date_from";
+            $conditions[] = "sp.created_at >= :date_from";
             $params[':date_from'] = $filters['date_from'];
         }
 
         if (isset($filters['date_to']) && !empty($filters['date_to'])) {
-            $conditions[] = "transaction_date <= :date_to";
+            $conditions[] = "sp.created_at <= :date_to";
             $params[':date_to'] = $filters['date_to'];
         }
 
         if (isset($filters['search']) && !empty($filters['search'])) {
-            $conditions[] = "(video_title LIKE :search OR user_name LIKE :search OR payment_intent_id LIKE :search)";
+            $conditions[] = "(v.title LIKE :search OR u.name LIKE :search OR u.email LIKE :search OR sp.payment_intent_id LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
 
@@ -76,7 +86,7 @@ class Transaction {
             $query .= " WHERE " . implode(" AND ", $conditions);
         }
 
-        $query .= " ORDER BY transaction_date DESC";
+        $query .= " ORDER BY sp.created_at DESC";
 
         // Add pagination
         if (isset($filters['limit'])) {
@@ -96,32 +106,33 @@ class Transaction {
         return $stmt;
     }
 
-    // Get transaction statistics
+    // Get transaction statistics - ONLY for Stripe transactions
     public function getStats($filters = []) {
         $baseQuery = "SELECT 
             COUNT(*) as total_transactions,
             COALESCE(SUM(amount), 0) as total_amount,
-            COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0) as completed_amount,
-            COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_transactions,
+            COALESCE(SUM(CASE WHEN status = 'succeeded' THEN amount ELSE 0 END), 0) as completed_amount,
+            COUNT(CASE WHEN status = 'succeeded' THEN 1 END) as completed_transactions,
             COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_transactions,
-            COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_transactions
-            FROM " . $this->view_name;
+            COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_transactions,
+            COUNT(CASE WHEN status = 'canceled' THEN 1 END) as canceled_transactions
+            FROM stripe_payments sp";
 
         $conditions = [];
         $params = [];
 
         if (isset($filters['user_id']) && !empty($filters['user_id'])) {
-            $conditions[] = "user_id = :user_id";
+            $conditions[] = "sp.user_id = :user_id";
             $params[':user_id'] = $filters['user_id'];
         }
 
         if (isset($filters['date_from']) && !empty($filters['date_from'])) {
-            $conditions[] = "transaction_date >= :date_from";
+            $conditions[] = "sp.created_at >= :date_from";
             $params[':date_from'] = $filters['date_from'];
         }
 
         if (isset($filters['date_to']) && !empty($filters['date_to'])) {
-            $conditions[] = "transaction_date <= :date_to";
+            $conditions[] = "sp.created_at <= :date_to";
             $params[':date_to'] = $filters['date_to'];
         }
 
@@ -137,6 +148,60 @@ class Transaction {
         
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Count transactions for pagination - ONLY Stripe transactions
+    public function count($filters = []) {
+        $query = "SELECT COUNT(*) as total FROM stripe_payments sp";
+        $conditions = [];
+        $params = [];
+
+        if (isset($filters['user_id']) && !empty($filters['user_id'])) {
+            $conditions[] = "sp.user_id = :user_id";
+            $params[':user_id'] = $filters['user_id'];
+        }
+
+        if (isset($filters['video_id']) && !empty($filters['video_id'])) {
+            $conditions[] = "sp.video_id = :video_id";
+            $params[':video_id'] = $filters['video_id'];
+        }
+
+        if (isset($filters['status']) && !empty($filters['status'])) {
+            $conditions[] = "sp.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+
+        if (isset($filters['date_from']) && !empty($filters['date_from'])) {
+            $conditions[] = "sp.created_at >= :date_from";
+            $params[':date_from'] = $filters['date_from'];
+        }
+
+        if (isset($filters['date_to']) && !empty($filters['date_to'])) {
+            $conditions[] = "sp.created_at <= :date_to";
+            $params[':date_to'] = $filters['date_to'];
+        }
+
+        if (isset($filters['search']) && !empty($filters['search'])) {
+            $query = "SELECT COUNT(*) as total FROM stripe_payments sp 
+                     LEFT JOIN users u ON sp.user_id = u.id 
+                     LEFT JOIN videos v ON sp.video_id = v.id";
+            $conditions[] = "(v.title LIKE :search OR u.name LIKE :search OR u.email LIKE :search OR sp.payment_intent_id LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+
+        if (!empty($conditions)) {
+            $query .= " WHERE " . implode(" AND ", $conditions);
+        }
+
+        $stmt = $this->conn->prepare($query);
+        
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'];
     }
 
     // Get recent transactions
@@ -192,36 +257,6 @@ class Transaction {
         return false;
     }
 
-    // Count total transactions
-    public function count($filters = []) {
-        $query = "SELECT COUNT(*) as total FROM " . $this->view_name;
-        $conditions = [];
-        $params = [];
 
-        if (isset($filters['user_id']) && !empty($filters['user_id'])) {
-            $conditions[] = "user_id = :user_id";
-            $params[':user_id'] = $filters['user_id'];
-        }
-
-        if (isset($filters['status']) && !empty($filters['status'])) {
-            $conditions[] = "status = :status";
-            $params[':status'] = $filters['status'];
-        }
-
-        if (!empty($conditions)) {
-            $query .= " WHERE " . implode(" AND ", $conditions);
-        }
-
-        $stmt = $this->conn->prepare($query);
-        
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
-        }
-        
-        $stmt->execute();
-        
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['total'] ?? 0;
-    }
 }
 ?>

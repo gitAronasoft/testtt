@@ -117,7 +117,7 @@ class AdminManager {
             if (window.apiService) {
                 // Load admin metrics from new metrics API
                 try {
-                    const metricsResponse = await window.apiService.get('/api/endpoints/metrics.php?type=admin');
+                    const metricsResponse = await window.apiService.get('/metrics?type=admin');
                     if (metricsResponse.success) {
                         const metrics = metricsResponse.data;
                         this.updateDashboardMetrics(metrics);

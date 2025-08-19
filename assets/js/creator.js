@@ -149,18 +149,18 @@ class CreatorManager {
                     if (currentPage === 'dashboard.html') {
                         // Load all data for dashboard
                         [metricsResponse, videosResponse, earningsResponse] = await Promise.all([
-                            window.apiService.get(`/api/endpoints/metrics.php?type=creator&creator_id=${creatorId}`),
-                            window.apiService.get(`/api/endpoints/creator.php/videos?uploader_id=${creatorId}`),
-                            window.apiService.get(`/api/endpoints/creator.php/earnings?creator_id=${creatorId}`)
+                            window.apiService.get(`/metrics?type=creator&creator_id=${creatorId}`),
+                            window.apiService.get(`/creator/videos?uploader_id=${creatorId}`),
+                            window.apiService.get(`/creator/earnings?creator_id=${creatorId}`)
                         ]);
                     } else if (currentPage === 'videos.html') {
                         // Load only videos for videos page
-                        videosResponse = await window.apiService.get(`/api/endpoints/creator.php/videos?uploader_id=${creatorId}`);
+                        videosResponse = await window.apiService.get(`/creator/videos?uploader_id=${creatorId}`);
                         metricsResponse = { success: false };
                         earningsResponse = { data: { earnings: [] } };
                     } else if (currentPage === 'earnings.html') {
                         // Load only earnings for earnings page
-                        earningsResponse = await window.apiService.get(`/api/endpoints/creator.php/earnings?creator_id=${creatorId}`);
+                        earningsResponse = await window.apiService.get(`/creator/earnings?creator_id=${creatorId}`);
                         metricsResponse = { success: false };
                         videosResponse = { data: { videos: [] } };
                     } else {
@@ -489,7 +489,92 @@ class CreatorManager {
     }
 
     showUploadModal() {
-        console.log('Show upload modal');
+        const modal = document.getElementById('uploadModal');
+        if (modal) {
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+        }
+    }
+
+    async handleVideoUpload() {
+        const uploadForm = document.getElementById('uploadForm');
+        const formData = new FormData(uploadForm);
+        
+        // Validate form first
+        if (this.uploadValidator && !this.uploadValidator.validateForm()) {
+            this.showNotification('Please fix the errors below', 'error');
+            return;
+        }
+        
+        const title = document.getElementById('videoTitle').value;
+        const description = document.getElementById('videoDescription').value;
+        const price = document.getElementById('videoPrice').value;
+        const category = document.getElementById('videoCategory')?.value || '';
+        
+        // Get current user from session
+        const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+        const creatorId = userSession.id;
+        
+        if (!creatorId) {
+            this.showNotification('User session not found. Please log in again.', 'error');
+            return;
+        }
+        
+        // Show upload progress
+        this.showNotification('Creating video record...', 'info');
+        
+        try {
+            // Create video record in database
+            const videoData = {
+                title: title,
+                description: description,
+                price: parseFloat(price),
+                category: category,
+                creator_id: creatorId,
+                youtube_id: '', // Will be updated after YouTube upload
+                status: 'pending'
+            };
+            
+            const response = await window.apiService.post('/creator/upload', videoData);
+            
+            if (response.success) {
+                this.showNotification('Video uploaded successfully!', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                if (modal) modal.hide();
+                
+                // Reset form
+                uploadForm.reset();
+                
+                // Reload videos data
+                await this.loadDashboardData();
+                this.loadVideosGrid();
+                
+            } else {
+                this.showNotification(response.message || 'Upload failed', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.showNotification('Upload failed: ' + error.message, 'error');
+        }
+    }
+    
+    showNotification(message, type = 'info') {
+        if (window.notificationManager) {
+            if (type === 'error') {
+                window.notificationManager.showError(message);
+            } else if (type === 'success') {
+                window.notificationManager.showSuccess(message);
+            } else {
+                window.notificationManager.showInfo(message);
+            }
+        } else if (window.commonUtils) {
+            window.commonUtils.showToast(message, type);
+        } else {
+            alert(message);
+        }
     }
 
     playVideo(videoId) {

@@ -15,6 +15,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 $original_path = $path;
 $path = preg_replace('/.*\/api/', '', $path);
 
+// Also handle direct /video-platform/creator or /video-platform/metrics patterns
+if (preg_match('/.*\/video-platform\/(.*)/', $original_path, $matches)) {
+    $path = '/' . $matches[1];
+}
+
 // If path is empty, set to root
 if (empty($path)) {
     $path = '/';
@@ -44,13 +49,19 @@ switch (true) {
         require_once 'endpoints/purchases.php';
         break;
         
-    // Creator endpoints
+    // Creator endpoints (handle both /creator and /api/creator patterns)
     case preg_match('/^\/creator/', $path):
+    case preg_match('/^\/api\/creator/', $path):
+    case (strpos($request_uri, '/creator/') !== false):
         require_once 'endpoints/creator.php';
         break;
         
-    // Metrics endpoints
+    // Metrics endpoints (handle multiple routing patterns)
     case preg_match('/^\/metrics/', $path):
+    case preg_match('/^\/api\/metrics/', $path):
+    case preg_match('/^\/endpoints\/metrics/', $path):
+    case (strpos($request_uri, 'metrics.php') !== false):
+    case (strpos($request_uri, '/metrics') !== false):
         require_once 'endpoints/metrics.php';
         break;
         
