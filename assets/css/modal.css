@@ -1,0 +1,504 @@
+
+/* VideoHub - Modal Styles */
+
+/* ===== MODERN SLEEK MODALS ===== */
+.modal-content {
+    border: none !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.08), 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+    backdrop-filter: blur(20px) !important;
+}
+
+.modal-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 2rem 2rem 1.5rem !important;
+    position: relative !important;
+}
+
+.modal-header::before {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 2rem !important;
+    right: 2rem !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, #e2e8f0, transparent) !important;
+}
+
+.modal-title {
+    font-weight: 600 !important;
+    font-size: 1.25rem !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    letter-spacing: -0.01em !important;
+    line-height: 1.4 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.modal-title i {
+    margin-right: 0.625rem !important;
+    font-size: 1.125rem !important;
+    opacity: 0.7 !important;
+    color: #6366f1 !important;
+}
+
+.modal-body {
+    padding: 1.5rem 2rem 2rem !important;
+    background: #ffffff !important;
+    line-height: 1.6 !important;
+}
+
+.modal-footer {
+    background: #ffffff !important;
+    border-top: 1px solid #f1f5f9 !important;
+    padding: 1.5rem 2rem 2rem !important;
+    display: flex !important;
+    gap: 0.75rem !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+}
+
+/* THEME COLORED HEADERS */
+.modal-header.bg-primary {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca) !important;
+    border-color: #0d6efd !important;
+    color: #ffffff !important;
+}
+
+.modal-header.bg-success {
+    background: linear-gradient(135deg, #198754, #146c43) !important;
+    border-color: #198754 !important;
+    color: #ffffff !important;
+}
+
+.modal-header.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #ffca2c) !important;
+    border-color: #ffc107 !important;
+    color: #000000 !important;
+}
+
+.modal-header.bg-danger {
+    background: linear-gradient(135deg, #dc3545, #b02a37) !important;
+    border-color: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+.modal-header.bg-info {
+    background: linear-gradient(135deg, #0dcaf0, #3dd5f3) !important;
+    border-color: #0dcaf0 !important;
+    color: #000000 !important;
+}
+
+/* MODERN MODAL TYPOGRAPHY & FORMS */
+.modal .form-label {
+    font-weight: 600 !important;
+    color: #374151 !important;
+    margin-bottom: 0.5rem !important;
+    font-size: 0.875rem !important;
+    letter-spacing: 0.005em !important;
+}
+
+.modal .form-control,
+.modal .form-select {
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 400 !important;
+    transition: all 0.2s ease !important;
+    background-color: #ffffff !important;
+    line-height: 1.5 !important;
+    color: #374151 !important;
+}
+
+.modal .form-control:focus,
+.modal .form-select:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+    outline: none !important;
+}
+
+.modal .input-group-text {
+    background: #f9fafb !important;
+    border: 1px solid #d1d5db !important;
+    color: #6b7280 !important;
+    border-radius: 8px !important;
+    font-weight: 400 !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.modal p {
+    font-size: 0.875rem !important;
+    line-height: 1.6 !important;
+    color: #6b7280 !important;
+    margin-bottom: 1rem !important;
+}
+
+.modal h6 {
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    color: #374151 !important;
+    margin-bottom: 0.5rem !important;
+    letter-spacing: 0 !important;
+}
+
+.modal .row {
+    margin-bottom: 1rem !important;
+}
+
+.modal .mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.modal .mb-4 {
+    margin-bottom: 1.5rem !important;
+}
+
+.modal hr {
+    margin: 1.5rem 0 !important;
+    border: none !important;
+    height: 1px !important;
+    background: #f1f5f9 !important;
+}
+
+.modal .btn {
+    padding: 0.625rem 1.5rem !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    font-size: 0.875rem !important;
+    border: 1px solid transparent !important;
+    transition: all 0.15s ease !important;
+    letter-spacing: 0 !important;
+    min-width: 80px !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.modal .btn:hover {
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.modal .btn:active {
+    transform: translateY(1px) !important;
+}
+
+.modal .btn::before {
+    display: none !important;
+}
+
+/* MODERN CARD & CONTENT STYLING */
+.modal .alert {
+    border-radius: 12px !important;
+    border: none !important;
+    padding: 1.25rem 1.5rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    margin-bottom: 1.5rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.modal .card {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+    margin-bottom: 1.25rem !important;
+    overflow: hidden !important;
+}
+
+.modal .card-body {
+    padding: 1.5rem !important;
+}
+
+.modal .badge {
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 8px !important;
+    letter-spacing: 0.025em !important;
+}
+
+.modal .row {
+    margin-bottom: 1.25rem !important;
+}
+
+.modal .col-md-6:not(:last-child) {
+    margin-bottom: 1rem !important;
+}
+
+.modal hr {
+    margin: 2rem 0 !important;
+    border: none !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, #e2e8f0, transparent) !important;
+}
+
+/* RESPONSIVE SPACING */
+@media (max-width: 768px) {
+    .modal-body {
+        padding: 1.5rem 1.25rem !important;
+    }
+    
+    .modal-header {
+        padding: 1.5rem 1.25rem 1rem !important;
+    }
+    
+    .modal-footer {
+        padding: 1rem 1.25rem 1.5rem !important;
+        flex-direction: column !important;
+    }
+    
+    .modal .btn {
+        width: 100% !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .modal .btn:last-child {
+        margin-bottom: 0 !important;
+    }
+}
+
+.modal .alert-light {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.modal .alert-warning {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fcd34d !important;
+}
+
+/* CLEAN UPLOAD AND INTERACTION AREAS */
+.upload-area {
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+    border-radius: 12px !important;
+    border: 2px dashed #d1d5db !important;
+    background-color: #f9fafb !important;
+    padding: 3rem 2rem !important;
+    text-align: center !important;
+}
+
+.upload-area:hover {
+    background-color: #f0f9ff !important;
+    border-color: #6366f1 !important;
+}
+
+.modal .alert {
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 1rem 1.25rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 400 !important;
+    margin-bottom: 1.5rem !important;
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    border-left: 4px solid #e2e8f0 !important;
+}
+
+.modal .alert-warning {
+    background-color: #fffbeb !important;
+    color: #92400e !important;
+    border-left-color: #f59e0b !important;
+}
+
+.modal .alert-info {
+    background-color: #eff6ff !important;
+    color: #1e40af !important;
+    border-left-color: #3b82f6 !important;
+}
+
+.modal .alert-success {
+    background-color: #f0fdf4 !important;
+    color: #166534 !important;
+    border-left-color: #10b981 !important;
+}
+
+.modal .alert-danger {
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+    border-left-color: #ef4444 !important;
+}
+
+/* MODAL BUTTONS STYLING */
+.modal .btn-primary {
+    background: #6366f1 !important;
+    color: #ffffff !important;
+    border-color: #6366f1 !important;
+}
+
+.modal .btn-primary:hover {
+    background: #5b5cf4 !important;
+    border-color: #5b5cf4 !important;
+}
+
+.modal .btn-success {
+    background: #10b981 !important;
+    color: #ffffff !important;
+    border-color: #10b981 !important;
+}
+
+.modal .btn-success:hover {
+    background: #059669 !important;
+    border-color: #059669 !important;
+}
+
+.modal .btn-warning {
+    background: #f59e0b !important;
+    color: #ffffff !important;
+    border-color: #f59e0b !important;
+}
+
+.modal .btn-warning:hover {
+    background: #d97706 !important;
+    border-color: #d97706 !important;
+}
+
+.modal .btn-danger {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #ef4444 !important;
+}
+
+.modal .btn-danger:hover {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+}
+
+.modal .btn-secondary {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+    border: 1px solid #d1d5db !important;
+}
+
+.modal .btn-secondary:hover {
+    background: #e5e7eb !important;
+    border-color: #d1d5db !important;
+}
+
+.modal .btn-outline-secondary {
+    background: transparent !important;
+    color: #6b7280 !important;
+    border: 1px solid #d1d5db !important;
+}
+
+.modal .btn-outline-secondary:hover {
+    background: #f9fafb !important;
+    color: #374151 !important;
+    border-color: #d1d5db !important;
+}
+
+/* Modal sizing for different screens */
+@media (max-width: 768px) {
+    .modal-xl {
+        max-width: 95% !important;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem !important;
+    }
+}
+
+/* Video player modal enhancements */
+.modal-fullscreen .modal-content {
+    border-radius: 0 !important;
+}
+
+.modal-fullscreen .modal-body {
+    padding: 0 !important;
+    background-color: #000 !important;
+}
+
+/* GRADIENT BACKGROUNDS FOR CARDS */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%) !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%) !important;
+}
+
+.bg-gradient-danger {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%) !important;
+}
+
+/* UTILITY CLASSES */
+.tracking-wide {
+    letter-spacing: 0.05em !important;
+}
+
+.icon-wrapper {
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.icon-circle {
+    transition: all 0.3s ease !important;
+}
+
+.stat-card:hover .icon-circle {
+    transform: scale(1.1) !important;
+}
+
+.info-card {
+    transition: all 0.3s ease !important;
+    cursor: default !important;
+}
+
+.info-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* MODAL BACKDROP */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/* Loading state for buttons in modals */
+.btn-loading {
+    position: relative !important;
+    color: transparent !important;
+}
+
+.btn-loading:after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: button-loading-spinner 0.6s ease infinite;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+    to {
+        transform: rotate(1turn);
+    }
+}

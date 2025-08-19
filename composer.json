@@ -1,0 +1,15 @@
+{
+    "require": {
+        "phpmailer/phpmailer": "^6.10",
+        "google/apiclient": "^2.15.0",
+         "stripe/stripe-php": "^17.5"
+    },
+    "scripts": {
+        "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
+    },
+    "extra": {
+        "google/apiclient-services": [          
+            "YouTube"
+        ]
+    }
+}

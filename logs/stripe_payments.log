@@ -1,0 +1,8 @@
+[2025-08-19 06:44:07] Created new customer | Data: {"customer_id":"cus_StUNnVhJKVVrKo","user_id":8,"email":"viewer@videohub.com"}
+[2025-08-19 06:44:07] Creating Payment Intent | Data: {"amount":40,"currency":"usd"}
+[2025-08-19 06:44:07] Payment Intent with customer | Data: {"customer_id":"cus_StUNnVhJKVVrKo"}
+[2025-08-19 06:44:08] Payment Intent created successfully | Data: {"id":"pi_3RxhP2LzvpT6nLjb1drHYKd4"}
+[2025-08-19 06:44:08] Payment record stored | Data: {"payment_id":"1","payment_intent_id":"pi_3RxhP2LzvpT6nLjb1drHYKd4"}
+[2025-08-19 06:44:12] Payment confirmed | Data: {"payment_intent_id":"pi_3RxhP2LzvpT6nLjb1drHYKd4","status":"succeeded"}
+[2025-08-19 06:44:13] Purchase record created | Data: {"purchase_id":"1","payment_intent_id":"pi_3RxhP2LzvpT6nLjb1drHYKd4"}
+[2025-08-19 06:44:13] Payment status updated | Data: {"payment_intent_id":"pi_3RxhP2LzvpT6nLjb1drHYKd4","status":"succeeded"}
