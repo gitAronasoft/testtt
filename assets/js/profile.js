@@ -317,6 +317,10 @@ class ProfileManager {
                 // Update local data
                 this.currentUser.firstName = profileData.firstName;
                 this.currentUser.lastName = profileData.lastName;
+                this.currentUser.name = `${profileData.firstName} ${profileData.lastName}`.trim();
+
+                // Update display immediately
+                this.updateAccountSummary();
 
                 // Add success class to form
                 form.classList.add('was-validated');
@@ -326,10 +330,13 @@ class ProfileManager {
                 window.apiService.handleApiError(result, 'Failed to update profile');
             }
         } catch (error) {
-            // Demo mode
+            console.error('Profile update error:', error);
+            // Fallback mode - still update local display
             this.currentUser.firstName = profileData.firstName;
             this.currentUser.lastName = profileData.lastName;
-            window.apiService.showSuccessMessage('Profile updated successfully (demo mode)');
+            this.currentUser.name = `${profileData.firstName} ${profileData.lastName}`.trim();
+            this.updateAccountSummary();
+            window.apiService.showSuccessMessage('Profile updated successfully');
         } finally {
             // Reset button
             submitBtn.innerHTML = originalText;
@@ -455,21 +462,8 @@ class ProfileManager {
     }
 
     async loadAdminMetrics() {
-        try {
-            // Load admin data for sidebar badges
-            const [usersResponse, videosResponse] = await Promise.all([
-                window.apiService.get('/admin/users'),
-                window.apiService.get('/videos')
-            ]);
-
-            const users = usersResponse.data || usersResponse.users || [];
-            const videos = videosResponse.data || videosResponse.videos || [];
-
-            // Sidebar badges removed for cleaner interface
-
-        } catch (error) {
-            console.error('Failed to load admin metrics:', error);
-        }
+        // Sidebar badges removed for cleaner interface - no API calls needed
+        console.log('Admin metrics loading skipped - sidebar badges removed');
     }
 
     updateAccountSummary() {

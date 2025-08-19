@@ -253,7 +253,13 @@
     }
 
     async updateUserProfile(profileData, userdata) {
-        return this.put(`/api/users/profile/${userdata.id}`, profileData);
+        // Transform firstName/lastName to name field for backend compatibility
+        const backendData = {
+            name: `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim()
+        };
+        
+        // Use correct endpoint that matches backend routing
+        return this.put(`/api/users/${userdata.id}`, backendData);
     }
 
     async getUsers(params = {}) {

@@ -54,6 +54,12 @@ switch (true) {
         require_once 'endpoints/metrics.php';
         break;
         
+    // Transactions endpoints (both admin and viewer)
+    case preg_match('/^\/transactions/', $path):
+    case preg_match('/^\/admin\/transactions/', $path):
+        require_once 'endpoints/transactions.php';
+        break;
+        
     // Admin endpoints
     case preg_match('/^\/admin/', $path):
         require_once 'endpoints/admin.php';

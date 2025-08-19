@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Transactions - VideoHub Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background-color: white;
+            border-right: 1px solid #dee2e6;
+        }
+        .nav-link {
+            color: #495057;
+            border-radius: 5px;
+            margin: 2px 0;
+        }
+        .nav-link:hover {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .card {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .navbar {
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+        }
+        .status-succeeded {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-failed {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-canceled {
+            background-color: #e2e3e5;
+            color: #6c757d;
+        }
+        .table-responsive {
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .metric-card {
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-shield-alt me-2"></i>VideoHub Admin
+            </span>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i>Admin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showLogoutConfirm()"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="users.html">
+                                <i class="fas fa-users me-2"></i>Users
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="videos.html">
+                                <i class="fas fa-video me-2"></i>Videos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="transactions.html">
+                                <i class="fas fa-receipt me-2"></i>Transactions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="profile.html">
+                                <i class="fas fa-cog me-2"></i>Settings
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-3">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">All Transactions</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn btn-outline-primary" onclick="exportTransactions()">
+                            <i class="fas fa-download me-1"></i>Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transaction Metrics -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-2">
+                        <div class="card metric-card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Successful
+                                </h5>
+                                <h3 class="card-text" id="successfulCount">-</h3>
+                                <small class="text-muted" id="successfulAmount">$0.00</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card metric-card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-warning">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Pending
+                                </h5>
+                                <h3 class="card-text" id="pendingCount">-</h3>
+                                <small class="text-muted" id="pendingAmount">$0.00</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card metric-card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-danger">
+                                    <i class="fas fa-times-circle me-1"></i>
+                                    Failed
+                                </h5>
+                                <h3 class="card-text" id="failedCount">-</h3>
+                                <small class="text-muted" id="failedAmount">$0.00</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card metric-card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-secondary">
+                                    <i class="fas fa-ban me-1"></i>
+                                    Canceled
+                                </h5>
+                                <h3 class="card-text" id="canceledCount">-</h3>
+                                <small class="text-muted" id="canceledAmount">$0.00</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card metric-card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">
+                                    <i class="fas fa-dollar-sign me-1"></i>
+                                    Total Revenue
+                                </h5>
+                                <h3 class="card-text" id="totalRevenue">-</h3>
+                                <small class="text-muted" id="totalTransactions">0 transactions</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card metric-card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-info">
+                                    <i class="fas fa-percentage me-1"></i>
+                                    Success Rate
+                                </h5>
+                                <h3 class="card-text" id="successRate">-</h3>
+                                <small class="text-muted">conversion rate</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Filters -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0"><i class="fas fa-filter me-2"></i>Advanced Filters</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="statusFilter">
+                                    <option value="">All Statuses</option>
+                                    <option value="succeeded">Successful</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="canceled">Canceled</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Date Range</label>
+                                <select class="form-select" id="dateFilter">
+                                    <option value="">All Time</option>
+                                    <option value="today">Today</option>
+                                    <option value="week">This Week</option>
+                                    <option value="month">This Month</option>
+                                    <option value="quarter">This Quarter</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Amount Range</label>
+                                <select class="form-select" id="amountFilter">
+                                    <option value="">Any Amount</option>
+                                    <option value="0-10">$0 - $10</option>
+                                    <option value="10-50">$10 - $50</option>
+                                    <option value="50-100">$50 - $100</option>
+                                    <option value="100+">$100+</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Actions</label>
+                                <div class="d-grid">
+                                    <button class="btn btn-outline-primary" onclick="refreshTransactions()">
+                                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-list me-2"></i>All Platform Transactions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="transactionsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>User</th>
+                                        <th>Video</th>
+                                        <th>Amount</th>
+                                        <th>Payment Method</th>
+                                        <th>Status</th>
+                                        <th>Transaction ID</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                            Loading transactions...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Transaction Details Modal -->
+    <div class="modal fade" id="transactionDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-receipt me-2"></i>Transaction Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="transactionDetailsContent">
+                        <!-- Content will be loaded dynamically -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="refundTransaction()">
+                        <i class="fas fa-undo me-1"></i>Process Refund
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    
+    <!-- Core Config -->
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/global-state.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/auth-manager.js"></script>
+    <script src="../assets/js/common.js"></script>
+    <script src="../assets/js/admin.js"></script>
+    
+    <script>
+        class AdminTransactions {
+            constructor() {
+                this.transactions = [];
+                this.dataTable = null;
+                this.currentTransaction = null;
+                this.init();
+            }
+
+            async init() {
+                // Check authentication
+                const session = window.commonUtils?.getUserSession();
+                if (!session) {
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
+                
+                await this.loadTransactions();
+                this.initializeDataTable();
+                this.bindEvents();
+            }
+
+            async loadTransactions() {
+                try {
+                    const response = await window.apiService.get('/admin/transactions');
+                    if (response.success) {
+                        this.transactions = response.data || [];
+                        this.updateMetrics();
+                        this.populateTransactionsTable();
+                    } else {
+                        console.error('Failed to load transactions:', response.message);
+                        this.showNoTransactions();
+                    }
+                } catch (error) {
+                    console.error('Error loading transactions:', error);
+                    this.showNoTransactions();
+                }
+            }
+
+            updateMetrics() {
+                const successful = this.transactions.filter(t => t.status === 'succeeded');
+                const pending = this.transactions.filter(t => t.status === 'pending');
+                const failed = this.transactions.filter(t => t.status === 'failed');
+                const canceled = this.transactions.filter(t => t.status === 'canceled');
+
+                const successfulAmount = successful.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+                const pendingAmount = pending.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+                const failedAmount = failed.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+                const canceledAmount = canceled.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
+                const successRate = this.transactions.length > 0 ? 
+                    Math.round((successful.length / this.transactions.length) * 100) : 0;
+
+                document.getElementById('successfulCount').textContent = successful.length;
+                document.getElementById('pendingCount').textContent = pending.length;
+                document.getElementById('failedCount').textContent = failed.length;
+                document.getElementById('canceledCount').textContent = canceled.length;
+
+                document.getElementById('successfulAmount').textContent = '$' + successfulAmount.toFixed(2);
+                document.getElementById('pendingAmount').textContent = '$' + pendingAmount.toFixed(2);
+                document.getElementById('failedAmount').textContent = '$' + failedAmount.toFixed(2);
+                document.getElementById('canceledAmount').textContent = '$' + canceledAmount.toFixed(2);
+
+                document.getElementById('totalRevenue').textContent = '$' + successfulAmount.toFixed(2);
+                document.getElementById('totalTransactions').textContent = this.transactions.length + ' transactions';
+                document.getElementById('successRate').textContent = successRate + '%';
+            }
+
+            populateTransactionsTable() {
+                const tbody = document.querySelector('#transactionsTable tbody');
+                
+                if (this.transactions.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                                    <p>No transactions found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = this.transactions.map(transaction => `
+                    <tr>
+                        <td>${new Date(transaction.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div>
+                                    <div class="fw-semibold">${transaction.user_name || 'Unknown User'}</div>
+                                    <small class="text-muted">${transaction.user_email || 'No email'}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div>
+                                    <div class="fw-semibold">${transaction.video_title || 'Unknown Video'}</div>
+                                    <small class="text-muted">ID: ${transaction.video_id}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="fw-semibold">$${parseFloat(transaction.amount || 0).toFixed(2)}</td>
+                        <td>
+                            <i class="fab fa-cc-${this.getPaymentIcon(transaction.payment_method)} me-1"></i>
+                            ${this.formatPaymentMethod(transaction.payment_method)}
+                        </td>
+                        <td>
+                            <span class="badge status-badge status-${transaction.status}">
+                                ${this.getStatusIcon(transaction.status)} ${this.formatStatus(transaction.status)}
+                            </span>
+                        </td>
+                        <td>
+                            <small class="font-monospace">${transaction.transaction_id || transaction.payment_intent_id || 'N/A'}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="adminTransactions.viewDetails('${transaction.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                ${transaction.status === 'succeeded' ? `
+                                <button class="btn btn-outline-warning" onclick="adminTransactions.initiateRefund('${transaction.id}')">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            getStatusIcon(status) {
+                const icons = {
+                    'succeeded': '<i class="fas fa-check"></i>',
+                    'failed': '<i class="fas fa-times"></i>',
+                    'pending': '<i class="fas fa-clock"></i>',
+                    'canceled': '<i class="fas fa-ban"></i>'
+                };
+                return icons[status] || '<i class="fas fa-question"></i>';
+            }
+
+            formatStatus(status) {
+                const statuses = {
+                    'succeeded': 'Successful',
+                    'failed': 'Failed',
+                    'pending': 'Pending',
+                    'canceled': 'Canceled'
+                };
+                return statuses[status] || status;
+            }
+
+            getPaymentIcon(method) {
+                if (!method) return 'generic';
+                if (method.includes('visa')) return 'visa';
+                if (method.includes('mastercard')) return 'mastercard';
+                if (method.includes('amex')) return 'amex';
+                return 'generic';
+            }
+
+            formatPaymentMethod(method) {
+                if (!method) return 'Unknown';
+                return method.charAt(0).toUpperCase() + method.slice(1);
+            }
+
+            showNoTransactions() {
+                const tbody = document.querySelector('#transactionsTable tbody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                <p>Unable to load transactions</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            initializeDataTable() {
+                if (this.dataTable) {
+                    this.dataTable.destroy();
+                }
+
+                this.dataTable = $('#transactionsTable').DataTable({
+                    pageLength: 25,
+                    order: [[0, 'desc']], // Sort by date, newest first
+                    columnDefs: [
+                        { orderable: false, targets: -1 } // Disable sorting on actions column
+                    ],
+                    language: {
+                        search: "Search transactions:",
+                        lengthMenu: "Show _MENU_ transactions per page",
+                        info: "Showing _START_ to _END_ of _TOTAL_ transactions",
+                        emptyTable: "No transactions found"
+                    }
+                });
+            }
+
+            bindEvents() {
+                // Status filter
+                document.getElementById('statusFilter').addEventListener('change', (e) => {
+                    this.dataTable.column(5).search(e.target.value).draw();
+                });
+
+                // Date filter
+                document.getElementById('dateFilter').addEventListener('change', (e) => {
+                    // Custom date filtering logic would be implemented here
+                    console.log('Date filter:', e.target.value);
+                });
+
+                // Amount filter
+                document.getElementById('amountFilter').addEventListener('change', (e) => {
+                    // Custom amount filtering logic would be implemented here
+                    console.log('Amount filter:', e.target.value);
+                });
+            }
+
+            async viewDetails(transactionId) {
+                try {
+                    const transaction = this.transactions.find(t => t.id == transactionId);
+                    if (!transaction) return;
+
+                    this.currentTransaction = transaction;
+
+                    const content = `
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <strong>Transaction ID:</strong><br>
+                                <code>${transaction.transaction_id || transaction.payment_intent_id || 'N/A'}</code>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Date:</strong><br>
+                                ${new Date(transaction.created_at).toLocaleString()}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>User:</strong><br>
+                                ${transaction.user_name || 'Unknown User'}<br>
+                                <small class="text-muted">${transaction.user_email || 'No email'}</small>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Video:</strong><br>
+                                ${transaction.video_title || 'Unknown Video'} (ID: ${transaction.video_id})
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Amount:</strong><br>
+                                $${parseFloat(transaction.amount || 0).toFixed(2)}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Payment Method:</strong><br>
+                                ${this.formatPaymentMethod(transaction.payment_method)}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Status:</strong><br>
+                                <span class="badge status-badge status-${transaction.status}">
+                                    ${this.getStatusIcon(transaction.status)} ${this.formatStatus(transaction.status)}
+                                </span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>IP Address:</strong><br>
+                                ${transaction.ip_address || 'Unknown'}
+                            </div>
+                            ${transaction.status === 'failed' && transaction.failure_reason ? `
+                            <div class="col-12">
+                                <strong>Failure Reason:</strong><br>
+                                <div class="alert alert-warning">${transaction.failure_reason}</div>
+                            </div>
+                            ` : ''}
+                            ${transaction.metadata ? `
+                            <div class="col-12">
+                                <strong>Additional Information:</strong><br>
+                                <pre class="bg-light p-2 rounded">${JSON.stringify(JSON.parse(transaction.metadata), null, 2)}</pre>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+
+                    document.getElementById('transactionDetailsContent').innerHTML = content;
+                    new bootstrap.Modal(document.getElementById('transactionDetailsModal')).show();
+                } catch (error) {
+                    console.error('Error viewing transaction details:', error);
+                }
+            }
+
+            async initiateRefund(transactionId) {
+                if (confirm('Are you sure you want to process a refund for this transaction?')) {
+                    try {
+                        const response = await window.apiService.post(`/admin/transactions/${transactionId}/refund`);
+                        if (response.success) {
+                            alert('Refund processed successfully');
+                            this.refreshTransactions();
+                        } else {
+                            alert('Failed to process refund: ' + response.message);
+                        }
+                    } catch (error) {
+                        console.error('Error processing refund:', error);
+                        alert('Error processing refund');
+                    }
+                }
+            }
+
+            async refreshTransactions() {
+                await this.loadTransactions();
+                this.dataTable.clear().destroy();
+                this.initializeDataTable();
+            }
+
+            async exportTransactions() {
+                try {
+                    const response = await window.apiService.get('/admin/transactions/export');
+                    if (response.success) {
+                        // Create downloadable CSV
+                        const blob = new Blob([response.data], { type: 'text/csv' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                    }
+                } catch (error) {
+                    console.error('Error exporting transactions:', error);
+                    alert('Error exporting transactions');
+                }
+            }
+        }
+
+        // Global functions
+        window.refreshTransactions = function() {
+            adminTransactions.refreshTransactions();
+        };
+
+        window.exportTransactions = function() {
+            adminTransactions.exportTransactions();
+        };
+
+        window.refundTransaction = function() {
+            if (adminTransactions.currentTransaction) {
+                adminTransactions.initiateRefund(adminTransactions.currentTransaction.id);
+            }
+        };
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            window.adminTransactions = new AdminTransactions();
+        });
+    </script>
+</body>
+</html>
