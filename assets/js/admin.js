@@ -1,4 +1,3 @@
-
 /**
  * VideoHub Admin Panel Module
  * Handles admin dashboard functionality with API integration
@@ -41,6 +40,8 @@ class AdminManager {
         } else if (currentPage === 'users.html') {
             // For users page, only initialize table once
             await this.initUsersPage();
+        } else if (currentPage === 'transactions.html') {
+            await this.initTransactionHistory();
         } else {
             await this.waitForAPIService();
         }
@@ -56,1666 +57,255 @@ class AdminManager {
             await new Promise(resolve => setTimeout(resolve, 100));
             retries++;
         }
-
-        // Only load data for non-dashboard and non-users pages
-        const currentPage = window.location.pathname.split('/').pop();
         
-        if (window.apiService && !this.dataLoaded && currentPage !== 'users.html') {
-            try {
-                if (currentPage === 'user-detail.html') {
-                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                    const usersResponse = await window.apiService.get(`${apiUrl}/admin/users`);
-                    this.users = usersResponse.data || usersResponse.users || [];
-                    this.dataLoaded = true;
-                }
-                
-                if (currentPage === 'videos.html') {
-                    // const videosResponse = await window.apiService.get('/videos');
-                    // this.videos = videosResponse.data || videosResponse.videos || [];
-                    this.dataLoaded = true;
-                }
-            } catch (error) {
-                console.error('Failed to load data from API:', error);
-                this.users = [];
-                this.videos = [];
-            }
+        if (!window.apiService) {
+            throw new Error('API service not available');
         }
-    }
-
-    async loadDashboardData() {
-        // Prevent multiple concurrent loads using global state
-        if (window.VideoHubState && window.VideoHubState.isLoading('adminData')) {
-            console.log('Admin data loading already in progress, skipping...');
-            return;
-        }
-
-        try {
-            if (window.VideoHubState) {
-                window.VideoHubState.setLoading('adminData', true);
-            }
-
-            // Show section loaders
-            const metricsSection = document.querySelector('.admin-metrics');
-            const usersSection = document.querySelector('.admin-users');
-            const videosSection = document.querySelector('.admin-videos');
-
-            if (window.commonUtils) {
-                if (metricsSection) window.commonUtils.showSectionLoader(metricsSection, 'Loading admin metrics...');
-                if (usersSection) window.commonUtils.showSectionLoader(usersSection, 'Loading user data...');
-                if (videosSection) window.commonUtils.showSectionLoader(videosSection, 'Loading video data...');
-            }
-
-            // Wait for API service to be available
-            let retries = 0;
-            const maxRetries = 50;
-            
-            while (retries < maxRetries && !window.apiService) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                retries++;
-            }
-
-            if (window.apiService) {
-                // Load admin metrics from new metrics API
-                try {
-                    const metricsResponse = await window.apiService.get('/api/endpoints/metrics.php?type=admin');
-                    if (metricsResponse.success) {
-                        const metrics = metricsResponse.data;
-                        this.updateDashboardMetrics(metrics);
-                    } else {
-                        // Calculate metrics manually if endpoint fails
-                        this.calculateMetricsManually();
-                    }
-                } catch (error) {
-                    console.log('Metrics endpoint not available, calculating manually');
-                    this.calculateMetricsManually();
-                }
-                
-                // Load additional data for dashboard
-                const [usersResponse, videosResponse] = await Promise.all([
-                    window.apiService.get('/api/admin/users'),
-                    window.apiService.get('/api/videos')
-                ]);
-                
-                this.users = usersResponse.data || usersResponse.users || [];
-                this.videos = videosResponse.data || videosResponse.videos || [];
-                
-                // Update sidebar badges
-                this.updateSidebarBadges();
-            }
-        } catch (error) {
-            console.error('Failed to load dashboard data:', error);
-            
-            // Handle API error with proper user feedback
-            if (window.commonUtils) {
-                window.commonUtils.handleAPIError(error, 'Loading admin dashboard data');
-            }
-            
-            // Set empty values on error
-            this.updateDashboardMetrics({
-                totalUsers: 0,
-                totalVideos: 0,
-                totalViews: 0,
-                pendingVideos: 0
-            });
-        } finally {
-            if (window.VideoHubState) {
-                window.VideoHubState.setLoading('adminData', false);
-            }
-
-            // Hide section loaders
-            const metricsSection = document.querySelector('.admin-metrics');
-            const usersSection = document.querySelector('.admin-users');
-            const videosSection = document.querySelector('.admin-videos');
-
-            if (window.commonUtils) {
-                if (metricsSection) window.commonUtils.hideSectionLoader(metricsSection);
-                if (usersSection) window.commonUtils.hideSectionLoader(usersSection);
-                if (videosSection) window.commonUtils.hideSectionLoader(videosSection);
-            }
-        }
-    }
-
-    updateDashboardMetrics(metrics) {
-        // Update dashboard metric displays
-        const totalUsersEl = document.getElementById('totalUsers');
-        const totalVideosEl = document.getElementById('totalVideos');
-        const totalViewsEl = document.getElementById('totalViews');
-        const pendingVideosEl = document.getElementById('pendingVideos');
-        
-        if (totalUsersEl) totalUsersEl.textContent = metrics.totalUsers || 0;
-        if (totalVideosEl) totalVideosEl.textContent = metrics.totalVideos || 0;
-        if (totalViewsEl) totalViewsEl.textContent = metrics.totalViews || 0;
-        if (pendingVideosEl) pendingVideosEl.textContent = metrics.pendingVideos || 0;
-    }
-
-    calculateMetricsManually() {
-        // Calculate metrics from loaded data
-        const metrics = {
-            totalUsers: this.users.length || 0,
-            totalVideos: this.videos.length || 0,
-            totalViews: this.videos.reduce((sum, video) => sum + (parseInt(video.views) || 0), 0),
-            pendingVideos: this.videos.filter(video => video.status === 'pending').length || 0
-        };
-        this.updateDashboardMetrics(metrics);
-    }
-
-    // Add the missing viewUserDetailsPage function
-    viewUserDetailsPage(userId) {
-        window.location.href = `user-detail.html?id=${userId}`;
-    }
-
-    updateSidebarBadges() {
-        // Sidebar badges removed for cleaner interface
     }
 
     bindEvents() {
-        // Event listeners for admin functionality
-        document.addEventListener('DOMContentLoaded', () => {
-            this.loadPageSpecificHandlers();
-            this.bindModalEvents();
+        // Page visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.dataLoaded) {
+                this.refreshData();
+            }
         });
     }
 
-    bindModalEvents() {
-        // Add User Modal
-        const saveUserBtn = document.getElementById('saveUser');
-        if (saveUserBtn) {
-            saveUserBtn.addEventListener('click', () => this.handleAddUser());
-        }
-
-        // Edit User Modal
-        const updateUserBtn = document.getElementById('updateUser');
-        if (updateUserBtn) {
-            updateUserBtn.addEventListener('click', () => this.handleUpdateUser());
-        }
-
-        // Confirm Delete
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        if (confirmDeleteBtn) {
-            confirmDeleteBtn.addEventListener('click', () => this.handleConfirmDelete());
+    async loadDashboardData() {
+        try {
+            await this.waitForAPIService();
+            
+            // Load dashboard statistics
+            const statsResponse = await window.apiService.get('/api/admin/stats');
+            if (statsResponse.success) {
+                this.updateDashboardStats(statsResponse.data);
+            }
+            
+            this.dataLoaded = true;
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            this.showNotification('Failed to load dashboard data', 'error');
         }
     }
 
-    loadPageSpecificHandlers() {
+    updateDashboardStats(stats) {
+        // Update user stats
+        const totalUsersElement = document.getElementById('totalUsers');
+        if (totalUsersElement) {
+            totalUsersElement.textContent = stats.total_users || '0';
+        }
+
+        const activeUsersElement = document.getElementById('activeUsers');
+        if (activeUsersElement) {
+            activeUsersElement.textContent = stats.active_users || '0';
+        }
+
+        // Update video stats
+        const totalVideosElement = document.getElementById('totalVideos');
+        if (totalVideosElement) {
+            totalVideosElement.textContent = stats.total_videos || '0';
+        }
+
+        const pendingVideosElement = document.getElementById('pendingVideos');
+        if (pendingVideosElement) {
+            pendingVideosElement.textContent = stats.pending_videos || '0';
+        }
+
+        // Update transaction stats
+        const totalTransactionsElement = document.getElementById('totalTransactions');
+        if (totalTransactionsElement) {
+            totalTransactionsElement.textContent = stats.total_transactions || '0';
+        }
+
+        const totalRevenueElement = document.getElementById('totalRevenue');
+        if (totalRevenueElement) {
+            totalRevenueElement.textContent = stats.total_revenue_formatted || '$0.00';
+        }
+    }
+
+    async refreshData() {
         const currentPage = window.location.pathname.split('/').pop();
         
-        // Prevent multiple handler loads
-        if (this.handlersLoaded) {
-            return;
-        }
-        this.handlersLoaded = true;
-        
-        switch (currentPage) {
-            case 'dashboard.html':
-                this.initDashboard();
-                break;
-            case 'users.html':
-                // Users page already initialized in init() method
-                break;
-            case 'videos.html':
-                ///this.initVideosPage();
-                break;
+        if (currentPage === 'dashboard.html') {
+            await this.loadDashboardData();
+        } else if (currentPage === 'users.html') {
+            await this.loadUsers();
+        } else if (currentPage === 'transactions.html') {
+            await this.loadTransactions();
         }
     }
 
-    initDashboard() {
-        console.log('Admin dashboard initialized');
-    }
-
+    // Users management methods
     async initUsersPage() {
-        // Wait for API service first
-        let retries = 0;
-        while (retries < 50 && !window.apiService) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            retries++;
-        }
-        
-        // Only initialize if not already done and ensure single initialization
-        if (!this.isInitializingTable && !this.usersTable && !this.tableInitialized) {
-            this.tableInitialized = true;
-            await this.loadUsersDataTable();
+        try {
+            await this.waitForAPIService();
+            await this.loadUsers();
+            this.dataLoaded = true;
+        } catch (error) {
+            console.error('Error initializing users page:', error);
+            this.showNotification('Failed to load users data', 'error');
         }
     }
 
-    // initVideosPage() {
-    //     this.loadVideosGrid();
-    // }
+    async loadUsers() {
+        try {
+            const response = await window.apiService.get('/api/admin/users');
+            if (response.success) {
+                this.users = response.data;
+                this.updateUsersTable();
+            } else {
+                throw new Error(response.message || 'Failed to load users');
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            this.showNotification('Failed to load users', 'error');
+        }
+    }
 
-    async loadUsersDataTable() {
-        // Prevent multiple simultaneous initializations
-        if (this.isInitializingTable) {
-            console.log('Table initialization already in progress');
+    updateUsersTable() {
+        const tableBody = document.querySelector('#usersTable tbody');
+        if (!tableBody) return;
+
+        if (this.users.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No users found</td></tr>';
             return;
         }
-        
-        this.isInitializingTable = true;
 
-        try {
-            // Wait for jQuery and DataTables to be available
-            // if (typeof $ === 'undefined' || !$.fn.DataTable) {
-            //     setTimeout(() => {
-            //         this.isInitializingTable = false;
-            //         this.loadUsersDataTable();
-            //     }, 100);
-            //     return;
-            // }
+        tableBody.innerHTML = this.users.map(user => `
+            <tr>
+                <td>${user.id}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm rounded-circle bg-primary text-white me-2 d-flex align-items-center justify-content-center">
+                            ${user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div class="fw-semibold">${user.name}</div>
+                            <small class="text-muted">${user.email}</small>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge bg-${this.getRoleBadgeColor(user.role)}">${user.role}</span></td>
+                <td><span class="badge bg-${user.status === 'active' ? 'success' : 'warning'}">${user.status}</span></td>
+                <td>${this.formatDate(user.created_at)}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="window.adminManager.viewUserDetails(${user.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="window.adminManager.editUser(${user.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="window.adminManager.deleteUser(${user.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-            // Check if table element exists
-            const tableElement = $('#usersTable');
-            if (tableElement.length === 0) {
-                console.error('Users table element not found');
-                this.isInitializingTable = false;
-                return;
-            }
-
-            // Load users data first (only if not already loaded)
-            if (!this.users.length && !this.dataLoaded) {
-                try {
-                    console.log('Loading users data from API...');
-                    const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                    const response = await fetch(`${apiUrl}/admin/users`);
-                    const result = await response.json();
-                    if (result.success) {
-                        this.users = result.data || [];
-                        this.dataLoaded = true;
-                        console.log(`Loaded ${this.users.length} users`);
-                    } else {
-                        this.users = [];
-                    }
-                } catch (error) {
-                    console.error('Failed to load users:', error);
-                    this.users = [];
-                }
-            }
-
-            // Update total users count
-            const totalUsersCount = document.getElementById('totalUsersCount');
-            if (totalUsersCount) {
-                totalUsersCount.textContent = this.users.length;
-            }
-
-            // Properly destroy existing DataTable if it exists
-            if ($.fn.DataTable.isDataTable('#usersTable')) {
-                console.log('Destroying existing DataTable');
-                tableElement.DataTable().clear().destroy();
-                tableElement.empty(); // Clear table contents
-                this.usersTable = null;
-            }
-
-            // Small delay to ensure cleanup is complete
-            await new Promise(resolve => setTimeout(resolve, 150));
-
-        // Initialize DataTable
-        this.usersTable = tableElement.DataTable({
-            data: this.users,
-            responsive: true,
-            pageLength: 25,
-            order: [[0, 'asc']],
-            columnDefs: [
-                { 
-                    targets: 0,
-                    data: null,
-                    width: '60px',
-                    className: 'text-center',
-                    orderable: false,
-                    render: function(data, type, row, meta) {
-                        return meta.row + 1; // Serial number starting from 1
-                    }
-                },
-                { 
-                    targets: 1,
-                    data: null,
-                    orderable: true,
-                    render: function(data, type, row) {
-                        const name = row.name || 'Unknown User';
-                        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                        return `
-                            <div class="d-flex align-items-center">
-                                <div class="user-avatar me-3">
-                                    ${initials}
-                                </div>
-                                <div>
-                                    <div class="fw-semibold">${name}</div>
-                                    <small class="text-muted">ID: ${row.id}</small>
-                                </div>
-                            </div>
-                        `;
-                    }
-                },
-                { 
-                    targets: 2,
-                    data: 'email',
-                    render: function(data) {
-                        return data || 'No email';
-                    }
-                },
-                { 
-                    targets: 3,
-                    data: 'role',
-                    render: function(data) {
-                        const badgeClass = {
-                            'admin': 'danger',
-                            'creator': 'success', 
-                            'viewer': 'primary'
-                        };
-                        const roleText = data ? data.charAt(0).toUpperCase() + data.slice(1) : 'Viewer';
-                        return `<span class="badge bg-${badgeClass[data] || 'secondary'}">${roleText}</span>`;
-                    }
-                },
-                {
-                    targets: 4,
-                    data: 'status',
-                    render: function(data) {
-                        const badgeClass = {
-                            'active': 'success',
-                            'inactive': 'warning',
-                            'suspended': 'danger',
-                            'revoked': 'dark'
-                        };
-                        const statusText = data ? data.charAt(0).toUpperCase() + data.slice(1) : 'Active';
-                        return `<span class="badge bg-${badgeClass[data] || 'success'}">${statusText}</span>`;
-                    }
-                },
-                {
-                    targets: 5,
-                    data: null,
-                    render: function(data, type, row) {
-                        return row.email_verified ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-warning">Not Verified</span>';
-                    }
-                },
-                {
-                    targets: 6,
-                    data: 'joinDate',
-                    render: function(data) {
-                        if (!data) return 'Unknown';
-                        try {
-                            return new Date(data).toLocaleDateString();
-                        } catch (e) {
-                            return data;
-                        }
-                    }
-                },
-                {
-                    targets: 7,
-                    data: null,
-                    orderable: false,
-                    width: '200px',
-                    className: 'text-center',
-                    render: function(data, type, row) {
-                        return `
-                            <div class="btn-group" role="group">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-info dropdown-toggle" type="button" data-bs-toggle="dropdown" title="View Options">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="adminManager.showUserDetails(${row.id})"><i class="fas fa-info-circle me-2"></i>Quick View</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="adminManager.viewUserDetailsPage(${row.id})"><i class="fas fa-external-link-alt me-2"></i>Full Details</a></li>
-                                    </ul>
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary" onclick="adminManager.editUser(${row.id})" title="Edit User">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-warning" onclick="revokeUser(${row.id})" title="Revoke Access">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${row.id})" title="Delete User">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
-                    }
-                }
-            ],
-            language: {
-                search: "Search users:",
-                lengthMenu: "Show _MENU_ users per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ users",
-                infoEmpty: "No users available",
-                infoFiltered: "(filtered from _MAX_ total users)",
-                zeroRecords: "No matching users found",
-                paginate: {
-                    first: "First",
-                    last: "Last",
-                    next: "Next",
-                    previous: "Previous"
-                }
-            },
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                 '<"row"<"col-sm-12"tr>>' +
-                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-            searchDelay: 400,
-            processing: true,
-            drawCallback: function() {
-                console.log('DataTable draw completed');
-            }
-        });
-        
-        console.log('DataTable initialized successfully with', this.users.length, 'users');
-        
-        // Hide loading indicator after successful initialization
-        const loadingIndicator = document.getElementById('usersLoadingIndicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
-        }
-        
-        } catch (error) {
-            console.error('Error initializing DataTable:', error);
-            // Hide loading indicator even on error
-            const loadingIndicator = document.getElementById('usersLoadingIndicator');
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'none';
-            }
-        } finally {
-            this.isInitializingTable = false;
+    getRoleBadgeColor(role) {
+        switch (role) {
+            case 'admin': return 'danger';
+            case 'creator': return 'primary';
+            case 'viewer': return 'info';
+            default: return 'secondary';
         }
     }
 
-    // User management methods
-    async showUserDetails(userId) {
+    formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString();
+    }
+
+    // User detail methods
+    async viewUserDetails(userId) {
         try {
-            // Find user in local data first
-            let user = this.users.find(u => u.id == userId);
-            
-            // If not found locally, fetch from API
-            if (!user) {
-                const response = await fetch(`/api/endpoints/users.php/${userId}`);
-                const result = await response.json();
-                if (result.success) {
-                    user = result.data;
-                }
-            }
-
-            if (user) {
-                // Helper function to safely set element content
-                const safeSetContent = (elementId, content) => {
-                    const element = document.getElementById(elementId);
-                    if (element) {
-                        element.textContent = content;
-                    } else {
-                        console.warn(`Element with ID '${elementId}' not found`);
-                    }
-                };
-
-                const safeSetClass = (elementId, className) => {
-                    const element = document.getElementById(elementId);
-                    if (element) {
-                        element.className = className;
-                    } else {
-                        console.warn(`Element with ID '${elementId}' not found`);
-                    }
-                };
-
-                // Populate user details modal safely
-                safeSetContent('detailUserId', user.id);
-                safeSetContent('detailUserName', user.name || 'Unknown User');
-                safeSetContent('detailUserEmail', user.email || 'No email');
-                safeSetContent('detailUserRole', (user.role || 'viewer').charAt(0).toUpperCase() + (user.role || 'viewer').slice(1));
-                safeSetClass('detailUserRole', `badge bg-${this.getUserRoleBadgeClass(user.role)}`);
-                
-                // Status badge
-                const statusEl = document.getElementById('detailUserStatus');
-                if (statusEl) {
-                    statusEl.textContent = (user.status || 'active').charAt(0).toUpperCase() + (user.status || 'active').slice(1);
-                    statusEl.className = `badge bg-${user.status === 'active' ? 'success' : user.status === 'suspended' ? 'danger' : user.status === 'revoked' ? 'dark' : 'warning'}`;
-                }
-                
-                safeSetContent('detailJoinDate', user.joinDate ? new Date(user.joinDate).toLocaleDateString() : (user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'));
-                safeSetContent('detailLastSeen', user.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'Recently');
-                
-                const emailVerifiedEl = document.getElementById('detailEmailVerified');
-                if (emailVerifiedEl) {
-                    emailVerifiedEl.textContent = user.email_verified_at ? 'Verified' : 'Not Verified';
-                    emailVerifiedEl.className = `badge bg-${user.email_verified_at ? 'success' : 'warning'}`;
-                }
-
-                // Optional elements that might not exist on all pages
-                safeSetContent('detailLastLogin', 'Recently'); // Mock data for now
-                safeSetContent('detailVideoCount', Math.floor(Math.random() * 10));
-                safeSetContent('detailPurchaseCount', Math.floor(Math.random() * 20));
-                safeSetContent('detailTotalSpent', `$${(Math.random() * 500).toFixed(2)}`);
-                
-                // Store current user ID for editing
-                this.currentUserId = userId;
-                
-                // Show modal
-                const modalElement = document.getElementById('userDetailsModal');
-                if (modalElement) {
-                    const modal = new bootstrap.Modal(modalElement);
-                    modal.show();
-                } else {
-                    console.error('User details modal not found');
-                    this.showAlert('Modal not available', 'danger');
-                }
+            const response = await window.apiService.get(`/api/admin/users/${userId}`);
+            if (response.success) {
+                this.showUserDetailsModal(response.data);
             } else {
-                this.showAlert('User not found', 'danger');
+                throw new Error(response.message || 'Failed to load user details');
             }
         } catch (error) {
             console.error('Error loading user details:', error);
-            this.showAlert('Failed to load user details', 'danger');
+            this.showNotification('Failed to load user details', 'error');
         }
+    }
+
+    showUserDetailsModal(user) {
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'userDetailsModal';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">User Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Basic Information</h6>
+                                <table class="table table-borderless">
+                                    <tr><td><strong>ID:</strong></td><td>${user.id}</td></tr>
+                                    <tr><td><strong>Name:</strong></td><td>${user.name}</td></tr>
+                                    <tr><td><strong>Email:</strong></td><td>${user.email}</td></tr>
+                                    <tr><td><strong>Role:</strong></td><td><span class="badge bg-${this.getRoleBadgeColor(user.role)}">${user.role}</span></td></tr>
+                                    <tr><td><strong>Status:</strong></td><td><span class="badge bg-${user.status === 'active' ? 'success' : 'warning'}">${user.status}</span></td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Account Details</h6>
+                                <table class="table table-borderless">
+                                    <tr><td><strong>Created:</strong></td><td>${this.formatDate(user.created_at)}</td></tr>
+                                    <tr><td><strong>Email Verified:</strong></td><td>${user.email_verified_at ? 'Yes' : 'No'}</td></tr>
+                                    <tr><td><strong>Last Login:</strong></td><td>${user.last_login ? this.formatDate(user.last_login) : 'Never'}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
     }
 
     async editUser(userId) {
-        try {
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await fetch(`${apiUrl}/admin/users?id=${userId}`);
-            const result = await response.json();
-            
-            if (result.success && result.data) {
-                const user = result.data;
-                
-                // Fill edit form
-                document.getElementById('editUserId').value = user.id;
-                document.getElementById('editFirstName').value = user.name?.split(' ')[0] || '';
-                document.getElementById('editLastName').value = user.name?.split(' ').slice(1).join(' ') || '';
-                document.getElementById('editEmail').value = user.email;
-                document.getElementById('editUserType').value = user.role;
-                document.getElementById('editStatus').value = user.status || 'active';
-                
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
-                modal.show();
-            }
-        } catch (error) {
-            console.error('Error loading user for edit:', error);
-            this.showAlert('Error loading user details', 'danger');
-        }
-    }
-
-    async revokeUser(userId) {
-        try {
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await fetch(`${apiUrl}/admin/users`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    id: userId,
-                    status: 'revoked'
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                // Update user in local data
-                const user = this.users.find(u => u.id == userId);
-                if (user) {
-                    user.status = 'revoked';
-                }
-                
-                // Refresh the table
-                this.refreshUsersTable();
-                
-                if (window.commonUtils) {
-                    window.commonUtils.showToast('User access revoked successfully', 'warning');
-                }
-            } else {
-                throw new Error(result.message || 'Failed to revoke user access');
-            }
-        } catch (error) {
-            console.error('Error revoking user:', error);
-            if (window.commonUtils) {
-                window.commonUtils.showToast('Error revoking user access', 'danger');
-            }
-        }
+        this.showNotification('Edit functionality coming soon', 'info');
     }
 
     async deleteUser(userId) {
-        try {
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await fetch(`${apiUrl}/admin/users`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ id: userId })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                // Remove user from local data
-                this.users = this.users.filter(u => u.id != userId);
-                
-                // Refresh the table
-                this.refreshUsersTable();
-                
-                if (window.commonUtils) {
-                    window.commonUtils.showToast('User deleted successfully', 'success');
-                }
-            } else {
-                throw new Error(result.message || 'Failed to delete user');
-            }
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            if (window.commonUtils) {
-                window.commonUtils.showToast('Error deleting user', 'danger');
-            }
-        }
-    }
-
-    async createUser(userData) {
-        try {
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await fetch(`${apiUrl}/admin/users`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showAlert('User created successfully', 'success');
-                this.refreshUsersTable();
-                return true;
-            } else {
-                this.showAlert(result.message || 'Failed to create user', 'danger');
-                return false;
-            }
-        } catch (error) {
-            console.error('Error creating user:', error);
-            this.showAlert('Error creating user', 'danger');
-            return false;
-        }
-    }
-
-    async updateUser(userData) {
-        try {
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await fetch(`${apiUrl}/admin/users`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showAlert('User updated successfully', 'success');
-                this.refreshUsersTable();
-                return true;
-            } else {
-                this.showAlert(result.message || 'Failed to update user', 'danger');
-                return false;
-            }
-        } catch (error) {
-            console.error('Error updating user:', error);
-            this.showAlert('Error updating user', 'danger');
-            return false;
-        }
-    }
-
-    async refreshUsersTable() {
-        if (this.usersTable && $.fn.DataTable.isDataTable('#usersTable')) {
-            // Reload data
+        if (confirm('Are you sure you want to delete this user?')) {
             try {
-                const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-                const response = await fetch(`${apiUrl}/admin/users`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    this.users = result.data || [];
-                    this.usersTable.clear();
-                    this.usersTable.rows.add(this.users);
-                    this.usersTable.draw();
-                    
-                    // Update total count
-                    const totalUsersCount = document.getElementById('totalUsersCount');
-                    if (totalUsersCount) {
-                        totalUsersCount.textContent = this.users.length;
-                    }
+                const response = await window.apiService.delete(`/api/admin/users/${userId}`);
+                if (response.success) {
+                    this.showNotification('User deleted successfully', 'success');
+                    await this.loadUsers();
+                } else {
+                    throw new Error(response.message || 'Failed to delete user');
                 }
             } catch (error) {
-                console.error('Error refreshing users table:', error);
-                this.showAlert('Error refreshing table', 'danger');
-            }
-        } else {
-            // If table doesn't exist, reinitialize it
-            await this.loadUsersDataTable();
-        }
-    }
-
-    showAlert(message, type) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        const container = document.querySelector('main');
-        if (container) {
-            container.insertBefore(alertDiv, container.firstChild);
-            
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 5000);
-        }
-    }
-
-    async loadVideosGrid() {
-
-           console.log('load grid');
-        const videosGrid = document.getElementById('videosGrid');
-        const loadingIndicator = document.getElementById('videosLoadingIndicator');
-        const emptyState = document.getElementById('emptyState');
-        
-        if (!videosGrid) return;
-        
-        try {
-            // Show loading indicator
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'block';
-            }
-            if (emptyState) {
-                emptyState.classList.add('d-none');
-            }
-            
-            // Load videos from API
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            let response = await fetch(`${apiUrl}/endpoints/videos.php`);
-            let result = await response.json();
-            console.log('Videos API response:', result);
-            
-            if (result.success && result.data && result.data.videos) {
-                // Transform videos data for admin display
-                this.videos = result.data.videos.map(video => ({
-                    id: video.id,
-                    title: video.title,
-                    description: video.description,
-                    price: video.price,
-                    thumbnail: video.thumbnail,
-                    youtube_id: video.youtube_id || video.youtubeId,
-                    creator_name: video.creatorName,
-                    creator_email: '',
-                    upload_date: video.uploadDate,
-                    views: video.views,
-                    purchase_count: video.views,
-                    status: video.status || 'published',
-                    created_at: new Date().toISOString(),
-                    youtube_thumbnail: video.thumbnail,
-                    youtube_channel_title: video.creatorName,
-                    youtube_views: video.views
-                }));
-            } else if (result.success && Array.isArray(result.data)) {
-                // Handle case where data is directly an array
-                this.videos = result.data;
-            } else {
-                throw new Error('Failed to load videos: ' + (result.message || 'Invalid response format'));
-            }
-            
-            // Update stats cards
-            this.updateVideoStats();
-            
-            // Render videos grid
-            this.renderVideosGrid();
-            
-        } catch (error) {
-            console.error('Error loading videos:', error);
-            videosGrid.innerHTML = `
-                <div class="col-12 text-center py-4">
-                    <div class="text-danger">
-                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                        <p>Error loading videos: ${error.message}</p>
-                        <button class="btn btn-outline-primary btn-sm" onclick="adminManager.loadVideosGrid()">
-                            <i class="fas fa-refresh me-1"></i>Retry
-                        </button>
-                    </div>
-                </div>
-            `;
-        } finally {
-            // Hide loading indicator
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'none';
+                console.error('Error deleting user:', error);
+                this.showNotification('Failed to delete user', 'error');
             }
         }
     }
 
-    renderVideosGrid() {
-        const videosGrid = document.getElementById('videosGrid');
-        const emptyState = document.getElementById('emptyState');
-        
-        if (!videosGrid) return;
-        
-        if (this.videos.length === 0) {
-            if (emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-            videosGrid.innerHTML = '';
-            return;
-        }
-        
-        if (emptyState) {
-            emptyState.classList.add('d-none');
-        }
-        
-        videosGrid.innerHTML = '';
-        
-        this.videos.forEach(video => {
-            const videoCard = document.createElement('div');
-            videoCard.className = 'col-lg-4 col-md-6 mb-4';
-            
-            const statusClass = video.status === 'published' || video.status === 'active' ? 'success' : 
-                              video.status === 'pending' ? 'warning' : 
-                              video.status === 'flagged' ? 'danger' : 'secondary';
-            
-            const uploadDate = video.upload_date ? new Date(video.upload_date).toLocaleDateString() : 
-                             video.created_at ? new Date(video.created_at).toLocaleDateString() : 'Unknown';
-            
-            // Get YouTube ID from various possible fields  
-            const youtubeId = video.youtube_id || video.youtube_video_id || video.video_id || video.youtubeId;
-            
-
-            
-            // Improved thumbnail handling with fallbacks
-            const getThumbnailHtml = () => {
-                if (youtubeId) {
-                    return `
-                        <img src="https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg" 
-                             class="card-img-top w-100 h-100" alt="${video.title}" style="object-fit: cover; height: 200px;"
-                             onerror="this.onerror=null; this.src='https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg';">
-                    `;
-                } else if (video.thumbnail) {
-                    return `
-                        <img src="${video.thumbnail}" 
-                             class="card-img-top w-100 h-100" alt="${video.title}" style="object-fit: cover; height: 200px;"
-                             onerror="this.onerror=null; this.src='https://via.placeholder.com/350x200/6c757d/ffffff?text=Video+Unavailable';">
-                    `;
-                } else {
-                    return `
-                        <div class="d-flex align-items-center justify-content-center h-100 bg-light">
-                            <i class="fas fa-play fa-3x text-muted"></i>
-                        </div>
-                    `;
-                }
-            };
-            
-            videoCard.innerHTML = `
-                <div class="card h-100">
-                    <div class="position-relative" style="height: 200px; cursor: pointer;" 
-                         onclick="${youtubeId ? `watchVideo('${youtubeId}', '${video.title}')` : `alert('Video not available for playback')`}">
-                        ${getThumbnailHtml()}
-                        
-                        <!-- Play Button Overlay -->
-                        <div class="position-absolute top-50 start-50 translate-middle">
-                            <div class="d-flex align-items-center justify-content-center" 
-                                 style="width: 60px; height: 60px; background: rgba(0,0,0,0.7); border-radius: 50%;">
-                                <i class="fas fa-play text-white" style="font-size: 24px; margin-left: 3px;"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="position-absolute top-0 end-0 m-2">
-                            <span class="badge bg-${statusClass}">${(video.status || 'active').charAt(0).toUpperCase() + (video.status || 'active').slice(1)}</span>
-                        </div>
-                        <div class="position-absolute bottom-0 end-0 m-2">
-                            <span class="badge bg-dark">${video.duration || '00:00'}</span>
-                        </div>
-                        <div class="position-absolute top-0 start-0 m-2">
-                            <span class="badge bg-success">$${parseFloat(video.price || 0).toFixed(2)}</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <h6 class="card-title mb-2" title="${video.title}">${video.title.length > 50 ? video.title.substring(0, 47) + '...' : video.title}</h6>
-                        <p class="card-text text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                            ${video.description || 'No description available'}
-                        </p>
-                        
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <small class="text-muted">by ${video.creator_name || video.youtube_channel_title || 'Unknown Creator'}</small>
-                            <small class="text-muted">${(video.views || video.youtube_views || 0).toLocaleString()} views</small>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <small class="text-muted">${uploadDate}</small>
-                            ${youtubeId ? `
-                                <div class="btn-group">
-                                    <button class="btn btn-primary btn-sm" onclick="watchVideo('${youtubeId}', '${video.title}')" title="Watch in modal">
-                                        <i class="fas fa-play me-1"></i>Watch
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" onclick="window.commonUtils.openVideoInNewTab('${video.id}', '${youtubeId}')" title="Open in new tab">
-                                        <i class="fas fa-external-link-alt"></i>
-                                    </button>
-                                </div>
-                            ` : `
-                                <button class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-ban me-1"></i>Unavailable
-                                </button>
-                            `}
-                        </div>
-                        
-                        <div class="d-flex gap-2">
-                            ${video.status === 'published' || video.status === 'active' ? 
-                                `<button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
-                                    <i class="fas fa-times me-1"></i>Reject
-                                </button>
-                                <button class="btn btn-warning btn-sm" onclick="adminManager.flagVideo(${video.id})" title="Flag Video">
-                                    <i class="fas fa-flag"></i>
-                                </button>` :
-                                video.status === 'rejected' ?
-                                `<button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
-                                    <i class="fas fa-check me-1"></i>Approve
-                                </button>
-                                <button class="btn btn-warning btn-sm" onclick="adminManager.flagVideo(${video.id})" title="Flag Video">
-                                    <i class="fas fa-flag"></i>
-                                </button>` :
-                                video.status === 'flagged' ?
-                                `<button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
-                                    <i class="fas fa-check me-1"></i>Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
-                                    <i class="fas fa-times me-1"></i>Reject
-                                </button>` :
-                                `<button class="btn btn-success btn-sm flex-fill" onclick="adminManager.approveVideo(${video.id})" title="Approve Video">
-                                    <i class="fas fa-check me-1"></i>Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm flex-fill" onclick="adminManager.rejectVideo(${video.id})" title="Reject Video">
-                                    <i class="fas fa-times me-1"></i>Reject
-                                </button>`
-                            }
-                            <button class="btn btn-outline-primary btn-sm" onclick="adminManager.showVideoDetails(${video.id})" title="View Details">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            videosGrid.appendChild(videoCard);
-        });
-    }
-
-    async loadVideosTable() {
-        const tbody = document.querySelector('#videosTableBody');
-        const loadingIndicator = document.getElementById('videosLoadingIndicator');
-        const emptyState = document.getElementById('videosEmptyState');
-        const totalCount = document.getElementById('totalVideosCount');
-        
-        if (!tbody) return;
-        
-        try {
-            // Show loading indicator
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'block';
-            }
-            if (emptyState) {
-                emptyState.classList.add('d-none');
-            }
-            
-            // Try to load from admin videos endpoint first, fallback to regular videos endpoint
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            let response = await fetch(`${apiUrl}/endpoints/videos.php`);
-            let result = await response.json();
-            
-            if (!result.success) {
-                // Fallback to regular videos API  
-                response = await fetch(`${apiUrl}/videos`);
-                result = await response.json();
-            }
-            
-            if (result.success && result.data && result.data.videos) {
-                // Transform videos data for admin display
-                this.videos = result.data.videos.map(video => ({
-                    id: video.id,
-                    title: video.title,
-                    description: video.description,
-                    price: video.price,
-                    thumbnail: video.thumbnail,
-                    youtube_id: video.youtube_id || video.youtubeId,
-                    creator_name: video.creatorName,
-                    creator_email: '',
-                    upload_date: video.uploadDate,
-                    views: video.views,
-                    purchase_count: video.views,
-                    status: video.status || 'published',
-                    created_at: new Date().toISOString()
-                }));
-            } else if (result.success && Array.isArray(result.data)) {
-                // Handle case where data is directly an array
-                this.videos = result.data;
-            } else {
-                throw new Error('Failed to load videos: ' + (result.message || 'Invalid response format'));
-            }
-            
-            // Update total count
-            if (totalCount) {
-                totalCount.textContent = this.videos.length;
-            }
-            
-            // Update stats cards
-            this.updateVideoStats();
-            
-            // Clear existing content
-            tbody.innerHTML = '';
-            
-            if (this.videos.length === 0) {
-                if (emptyState) {
-                    emptyState.classList.remove('d-none');
-                }
-            } else {
-                this.videos.forEach(video => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td><span class="fw-bold">${video.id}</span></td>
-                        <td>
-                            <img src="${video.thumbnail || 'https://via.placeholder.com/60x40'}" 
-                                 alt="${video.title}" class="rounded shadow-sm" 
-                                 style="width: 60px; height: 40px; object-fit: cover;">
-                        </td>
-                        <td>
-                            <div class="fw-bold">${video.title}</div>
-                            <small class="text-muted">${video.description ? video.description.substring(0, 50) + '...' : 'No description'}</small>
-                        </td>
-                        <td>
-                            <div>${video.creator_name || 'Unknown'}</div>
-                            <small class="text-muted">${video.creator_email || ''}</small>
-                        </td>
-                        <td><span class="fw-bold text-success">$${video.price || '0.00'}</span></td>
-                        <td>
-                            <span class="badge bg-${this.getVideoStatusBadgeColor(video.status)}">${video.status || 'active'}</span>
-                        </td>
-                        <td><span class="fw-bold">${video.views || video.purchase_count || 0}</span></td>
-                        <td>${video.upload_date || new Date(video.created_at).toLocaleDateString()}</td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-info btn-sm" onclick="adminManager.viewVideo(${video.id})" title="View Video">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-primary btn-sm" onclick="adminManager.editVideo(${video.id})" title="Edit Video">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="adminManager.toggleVideoStatus(${video.id})" title="Toggle Status">
-                                    <i class="fas fa-toggle-on"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="adminManager.deleteVideo(${video.id})" title="Delete Video">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            }
-            
-        } catch (error) {
-            console.error('Error loading videos:', error);
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="text-center py-4">
-                        <div class="text-danger">
-                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                            <p>Error loading videos: ${error.message}</p>
-                            <button class="btn btn-outline-primary btn-sm" onclick="adminManager.loadVideosTable()">
-                                <i class="fas fa-refresh me-1"></i>Retry
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        } finally {
-            // Hide loading indicator
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'none';
-            }
-        }
-    }
-
-    updateVideoStats() {
-        const totalVideos = document.getElementById('totalVideos');
-        const publishedVideos = document.getElementById('publishedVideos');
-        const pendingVideos = document.getElementById('pendingVideos');
-        const flaggedVideos = document.getElementById('flaggedVideos');
-        
-        // Ensure this.videos is an array before using filter
-        if (!Array.isArray(this.videos)) {
-            console.warn('Videos data is not an array:', this.videos);
-            this.videos = [];
-        }
-        
-        if (totalVideos) totalVideos.textContent = this.videos.length;
-        if (publishedVideos) publishedVideos.textContent = this.videos.filter(v => v.status === 'published' || v.status === 'active').length;
-        if (pendingVideos) pendingVideos.textContent = this.videos.filter(v => v.status === 'pending').length;
-        if (flaggedVideos) flaggedVideos.textContent = this.videos.filter(v => v.status === 'flagged').length;
-    }
-
-    getVideoStatusBadgeColor(status) {
-        switch(status) {
-            case 'published':
-            case 'active': return 'success';
-            case 'pending': return 'warning';
-            case 'flagged': return 'danger';
-            case 'draft': return 'secondary';
-            default: return 'primary';
-        }
-    }
-
-    // Video management methods
-    async viewVideo(videoId) {
-        window.open(`/video-player.html?id=${videoId}`, '_blank');
-    }
-
-    async editVideo(videoId) {
-        // Redirect to video edit page or show modal
-        this.showAlert('Video editing functionality coming soon', 'info');
-    }
-
-    async toggleVideoStatus(videoId) {
-        try {
-            const video = this.videos.find(v => v.id === videoId);
-            if (!video) return;
-            
-            const newStatus = video.status === 'active' ? 'pending' : 'active';
-            
-            // Here you would call API to update video status
-            this.showAlert(`Video status would be changed to ${newStatus}`, 'info');
-            
-        } catch (error) {
-            console.error('Error toggling video status:', error);
-            this.showAlert('Error updating video status', 'danger');
-        }
-    }
-
-    async approveVideo(videoId) {
-        try {
-            if (!confirm('Are you sure you want to approve this video?')) return;
-            
-            const response = await window.apiService.put(`/api/endpoints/videos.php/${videoId}`, {
-                status: 'published'
-            });
-            
-            if (response.success) {
-                this.showAlert('Video approved successfully!', 'success');
-                // Update local video status
-                const video = this.videos.find(v => v.id == videoId);
-                if (video) {
-                    video.status = 'published';
-                }
-                // Refresh the videos grid immediately to show updated buttons
-                this.renderVideosGrid();
-                this.updateVideoStats();
-            } else {
-                this.showAlert(response.message || 'Failed to approve video', 'danger');
-            }
-        } catch (error) {
-            console.error('Error approving video:', error);
-            this.showAlert('Error approving video', 'danger');
-        }
-    }
-
-    async rejectVideo(videoId) {
-        try {
-            if (!confirm('Are you sure you want to reject this video?')) return;
-            
-            const response = await window.apiService.put(`/api/endpoints/videos.php/${videoId}`, {
-                status: 'rejected'
-            });
-            
-            if (response.success) {
-                this.showAlert('Video rejected successfully!', 'warning');
-                // Update local video status
-                const video = this.videos.find(v => v.id == videoId);
-                if (video) {
-                    video.status = 'rejected';
-                }
-                // Refresh the videos grid immediately to show updated buttons
-                this.renderVideosGrid();
-                this.updateVideoStats();
-            } else {
-                this.showAlert(response.message || 'Failed to reject video', 'danger');
-            }
-        } catch (error) {
-            console.error('Error rejecting video:', error);
-            this.showAlert('Error rejecting video', 'danger');
-        }
-    }
-
-    async flagVideo(videoId) {
-        try {
-            if (!confirm('Are you sure you want to flag this video?')) return;
-            
-            const response = await window.apiService.put(`/api/endpoints/videos.php/${videoId}`, {
-                status: 'flagged'
-            });
-            
-            if (response.success) {
-                this.showAlert('Video flagged successfully!', 'danger');
-                // Update local video status
-                const video = this.videos.find(v => v.id == videoId);
-                if (video) {
-                    video.status = 'flagged';
-                }
-                // Refresh the videos grid immediately to show updated buttons
-                this.renderVideosGrid();
-                this.updateVideoStats();
-            } else {
-                this.showAlert(response.message || 'Failed to flag video', 'danger');
-            }
-        } catch (error) {
-            console.error('Error flagging video:', error);
-            this.showAlert('Error flagging video', 'danger');
-        }
-    }
-
-    async showVideoDetails(videoId) {
-        try {
-            const video = this.videos.find(v => v.id == videoId);
-            if (!video) {
-                this.showAlert('Video not found', 'danger');
-                return;
-            }
-
-            // Populate modal with video details
-            document.getElementById('modalVideoTitle').textContent = video.title || 'Unknown Title';
-            document.getElementById('modalVideoCreator').textContent = video.creator_name || video.creatorName || 'Unknown Creator';
-            document.getElementById('modalVideoDuration').textContent = video.duration || 'Unknown';
-            document.getElementById('modalVideoDate').textContent = video.upload_date || video.uploadDate || 'Unknown';
-            document.getElementById('modalVideoViews').textContent = (video.views || 0).toLocaleString();
-            document.getElementById('modalVideoPrice').textContent = `$${parseFloat(video.price || 0).toFixed(2)}`;
-            
-            const statusEl = document.getElementById('modalVideoStatus');
-            const statusClass = video.status === 'published' ? 'success' : video.status === 'pending' ? 'warning' : video.status === 'rejected' ? 'danger' : 'secondary';
-            statusEl.className = `badge bg-${statusClass}`;
-            statusEl.textContent = (video.status || 'published').charAt(0).toUpperCase() + (video.status || 'published').slice(1);
-            
-            document.getElementById('modalVideoDescription').textContent = video.description || 'No description available';
-            
-            // Set thumbnail
-            const thumbnailEl = document.getElementById('modalVideoThumbnail');
-            if (video.youtube_id) {
-                thumbnailEl.src = `https://img.youtube.com/vi/${video.youtube_id}/maxresdefault.jpg`;
-            } else if (video.thumbnail) {
-                thumbnailEl.src = video.thumbnail;
-            } else {
-                thumbnailEl.src = 'https://via.placeholder.com/300x200/007bff/ffffff?text=Video+Preview';
-            }
-
-            // Set up modal action buttons
-            const approveBtn = document.getElementById('approveVideo');
-            const rejectBtn = document.getElementById('rejectVideo');
-            const flagBtn = document.getElementById('flagVideo');
-
-            // Remove existing event listeners
-            approveBtn.replaceWith(approveBtn.cloneNode(true));
-            rejectBtn.replaceWith(rejectBtn.cloneNode(true));
-            flagBtn.replaceWith(flagBtn.cloneNode(true));
-
-            // Re-get the new elements after cloning
-            const newApproveBtn = document.getElementById('approveVideo');
-            const newRejectBtn = document.getElementById('rejectVideo');
-            const newFlagBtn = document.getElementById('flagVideo');
-
-            newApproveBtn.addEventListener('click', () => {
-                bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal')).hide();
-                this.approveVideo(videoId);
-            });
-
-            newRejectBtn.addEventListener('click', () => {
-                bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal')).hide();
-                this.rejectVideo(videoId);
-            });
-
-            newFlagBtn.addEventListener('click', () => {
-                bootstrap.Modal.getInstance(document.getElementById('videoDetailsModal')).hide();
-                this.flagVideo(videoId);
-            });
-
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('videoDetailsModal'));
-            modal.show();
-
-        } catch (error) {
-            console.error('Error showing video details:', error);
-            this.showAlert('Error loading video details', 'danger');
-        }
-    }
-
-    async flagVideo(videoId) {
-        try {
-            if (!confirm('Are you sure you want to flag this video?')) return;
-            
-            const response = await window.apiService.put(`/api/endpoints/videos.php/${videoId}`, {
-                status: 'flagged'
-            });
-            
-            if (response.success) {
-                this.showAlert('Video flagged successfully!', 'danger');
-                // Update local video status
-                const video = this.videos.find(v => v.id == videoId);
-                if (video) {
-                    video.status = 'flagged';
-                }
-                // Refresh the videos grid
-                this.renderVideosGrid();
-                this.updateVideoStats();
-            } else {
-                this.showAlert(response.message || 'Failed to flag video', 'danger');
-            }
-        } catch (error) {
-            console.error('Error flagging video:', error);
-            this.showAlert('Error flagging video', 'danger');
-        }
-    }
-
-    // Video Playback Functions
-    watchVideo(youtubeId, title) {
-        // Create video player modal
-        const modal = document.createElement('div');
-        modal.className = 'modal fade';
-        modal.id = 'videoPlayerModal';
-        modal.innerHTML = `
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">${title}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-0">
-                        <div class="ratio ratio-16x9">
-                            <iframe src="https://www.youtube.com/embed/${youtubeId}?autoplay=1" 
-                                    title="${title}" 
-                                    frameborder="0" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowfullscreen></iframe>
-                        </div>
-                        <div class="p-3">
-                            <h6>${title}</h6>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted">Admin Preview</span>
-                                <button class="btn btn-outline-primary btn-sm" onclick="window.commonUtils.openVideoInNewTab(null, '${youtubeId}')" title="Open in new tab">
-                                    <i class="fas fa-external-link-alt me-1"></i>Open in YouTube
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        const bootstrapModal = new bootstrap.Modal(modal);
-        bootstrapModal.show();
-
-        // Remove modal after it's hidden
-        modal.addEventListener('hidden.bs.modal', () => {
-            modal.remove();
-        });
-    }
-
-    // Video stats update method
-    updateVideoStats() {
-        const totalVideos = document.getElementById('totalVideos');
-        const publishedVideos = document.getElementById('publishedVideos');
-        const pendingVideos = document.getElementById('pendingVideos'); 
-        const flaggedVideos = document.getElementById('flaggedVideos');
-        
-        if (totalVideos) totalVideos.textContent = this.videos.length;
-        if (publishedVideos) publishedVideos.textContent = this.videos.filter(v => v.status === 'published' || v.status === 'active').length;
-        if (pendingVideos) pendingVideos.textContent = this.videos.filter(v => v.status === 'pending').length;
-        if (flaggedVideos) flaggedVideos.textContent = this.videos.filter(v => v.status === 'flagged').length;
-    }
-
-    // Utility methods
-    getUserRoleBadgeClass(role) {
-        const badgeClass = {
-            'admin': 'danger', 
-            'creator': 'success', 
-            'viewer': 'primary'
-        };
-        return badgeClass[role] || 'secondary';
-    }
-
-    showAlert(message, type = 'info') {
-        // Simple alert implementation
-        console.log(`${type.toUpperCase()}: ${message}`);
-        
-        // Create toast notification if possible
-        if (window.commonUtils && window.commonUtils.showToast) {
-            window.commonUtils.showToast(message, type);
-        } else {
-            // Fallback to browser alert
-            alert(message);
-        }
-    }
-
-    refreshUsersTable() {
-        if (this.usersTable) {
-            this.loadUsersDataTable();
-        }
-    }
-
-    // Helper method for getting video status badge color
-    getVideoStatusBadgeColor(status) {
-        switch(status) {
-            case 'published':
-            case 'active': return 'success';
-            case 'pending': return 'warning';
-            case 'flagged': return 'danger';
-            case 'rejected': return 'dark';
-            case 'draft': return 'secondary';
-            default: return 'primary';
-        }
-    }
-
-    // Add filter functionality for admin videos page
-    setupVideoFilters() {
-        const applyFiltersBtn = document.getElementById('applyFilters');
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', () => {
-                this.applyVideoFilters();
-            });
-        }
-
-        // Also bind to individual filter changes
-        const searchInput = document.getElementById('searchInput');
-        const statusFilter = document.getElementById('statusFilter');
-        const creatorFilter = document.getElementById('creatorFilter');
-        const categoryFilter = document.getElementById('categoryFilter');
-        const dateFilter = document.getElementById('dateFilter');
-
-        if (searchInput) {
-            searchInput.addEventListener('input', () => this.applyVideoFilters());
-        }
-        if (statusFilter) {
-            statusFilter.addEventListener('change', () => this.applyVideoFilters());
-        }
-        if (creatorFilter) {
-            creatorFilter.addEventListener('change', () => this.applyVideoFilters());
-        }
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', () => this.applyVideoFilters());
-        }
-        if (dateFilter) {
-            dateFilter.addEventListener('change', () => this.applyVideoFilters());
-        }
-    }
-
-    applyVideoFilters() {
-        if (!this.videos || this.videos.length === 0) return;
-
-        const searchInput = document.getElementById('searchInput');
-        const statusFilter = document.getElementById('statusFilter');
-        const creatorFilter = document.getElementById('creatorFilter');
-        const categoryFilter = document.getElementById('categoryFilter');
-        const dateFilter = document.getElementById('dateFilter');
-
-        let filteredVideos = [...this.videos];
-
-        // Apply search filter
-        if (searchInput && searchInput.value) {
-            const searchTerm = searchInput.value.toLowerCase();
-            filteredVideos = filteredVideos.filter(video => 
-                video.title.toLowerCase().includes(searchTerm) ||
-                (video.description && video.description.toLowerCase().includes(searchTerm)) ||
-                (video.creator_name && video.creator_name.toLowerCase().includes(searchTerm))
-            );
-        }
-
-        // Apply status filter
-        if (statusFilter && statusFilter.value) {
-            filteredVideos = filteredVideos.filter(video => 
-                (video.status || 'published') === statusFilter.value
-            );
-        }
-
-        // Apply creator filter
-        if (creatorFilter && creatorFilter.value) {
-            filteredVideos = filteredVideos.filter(video => 
-                video.creator_name === creatorFilter.value || video.uploader_id == creatorFilter.value
-            );
-        }
-
-        // Apply category filter
-        if (categoryFilter && categoryFilter.value) {
-            filteredVideos = filteredVideos.filter(video => 
-                video.category === categoryFilter.value
-            );
-        }
-
-        // Apply date filter
-        if (dateFilter && dateFilter.value) {
-            const now = new Date();
-            const dateThreshold = new Date();
-            
-            switch (dateFilter.value) {
-                case 'today':
-                    dateThreshold.setHours(0, 0, 0, 0);
-                    break;
-                case 'week':
-                    dateThreshold.setDate(now.getDate() - 7);
-                    break;
-                case 'month':
-                    dateThreshold.setMonth(now.getMonth() - 1);
-                    break;
-            }
-            
-            if (dateFilter.value !== '') {
-                filteredVideos = filteredVideos.filter(video => {
-                    const videoDate = new Date(video.created_at || video.uploadDate);
-                    return videoDate >= dateThreshold;
-                });
-            }
-        }
-
-        // Update display with filtered videos
-        this.displayFilteredVideos(filteredVideos);
-    }
-
-    displayFilteredVideos(filteredVideos) {
-        const videosGrid = document.getElementById('videosGrid');
-        if (!videosGrid) return;
-
-        if (filteredVideos.length === 0) {
-            const emptyState = document.getElementById('emptyState');
-            if (emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-            videosGrid.innerHTML = '';
-            return;
-        }
-
-        const emptyState = document.getElementById('emptyState');
-        if (emptyState) {
-            emptyState.classList.add('d-none');
-        }
-
-        videosGrid.innerHTML = filteredVideos.map(video => `
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="card h-100">
-                    <div class="position-relative">
-                        <div class="video-thumbnail bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
-                            ${video.thumbnail ? 
-                                `<img src="${video.thumbnail}" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: cover;" alt="${video.title}">` :
-                                `<i class="fas fa-play-circle fa-3x text-muted"></i>`
-                            }
-                        </div>
-                        <div class="position-absolute top-0 end-0 m-2">
-                            <span class="badge bg-${this.getVideoStatusBadgeColor(video.status)}">${video.status || 'published'}</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <h6 class="card-title text-truncate" title="${video.title}">${video.title}</h6>
-                        <p class="card-text text-muted small">${(video.description || '').substring(0, 80)}...</p>
-                        <div class="d-flex justify-content-between align-items-center small text-muted">
-                            <span><i class="fas fa-user me-1"></i>${video.creator_name || 'Unknown'}</span>
-                            <span><i class="fas fa-eye me-1"></i>${video.views || 0}</span>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-transparent">
-                        <div class="btn-group w-100" role="group">
-                            <button class="btn btn-outline-primary btn-sm" onclick="adminManager.viewVideo('${video.id}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-outline-warning btn-sm" onclick="adminManager.approveVideo('${video.id}')">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm" onclick="adminManager.flagVideo('${video.id}')">
-                                <i class="fas fa-flag"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-}
-
-// Global video playback function for admin
-function watchVideo(youtubeId, title) {
-    if (window.adminManager && typeof window.adminManager.watchVideo === 'function') {
-        window.adminManager.watchVideo(youtubeId, title);
-    } else {
-        // Fallback implementation
-        const modal = document.createElement('div');
-        modal.className = 'modal fade';
-        modal.id = 'videoPlayerModal';
-        modal.innerHTML = `
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">${title}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-0">
-                        <div class="ratio ratio-16x9">
-                            <iframe src="https://www.youtube.com/embed/${youtubeId}?autoplay=1" 
-                                    title="${title}" 
-                                    frameborder="0" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowfullscreen></iframe>
-                        </div>
-                        <div class="p-3">
-                            <h6>${title}</h6>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted">Admin Preview</span>
-                                <button class="btn btn-outline-primary btn-sm" onclick="window.commonUtils.openVideoInNewTab(null, '${youtubeId}')" title="Open in new tab">
-                                    <i class="fas fa-external-link-alt me-1"></i>Open in YouTube
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        const bootstrapModal = new bootstrap.Modal(modal);
-        bootstrapModal.show();
-
-        modal.addEventListener('hidden.bs.modal', () => {
-            modal.remove();
-        });
-    }
-}
-
-    /**
-     * Initialize transaction history page
-     */
+    // Transaction management methods
     async initTransactionHistory() {
         console.log('Initializing transaction history page');
         
@@ -1735,9 +325,6 @@ function watchVideo(youtubeId, title) {
         }
     }
 
-    /**
-     * Load transaction statistics
-     */
     async loadTransactionStats() {
         try {
             const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
@@ -1754,100 +341,44 @@ function watchVideo(youtubeId, title) {
             }
         } catch (error) {
             console.error('Error loading transaction stats:', error);
-            // Set fallback values
-            document.getElementById('totalTransactions').textContent = '0';
-            document.getElementById('totalRevenue').textContent = '$0.00';
-            document.getElementById('avgTransaction').textContent = '$0.00';
-            document.getElementById('successRate').textContent = '0%';
         }
     }
 
-    /**
-     * Load transactions with current filters
-     */
     async loadTransactions(page = 1) {
         try {
             const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const params = new URLSearchParams({
-                page: page,
-                limit: 25,
-                ...this.transactionFilters
-            });
-            
-            const response = await window.apiService.get(`${apiUrl}/transactions?${params}`);
+            const response = await window.apiService.get(`${apiUrl}/transactions?page=${page}&limit=25`);
             
             if (response.success) {
-                this.transactions = response.data.transactions;
-                this.renderTransactionsTable();
-                this.renderTransactionsPagination(response.data.pagination);
-            } else {
-                this.showNotification('Failed to load transactions', 'error');
+                this.updateTransactionsTable(response.data.transactions);
+                this.updateTransactionsPagination(response.data.pagination);
             }
         } catch (error) {
             console.error('Error loading transactions:', error);
-            this.showNotification('Error loading transactions', 'error');
+            this.showNotification('Failed to load transactions', 'error');
         }
     }
 
-    /**
-     * Render transactions table
-     */
-    renderTransactionsTable() {
-        const tbody = document.getElementById('transactionsTableBody');
-        
-        if (!this.transactions || this.transactions.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center py-4">
-                        <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
-                        <p class="text-muted mb-0">No transactions found</p>
-                    </td>
-                </tr>
-            `;
+    updateTransactionsTable(transactions) {
+        const tableBody = document.querySelector('#transactionsTable tbody');
+        if (!tableBody) return;
+
+        if (transactions.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No transactions found</td></tr>';
             return;
         }
-        
-        tbody.innerHTML = this.transactions.map(transaction => `
+
+        tableBody.innerHTML = transactions.map(transaction => `
             <tr>
+                <td><code>${transaction.transaction_id}</code></td>
+                <td>${transaction.buyer_name}</td>
+                <td>${transaction.video_title || 'N/A'}</td>
+                <td>${transaction.amount_formatted}</td>
+                <td><span class="badge bg-${transaction.status_class}">${transaction.status_display}</span></td>
+                <td>${transaction.payment_provider}</td>
+                <td>${transaction.transaction_date_formatted}</td>
                 <td>
-                    <span class="transaction-id" title="${transaction.transaction_id}">
-                        ${transaction.transaction_id}
-                    </span>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <div>
-                            <div class="fw-semibold">${transaction.buyer_name}</div>
-                            <small class="text-muted">${transaction.buyer_email}</small>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div>
-                        <div class="fw-semibold">${transaction.video_title}</div>
-                        <small class="text-muted">by ${transaction.creator_name}</small>
-                    </div>
-                </td>
-                <td>
-                    <span class="fw-bold">${transaction.amount_formatted}</span>
-                </td>
-                <td>
-                    <span class="badge bg-light text-dark">
-                        ${transaction.payment_method}
-                    </span>
-                    <br>
-                    <small class="text-muted">${transaction.payment_provider}</small>
-                </td>
-                <td>
-                    <span class="badge status-badge bg-${transaction.status_class}">
-                        ${transaction.status_display}
-                    </span>
-                </td>
-                <td>
-                    <div>${transaction.transaction_date_formatted}</div>
-                </td>
-                <td class="table-actions">
-                    <button class="btn btn-sm btn-outline-primary" onclick="window.adminManager.viewTransactionDetails('${transaction.transaction_id}')">
+                    <button class="btn btn-outline-primary btn-sm" onclick="window.adminManager.viewTransactionDetails('${transaction.transaction_id}')">
                         <i class="fas fa-eye"></i>
                     </button>
                 </td>
@@ -1855,259 +386,13 @@ function watchVideo(youtubeId, title) {
         `).join('');
     }
 
-    /**
-     * Setup transaction filters
-     */
-    setupTransactionFilters() {
-        // Initialize transaction filters object
-        this.transactionFilters = {};
-        
-        // Apply filters button
-        const applyFiltersBtn = document.getElementById('applyFilters');
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', () => {
-                this.applyTransactionFilters();
-            });
-        }
-        
-        // Clear filters button
-        const clearFiltersBtn = document.getElementById('clearFilters');
-        if (clearFiltersBtn) {
-            clearFiltersBtn.addEventListener('click', () => {
-                this.clearTransactionFilters();
-            });
-        }
-        
-        // Refresh button
-        const refreshBtn = document.getElementById('refreshTransactions');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-                this.loadTransactions();
-            });
-        }
-        
-        // Export button
-        const exportBtn = document.getElementById('exportTransactions');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                this.exportTransactions();
-            });
-        }
-        
-        // Search input with debounce
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.transactionFilters.search = e.target.value;
-                    this.loadTransactions();
-                }, 500);
-            });
-        }
-    }
+    updateTransactionsPagination(pagination) {
+        const paginationContainer = document.querySelector('.pagination');
+        if (!paginationContainer) return;
 
-    /**
-     * Apply transaction filters
-     */
-    applyTransactionFilters() {
-        this.transactionFilters = {
-            date_from: document.getElementById('dateFrom')?.value || '',
-            date_to: document.getElementById('dateTo')?.value || '',
-            status: document.getElementById('statusFilter')?.value || '',
-            payment_provider: document.getElementById('providerFilter')?.value || '',
-            search: document.getElementById('searchInput')?.value || ''
-        };
-        
-        // Remove empty filters
-        Object.keys(this.transactionFilters).forEach(key => {
-            if (!this.transactionFilters[key]) {
-                delete this.transactionFilters[key];
-            }
-        });
-        
-        this.loadTransactions();
-    }
+        const { page: currentPage, total, has_more } = pagination;
+        const totalPages = Math.ceil(total / 25);
 
-    /**
-     * Clear transaction filters
-     */
-    clearTransactionFilters() {
-        this.transactionFilters = {};
-        
-        // Clear form inputs
-        const inputs = ['dateFrom', 'dateTo', 'statusFilter', 'providerFilter', 'searchInput'];
-        inputs.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.value = '';
-        });
-        
-        this.loadTransactions();
-    }
-
-    /**
-     * View transaction details
-     */
-    async viewTransactionDetails(transactionId) {
-        try {
-            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '/api';
-            const response = await window.apiService.get(`${apiUrl}/transactions/${transactionId}`);
-            
-            if (response.success) {
-                const transaction = response.data;
-                this.showTransactionModal(transaction);
-            } else {
-                this.showAlert('Failed to load transaction details', 'danger');
-            }
-        } catch (error) {
-            console.error('Error loading transaction details:', error);
-            this.showAlert('Error loading transaction details', 'danger');
-        }
-    }
-
-    /**
-     * Show transaction details modal
-     */
-    showTransactionModal(transaction) {
-        const modalBody = document.getElementById('transactionDetails');
-        
-        modalBody.innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <h6>Transaction Information</h6>
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Transaction ID:</strong></td>
-                            <td>${transaction.transaction_id}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Type:</strong></td>
-                            <td>${transaction.transaction_type_display}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Status:</strong></td>
-                            <td><span class="badge bg-${transaction.status_class}">${transaction.status_display}</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Amount:</strong></td>
-                            <td>${transaction.amount_formatted}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Payment Method:</strong></td>
-                            <td>${transaction.payment_method} (${transaction.payment_provider})</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Date:</strong></td>
-                            <td>${transaction.transaction_date_formatted}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <h6>Customer Information</h6>
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Name:</strong></td>
-                            <td>${transaction.buyer_name}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Email:</strong></td>
-                            <td>${transaction.buyer_email}</td>
-                        </tr>
-                    </table>
-                    
-                    <h6>Video Information</h6>
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Title:</strong></td>
-                            <td>${transaction.video_title}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Creator:</strong></td>
-                            <td>${transaction.creator_name}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            
-            ${transaction.stripe_payment_intent_id ? `
-                <div class="mt-3">
-                    <h6>Stripe Information</h6>
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Payment Intent:</strong></td>
-                            <td><code>${transaction.stripe_payment_intent_id}</code></td>
-                        </tr>
-                    </table>
-                </div>
-            ` : ''}
-            
-            ${transaction.metadata ? `
-                <div class="mt-3">
-                    <h6>Additional Data</h6>
-                    <pre class="bg-light p-2 rounded"><code>${JSON.stringify(JSON.parse(transaction.metadata), null, 2)}</code></pre>
-                </div>
-            ` : ''}
-        `;
-        
-        const modal = new bootstrap.Modal(document.getElementById('transactionModal'));
-        modal.show();
-    }
-
-    /**
-     * Export transactions
-     */
-    exportTransactions() {
-        if (!this.transactions || this.transactions.length === 0) {
-            this.showAlert('No transactions to export', 'warning');
-            return;
-        }
-        
-        // Create CSV content
-        const headers = ['Transaction ID', 'User', 'Email', 'Video', 'Creator', 'Amount', 'Status', 'Payment Method', 'Date'];
-        const csvContent = [
-            headers.join(','),
-            ...this.transactions.map(t => [
-                t.transaction_id,
-                `"${t.buyer_name}"`,
-                t.buyer_email,
-                `"${t.video_title}"`,
-                `"${t.creator_name}"`,
-                t.amount,
-                t.status,
-                t.payment_method,
-                t.transaction_date
-            ].join(','))
-        ].join('\n');
-        
-        // Download CSV
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        this.showAlert('Transactions exported successfully', 'success');
-    }
-
-    /**
-     * Render transactions pagination
-     */
-    renderTransactionsPagination(pagination) {
-        const paginationContainer = document.getElementById('transactionsPagination');
-        
-        if (!paginationContainer || !pagination || pagination.total <= pagination.limit) {
-            if (paginationContainer) paginationContainer.innerHTML = '';
-            return;
-        }
-        
-        const totalPages = Math.ceil(pagination.total / pagination.limit);
-        const currentPage = pagination.page;
-        
         let paginationHtml = '';
         
         // Previous button
@@ -2140,9 +425,48 @@ function watchVideo(youtubeId, title) {
         paginationContainer.innerHTML = paginationHtml;
     }
 
-    /**
-     * Show notification/alert
-     */
+    setupTransactionFilters() {
+        // Setup filter event listeners
+        console.log('Setting up transaction filters');
+    }
+
+    async viewTransactionDetails(transactionId) {
+        this.showNotification('Transaction details coming soon', 'info');
+    }
+
+    // Utility methods
+    loadPageSpecificHandlers() {
+        if (this.handlersLoaded) return;
+        
+        const currentPage = window.location.pathname.split('/').pop();
+        
+        if (currentPage === 'users.html') {
+            this.setupUsersPageHandlers();
+        } else if (currentPage === 'videos.html') {
+            this.setupVideosPageHandlers();
+        }
+        
+        this.handlersLoaded = true;
+    }
+
+    setupUsersPageHandlers() {
+        // Add user button
+        const addUserBtn = document.getElementById('addUserBtn');
+        if (addUserBtn && !addUserBtn.hasAttribute('data-handler-added')) {
+            addUserBtn.addEventListener('click', () => this.showAddUserModal());
+            addUserBtn.setAttribute('data-handler-added', 'true');
+        }
+    }
+
+    setupVideosPageHandlers() {
+        // Video-specific handlers
+        console.log('Setting up videos page handlers');
+    }
+
+    showAddUserModal() {
+        this.showNotification('Add user functionality coming soon', 'info');
+    }
+
     showNotification(message, type = 'info') {
         if (window.commonUtils && window.commonUtils.showToast) {
             window.commonUtils.showToast(message, type);
@@ -2150,11 +474,33 @@ function watchVideo(youtubeId, title) {
             this.showAlert(message, type);
         }
     }
+
+    showAlert(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : 
+                          type === 'error' ? 'alert-danger' : 
+                          type === 'warning' ? 'alert-warning' : 'alert-info';
+        
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        const container = document.querySelector('.container-fluid') || document.body;
+        container.insertAdjacentHTML('afterbegin', alertHtml);
+    }
 }
 
-// Setup video filters if on videos page
-setTimeout(() => {
-    if (window.location.pathname.includes('videos.html') && window.adminManager) {
-        window.adminManager.setupVideoFilters();
+// Initialize AdminManager
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, creating AdminManager instance');
+    if (!window.adminManager) {
+        window.adminManager = new AdminManager();
     }
-}, 1000);
+});
+
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = AdminManager;
+}

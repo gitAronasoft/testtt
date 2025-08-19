@@ -87,7 +87,7 @@ function getAllTransactions($transaction) {
         // Format transactions for display
         $formattedTransactions = array_map(function($t) {
             return [
-                'id' => $t['id'],
+                'id' => $t['id'] ?? null,
                 'transaction_id' => $t['transaction_id'],
                 'transaction_type' => $t['transaction_type'],
                 'transaction_type_display' => ucwords(str_replace('_', ' ', $t['transaction_type'])),
@@ -104,8 +104,8 @@ function getAllTransactions($transaction) {
                 'currency' => $t['currency'] ?: 'USD',
                 'payment_method' => $t['payment_method'] ?: 'Unknown',
                 'payment_provider' => $t['payment_provider'] ?: 'Unknown',
-                'stripe_payment_intent_id' => $t['stripe_payment_intent_id'],
-                'stripe_customer_id' => $t['stripe_customer_id'],
+                'stripe_payment_intent_id' => $t['stripe_payment_intent_id'] ?? null,
+                'stripe_customer_id' => $t['stripe_customer_id'] ?? null,
                 'status' => $t['status'],
                 'status_display' => ucfirst($t['status']),
                 'status_class' => getStatusClass($t['status']),

@@ -1,35 +1,74 @@
-
 /**
  * VideoHub Authentication Guard
  * Handles session validation and route protection
  * CRITICAL SECURITY: Blocks unauthorized access immediately
  */
 
-// IMMEDIATE PROTECTION: Block page content until auth is verified
+// IMMEDIATE PROTECTION: Block ALL protected content until auth is verified
 if (window.location.pathname.includes('/admin/') || 
     window.location.pathname.includes('/creator/') || 
     window.location.pathname.includes('/viewer/')) {
     
-    // Check if user session exists before hiding content
-    const hasSession = localStorage.getItem('userSession') || sessionStorage.getItem('userSession');
-    const hasToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    // ALWAYS hide content immediately on protected pages
+    document.documentElement.style.visibility = 'hidden';
     
-    // Only hide content if no session exists (likely unauthorized access)
-    if (!hasSession || !hasToken) {
-        // Hide body content immediately for unauthorized access
-        document.documentElement.style.visibility = 'hidden';
-        
-        // Add CSS to ensure content stays hidden
-        const style = document.createElement('style');
-        style.textContent = `
-            body { visibility: hidden !important; }
-            .auth-guard-approved { visibility: visible !important; }
-        `;
-        document.head.appendChild(style);
-    } else {
-        // User has session, show content but still validate
-        console.log('User session found, allowing initial content display');
-    }
+    // Add CSS to ensure content stays hidden until approved
+    const style = document.createElement('style');
+    style.textContent = `
+        body { 
+            visibility: hidden !important; 
+            opacity: 0 !important;
+        }
+        .auth-guard-approved { 
+            visibility: visible !important; 
+            opacity: 1 !important;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .auth-loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        .auth-loading-content {
+            text-align: center;
+            color: #495057;
+        }
+        .auth-spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 0.3em solid rgba(13, 110, 253, 0.2);
+            border-radius: 50%;
+            border-top: 0.3em solid #0d6efd;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Show professional loading screen
+    const loadingScreen = document.createElement('div');
+    loadingScreen.className = 'auth-loading-screen';
+    loadingScreen.innerHTML = `
+        <div class="auth-loading-content">
+            <div class="auth-spinner"></div>
+            <h5>Verifying Access...</h5>
+            <p class="text-muted">Please wait while we confirm your permissions</p>
+        </div>
+    `;
+    document.body.appendChild(loadingScreen);
 }
 
 class AuthGuard {
@@ -55,12 +94,44 @@ class AuthGuard {
         const isAuthPage = this.isAuthenticationPage(currentPath);
         const isProtectedPage = this.isProtectedPage(currentPath);
 
-        // Immediately show loading overlay for protected pages to prevent content flash
-        if (isProtectedPage) {
-            this.showAuthCheckLoader();
-        }
-
         try {
+            // For protected pages, ALWAYS verify with server first
+            if (isProtectedPage) {
+                const userSession = this.getUserSession();
+                const token = this.getAuthToken();
+                
+                // No local session = immediate redirect
+                if (!userSession || !token) {
+                    console.log('SECURITY: No valid session found');
+                    this.redirectToLogin();
+                    return;
+                }
+                
+                // Verify with server BEFORE allowing access
+                const isValid = await this.verifyTokenWithServer(token);
+                if (!isValid) {
+                    console.log('SECURITY: Server token validation failed');
+                    this.clearAuthData();
+                    this.redirectToLogin();
+                    return;
+                }
+                
+                // Check role permissions
+                const requiredRole = this.getRequiredRole(currentPath);
+                if (requiredRole && userSession.userType !== requiredRole) {
+                    console.log(`SECURITY: Access denied - required ${requiredRole}, user has ${userSession.userType}`);
+                    this.showAccessDenied(requiredRole, userSession.userType);
+                    setTimeout(() => this.redirectToUserDashboard(userSession.userType), 2000);
+                    return;
+                }
+                
+                // All checks passed - allow access
+                console.log('AUTH: Access granted for user role:', userSession.userType);
+                this.allowPageAccess();
+                return;
+            }
+            
+            // If no session or auth page, do full validation
             const isAuthenticated = await this.validateSession();
             
             if (isAuthenticated) {
@@ -72,24 +143,20 @@ class AuthGuard {
                 }
                 
                 if (isProtectedPage && userSession) {
-                    // Check role-based access - STRICT ENFORCEMENT
+                    // Check role-based access
                     const requiredRole = this.getRequiredRole(currentPath);
                     if (requiredRole && userSession.userType !== requiredRole) {
                         console.log(`SECURITY: Access denied - required ${requiredRole}, user has ${userSession.userType}`);
-                        // IMMEDIATE redirect for unauthorized access - no delay
                         this.showAccessDenied(requiredRole, userSession.userType);
-                        // Redirect immediately
-                        this.redirectToUserDashboard(userSession.userType);
+                        setTimeout(() => this.redirectToUserDashboard(userSession.userType), 2000);
                         return;
                     }
                     // User is authenticated and has correct role - allow access
-                    this.hideAuthCheckLoader();
                     this.allowPageAccess();
                     return;
                 }
                 
                 // Not a protected page, allow access
-                this.hideAuthCheckLoader();
                 this.allowPageAccess();
             } else {
                 if (isProtectedPage) {
@@ -103,22 +170,23 @@ class AuthGuard {
         } catch (error) {
             console.error('Auth check failed:', error);
             if (isProtectedPage) {
-                // Check if it's just an API service timing issue
-                if (error.message.includes('API service not available')) {
-                    console.warn('API service timing issue, retrying auth check in 1 second...');
-                    setTimeout(() => {
-                        this.checkAuthStatus();
-                    }, 1000);
+                // For protected pages, if user has session but validation failed due to network issues
+                const userSession = this.getUserSession();
+                const token = this.getAuthToken();
+                if (userSession && token && error.name === 'TypeError') {
+                    console.warn('Network error during auth check - allowing cached session');
+                    this.allowPageAccess();
                     return;
                 }
+                
                 this.clearUserSession();
                 this.redirectToLogin();
                 return;
             }
         }
         
-        // Always hide loader at the end
-        this.hideAuthCheckLoader();
+        // Always allow access at the end for non-protected pages
+        this.allowPageAccess();
     }
 
     async validateSession() {
@@ -133,51 +201,67 @@ class AuthGuard {
         }
 
         try {
-            // Wait for API service to be available
+            // Try to wait for API service but don't fail if it's not available
             await this.waitForAPIService();
             
-            // Ensure API service has the current token
+            // Ensure API service has the current token if available
             if (window.apiService && window.apiService.setAuthToken) {
                 window.apiService.setAuthToken(token);
             }
             
-            const response = await window.apiService.get('/api/auth/verify');
-            
-            if (response.success && response.data) {
-                // Update user session with fresh data from API
-                const userData = response.data.user;
-                this.updateUserSession({
-                    id: userData.id,
-                    name: userData.name,
-                    email: userData.email,
-                    userType: userData.role
-                });
-                console.log('Session validation successful for user:', userData.role);
-                return true;
-            } else {
-                console.log('Session validation failed:', response.message);
-                this.clearUserSession();
-                return false;
+            // Make direct fetch call to avoid conflicts with API service
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '';
+            const response = await fetch(`${apiUrl}/api/auth/verify`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data) {
+                    // Update user session with fresh data from API
+                    const userData = data.data.user;
+                    this.updateUserSession({
+                        id: userData.id,
+                        name: userData.name,
+                        email: userData.email,
+                        userType: userData.role
+                    });
+                    console.log('Session validation successful for user:', userData.role);
+                    return true;
+                }
             }
+            
+            console.log('Session validation failed - server response invalid');
+            return false;
+            
         } catch (error) {
             console.error('Session validation failed:', error);
-            // Don't immediately clear session for API errors - could be temporary
-            if (error.message.includes('API service not available')) {
-                console.warn('Session validation failed due to API timing issue');
-                return false;
+            // For network errors or API service issues, be more lenient
+            if (error.name === 'TypeError' || 
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('API service not available')) {
+                console.warn('Network/API error during session validation - allowing current session');
+                return true; // Don't log out for temporary network/API issues
             }
-            this.clearUserSession();
             return false;
         }
     }
 
     async logout() {
         try {
-            // Wait for API service to be available
+            // Try to wait for API service but don't block logout if unavailable
             await this.waitForAPIService();
             
-            // Call logout endpoint
-            await window.apiService.post('/api/auth/logout');
+            // Call logout endpoint if API service is available
+            if (window.apiService) {
+                await window.apiService.post('/api/auth/logout');
+            } else {
+                console.warn('API service not available for logout - clearing local session only');
+            }
         } catch (error) {
             console.error('Logout API call failed:', error);
         } finally {
@@ -185,6 +269,53 @@ class AuthGuard {
             this.clearUserSession();
             this.redirectToLogin();
         }
+    }
+
+    // New method for server token verification
+    async verifyTokenWithServer(token) {
+        try {
+            const apiUrl = window.videoHubConfig ? window.videoHubConfig.getApiUrl() : '';
+            const response = await fetch(`${apiUrl}/api/auth/verify`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.success && data.data;
+            }
+            return false;
+        } catch (error) {
+            console.error('Token verification failed:', error);
+            return false;
+        }
+    }
+
+    // Professional page access method
+    allowPageAccess() {
+        // Remove loading screen
+        const loadingScreen = document.querySelector('.auth-loading-screen');
+        if (loadingScreen) {
+            loadingScreen.remove();
+        }
+
+        // Show page content with smooth transition
+        document.documentElement.style.visibility = 'visible';
+        document.documentElement.style.opacity = '1';
+        document.body.classList.add('auth-guard-approved');
+
+        console.log('AUTH: Page access granted');
+    }
+
+    // Clear authentication data
+    clearAuthData() {
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('userSession');
+        sessionStorage.removeItem('authToken');
     }
 
     setupLogoutHandlers() {
@@ -210,72 +341,49 @@ class AuthGuard {
     }
 
     validateTokenPeriodically() {
-        // Validate token every 5 minutes
+        // Validate token every 10 minutes (less aggressive)
         setInterval(async () => {
             const isProtectedPage = this.isProtectedPage(window.location.pathname);
             if (isProtectedPage) {
-                const isValid = await this.validateSession();
-                if (!isValid) {
-                    this.clearUserSession();
-                    this.redirectToLogin();
+                try {
+                    const isValid = await this.validateSession();
+                    if (!isValid) {
+                        console.log('Periodic validation failed - logging out');
+                        this.clearUserSession();
+                        this.redirectToLogin();
+                    }
+                } catch (error) {
+                    console.warn('Periodic validation error - ignoring:', error);
+                    // Don't log out for periodic validation errors
                 }
             }
-        }, 5 * 60 * 1000); // 5 minutes
+        }, 10 * 60 * 1000); // 10 minutes
         
-        // Also check on browser focus/visibility change
+        // Check on browser focus/visibility change (but less aggressive)
         document.addEventListener('visibilitychange', async () => {
             if (!document.hidden) {
                 const isProtectedPage = this.isProtectedPage(window.location.pathname);
                 if (isProtectedPage) {
-                    const isValid = await this.validateSession();
-                    if (!isValid) {
-                        this.clearUserSession();
-                        this.redirectToLogin();
+                    try {
+                        const userSession = this.getUserSession();
+                        const token = this.getAuthToken();
+                        
+                        // Only validate if session exists
+                        if (userSession && token) {
+                            const isValid = await this.validateSession();
+                            if (!isValid) {
+                                console.log('Visibility validation failed - logging out');
+                                this.clearUserSession();
+                                this.redirectToLogin();
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Visibility validation error - ignoring:', error);
+                        // Don't log out for visibility validation errors
                     }
                 }
             }
         });
-    }
-    
-    showAuthCheckLoader() {
-        // Prevent content flash during auth check
-        const loader = document.createElement('div');
-        loader.id = 'auth-check-loader';
-        loader.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
-        loader.innerHTML = `
-            <div class="text-center">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <div>Checking authentication...</div>
-            </div>
-        `;
-        document.body.appendChild(loader);
-    }
-    
-    hideAuthCheckLoader() {
-        const loader = document.getElementById('auth-check-loader');
-        if (loader) {
-            loader.remove();
-        }
-    }
-    
-    allowPageAccess() {
-        // Show page content for authorized users
-        document.documentElement.style.visibility = 'visible';
-        document.body.classList.add('auth-guard-approved');
-        document.body.style.visibility = 'visible';
     }
     
     showAccessDenied(requiredRole, userRole) {
@@ -330,107 +438,77 @@ class AuthGuard {
         return null;
     }
     
-    redirectToLogin() {
-        if (window.videoHubConfig) {
-            window.location.href = window.videoHubConfig.getUrl('/auth/login.html');
-        } else {
-            window.location.href = '/auth/login.html';
-        }
-    }
-    
-    redirectToUserDashboard(userType) {
-        const dashboards = {
-            admin: '/admin/dashboard.html',
-            creator: '/creator/dashboard.html',
-            viewer: '/viewer/dashboard.html'
-        };
-        
-        const dashboardUrl = dashboards[userType];
-        if (dashboardUrl) {
-            if (window.videoHubConfig) {
-                window.location.href = window.videoHubConfig.getUrl(dashboardUrl);
-            } else {
-                window.location.href = dashboardUrl;
-            }
-        }
-    }
-    
     getUserSession() {
-        const localSession = localStorage.getItem('userSession');
-        const sessionSession = sessionStorage.getItem('userSession');
-        const session = localSession || sessionSession;
+        const session = localStorage.getItem('userSession') || sessionStorage.getItem('userSession');
         return session ? JSON.parse(session) : null;
-    }
-    
-    updateUserSession(userData) {
-        const existingSession = this.getUserSession();
-        if (existingSession) {
-            const updatedSession = { ...existingSession, ...userData };
-            if (localStorage.getItem('userSession')) {
-                localStorage.setItem('userSession', JSON.stringify(updatedSession));
-            } else {
-                sessionStorage.setItem('userSession', JSON.stringify(updatedSession));
-            }
-        }
-    }
-    
-    clearUserSession() {
-        localStorage.removeItem('userSession');
-        sessionStorage.removeItem('userSession');
-        localStorage.removeItem('authToken');
-        sessionStorage.removeItem('authToken');
     }
     
     getAuthToken() {
         return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     }
     
+    updateUserSession(userData) {
+        const sessionData = JSON.stringify(userData);
+        
+        // Update both storages to maintain consistency
+        if (localStorage.getItem('userSession')) {
+            localStorage.setItem('userSession', sessionData);
+        }
+        if (sessionStorage.getItem('userSession')) {
+            sessionStorage.setItem('userSession', sessionData);
+        }
+    }
+    
+    clearUserSession() {
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('userSession');
+        sessionStorage.removeItem('authToken');
+        
+        // Clear API service token
+        if (window.apiService && window.apiService.clearAuthToken) {
+            window.apiService.clearAuthToken();
+        }
+    }
+    
+    redirectToLogin() {
+        const baseUrl = window.videoHubConfig ? window.videoHubConfig.getBaseUrl() : '';
+        window.location.href = `${baseUrl}/auth/login.html`;
+    }
+    
+    redirectToUserDashboard(userType) {
+        const baseUrl = window.videoHubConfig ? window.videoHubConfig.getBaseUrl() : '';
+        const dashboardMap = {
+            'admin': '/admin/dashboard.html',
+            'creator': '/creator/dashboard.html',
+            'viewer': '/viewer/dashboard.html'
+        };
+        
+        const dashboardPath = dashboardMap[userType] || '/auth/login.html';
+        window.location.href = `${baseUrl}${dashboardPath}`;
+    }
+
     async waitForAPIService() {
         let retries = 0;
-        const maxRetries = 100; // Increased from 50 to 10 seconds
+        const maxRetries = 50;
         
         while (retries < maxRetries && !window.apiService) {
             await new Promise(resolve => setTimeout(resolve, 100));
             retries++;
         }
         
-        if (!window.apiService) {
-            // Don't throw error - try to initialize API service manually
-            console.warn('API service not found, attempting manual initialization');
-            if (typeof APIService !== 'undefined') {
-                window.apiService = new APIService();
-                // Give it a moment to initialize
-                await new Promise(resolve => setTimeout(resolve, 200));
-            }
-            
-            if (!window.apiService) {
-                throw new Error('API service not available');
-            }
-        }
+        return !!window.apiService;
     }
 }
 
-// Enhanced browser security measures
-window.addEventListener('load', () => {
-    // Prevent back button access to protected pages after logout
-    window.addEventListener('pageshow', (event) => {
-        if (event.persisted) {
-            // Page was loaded from cache (back button)
-            const isProtectedPage = window.location.pathname.includes('/admin/') || 
-                                   window.location.pathname.includes('/creator/') || 
-                                   window.location.pathname.includes('/viewer/');
-            
-            if (isProtectedPage) {
-                const authGuard = new AuthGuard();
-                authGuard.checkAuthStatus();
-            }
-        }
-    });
+// Initialize AuthGuard
+document.addEventListener('DOMContentLoaded', () => {
+    if (!window.authGuard) {
+        window.authGuard = new AuthGuard();
+    }
 });
 
-// Initialize auth guard globally - prevent multiple instances
-if (!window.authGuard) {
-    window.authGuard = new AuthGuard();
-} else {
-    console.log('Auth guard already initialized');
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = AuthGuard;
 }

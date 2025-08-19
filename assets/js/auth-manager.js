@@ -26,17 +26,8 @@ class AuthManager {
         // Load stored authentication state
         this.loadStoredAuth();
         
-        // Start authentication check
-        //await this.checkAuthentication();
-        
-        // Setup periodic validation
-        //this.setupPeriodicValidation();
-        
         // Setup logout handlers
-         this.setupLogoutHandlers();
-        
-        // Handle browser back/forward
-        // this.setupBrowserHandlers();
+        this.setupLogoutHandlers();
         
         console.log('AuthManager initialized successfully');
     }
@@ -162,11 +153,17 @@ class AuthManager {
             console.error('Session validation error:', error);
             
             // Retry logic for network errors
-            if (this.retryCount < this.maxRetries && this.isNetworkError(error)) {
+            if (this.retryCount < this.maxRetries && (error.isNetworkError || this.isNetworkError(error))) {
                 this.retryCount++;
                 console.log(`Retrying validation (${this.retryCount}/${this.maxRetries})`);
                 await this.delay(1000 * this.retryCount); // Exponential backoff
                 return this.performValidation();
+            }
+            
+            // For network errors without retries left, don't fail validation
+            if (error.isNetworkError || this.isNetworkError(error)) {
+                console.warn('Network error during validation - allowing current session');
+                return true;
             }
             
             return false;
@@ -174,19 +171,29 @@ class AuthManager {
     }
 
     async makeAuthRequest(endpoint) {
-        const response = await fetch(endpoint, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.authToken}`
+        try {
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
             }
-        });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            return response.json();
+        } catch (error) {
+            console.error('Auth request failed:', error);
+            // Mark as network error for proper handling
+            if (error.name === 'TypeError' || error.message.includes('Failed to fetch')) {
+                error.isNetworkError = true;
+            }
+            throw error;
         }
-
-        return response.json();
     }
 
     setAuthentication(userData, token, rememberMe = false) {

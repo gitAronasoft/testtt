@@ -121,7 +121,7 @@ class Transaction {
                 p.purchase_date as transaction_date,
                 p.purchase_date as completed_at,
                 p.created_at,
-                p.updated_at
+                p.created_at as updated_at
             FROM purchases p
             LEFT JOIN users u ON p.user_id_new = u.id
             LEFT JOIN videos v ON p.video_id = v.id
