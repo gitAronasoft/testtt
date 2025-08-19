@@ -310,7 +310,8 @@ class ProfileManager {
         submitBtn.disabled = true;
 
         try {
-            const result = await window.apiService.updateUserProfile(profileData);
+            const userSession = this.getUserSession();
+            const result = await window.apiService.updateUserProfile(profileData, userSession);
 
             if (result.success) {
                 // Update local data
@@ -334,6 +335,11 @@ class ProfileManager {
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         }
+    }
+
+    getUserSession() {
+        const sessionData = sessionStorage.getItem('userSession') || localStorage.getItem('userSession');
+        return sessionData ? JSON.parse(sessionData) : null;
     }
 
     validateProfileForm(form) {

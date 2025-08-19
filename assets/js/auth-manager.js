@@ -27,7 +27,7 @@ class AuthManager {
         this.loadStoredAuth();
         
         // Start authentication check
-        //await this.checkAuthentication();
+        await this.checkAuthentication();
         
         // Setup periodic validation
         //this.setupPeriodicValidation();
