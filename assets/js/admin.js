@@ -450,7 +450,7 @@ class AdminManager {
                                     </button>
                                     <ul class="dropdown-menu">
                                         <li><a class="dropdown-item" href="#" onclick="adminManager.showUserDetails(${row.id})"><i class="fas fa-info-circle me-2"></i>Quick View</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="viewUserDetailsPage(${row.id})"><i class="fas fa-external-link-alt me-2"></i>Full Details</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="adminManager.viewUserDetailsPage(${row.id})"><i class="fas fa-external-link-alt me-2"></i>Full Details</a></li>
                                     </ul>
                                 </div>
                                 <button class="btn btn-sm btn-outline-primary" onclick="adminManager.editUser(${row.id})" title="Edit User">

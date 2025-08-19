@@ -150,6 +150,12 @@ class ProfileManager {
             };
             roleEl.value = roleMap[this.currentUser.role] || this.currentUser.role;
         }
+
+        // Update Account Summary dynamic data
+        this.updateAccountSummary();
+
+        // Update Account Summary dynamic data
+        this.updateAccountSummary();
     }
 
     bindEvents() {
@@ -457,6 +463,73 @@ class ProfileManager {
 
         } catch (error) {
             console.error('Failed to load admin metrics:', error);
+        }
+    }
+
+    updateAccountSummary() {
+        try {
+            // Update display name
+            const displayNameEl = document.getElementById('displayName');
+            if (displayNameEl) {
+                const fullName = `${this.currentUser.firstName || ''} ${this.currentUser.lastName || ''}`.trim();
+                displayNameEl.textContent = fullName || this.currentUser.name || this.currentUser.email || 'User';
+            }
+
+            // Update user role text
+            const userRoleEl = document.getElementById('userRole');
+            if (userRoleEl && this.currentUser.role) {
+                const roleMap = {
+                    'admin': 'Platform Administrator',
+                    'creator': 'Content Creator',
+                    'viewer': 'Video Viewer'
+                };
+                userRoleEl.textContent = roleMap[this.currentUser.role] || this.currentUser.role;
+            }
+
+            // Update member since date (use creation date or fallback to current)
+            const memberSinceEl = document.getElementById('memberSince');
+            if (memberSinceEl) {
+                const createdDate = this.currentUser.created_at || this.currentUser.createdAt;
+                if (createdDate) {
+                    const date = new Date(createdDate);
+                    memberSinceEl.textContent = date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        year: 'numeric' 
+                    });
+                } else {
+                    // Fallback: estimate based on current date minus some time
+                    const fallbackDate = new Date();
+                    fallbackDate.setMonth(fallbackDate.getMonth() - 3); // 3 months ago as fallback
+                    memberSinceEl.textContent = fallbackDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        year: 'numeric' 
+                    });
+                }
+            }
+
+            // Update last login
+            const lastLoginEl = document.getElementById('lastLogin');
+            if (lastLoginEl) {
+                const lastLogin = this.currentUser.last_login || this.currentUser.lastLogin;
+                if (lastLogin) {
+                    const date = new Date(lastLogin);
+                    lastLoginEl.textContent = date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                } else {
+                    // Show "Today" as fallback since user is currently logged in
+                    lastLoginEl.textContent = 'Today';
+                }
+            }
+
+        } catch (error) {
+            console.error('Error updating account summary:', error);
+            // Graceful fallback - at least show user email
+            const displayNameEl = document.getElementById('displayName');
+            if (displayNameEl && this.currentUser.email) {
+                displayNameEl.textContent = this.currentUser.email;
+            }
         }
     }
 }

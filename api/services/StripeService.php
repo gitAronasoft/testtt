@@ -10,12 +10,16 @@ class StripeService {
     private $stripe;
     private $db;
     private $logger;
+    private $webhookSecret;
 
     public function __construct($database) {
         $this->db = $database->getConnection();
         
         // Get Stripe secret key from environment
         $stripeSecretKey = "sk_test_51MMBpLLzvpT6nLjbghXOEgosU07FYeXTUM5q4G5Q3lewgrQx0WZqVd5LsrLsuX80AL9xa6AJCeiXxyRynRLem33100J0m9m9Sf";
+        
+        // Get webhook secret (you'll need to set this in your Stripe dashboard)
+        $this->webhookSecret = 'we_1MgAHjLzvpT6nLjbr01fHqdF';
         
         if (!$stripeSecretKey) {
             throw new Exception('Stripe secret key not configured');
@@ -48,17 +52,110 @@ class StripeService {
     /**
      * Create a Payment Intent for one-time payment
      */
-    public function createPaymentIntent($amount, $currency = 'usd', $metadata = []) {
+    /**
+     * Construct and verify webhook event from Stripe
+     */
+    public function constructWebhookEvent($payload, $sigHeader) {
+        if (!$this->webhookSecret) {
+            throw new Exception('Webhook secret not configured');
+        }
+        
+        try {
+            return \Stripe\Webhook::constructEvent(
+                $payload,
+                $sigHeader,
+                $this->webhookSecret
+            );
+        } catch (\UnexpectedValueException $e) {
+            $this->log("Webhook payload error", ['error' => $e->getMessage()]);
+            throw new Exception('Invalid payload: ' . $e->getMessage());
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            $this->log("Webhook signature error", ['error' => $e->getMessage()]);
+            throw new Exception('Invalid signature: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a Payment Intent for one-time payment
+     */
+
+    /**
+     * Create or retrieve Stripe customer
+     */
+    public function createOrGetCustomer($userId, $email, $name = null) {
+        try {
+            // Check if customer already exists in database
+            $stmt = $this->db->prepare("SELECT stripe_customer_id FROM users WHERE id = ? AND stripe_customer_id IS NOT NULL");
+            $stmt->execute([$userId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result && $result['stripe_customer_id']) {
+                // Verify customer exists in Stripe
+                try {
+                    $customer = \Stripe\Customer::retrieve($result['stripe_customer_id']);
+                    $this->log("Retrieved existing customer", ['customer_id' => $customer->id, 'user_id' => $userId]);
+                    return $customer;
+                } catch (\Stripe\Exception\InvalidRequestException $e) {
+                    // Customer doesn't exist in Stripe, create new one
+                    $this->log("Customer not found in Stripe, creating new", ['old_customer_id' => $result['stripe_customer_id']]);
+                }
+            }
+            
+            // Create new customer in Stripe
+            $customerData = [
+                'email' => $email,
+                'metadata' => [
+                    'user_id' => $userId,
+                    'platform' => 'VideoHub'
+                ]
+            ];
+            
+            if ($name) {
+                $customerData['name'] = $name;
+            }
+            
+            $customer = \Stripe\Customer::create($customerData);
+            
+            // Update user record with Stripe customer ID
+            $updateStmt = $this->db->prepare("UPDATE users SET stripe_customer_id = ? WHERE id = ?");
+            $updateStmt->execute([$customer->id, $userId]);
+            
+            $this->log("Created new customer", [
+                'customer_id' => $customer->id, 
+                'user_id' => $userId,
+                'email' => $email
+            ]);
+            
+            return $customer;
+            
+        } catch (Exception $e) {
+            $this->log("Customer creation failed", ['error' => $e->getMessage(), 'user_id' => $userId]);
+            throw new Exception('Failed to create customer: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a Payment Intent for one-time payment with customer
+     */
+    public function createPaymentIntent($amount, $currency = 'usd', $metadata = [], $customerId = null) {
         try {
             $this->log("Creating Payment Intent", ['amount' => $amount, 'currency' => $currency]);
 
-            $paymentIntent = \Stripe\PaymentIntent::create([
+            $paymentIntentData = [
                 'amount' => $amount * 100, // Convert to cents
                 'currency' => $currency,
                 'metadata' => $metadata,
                 'payment_method_types' => ['card'],
                 'capture_method' => 'automatic',
-            ]);
+            ];
+            
+            // Add customer if provided
+            if ($customerId) {
+                $paymentIntentData['customer'] = $customerId;
+                $this->log("Payment Intent with customer", ['customer_id' => $customerId]);
+            }
+            
+            $paymentIntent = \Stripe\PaymentIntent::create($paymentIntentData);
 
             $this->log("Payment Intent created successfully", ['id' => $paymentIntent->id]);
 

@@ -253,7 +253,7 @@
     }
 
     async updateUserProfile(profileData) {
-        return this.put('users/profile', profileData);
+        return this.put('/api/users/profile', profileData);
     }
 
     async getUsers(params = {}) {

@@ -140,15 +140,33 @@ function handleCreatePaymentIntent($stripeService, $input, $database) {
             return;
         }
         
-        // Create payment intent
+        // Get user details for customer creation
+        $userStmt = $db->prepare("SELECT email, name FROM users WHERE id = ?");
+        $userStmt->execute([$userId]);
+        $userData = $userStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$userData) {
+            http_response_code(404);
+            echo json_encode([
+                'success' => false,
+                'message' => 'User not found'
+            ]);
+            return;
+        }
+        
+        // Create or get Stripe customer
+        $customer = $stripeService->createOrGetCustomer($userId, $userData['email'], trim($userData['name']));
+        
+        // Create payment intent with customer
         $metadata = [
             'video_id' => $videoId,
             'user_id' => $userId,
             'video_title' => $video['title'],
-            'platform' => 'VideoHub'
+            'platform' => 'VideoHub',
+            'customer_id' => $customer->id
         ];
         
-        $result = $stripeService->createPaymentIntent($amount, 'usd', $metadata);
+        $result = $stripeService->createPaymentIntent($amount, 'usd', $metadata, $customer->id);
         
         if ($result['success']) {
             // Store payment record in database
@@ -179,6 +197,7 @@ function handleCreatePaymentIntent($stripeService, $input, $database) {
         
     } catch (Exception $e) {
         error_log("Create Payment Intent Error: " . $e->getMessage());
+        echo "<pre>";print_r( $e->getMessage());
         http_response_code(500);
         echo json_encode([
             'success' => false,
