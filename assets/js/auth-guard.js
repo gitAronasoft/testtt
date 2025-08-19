@@ -2,7 +2,35 @@
 /**
  * VideoHub Authentication Guard
  * Handles session validation and route protection
+ * CRITICAL SECURITY: Blocks unauthorized access immediately
  */
+
+// IMMEDIATE PROTECTION: Block page content until auth is verified
+if (window.location.pathname.includes('/admin/') || 
+    window.location.pathname.includes('/creator/') || 
+    window.location.pathname.includes('/viewer/')) {
+    
+    // Check if user session exists before hiding content
+    const hasSession = localStorage.getItem('userSession') || sessionStorage.getItem('userSession');
+    const hasToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    
+    // Only hide content if no session exists (likely unauthorized access)
+    if (!hasSession || !hasToken) {
+        // Hide body content immediately for unauthorized access
+        document.documentElement.style.visibility = 'hidden';
+        
+        // Add CSS to ensure content stays hidden
+        const style = document.createElement('style');
+        style.textContent = `
+            body { visibility: hidden !important; }
+            .auth-guard-approved { visibility: visible !important; }
+        `;
+        document.head.appendChild(style);
+    } else {
+        // User has session, show content but still validate
+        console.log('User session found, allowing initial content display');
+    }
+}
 
 class AuthGuard {
     constructor() {
@@ -44,20 +72,25 @@ class AuthGuard {
                 }
                 
                 if (isProtectedPage && userSession) {
-                    // Check role-based access
+                    // Check role-based access - STRICT ENFORCEMENT
                     const requiredRole = this.getRequiredRole(currentPath);
                     if (requiredRole && userSession.userType !== requiredRole) {
-                        console.log(`Role mismatch: required ${requiredRole}, user has ${userSession.userType}`);
+                        console.log(`SECURITY: Access denied - required ${requiredRole}, user has ${userSession.userType}`);
+                        // IMMEDIATE redirect for unauthorized access - no delay
+                        this.showAccessDenied(requiredRole, userSession.userType);
+                        // Redirect immediately
                         this.redirectToUserDashboard(userSession.userType);
                         return;
                     }
                     // User is authenticated and has correct role - allow access
                     this.hideAuthCheckLoader();
+                    this.allowPageAccess();
                     return;
                 }
                 
                 // Not a protected page, allow access
                 this.hideAuthCheckLoader();
+                this.allowPageAccess();
             } else {
                 if (isProtectedPage) {
                     // Redirect unauthenticated users to login
@@ -70,6 +103,14 @@ class AuthGuard {
         } catch (error) {
             console.error('Auth check failed:', error);
             if (isProtectedPage) {
+                // Check if it's just an API service timing issue
+                if (error.message.includes('API service not available')) {
+                    console.warn('API service timing issue, retrying auth check in 1 second...');
+                    setTimeout(() => {
+                        this.checkAuthStatus();
+                    }, 1000);
+                    return;
+                }
                 this.clearUserSession();
                 this.redirectToLogin();
                 return;
@@ -120,6 +161,11 @@ class AuthGuard {
             }
         } catch (error) {
             console.error('Session validation failed:', error);
+            // Don't immediately clear session for API errors - could be temporary
+            if (error.message.includes('API service not available')) {
+                console.warn('Session validation failed due to API timing issue');
+                return false;
+            }
             this.clearUserSession();
             return false;
         }
@@ -225,6 +271,50 @@ class AuthGuard {
         }
     }
     
+    allowPageAccess() {
+        // Show page content for authorized users
+        document.documentElement.style.visibility = 'visible';
+        document.body.classList.add('auth-guard-approved');
+        document.body.style.visibility = 'visible';
+    }
+    
+    showAccessDenied(requiredRole, userRole) {
+        // Show access denied overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'access-denied-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(220, 53, 69, 0.95);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        overlay.innerHTML = `
+            <div class="text-center text-white">
+                <div class="mb-3">
+                    <i class="fas fa-shield-alt" style="font-size: 4rem;"></i>
+                </div>
+                <h2>Access Denied</h2>
+                <p class="mb-3">You don't have permission to access this ${requiredRole} panel.</p>
+                <p>Your role: <strong>${userRole}</strong> | Required: <strong>${requiredRole}</strong></p>
+                <p><small>Redirecting to your dashboard...</small></p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        // Auto-remove after redirect
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.remove();
+            }
+        }, 1000);
+    }
+    
     isAuthenticationPage(path) {
         return path.includes('/auth/') || path.endsWith('login.html') || path.endsWith('signup.html');
     }
@@ -297,7 +387,7 @@ class AuthGuard {
     
     async waitForAPIService() {
         let retries = 0;
-        const maxRetries = 50;
+        const maxRetries = 100; // Increased from 50 to 10 seconds
         
         while (retries < maxRetries && !window.apiService) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -305,7 +395,17 @@ class AuthGuard {
         }
         
         if (!window.apiService) {
-            throw new Error('API service not available');
+            // Don't throw error - try to initialize API service manually
+            console.warn('API service not found, attempting manual initialization');
+            if (typeof APIService !== 'undefined') {
+                window.apiService = new APIService();
+                // Give it a moment to initialize
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            if (!window.apiService) {
+                throw new Error('API service not available');
+            }
         }
     }
 }

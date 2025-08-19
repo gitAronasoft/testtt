@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 // Get database connection
 $database = new Database();
@@ -13,6 +14,9 @@ $db = $database->getConnection();
 
 // Initialize user object
 $user = new User($db);
+
+// Initialize authentication middleware
+$authMiddleware = new AuthMiddleware($db);
 
 // Get request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -23,40 +27,15 @@ try {
     switch ($method) {
         case 'GET':
             if (isset($path_parts[1]) && $path_parts[1] === 'profile') {
-                // Get user profile - Get from session or token
-                $headers = getallheaders();
-                $token = null;
-                
-                if (isset($headers['Authorization'])) {
-                    $token = str_replace('Bearer ', '', $headers['Authorization']);
+                // SECURITY: Require authentication for profile access
+                $currentUser = $authMiddleware->authenticate();
+                if (!$currentUser) {
+                    $authMiddleware->sendUnauthorizedResponse();
+                    exit;
                 }
                 
-                // Get user ID from session data or token
-                $userId = null;
-                
-                // Try to get user ID from session first
-                session_start();
-                if (isset($_SESSION['user_id'])) {
-                    $userId = $_SESSION['user_id'];
-                } else {
-                    // Try to get from request headers or POST data
-                    $input = json_decode(file_get_contents("php://input"), true);
-                    if (isset($input['user_id'])) {
-                        $userId = $input['user_id'];
-                    } elseif (isset($_GET['user_id'])) {
-                        $userId = $_GET['user_id'];
-                    }
-                }
-                
-                // If still no user ID, return error
-                if (!$userId) {
-                    http_response_code(401);
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'User not authenticated'
-                    ]);
-                    break;
-                }
+                // Users can only access their own profile
+                $userId = $currentUser['id'];
                 
                 // Get user from database
                 $stmt = $db->prepare("SELECT id, name, email, role, created_at FROM users WHERE id = ?");
@@ -91,6 +70,12 @@ try {
                     ]);
                 }
             } elseif (isset($path_parts[1]) && is_numeric($path_parts[1])) {
+                // SECURITY: Only admins can access individual user details
+                $currentUser = $authMiddleware->requireRole('admin');
+                if (!$currentUser) {
+                    exit;
+                }
+                
                 // Get specific user
                 $user->id = $path_parts[1];
                 if ($user->readOne()) {
@@ -115,6 +100,12 @@ try {
                     ]);
                 }
             } else {
+                // SECURITY: Only admins can list all users
+                $currentUser = $authMiddleware->requireRole('admin');
+                if (!$currentUser) {
+                    exit;
+                }
+                
                 // Get all users with filters
                 $filters = [];
                 

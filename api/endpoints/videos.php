@@ -6,8 +6,7 @@
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/Video.php';
-
-
+require_once __DIR__ . '/../middleware/auth.php';
 
 // Get database connection
 $database = new Database();
@@ -15,6 +14,9 @@ $db = $database->getConnection();
 
 // Initialize video object
 $video = new Video($db);
+
+// Initialize authentication middleware
+$authMiddleware = new AuthMiddleware($db);
 
 // Get request method and path
 $method = $_SERVER['REQUEST_METHOD'];

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 header('Content-Type: application/json');
 
@@ -9,6 +10,16 @@ header('Content-Type: application/json');
 $database = new Database();
 $pdo = $database->getConnection();
 $user = new User($pdo);
+
+// Initialize authentication middleware
+$authMiddleware = new AuthMiddleware($pdo);
+
+// SECURITY: Require admin role for all admin endpoints
+$currentUser = $authMiddleware->requireRole('admin');
+if (!$currentUser) {
+    // Response already sent by middleware
+    exit;
+}
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];

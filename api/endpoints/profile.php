@@ -6,10 +6,14 @@
 
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 // Get database connection
 $database = new Database();
 $db = $database->getConnection();
+
+// Initialize authentication middleware
+$authMiddleware = new AuthMiddleware($db);
 
 // Get request method
 $method = $_SERVER['REQUEST_METHOD'];
@@ -17,30 +21,15 @@ $method = $_SERVER['REQUEST_METHOD'];
 try {
     switch ($method) {
         case 'GET':
-            // Get user profile - simple approach
-            $userId = null;
-            
-            // Try multiple ways to get user ID
-            if (isset($_GET['user_id'])) {
-                $userId = $_GET['user_id'];
-            } elseif (isset($_POST['user_id'])) {
-                $userId = $_POST['user_id'];
-            } else {
-                // Try to get from session
-                session_start();
-                if (isset($_SESSION['user_id'])) {
-                    $userId = $_SESSION['user_id'];
-                }
+            // SECURITY: Require authentication to access profile
+            $currentUser = $authMiddleware->authenticate();
+            if (!$currentUser) {
+                $authMiddleware->sendUnauthorizedResponse();
+                exit;
             }
             
-            if (!$userId) {
-                http_response_code(401);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'User not authenticated'
-                ]);
-                break;
-            }
+            // Users can only access their own profile
+            $userId = $currentUser['id'];
             
             // Simple query to get user data
             $stmt = $db->prepare("SELECT id, name, email, role, created_at FROM users WHERE id = ?");

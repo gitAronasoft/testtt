@@ -7,10 +7,14 @@
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/Video.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 // Get database connection
 $database = new Database();
 $db = $database->getConnection();
+
+// Initialize authentication middleware
+$authMiddleware = new AuthMiddleware($db);
 
 // Initialize video object
 $video = new Video($db);
@@ -24,17 +28,14 @@ try {
     switch ($method) {
         case 'GET':
             if (strpos($path, '/videos') !== false) {
-                // Get creator's videos
-                $creatorId = $_GET['uploader_id'] ?? $_GET['creator_id'] ?? null;
-                
-                if (!$creatorId) {
-                    http_response_code(400);
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'Creator ID is required'
-                    ]);
-                    return;
+                // SECURITY: Only authenticated creators can access video data
+                $currentUser = $authMiddleware->requireRole('creator');
+                if (!$currentUser) {
+                    exit;
                 }
+                
+                // Get creator's videos - creators can only access their own videos
+                $creatorId = $currentUser['id']; // Use authenticated user's ID, not from request
                 
                 $filters = ['uploader_id' => $creatorId];
                 

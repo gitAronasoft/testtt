@@ -6,10 +6,14 @@
 
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 // Get database connection
 $database = new Database();
 $db = $database->getConnection();
+
+// Initialize authentication middleware
+$authMiddleware = new AuthMiddleware($db);
 
 // Get request method and path
 $method = $_SERVER['REQUEST_METHOD'];
@@ -23,6 +27,12 @@ try {
             $type = $_GET['type'] ?? null;
             
             if ($type === 'admin' || (isset($path_parts[1]) && $path_parts[1] === 'admin')) {
+                // SECURITY: Only admins can access admin metrics
+                $currentUser = $authMiddleware->requireRole('admin');
+                if (!$currentUser) {
+                    exit;
+                }
+                
                 // Admin dashboard metrics
                 $metrics = [];
                 
